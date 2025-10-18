@@ -20,7 +20,7 @@ The UAG introduces a number of new tools through the MCP interface to provide an
 ## Getting Started
 The quickest way to become familar with the UAG is to first walk through our Local Example, and run it on your local machine. This will allow you to see how the UAG leverages the power of Form.io to connect with an AI Agent to provide dynamic context. All of this can be ran locally for free without any subscriptions required!
 
-[Click here to get started with our Local Example](examples/local/Readme.md) (Readme.md).
+**[Go to Local Example &raquo;](examples/local)**
 
 ## Runtime Environments
 There are two environments that you can current run and work with the UAG.
@@ -66,7 +66,7 @@ In addition to running the UAG in node.js, you can also run the UAG within the D
 formio/uag
 ```
 
-This container can be ran as a standalone container using the common **docker run** command, or inside of a **docker-compose.yml** (for Docker Compose). To see an example of using UAG with Docker Compose, we recommend taking a look at the [Local Example](./examples/local/Readme.md). 
+This container can be ran as a standalone container using the common **docker run** command, or inside of a **docker-compose.yml** (for Docker Compose). To see an example of using UAG with Docker Compose, we recommend taking a look at the [Local Example](./examples/local). 
 
 In both the Node.js runtime environemnt as well as Docker, the way to control the UAG is thorugh the use of **Environment Variables** and **Modules**.
 
@@ -102,11 +102,15 @@ If you are using the UAG with the Form.io Enterprise Server, you unlock several 
 ### Connecting your Developer Portal to the UAG.
 Before you spin up the UAG, you will need to make sure you provide a PORTAL_SECRET environment variable when it is deployed to your own environment. Once you have the UAG running in your own environment with a PORTAL_SECRET, you will now create a new Stage within your Developer portal. We can call this UAG.
 
-![Create UAG Stage](./examples/images/uag-create-stage.png)
+<div align="center">
+  <img src="./examples/images/uag-create-stage.png" alt="Create UAG Stage" width="600">
+</div>
 
 Next, you will click on **Staging** and then connect to your UAG server by providing the PORTAL_SECRET as follows.
 
-![Connect to UAG](./examples/images/connect-uag.png)
+<div align="center">
+  <img src="./examples/images/connect-uag.png" alt="Connect to UAG" width="600">
+</div>
 
 Now that the UAG is connected, you can then navigate to any Forms and Resources. These are the forms and resources hosted through the UAG.
 

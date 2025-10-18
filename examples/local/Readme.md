@@ -49,7 +49,9 @@ npx mcp-remote http://localhost:3000/mcp
 
 This will then navigate to a login page.
 
-![Login to UAG](../images/login.png)
+<div align="center">
+  <img src="../images/login.png" alt="Login to UAG" width="600">
+</div>
 
 Here you will then provide the one of the two user credentials that you configured in a previous step.  For example, we can login as the Manager using the following. After it logs in, it should then automatically be connected to the mcp-remote proxy, which is necessary to connect the **Claude Desktop** to your locally running UAG server.
 
@@ -73,7 +75,9 @@ We then need to close and re-open Claude Desktop.
 
 Once you have re-opened Claude Desktop, you can then click on User | Settings, where you will see the following under the Connections section.
 
-![Claude Desktop Local Connection](../images/claude-local.png)
+<div align="center">
+  <img src="../images/claude-local.png" alt="Claude Desktop Local Connection" width="600">
+</div>
 
 You are now connected!
 
@@ -94,7 +98,9 @@ It should also be noted that if you are using the **Remote MCP** (described at t
   
 Here is an example of a real chat made with Claude AI connected to the UAG.
 
-![Example Chat](../images/example-chat.png)
+<div align="center">
+  <img src="../images/example-chat.png" alt="Example Chat" width="600">
+</div>
 
 From this point forward, the AI Agent will use your configured Form.io Resources as a "rule book" for the AI Agent to follow. It will fetch a list of forms, determine if you have permissions, fetch the necessary fields, and then determine how to properly engage with the human interfacing it. This is a similar effect to if you were engaging with a fully trained AI Agent connected to a bespoke dataset, only this time, the training is done dynamically using the power of Form.io!
 
@@ -105,12 +111,16 @@ If you have upgrade your Claude to Pro level, or have onboarded your Enterprise 
  - Name:  Form.io UAG
  - Remote MCP Server URL:   <Your publically hosted URL for UAG>
 
-![Claude UI Connectors](../images/claude-ai-add-connector.png)
+<div align="center">
+  <img src="../images/claude-ai-add-connector.png" alt="Claude UI Connectors" width="600">
+</div>
 
 Now click "Add".
 
 Once the Remote Connector has been established, you then need to click on the "Connect" button next to the "Form.io UAG" connector.  This will then navigate to a login page.
 
-![Login to UAG](../images/login.png)
+<div align="center">
+  <img src="../images/login.png" alt="Login to UAG" width="600">
+</div>
 
 Here you will then provide the one of the two user credentials that you configured in a previous step.  For example, we can login as the Manager using the following. After it logs in, it should then automatically redirect you back to the Claude UI, where you are now "Connected". 

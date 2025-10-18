@@ -21,7 +21,7 @@ services:
       - MONGO_INITDB_ROOT_USERNAME
       - MONGO_INITDB_ROOT_PASSWORD
   formio:
-    image: formio/formio:dev
+    image: formio/formio:rc
     restart: always
     links:
       - mongo

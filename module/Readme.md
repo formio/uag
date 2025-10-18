@@ -69,16 +69,81 @@ You can also mount a module using Docker with the -v flag.
 docker run -v ./module:/app/module -e PORT=3200 -e DEBUG=formio.* formio/uag:rc
 ```
 
-## Module Capabilities
-Every module can provide a number of extensions and overrides to the UAG. The capabilities for modules are as follows:
+## Module Structure
+Every module can provide a number of extensions and overrides to the UAG. The capabilities for modules are provided through an exported JSON structure that looks like the following.
 
-### Custom Configurations
+```js
+import { UAGModule } from '@formio/uag';
+export default <UAGModule>{
+    config: {
+        template: undefined, // Default project.json template
+        loginForm: '', // Change the "/auth/authorize" form
+        responseTemplates: {}, // Override and create new reponse templates.
+        toolOverrides: {}, // Override existing tool definitions
+        tools: [], // Add your custom tools here.  Must be in the format defined by the ToolInfo type.
+        db: null, // Enterprise Only:  Database configurations defined by DbConfig
+        auth: null, // Authentication configuration defined by AuthConfig
+        license: '', // Enterprise License
+        cors: null, // CORS configurations defined by CorsOptions
+    },
+    actions: {} // Add your custom form actions here.
+};
+```
 
-### Custom Templates / Override Existing Templates
+Each of the following can be provided through a Module.
 
-### Custom Tools / Override Existing Tools
+### **templates**: Custom Templates / Override Existing Templates
+You can provide your own Form.io Project templates to serve as the default Forms, Resources, Actions, and Roles that you need to achieve the goals of your specific module. The Project Template can be retrieved either through the "/export" endpoint from OSS, or though the **Export Template** feature within your Project Staging settings of an Enterprise Server deployment.
 
-### Custom Actions
+### **tools**: Custom Tools / Override Existing Tools
+With this configuration, you can introduce new MCP tools to the UAG to further enhance the interfaces between Form.io and the AI Agents. This is extremely powerful since you could concieve of new tools that combine both the power of Form.io along with any other custom tool or external service you wish to combine with the Form.io tool intefaces.
+
+For an example of how to create a tool, simply look inside the [Tools Directory](../src/tools)
+
+### **responseTemplates**: Override and Create new Response Templates.
+The response templates provide the outputs that are sent to the AI Agent to establish the context it needs to accomplish custom goals. These templates use the [Lodash Template](https://lodash.com/docs/4.17.15#template) system to create a very flexible and powerful way to produce output text provided a data structure input. 
+
+With this configuration, you can provide your own custom templates which can then be used with the following command.
+
+```js
+import { UAGProjectInterface, ResponseTemplate, ToolInfo } from '@formio/uag';
+
+export const customTool = async (project: UAGProjectInterface): Promise<ToolInfo> => {
+  console.log(project.mcpResponse(ResponseTemplate.customTemplate, {
+    data: {
+      foo: 'bar'
+    }
+  }));
+};
+```
+
+To render a template directly (without an mcpResponse), you can use the method...
+
+```js
+import { UAGTemplate, ResponseTemplate } from '@formio/uag';
+UAGTemplate.renderTemplate(ResponseTemplate.customTemplate, {
+  data: {
+    foo: 'bar'
+  }
+})
+```
+
+### **toolOverrides**: Override the existing tools.
+Just like you can add your very own tools with the "tools" property, you can also completely override the existing UAG "tools" using the toolsOverride object. This can be done by providing the tool you wish to override as the "key" of the configuration, along with the "override" parameters you wish to override.
+
+The following example will override the "description" of the get_forms tool.
+
+```js
+{
+  toolOverrides: {
+    'get_forms': {
+      description: 'I believe having this description would produce better results!!!!'
+    }
+  }
+}
+```
+
+### **actions**: Custom Actions
 Of of the more powerful features of Modules is the ability to develop custom actions that should be included along with your Forms and Resources. Actions can the thought of a Configurable Middleware that can be attached and independently configured for any Form and Resource within the Form.io platform. The can be used to achieve custom integrations, workflows, behaviors and responses of the UAG.  
 
 A Basic Action "implements" the Action interface from @formio/uag and should follow the following type rules.
