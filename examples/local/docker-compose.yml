@@ -1,0 +1,55 @@
+version: "3.8"
+services:
+  nginx:
+    image: nginx
+    restart: always
+    links:
+      - formio
+      - formio-uag
+    depends_on:
+      - formio-uag
+    volumes:
+      - "./conf.d:/etc/nginx/conf.d"
+    ports:
+      - "3000:3000"
+  mongo:
+    image: mongo
+    restart: always
+    volumes:
+      - uag-data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME
+      - MONGO_INITDB_ROOT_PASSWORD
+  formio:
+    image: formio/formio:dev
+    restart: always
+    links:
+      - mongo
+    depends_on:
+      - mongo
+    environment:
+      DEBUG: formio.*
+      NODE_CONFIG: '{"mongo": "mongodb://mongo:27017/formio-oss", "jwt": {"secret": "CHANGEME"}, "mongoSecret": "CHANGEME"}'
+      ROOT_EMAIL: admin@example.com
+      ROOT_PASSWORD: CHANGEME
+      ADMIN_KEY: CHANGEME
+  formio-uag:
+    image: formio/uag:rc
+    restart: always
+    links:
+      - formio
+    depends_on:
+      - formio
+    volumes:
+      - ./module:/app/module
+    environment:
+      DEBUG: formio.*
+      PROJECT: http://formio:3001
+      ADMIN_KEY: CHANGEME
+      JWT_SECRET: CHANGEME
+      PORTAL_SECRET: CHANGEME
+      JWT_EXPIRE_TIME: 525600
+      LOGIN_FORM: https://formio.ngrok.io/employee/login
+      BASE_URL: https://formio.ngrok.io
+volumes:
+  uag-data:

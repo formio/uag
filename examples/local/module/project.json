@@ -1,0 +1,763 @@
+{
+  "title": "AI Demo",
+  "version": "2.0.0",
+  "name": "aidemo",
+  "roles": {
+    "manager": {
+      "title": "Manager",
+      "description": "A manager of the organization",
+      "admin": false,
+      "default": false
+    },
+    "employee": {
+      "title": "Employee",
+      "description": "An employee",
+      "admin": false,
+      "default": false
+    },
+    "administrator": {
+      "title": "Administrator",
+      "description": "A role for Administrative Users.",
+      "admin": true,
+      "default": false
+    },
+    "authenticated": {
+      "title": "Authenticated",
+      "description": "A role for Authenticated Users.",
+      "admin": false,
+      "default": false
+    },
+    "anonymous": {
+      "title": "Anonymous",
+      "description": "A role for Anonymous Users.",
+      "admin": false,
+      "default": true
+    }
+  },
+  "forms": {
+    "employeeLogin": {
+      "title": "Employee Login",
+      "type": "form",
+      "name": "employeeLogin",
+      "path": "employee/login",
+      "pdfComponents": [],
+      "display": "form",
+      "tags": [],
+      "settings": {},
+      "components": [
+        {
+          "label": "Email",
+          "applyMaskOn": "change",
+          "tableView": true,
+          "validate": {
+            "required": true
+          },
+          "validateWhenHidden": false,
+          "key": "email",
+          "type": "email",
+          "input": true
+        },
+        {
+          "label": "Password",
+          "applyMaskOn": "change",
+          "tableView": false,
+          "validate": {
+            "required": true
+          },
+          "validateWhenHidden": false,
+          "key": "password",
+          "type": "password",
+          "input": true,
+          "protected": true
+        },
+        {
+          "type": "button",
+          "label": "Submit",
+          "key": "submit",
+          "disableOnInvalid": true,
+          "input": true,
+          "tableView": false
+        }
+      ],
+      "access": [
+        {
+          "type": "create_own",
+          "roles": []
+        },
+        {
+          "type": "create_all",
+          "roles": []
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous",
+            "manager",
+            "employee"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": []
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": []
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": []
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "anonymous"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": []
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": []
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": []
+        }
+      ],
+      "properties": {},
+      "controller": "",
+      "submissionRevisions": "",
+      "revisions": "",
+      "esign": {}
+    }
+  },
+  "actions": {
+    "customer:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "customer",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    },
+    "customer:example": {
+      "title": "Example Action",
+      "name": "example",
+      "form": "customer",
+      "priority": 15,
+      "method": [
+        "create"
+      ],
+      "handler": [
+        "after"
+      ],
+      "settings": {
+        "example": "This is the configured value!"
+      }
+    },
+    "employee:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "employee",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    },
+    "employee:role": {
+      "title": "Role Assignment",
+      "name": "role",
+      "form": "employee",
+      "condition": {
+        "conjunction": "",
+        "conditions": [
+          {
+            "component": "role",
+            "operator": "isEqual",
+            "value": "employee"
+          }
+        ],
+        "custom": ""
+      },
+      "settings": {
+        "association": "new",
+        "type": "add",
+        "role": "employee"
+      },
+      "priority": 1,
+      "method": [
+        "create"
+      ],
+      "handler": [
+        "after"
+      ]
+    },
+    "employee:role1": {
+      "title": "Role Assignment",
+      "name": "role",
+      "form": "employee",
+      "condition": {
+        "conjunction": "",
+        "conditions": [
+          {
+            "component": "role",
+            "operator": "isEqual",
+            "value": "manager"
+          }
+        ],
+        "custom": ""
+      },
+      "settings": {
+        "association": "new",
+        "type": "add",
+        "role": "manager"
+      },
+      "priority": 1,
+      "method": [
+        "create"
+      ],
+      "handler": [
+        "after"
+      ]
+    },
+    "employeeLogin:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "employeeLogin",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    },
+    "employeeLogin:login": {
+      "title": "Login",
+      "name": "login",
+      "form": "employeeLogin",
+      "condition": {
+        "conjunction": "",
+        "conditions": [],
+        "custom": ""
+      },
+      "settings": {
+        "resources": [
+          "employee"
+        ],
+        "username": "email",
+        "password": "password",
+        "allowedAttempts": "5",
+        "attemptWindow": "30",
+        "lockWait": "1800"
+      },
+      "priority": 2,
+      "method": [
+        "create"
+      ],
+      "handler": [
+        "before"
+      ]
+    }
+  },
+  "resources": {
+    "employee": {
+      "title": "Employee",
+      "type": "resource",
+      "name": "employee",
+      "path": "employee",
+      "pdfComponents": [],
+      "display": "form",
+      "tags": [
+        "mcp",
+        "uag"
+      ],
+      "settings": {},
+      "components": [
+        {
+          "label": "First Name",
+          "applyMaskOn": "change",
+          "tableView": true,
+          "validate": {
+            "required": true
+          },
+          "validateWhenHidden": false,
+          "key": "firstName",
+          "type": "textfield",
+          "input": true
+        },
+        {
+          "label": "Last Name",
+          "applyMaskOn": "change",
+          "tableView": true,
+          "validate": {
+            "required": true
+          },
+          "validateWhenHidden": false,
+          "key": "lastName",
+          "type": "textfield",
+          "input": true
+        },
+        {
+          "label": "Email",
+          "applyMaskOn": "change",
+          "tableView": true,
+          "validate": {
+            "required": true
+          },
+          "validateWhenHidden": false,
+          "key": "email",
+          "type": "email",
+          "input": true
+        },
+        {
+          "label": "Role",
+          "widget": "choicesjs",
+          "tableView": true,
+          "data": {
+            "values": [
+              {
+                "label": "Manager",
+                "value": "manager"
+              },
+              {
+                "label": "Employee",
+                "value": "employee"
+              }
+            ]
+          },
+          "validateWhenHidden": false,
+          "key": "role",
+          "type": "select",
+          "input": true
+        },
+        {
+          "label": "Password",
+          "applyMaskOn": "change",
+          "tableView": false,
+          "validateWhenHidden": false,
+          "key": "password",
+          "type": "password",
+          "input": true,
+          "protected": true
+        },
+        {
+          "label": "Department",
+          "widget": "choicesjs",
+          "tableView": true,
+          "data": {
+            "values": [
+              {
+                "label": "Sales",
+                "value": "sales"
+              },
+              {
+                "label": "QA",
+                "value": "qa"
+              },
+              {
+                "label": "IT",
+                "value": "it"
+              },
+              {
+                "label": "Marketing",
+                "value": "marketing"
+              },
+              {
+                "label": "HR",
+                "value": "hr"
+              }
+            ]
+          },
+          "validateWhenHidden": false,
+          "key": "department",
+          "type": "select",
+          "input": true
+        },
+        {
+          "label": "Position",
+          "applyMaskOn": "change",
+          "tableView": true,
+          "validateWhenHidden": false,
+          "key": "position",
+          "type": "textfield",
+          "input": true
+        },
+        {
+          "type": "button",
+          "label": "Submit",
+          "key": "submit",
+          "disableOnInvalid": true,
+          "input": true,
+          "tableView": false
+        }
+      ],
+      "access": [
+        {
+          "type": "create_own",
+          "roles": []
+        },
+        {
+          "type": "create_all",
+          "roles": []
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous",
+            "manager",
+            "employee"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": []
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": []
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": []
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "manager"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "manager"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "manager"
+          ]
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "manager"
+          ]
+        }
+      ],
+      "properties": {},
+      "controller": "",
+      "submissionRevisions": "",
+      "revisions": "original",
+      "esign": {}
+    },
+    "customer": {
+      "title": "Customer",
+      "type": "resource",
+      "name": "customer",
+      "path": "customer",
+      "pdfComponents": [],
+      "display": "form",
+      "tags": [
+        "mcp",
+        "uag"
+      ],
+      "settings": {},
+      "components": [
+        {
+          "label": "First Name",
+          "applyMaskOn": "change",
+          "tableView": true,
+          "validate": {
+            "required": true
+          },
+          "validateWhenHidden": false,
+          "key": "firstName",
+          "type": "textfield",
+          "input": true
+        },
+        {
+          "label": "Last Name",
+          "applyMaskOn": "change",
+          "tableView": true,
+          "validate": {
+            "required": true
+          },
+          "validateWhenHidden": false,
+          "key": "lastName",
+          "type": "textfield",
+          "input": true
+        },
+        {
+          "label": "Email",
+          "applyMaskOn": "change",
+          "tableView": true,
+          "validate": {
+            "required": true
+          },
+          "validateWhenHidden": false,
+          "key": "email",
+          "type": "email",
+          "input": true
+        },
+        {
+          "label": "Phone Number",
+          "applyMaskOn": "change",
+          "tableView": true,
+          "validateWhenHidden": false,
+          "key": "phoneNumber",
+          "type": "phoneNumber",
+          "input": true
+        },
+        {
+          "label": "Company",
+          "description": "The company this person works for.",
+          "applyMaskOn": "change",
+          "tableView": true,
+          "validateWhenHidden": false,
+          "key": "company",
+          "type": "textfield",
+          "input": true
+        },
+        {
+          "label": "Position",
+          "description": "The position at the company for this customer.",
+          "applyMaskOn": "change",
+          "tableView": true,
+          "validateWhenHidden": false,
+          "key": "position",
+          "type": "textfield",
+          "input": true
+        },
+        {
+          "label": "Notes",
+          "description": "Any additional notes about this customer.",
+          "applyMaskOn": "change",
+          "autoExpand": false,
+          "tableView": true,
+          "validateWhenHidden": false,
+          "key": "notes",
+          "type": "textarea",
+          "input": true
+        },
+        {
+          "type": "button",
+          "label": "Submit",
+          "key": "submit",
+          "disableOnInvalid": true,
+          "input": true,
+          "tableView": false
+        }
+      ],
+      "access": [
+        {
+          "type": "create_own",
+          "roles": []
+        },
+        {
+          "type": "create_all",
+          "roles": []
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous",
+            "manager",
+            "employee"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": []
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": []
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": []
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "manager",
+            "employee"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "manager",
+            "employee"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "manager",
+            "employee"
+          ]
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "manager",
+            "employee"
+          ]
+        }
+      ],
+      "properties": {
+        "description": "Describes a person who is a customer or \"contact\"."
+      },
+      "controller": "",
+      "submissionRevisions": "",
+      "revisions": "",
+      "esign": {}
+    }
+  },
+  "revisions": {},
+  "reports": {},
+  "access": [
+    {
+      "type": "create_own",
+      "roles": []
+    },
+    {
+      "type": "create_all",
+      "roles": [
+        "administrator"
+      ]
+    },
+    {
+      "type": "read_own",
+      "roles": []
+    },
+    {
+      "type": "read_all",
+      "roles": [
+        "administrator",
+        "manager",
+        "employee"
+      ]
+    },
+    {
+      "type": "update_own",
+      "roles": []
+    },
+    {
+      "type": "update_all",
+      "roles": [
+        "administrator"
+      ]
+    },
+    {
+      "type": "delete_own",
+      "roles": []
+    },
+    {
+      "type": "delete_all",
+      "roles": [
+        "administrator"
+      ]
+    }
+  ]
+}
