@@ -49,7 +49,7 @@ services:
       JWT_SECRET: CHANGEME
       PORTAL_SECRET: CHANGEME
       JWT_EXPIRE_TIME: 525600
-      LOGIN_FORM: https://formio.ngrok.io/employee/login
-      BASE_URL: https://formio.ngrok.io
+      LOGIN_FORM: http://localhost:3000/employee/login
+      BASE_URL: http://localhost:3000
 volumes:
   uag-data:

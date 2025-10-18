@@ -31,10 +31,20 @@ From here, you can navigate to that URL and you should see the OSS Portal where 
 Once logged in, you should see the Resources automatically created by the Module, which for this example is a **Customer** resource and an **Employee** resource. You will also see in the project an **Employee Login** form. This will allow you to add new "employees" that will have certain permissions to perform certain tasks. In this example, the Managers can onboard new Employees, and the Employees can onboard new "Customers".  If an "Employee" (non-manager) tries to create a new Employee, they should be rejected. This examples shows how you can create a project structure where certain users can do certain things with the AI Agent based on their permissions. To show how this works, we will first need to create an example Manager and an example Customer.
 
 ## Creating Manager and Employee
-To create a new Manager, you simply need to click on the "Employee" resource within the Form.io OSS portal. You will then click on the "Enter Data" tab. On this resource you will provide an "Email", a temporary "Password" and then make sure to select a Role for that employee and then click submit. For this example, lets create a Manager and Employee with the following.
+To create a new Manager, you simply need to click on the **Employee** resource within the Form.io OSS portal. You will then click on the **Enter Data** tab. On this resource you will provide an **Email**, a temporary **Password** and then make sure to select a **Role** for that employee and then click submit. For this example, lets create a Manager and Employee with the following.
 
- - Manager:  manager@example.com, Role = Manager
- - Employee: employee@example.com, Role = Employee
+ - Manager:
+   - First Name: Example
+   - Last Name: Manager
+   - Email: manager@example.com
+   - Role: Manager
+   - Password: [TEMP PASSWORD]
+ - Employee:
+   - First Name: Example
+   - Last Name: Employee
+   - Email: employee@example.com
+   - Role: Employee
+   - Password: [TEMP PASSWORD]
 
 After you create these records, you will now be ready to hook up your AI Agent to walk through creating both new Employees (if you are logged in as a Manager) and Customers (if you are logged in as an Employee). As you are using the AI Agent in the next step, you can verify that the data is being collected correctly by clicking on the data tab of that resource and clicking refresh as it does its thing. So, let's do that now!
 
@@ -54,6 +64,12 @@ This will then navigate to a login page.
 </div>
 
 Here you will then provide the one of the two user credentials that you configured in a previous step.  For example, we can login as the Manager using the following. After it logs in, it should then automatically be connected to the mcp-remote proxy, which is necessary to connect the **Claude Desktop** to your locally running UAG server.
+
+If for any reason, you wish to log in as a different user, you can reset the "mcp-remote" authentication by deleting the ".mcp-auth" folder as follows. You can do this if you wish to try out the AI Agent logged in as either a Manager or an Employee.
+
+```
+rm -rf ~/.mcp-auth
+```
 
 Next, we will open up the **Claude Desktop**, where we will click on the **Developer** application bar item and then click on **Open App Config File**.  This should open up the ***claude_desktop_config.json*** file, which is used to configure locally ran MCP servers. We need to add an entry to run the "mcp-remote" proxy to call our lcoally running UAG server. We can do this by setting this file to read as follows.
 
