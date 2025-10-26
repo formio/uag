@@ -1,4 +1,4 @@
-import { FormInterface } from "@formio/appserver";
+import { AuthRequest, FormInterface, InterpolatedError } from "@formio/appserver";
 import {
     Component,
     TextFieldComponent,
@@ -6,9 +6,10 @@ import {
     DayComponent,
     SelectComponent,
     Utils,
-    Submission
+    Submission,
+    Processors
 } from "@formio/core";
-import { set } from "lodash";
+import { set, get } from "lodash";
 import { UAGForm } from "./config";
 
 export type UAGComponentInfo = {
@@ -21,6 +22,14 @@ export type UAGComponentInfo = {
     options?: { label: string; value: string }[];
     prompt?: string;
 };
+
+export type UAGData = Array<{ label: string; value: any, path: string }>;
+export type UAGSubmission = {
+    _id?: string;
+    data: UAGData;
+    created?: string | Date;
+    modified?: string | Date;
+}
 
 export type FormFieldInfo = {
     rules: Record<string, string>;
@@ -65,7 +74,7 @@ export class UAGFormInterface extends FormInterface {
             } else if ((component as SelectComponent).dataSrc === 'json') {
                 fieldInfo.options = [{ label: '** ANY VALUE IS ALLOWED **', value: 'Options are not dynamically defined.' }];
             } else {
-                const values = ((component as SelectComponent).data as any)?.values;
+                const values = ((component as SelectComponent).data as any)?.values || (component as any).values;
                 if (!values || !Array.isArray(values)) {
                     fieldInfo.options = [{ label: '', value: 'No options available' }];
                 }
@@ -80,8 +89,13 @@ export class UAGFormInterface extends FormInterface {
         return fieldInfo;
     }
 
+    isMultiple(component: Component | undefined): boolean {
+        if (!component) return false;
+        return !!component.multiple || component.type === 'selectboxes' || component.type === 'tags';
+    }
+
     getComponentValueRule(component: Component) {
-        let rule = `${component.type} -`;
+        let rule = '';
         switch (component.type) {
             case 'tags':
                 rule += 'The value can be any alphanumeric string, containing letters, numbers, but no white space characters or symbols. Multiple tags should be comma-separated.';
@@ -112,13 +126,7 @@ export class UAGFormInterface extends FormInterface {
             case 'selectboxes':
             case 'select':
             case 'radio':
-                const selectValues = ((component as SelectComponent).data as any)?.values;
-                if (!selectValues || !Array.isArray(selectValues) || selectValues.length === 0) {
-                    rule += 'No options are available for this select field.';
-                    break;
-                }
-                const multiple = (component as SelectComponent).multiple || component.type === 'selectboxes';
-                rule += `The value must be ${multiple ? 'one or more (as comma separated values)' : 'one'} of the following options provided in the "**Options**" section of that component, formatted as " - Label (value)":`;
+                rule += `The value must be ${this.isMultiple(component) ? 'one or more (as comma separated values)' : 'one'} of the following options provided in the "**Options**" section of that component, formatted as " - Label (value)":`;
                 break;
             case 'datetime':
                 rule += 'The value must be a valid date and time and in the format provided by the **Format** section of that component.';
@@ -141,31 +149,34 @@ export class UAGFormInterface extends FormInterface {
         return rule;
     }
 
-    supportsComponent(component: Component): boolean {
-        const supportedComponents = [
-            'textfield', 'textarea', 'number', 'currency', 'email', 'phoneNumber', 'date', 'time', 'datetime',
-            'select', 'selectboxes', 'radio', 'checkbox', 'tags', 'signature', 'url', 'password', 'hidden'
-        ];
-        return supportedComponents.includes(component.type);
-    }
-
-    getFields(currentData: Record<string, any> = {}): FormFieldInfo {
+    async getFields(submission: Submission, authInfo: AuthRequest): Promise<FormFieldInfo> {
         const fieldInfo: FormFieldInfo = {
             rules: {},
             required: [],
             optional: []
         };
-        Utils.eachComponent(this.form.components, (component, path) => {
-            if (!component.hasOwnProperty('input') || component.input && this.supportsComponent(component)) {
-                fieldInfo.rules[component.type] = this.getComponentValueRule(component);
-                if (component.validate?.required && !currentData[path]) {
-                    fieldInfo.required.push(this.getComponentInfo(component, path));
-                }
-                else {
-                    fieldInfo.optional.push(this.getComponentInfo(component, path));
+        const context = await this.process(submission, authInfo, null, null, null, [
+            ...Processors,
+            {
+                name: 'getFields',
+                shouldProcess: () => true,
+                postProcess: async (context: any) => {
+                    const { component, path, value } = context;
+                    if (
+                        component.type !== 'button' &&
+                        !component.scope?.conditionallyHidden
+                    ) {
+                        fieldInfo.rules[component.type] = this.getComponentValueRule(component);
+                        if (component.validate?.required && (!value || Array.isArray(value) && value.length === 0)) {
+                            fieldInfo.required.push(this.getComponentInfo(component, path));
+                        }
+                        else {
+                            fieldInfo.optional.push(this.getComponentInfo(component, path));
+                        }
+                    }
                 }
             }
-        });
+        ]);
         return fieldInfo;
     }
 
@@ -173,57 +184,65 @@ export class UAGFormInterface extends FormInterface {
         return Utils.getComponent(this.form.components, path);
     }
 
-    validateComponent(component: Component, value: any): { isValid: boolean; error?: string } {
-        if (component.validate?.required && (!value || value.trim() === '')) {
-            return { isValid: false, error: 'This field is required' };
-        }
-        // TO-DO: Add Form.io validation engine here...
-        return { isValid: true };
-    }
-
-    formatFormDataForDisplay(formData: Record<string, any>): any[] {
-        const formattedData: any[] = [];
-        Utils.eachComponent(this.form.components, (component, path) => {
-            if (formData.hasOwnProperty(path)) {
-                formattedData.push({
-                    path,
-                    label: component.label || component.key || path,
-                    value: formData[path]
+    /**
+     * Perform a validation process on the collected form data.
+     * @param data 
+     * @param auth 
+     * @returns 
+     */
+    async validateData(
+        submission: Submission,
+        auth: AuthRequest
+    ): Promise<{ label: string, path: string, error: string }[]> {
+        const invalidFields: { label: string, path: string, error: string }[] = [];
+        const validation = await this.validate(submission, auth);
+        if (validation.length > 0) {
+            validation.forEach((error: InterpolatedError) => {
+                invalidFields.push({
+                    label: error.context?.label || 'Field',
+                    path: error.context?.path,
+                    error: error.message || 'Unknown validation error'
                 });
-            }
-        });
-        return formattedData;
+            });
+        }
+        return invalidFields;
     }
 
     convertToSubmission(data: Record<string, any>): Submission {
         const submission: any = { data: {} };
-        for (const [path, value] of Object.entries(data)) {
+        for (let [path, value] of Object.entries(data)) {
+            const comp = this.getComponent(path);
+            if (comp?.type === 'selectboxes') {
+                value = value.split(',').reduce((obj: any, v: string) => {
+                    obj[v.trim()] = true;
+                    return obj;
+                }, {});
+            }
+            else if (this.isMultiple(comp)) {
+                value = value.split(',').map((v: string) => v.trim());
+            }
             set(submission.data, path, value);
         }
         return submission as Submission;
     }
 
-    formatSubmission(submission: Submission): any {
-        const formattedSubmission = {
+    formatSubmission(submission: Submission): UAGSubmission {
+        const uagSubmission = {
             _id: submission._id,
-            data: [] as Array<{ label: string; value: any, path: string }>,
+            data: [] as UAGData,
             created: submission.created,
             modified: submission.modified
         };
         Utils.eachComponentData(this.form?.components || [], submission.data || {}, (component, data, row, path) => {
-            if (
-                component.input !== false &&
-                row[component.key] !== undefined &&
-                row[component.key] !== null &&
-                row[component.key] !== ''
-            ) {
-                formattedSubmission.data.push({
+            const value = get(data, path);
+            if (component.input !== false && value !== undefined && value !== null && value !== '') {
+                uagSubmission.data.push({
                     path,
                     label: component.label || component.key || path,
-                    value: row[component.key]
+                    value
                 });
             }
         });
-        return formattedSubmission;
+        return uagSubmission;
     }
 }

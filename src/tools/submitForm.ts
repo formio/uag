@@ -34,7 +34,7 @@ export const submitCompletedForm = async (project: UAGProjectInterface): Promise
                     submissionId: submission._id || 'N/A',
                     submittedFieldsCount: Object.keys(current_data).length,
                     dataSummary: project.uagTemplate?.renderTemplate(ResponseTemplate.collectedData, {
-                        data: form.formatFormDataForDisplay(current_data)
+                        data: form.formatSubmission(submission).data
                     })
                 });
             } catch (err: any) {

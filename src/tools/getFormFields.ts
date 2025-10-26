@@ -13,13 +13,13 @@ export const getFormFields = async (project: UAGProjectInterface): Promise<ToolI
         inputSchema: {
             form_name: z.enum((project?.formNames || []) as [string, ...string[]]).describe('The name/key of the form to get fields for')
         },
-        execute: async ({ form_name }: any) => {
+        execute: async ({ form_name }: any, extra: any) => {
             const form = await project.getForm(form_name) as UAGFormInterface;
             if (!form) {
                 return project.mcpResponse(ResponseTemplate.formNotFound, { formName: form_name }, true);
             }
             try {
-                const fields = form.getFields(form);
+                const fields = await form.getFields({data: {}}, extra.authInfo);
                 return project.mcpResponse(ResponseTemplate.getFormFields, {
                     form: form.form,
                     rules: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldRules, { rules: Object.entries(fields.rules) }),

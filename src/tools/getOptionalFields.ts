@@ -13,19 +13,20 @@ export const getOptionalFields = async (project: UAGProjectInterface): Promise<T
             form_name: z.enum((project?.formNames || []) as [string, ...string[]]).describe('The name/key of the form'),
             current_data: z.record(z.any()).describe('The current collected form data as key-value pairs (using field paths as keys)')
         },
-        execute: async ({ form_name, current_data }: any) => {
+        execute: async ({ form_name, current_data }: any, extra: any) => {
             const form = await project.getForm(form_name) as UAGFormInterface;
             if (!form) {
                 return project.mcpResponse(ResponseTemplate.formNotFound, { formName: form_name }, true);
             }
-            const fields = form.getFields(current_data);
+            const submission = form.convertToSubmission(current_data);
+            const fields = await form.getFields(submission, extra.authInfo);
             return project.mcpResponse(ResponseTemplate.getOptionalFields, {
                 form: form.form,
                 rules: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldRules, { rules: Object.entries(fields.rules) }),
                 totalOptionalFields: fields.optional.length,
                 optionalFields: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldList, { fields: fields.optional }),
                 dataSummary: project.uagTemplate?.renderTemplate(ResponseTemplate.collectedData, {
-                    data: form.formatFormDataForDisplay(current_data)
+                    data: form.formatSubmission(submission).data
                 })
             });
         }

@@ -26,7 +26,7 @@ describe('collectData tool', () => {
             if (path === 'email') return { key: 'email', type: 'email', label: 'Email' };
             return null;
           },
-          validateComponent: async (component: any, value: any) => ({ isValid: true }),
+          validateComponentValue: async (component: any, value: any) => ({ isValid: true }),
           getFields: (data: any) => ({
             rules: {},
             required: Object.keys(data).includes('name') ? [] : [{ path: 'name', label: 'Name' }],
@@ -78,7 +78,7 @@ describe('collectData tool', () => {
   it('returns validation errors for invalid field', async () => {
     project.getForm = async () => ({
       getComponent: (path: string) => null, // field not found
-      validateComponent: async () => ({ isValid: false, error: 'Field not found' }),
+      validateComponentValue: async () => ({ isValid: false, error: 'Field not found' }),
       getFields: () => ({ rules: {}, required: [], optional: [] }),
       formatFormDataForDisplay: (data: any) => []
     });
