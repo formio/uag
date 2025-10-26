@@ -16,9 +16,9 @@ npm i @example/uag
 This is not a real module, but provides an example of how a module can be distributed and used from any company wishing to produce their own specific module behaviors.
 
 ```js
-import { ExampleModule } from '@example/uag';
-import { UAGServer } from '@formio/uag';
-import Express from 'express';
+const { ExampleModule } = require('@example/uag');
+const { UAGServer } = require('@formio/uag');
+const Express = require('express');
 try {
     (async function () {
         const server = new UAGServer();
@@ -73,8 +73,7 @@ docker run -v ./module:/app/module -e PORT=3200 -e DEBUG=formio.* formio/uag:rc
 Every module can provide a number of extensions and overrides to the UAG. The capabilities for modules are provided through an exported JSON structure that looks like the following.
 
 ```js
-import { UAGModule } from '@formio/uag';
-export default <UAGModule>{
+module.exports = {
     config: {
         template: undefined, // Default project.json template
         loginForm: '', // Change the "/auth/authorize" form
@@ -106,9 +105,8 @@ The response templates provide the outputs that are sent to the AI Agent to esta
 With this configuration, you can provide your own custom templates which can then be used with the following command.
 
 ```js
-import { UAGProjectInterface, ResponseTemplate, ToolInfo } from '@formio/uag';
-
-export const customTool = async (project: UAGProjectInterface): Promise<ToolInfo> => {
+const { ResponseTemplate } = require('@formio/uag');
+module.exports = async (project) => {
   console.log(project.mcpResponse(ResponseTemplate.customTemplate, {
     data: {
       foo: 'bar'
@@ -120,7 +118,7 @@ export const customTool = async (project: UAGProjectInterface): Promise<ToolInfo
 To render a template directly (without an mcpResponse), you can use the method...
 
 ```js
-import { UAGTemplate, ResponseTemplate } from '@formio/uag';
+const { UAGTemplate, ResponseTemplate } = require('@formio/uag');
 UAGTemplate.renderTemplate(ResponseTemplate.customTemplate, {
   data: {
     foo: 'bar'
@@ -175,21 +173,18 @@ export interface Action {
 
 A very minimal Action looks like the following.
 
-```ts
-import { 
-  Action, 
-  ActionInfo, 
-  AppServerAction, 
-  FormInterface, 
-  SubmissionRequest, 
-  SubmissionResponse
-} from '@formio/uag';
-import { NextFunction } from 'express';
-export const ExampleAction: Action = {
+```js
+/**
+ * An example custom action to work with the @formio/uag platform.
+ */
+export const ExampleAction = {
     /**
      * The ActionInfo for this action. This defines and describes the action.
+     * 
+     * @import { AppServerAction } from '@formio/uag';
+     * @return { AppServerAction } - The action information for this custom action.
      */
-    get info(): ActionInfo {
+    get info() {
         return {
             name: 'example',
             title: 'Example Action',
@@ -204,9 +199,13 @@ export const ExampleAction: Action = {
 
     /**
      * The settings form for this action.
-     * @param {*} form 
+     * 
+     * @import { Form } from '@formio/core';
+     * @import { FormInterface } from '@formio/uag';
+     * @param { FormInterface } form - The form interface for this action.
+     * @return { Form.components } - The form.io Form components to be used for the settings form.
      */
-    async settingsForm(form: FormInterface) {
+    async settingsForm(form) {
         return [
             {
                 type: 'textfield',
@@ -218,14 +217,20 @@ export const ExampleAction: Action = {
     },
 
     /**
-     * Enterprise Only:  For the Enterprise Only deployments, you can also store "secret" configurations necessary for secure integrations
-     * within the encrypted Project Settings. If you action implements this method, they can provide a special form for that Action where the
-     * value of this form will be saved in the Project Settings of that project. It should be noted, that this value is not per-instance but rather
-     * is treated as a Global value. This is good for any API Keys or secrets that are needed for integration purposes.
+     * Enterprise Only:  For the Enterprise Only deployments, you can also store "secret" configurations necessary for 
+     * secure integrations within the encrypted Project Settings. If you action implements this method, they can provide
+     * a special form for that Action where the value of this form will be saved in the Project Settings of that project. 
+     * It should be noted, that this value is not per-instance but rather is treated as a Global value. This is good for 
+     * any API Keys or secrets that are needed for integration purposes.
      * 
      * Once a value is saved, it can be fetched via "form.project.settings?.myservice?.secret" variable.
+     * 
+     * @import { Form } from '@formio/core';
+     * @import { FormInterface } from '@formio/uag';
+     * @param { FormInterface } form - The form interface for this action.
+     * @return { Form.components } - The form.io form components for the project settings.
      */
-    async projectSettings(form: FormInterface) {
+    async projectSettings(form) {
       return [
         {
           type: 'textfield',
@@ -237,12 +242,35 @@ export const ExampleAction: Action = {
     },
 
     /**
+     * The executor method for this action. This method is called when the action is loading. It provides a 
+     * moment to asynchronously load anything that is needed for the action before the action is executed. The executors
+     * for all actions will be evaluated while the server is "booting" up to provide a single execution to load any async 
+     * dependencies that the action may have. It will then return the "run-time" middleware that will be executed when the
+     * action is executed.
      * 
+     * @import { FormInterface, AppServerAction } from '@formio/uag';
+     * @param { FormInterface } form - The form interface for this action.
+     * @param { AppServerAction } action - The action JSON for the action being executed.
+     * @param { string } handler - If the executor is being executed "before" or "after"
+     * @param { string } method - The execute method.  "create", "read", "update", or "delete"
+     * @return { Function } - The Express.js middleware function to execute the action in real-time.
      */
-    async executor(form: FormInterface, action: AppServerAction, handler: string, method: string) {
+    async executor(form, action, handler, method) {
         const settings = action.settings;
-        console.log(settings.example); // This is the value configured in the settings form for this action instance.
-        return async (req: SubmissionRequest, res: SubmissionResponse, next: NextFunction) => {
+
+        // This is the value configured in the settings form for this action instance.
+        console.log(settings.example);
+
+        /**
+         * Return the "run-time" middleware function for this action.
+         * 
+         * @import { SubmissionRequest, SubmissionResponse } from '@formio/uag';
+         * @import { NextFunction } from 'express';
+         * @param { SubmissionRequest } req - The Express.js request with additional properties.
+         * @param { SubmissionResponse } res - The Express.js response with additional properties.
+         * @param { NextFunction } next - The Express.js next callback to move onto the next middleware.
+         */
+        return async (req, res, next) => {
             // The action is executed here as Express.js middleware.
             console.log(req.body);  // The submission data if the handler is "before"
             console.log(res.resource); // The "response" data if the handler is "after";
@@ -270,7 +298,7 @@ The **settingsForm** returns the Form.io JSON form that is used for the configur
 You could return the following for your settingsForm definition.
 
 ```js
-async settingsForm(form: FormInterface) {
+async settingsForm(form) {
   return [
       {
           type: 'datagrid',
@@ -292,35 +320,48 @@ The **executor** is a **pre-load function** that returns a **run-time middleware
 
 The Executor function is shown as follows.
 
-```ts
+```js
 /**
- * The "executor" function of an Action. It consists of a pre-load function that returns a run-time function.
+ * The executor method for this action. This method is called when the action is loading. It provides a 
+ * moment to asynchronously load anything that is needed for the action before the action is executed. The executors
+ * for all actions will be evaluated while the server is "booting" up to provide a single execution to load any async 
+ * dependencies that the action may have. It will then return the "run-time" middleware that will be executed when the
+ * action is executed.
  * 
- * @param form: FormInterface - The form interface for the current form being executed. See type definition of FormInteface
- * for a description of all the methods that are supported within class.
- * 
- * @param action AppServerAction - The JSON "instance" of this action. 
- * @param handler - The handler "before" or "after"
- * @param method - The CRUD method of the action:  "create", "read", "update", "delete"
+ * @import { FormInterface, AppServerAction } from '@formio/uag';
+ * @param { FormInterface } form - The form interface for this action.
+ * @param { AppServerAction } action - The action JSON for the action being executed.
+ * @param { string } handler - If the executor is being executed "before" or "after"
+ * @param { string } method - The execute method.  "create", "read", "update", or "delete"
+ * @return { Function } - The Express.js middleware function to execute the action in real-time.
  */
-async executor(form: FormInterface, action: AppServerAction, handler: string, method: string) {
-  const settings = action.settings;
-  console.log(settings.example); // This is the value configured in the settings form for this action instance.
+async executor(form, action, handler, method) {
+    const settings = action.settings;
 
-  /**
-   * Returns the "runtime" function for the "action". This is simply an Express.js middleware function that is evaluated
-   * during the request runtime. Just like Express, you must make sure you call the next function to continue the request.
-   */
-  return async (req: SubmissionRequest, res: SubmissionResponse, next: NextFunction) => {
-    // The submission data if the handler is "before"
-    console.log(req.body);
+    // This is the value configured in the settings form for this action instance.
+    console.log(settings.example);
 
-    // The "response" data (such as form submission, or index, etc) if the handler is "after";
-    console.log(res.resource);
+    /**
+     * Return the "run-time" middleware function for this action.
+     * 
+     * @import { SubmissionRequest, SubmissionResponse } from '@formio/uag';
+     * @import { NextFunction } from 'express';
+     * @param { SubmissionRequest } req - The Express.js request with additional properties.
+     * @param { SubmissionResponse } res - The Express.js response with additional properties.
+     * @param { NextFunction } next - The Express.js next callback to move onto the next middleware.
+     */
+    return async (req, res, next) => {
+        // The action is executed here as Express.js middleware.
 
-    // Make sure to always call "next" unless you are responding to the request.
-    next();
-  }
+        // The submission data if the handler is "before"
+        console.log(req.body);
+
+        // The "response" data if the handler is "after";
+        console.log(res.resource);
+
+        // Call next to continue processing.
+        next();
+    }
 }
 ```
 

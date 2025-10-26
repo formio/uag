@@ -27,10 +27,10 @@ return project.mcpResponse(ResponseTemplate.getAvailableForms, {
 If we look at the **src/templates** folder, you will see the markdown file that coorelates with this response. The names of the files match the name of the template, so the template for this response is found at **src/templates/getAvailableForms.md**.  If you wish to override this response template, simply copy this file and place it inside of the modules template folder.  You then just need to ensure you provide the same key in the **responseTemplates** configuration as follows.
 
 ```ts
-import * as fs from 'fs';
-import * as path from 'path';
-import Express from 'express';
-import { UAGServer, UAGModule } from '@formio/uag';
+const fs = require('fs');
+const path = require('path');
+const Express = require('express');
+const { UAGServer, UAGModule } = require('@formio/uag');
 (async function() {
     const server = new UAGServer();
     server.use({

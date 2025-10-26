@@ -1,7 +1,7 @@
-import 'dotenv/config';
-import Express from 'express';
-import { UAGServer } from './src';
-import UAGModule from './examples/local/module';
+require('dotenv/config');
+const Express = require('express');
+const { UAGServer } = require('./lib');
+const UAGModule = require('./module');
 try {
     (async function () {
         const server = new UAGServer();

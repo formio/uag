@@ -1,7 +1,7 @@
 FROM node:20-alpine
 COPY src/ /app/src/
 COPY module/ /app/module/
-COPY index.ts /app/
+COPY index.js /app/
 COPY package.json /app/
 COPY tsconfig.json /app/
 WORKDIR /app

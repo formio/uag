@@ -1,17 +1,8 @@
-import { 
-    Action, 
-    ActionInfo, 
-    AppServerAction, 
-    FormInterface, 
-    SubmissionRequest, 
-    SubmissionResponse 
-} from "../../../..";
-import { NextFunction } from "express";
-export const ExampleAction: Action = {
+export const ExampleAction = {
     /**
      * The ActionInfo for this action. This defines and describes the action.
      */
-    get info(): ActionInfo {
+    get info() {
         return {
             name: 'example',
             title: 'Example Action',
@@ -26,9 +17,9 @@ export const ExampleAction: Action = {
 
     /**
      * The settings form for this action.
-     * @param {*} form 
+     * @param {import('../../../../src').FormInterface} form - The form that this action is being configured for.
      */
-    async settingsForm(form: FormInterface) {
+    async settingsForm(form) {
         return [
             {
                 type: 'textfield',
@@ -39,10 +30,10 @@ export const ExampleAction: Action = {
         ];
     },
 
-    async executor(form: FormInterface, action: AppServerAction, handler: string, method: string) {
+    async executor(form, action, handler, method) {
         const settings = action.settings;
         console.log(settings.example); // This is the value configured in the settings form for this action instance.
-        return async (req: SubmissionRequest, res: SubmissionResponse, next: NextFunction) => {
+        return async (req, res, next) => {
             // The action is executed here as Express.js middleware.
             console.log(req.body);  // The submission data if the handler is "before"
             console.log(res.resource); // The "response" data if the handler is "after";

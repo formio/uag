@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { UAGProjectInterface } from './UAGProjectInterface';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp';
-import { isInitializeRequest } from '@modelcontextprotocol/sdk/types';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 
 // Helper function to create JSON RPC error responses
 const createJsonRpcErrorResponse = (code: number, message: string) => {

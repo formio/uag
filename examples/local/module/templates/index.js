@@ -1,5 +1,5 @@
-import * as fs from 'fs';
-import * as path from 'path';
-export default {
+const fs = require('fs');
+const path = require('path');
+module.exports = {
     example: fs.readFileSync(path.join(__dirname, 'example.md'), 'utf-8')
 };
