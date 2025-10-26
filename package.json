@@ -21,7 +21,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@formio/appserver": "^2.1.0",
+    "@formio/appserver": "^2.1.1",
     "@formio/core": "2.5.1-dev.291.98f47af",
     "@modelcontextprotocol/sdk": "^1.20.2",
     "cors": "^2.8.5",
