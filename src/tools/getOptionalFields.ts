@@ -34,7 +34,7 @@ export const getOptionalFields = async (project: UAGProjectInterface): Promise<T
                 });
             }
 
-
+            // Get some of the optional fields to fill out.
             return project.mcpResponse(ResponseTemplate.getOptionalFields, {
                 form: form.form,
                 rules: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldRules, { rules: Object.entries(fields.rules) }),

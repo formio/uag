@@ -38,15 +38,18 @@ export const collectData = async (project: UAGProjectInterface): Promise<ToolInf
 
             // Find next required field that hasn't been filled
             const fields = await form.getFields(submission, extra.authInfo);
-            const collectedDataSummary = project.uagTemplate?.renderTemplate(ResponseTemplate.collectedData, {
-                data: form.formatSubmission(submission).data
-            });
+
+            // If no required fields remain, then we can move onto a new tool.
             if (!fields.required.length) {
+                // All fields have been collected so move onto the next step.
                 return project.mcpResponse(ResponseTemplate.allFieldsCollected, {
-                    dataSummary: collectedDataSummary
+                    dataSummary: project.uagTemplate?.renderTemplate(ResponseTemplate.collectedData, {
+                        data: form.formatSubmission(submission).data
+                    })
                 });
             }
 
+            // Collect more required fields.
             return project.mcpResponse(ResponseTemplate.fieldCollectedNext, {
                 message: 'Form data collected successfully!',
                 rules: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldRules, { rules: Object.entries(fields.rules) }),
