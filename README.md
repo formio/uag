@@ -131,7 +131,7 @@ Next, you will click on **Staging** and then connect to your UAG server by provi
 
 Now that the UAG is connected, you can then navigate to any Forms and Resources. These are the forms and resources hosted through the UAG.
 
-### Deploying changes to your UAG: Form Versions
+### Deploying changes to your UAG using Stage Versions
 Next, you will simply use the existing Staging and Deployment system from your Developer portal to "deploy" any changes to your UAG. This will allow you to treat the UAG just like you would treat any other stage within your Enterprise deployment. This will allow you to track and any forms and resource changes using the Tag system, and then deploy new versions as well as "roll-back" to any previous versions if a change is made that does to perform as you would expect within the AI Agent enviornment. This is a stark contrast to what Enterprises must deal with "Trained Agents" where it is much harder to "roll back" any training that an agent has gone through. 
 
 ### Custom Actions
