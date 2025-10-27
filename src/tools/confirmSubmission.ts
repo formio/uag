@@ -26,6 +26,22 @@ export const confirmSubmission = async (project: UAGProjectInterface): Promise<T
                 return project.mcpResponse(ResponseTemplate.fieldValidationErrors, { invalidFields });
             }
 
+            // See which fields need to be filled out.
+            const fields = await form.getFields(submission, extra.authInfo);
+
+            // See if there are still required fields to fill out...
+            if (fields.required.length) {
+                return project.mcpResponse(ResponseTemplate.fieldCollectedNext, {
+                    message: 'There is additional data that needs to be collected before submission.',
+                    rules: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldRules, { rules: Object.entries(fields.rules) }),
+                    requiredFields: project.uagTemplate?.renderTemplate(ResponseTemplate.fields, { fields: fields.required }),
+                    progress: {
+                        collected: Object.keys(current_data).length,
+                        total: fields.required.length + Object.keys(current_data).length
+                    }
+                });
+            }
+
             // Confirm the submission.
             return project.mcpResponse(ResponseTemplate.confirmFormSubmission, {
                 form,

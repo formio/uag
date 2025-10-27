@@ -11,6 +11,7 @@ export class UAGServer extends Server {
   constructor(config?: UAGConfig) {
     super(defaultsDeep(config || {}, {
       baseUrl: get(process.env, 'BASE_URL', '').toString(),
+      license: get(process.env, 'UAG_LICENSE', '').toString(),
       submissionProxy: true,
       auth: { pkce: true }
     }));

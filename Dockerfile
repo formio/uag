@@ -11,7 +11,7 @@ RUN apk update && \
     apk add python3 && \
     apk add g++ && \
     apk add git
-RUN yarn
-RUN yarn build
+RUN npm install
+RUN npm run build
 RUN apk del git g++ make python3
-ENTRYPOINT [ "yarn", "start" ]
+ENTRYPOINT [ "npm", "run", "start" ]

@@ -1,6 +1,6 @@
-Form data collected successfully!
+<%= message %>
 
-**Progress**: <%= progress.collected %>/<%= progress.total %> fields collected
+**Progress**: <%= progress.collected %>/<%= progress.total %> required fields collected
 
 **Remaining required fields to complete:**
 <%= requiredFields %>

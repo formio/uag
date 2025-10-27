@@ -20,6 +20,21 @@ export const getOptionalFields = async (project: UAGProjectInterface): Promise<T
             }
             const submission = form.convertToSubmission(current_data);
             const fields = await form.getFields(submission, extra.authInfo);
+
+            // See if there are still required fields to fill out...
+            if (fields.required.length) {
+                return project.mcpResponse(ResponseTemplate.fieldCollectedNext, {
+                    message: 'There are more "required" fields that still need to be submitted.',
+                    rules: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldRules, { rules: Object.entries(fields.rules) }),
+                    requiredFields: project.uagTemplate?.renderTemplate(ResponseTemplate.fields, { fields: fields.required }),
+                    progress: {
+                        collected: Object.keys(current_data).length,
+                        total: fields.required.length + Object.keys(current_data).length
+                    }
+                });
+            }
+
+
             return project.mcpResponse(ResponseTemplate.getOptionalFields, {
                 form: form.form,
                 rules: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldRules, { rules: Object.entries(fields.rules) }),

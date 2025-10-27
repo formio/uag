@@ -48,6 +48,7 @@ export const collectData = async (project: UAGProjectInterface): Promise<ToolInf
             }
 
             return project.mcpResponse(ResponseTemplate.fieldCollectedNext, {
+                message: 'Form data collected successfully!',
                 rules: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldRules, { rules: Object.entries(fields.rules) }),
                 requiredFields: project.uagTemplate?.renderTemplate(ResponseTemplate.fields, { fields: fields.required }),
                 progress: {

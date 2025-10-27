@@ -1,6 +1,6 @@
 {
   "name": "@formio/uag",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "The Form.io Universal Agent Gateway (UAG).",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -11,15 +11,15 @@
     "clean": "rm -rf lib",
     "build:ts": "tsc",
     "build:copy-templates": "mkdir -p lib/templates && cp src/templates/*.md lib/templates/",
-    "build": "yarn clean && yarn build:ts && yarn build:copy-templates",
+    "build": "npm run clean && npm run build:ts && npm run build:copy-templates",
     "test": "TS_NODE_PROJECT=tsconfig.test.json mocha",
-    "dev": "yarn tsx --no-node-snapshot index.js",
+    "dev": "tsx --no-node-snapshot index.js",
     "start": "node --no-node-snapshot index.js"
   },
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@formio/appserver": "^2.1.1",
+    "@formio/appserver": "^2.2.0",
     "@formio/core": "2.5.1-dev.291.98f47af",
     "@modelcontextprotocol/sdk": "^1.20.2",
     "cors": "^2.8.5",
