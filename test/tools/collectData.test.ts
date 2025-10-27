@@ -1,104 +1,173 @@
 import { expect } from 'chai';
 import { collectData } from '../../src/tools/collectData';
-import { UAGProjectInterface } from '../../src/UAGProjectInterface';
 import { ResponseTemplate } from '../../src/template';
 
-describe('collectData tool', () => {
-  let project: any;
-  let tool: any;
+describe('collectData Tool', () => {
+    let mockProject: any;
+    let mockForm: any;
+    let mockAuthInfo: any;
+    let tool: any;
 
-  beforeEach(async () => {
-    project = Object.create(UAGProjectInterface.prototype);
-    project.formNames = ['testform'];
-    project.mcpResponse = (template: ResponseTemplate, data: any, isError?: boolean) => ({
-      template,
-      data,
-      isError
-    });
-    project.uagTemplate = {
-      renderTemplate: (name: string, data: any) => `rendered:${name}`
-    };
-    project.getForm = async (name: string) => {
-      if (name === 'testform') {
-        return {
-          getComponent: (path: string) => {
-            if (path === 'name') return { key: 'name', type: 'textfield', label: 'Name' };
-            if (path === 'email') return { key: 'email', type: 'email', label: 'Email' };
-            return null;
-          },
-          validateComponentValue: async (component: any, value: any) => ({ isValid: true }),
-          getFields: (data: any) => ({
-            rules: {},
-            required: Object.keys(data).includes('name') ? [] : [{ path: 'name', label: 'Name' }],
-            optional: []
-          }),
-          formatFormDataForDisplay: (data: any) => Object.entries(data).map(([k, v]) => ({ path: k, value: v }))
+    beforeEach(async () => {
+        mockAuthInfo = {
+            formPermissions: () => ({ create: true, read: true, update: true })
         };
-      }
-      return null;
-    };
 
-    tool = await collectData(project);
-  });
+        mockForm = {
+            form: { title: 'Test Form', name: 'testForm' },
+            convertToSubmission: (data: any) => ({ data }),
+            validateData: async () => [],
+            getFields: async () => ({
+                required: [
+                    { path: 'firstName', label: 'First Name', type: 'textfield' },
+                    { path: 'email', label: 'Email', type: 'email' }
+                ],
+                optional: [],
+                rules: {}
+            }),
+            formatSubmission: (sub: any) => ({ data: Object.entries(sub.data).map(([path, value]) => ({ path, value })) })
+        };
 
-  it('returns tool metadata with correct name', () => {
-    expect(tool.name).to.equal('collect_field_data');
-    expect(tool.title).to.equal('Collect Field Data');
-  });
+        mockProject = {
+            formNames: ['testForm'],
+            forms: { testForm: mockForm },
+            getForm: async (name: string) => name === 'testForm' ? mockForm : null,
+            mcpResponse: (template: string, data: any, isError?: boolean) => ({
+                template,
+                data,
+                isError: !!isError
+            }),
+            uagTemplate: {
+                renderTemplate: (template: string, data: any) => JSON.stringify(data)
+            },
+            config: {}
+        };
 
-  it('has inputSchema with form_name, field_updates, and current_data', () => {
-    expect(tool.inputSchema).to.have.property('form_name');
-    expect(tool.inputSchema).to.have.property('field_updates');
-    expect(tool.inputSchema).to.have.property('current_data');
-  });
-
-  it('returns formNotFound for non-existent form', async () => {
-    const result = await tool.execute({
-      form_name: 'nonexistent',
-      field_updates: [],
-      current_data: {}
-    });
-    expect(result.template).to.equal(ResponseTemplate.formNotFound);
-    expect(result.isError).to.be.true;
-  });
-
-  it('collects field data successfully', async () => {
-    const result = await tool.execute({
-      form_name: 'testform',
-      field_updates: [{ field_path: 'name', new_value: 'John' }],
-      current_data: {}
-    });
-    // Since name was the only required field, should indicate all fields collected or next field
-    expect(result.template).to.be.oneOf([
-      ResponseTemplate.fieldCollectedNext,
-      ResponseTemplate.allFieldsCollected
-    ]);
-  });
-
-  it('returns validation errors for invalid field', async () => {
-    project.getForm = async () => ({
-      getComponent: (path: string) => null, // field not found
-      validateComponentValue: async () => ({ isValid: false, error: 'Field not found' }),
-      getFields: () => ({ rules: {}, required: [], optional: [] }),
-      formatFormDataForDisplay: (data: any) => []
+        tool = await collectData(mockProject);
     });
 
-    const result = await tool.execute({
-      form_name: 'testform',
-      field_updates: [{ field_path: 'unknown', new_value: 'test' }],
-      current_data: {}
+    it('returns correct tool metadata', async () => {
+        expect(tool.name).to.equal('collect_field_data');
+        expect(tool.title).to.equal('Collect Field Data');
+        expect(tool.description).to.include('Collect data for form');
+        expect(tool.inputSchema).to.exist;
+        expect(tool.execute).to.be.a('function');
     });
-    expect(result.template).to.equal(ResponseTemplate.fieldValidationErrors);
-    expect(result.data.invalidFields).to.be.an('array');
-    expect(result.data.invalidFields[0].path).to.equal('unknown');
-  });
 
-  it('indicates all fields collected when no required fields remain', async () => {
-    const result = await tool.execute({
-      form_name: 'testform',
-      field_updates: [{ field_path: 'email', new_value: 'test@example.com' }],
-      current_data: { name: 'John' }
+    it('returns form not found error for invalid form', async () => {
+        const result = await tool.execute(
+            { form_name: 'invalidForm', updates: [], current_data: {} },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(result.template).to.equal(ResponseTemplate.formNotFound);
+        expect(result.isError).to.be.true;
     });
-    expect(result.template).to.equal(ResponseTemplate.allFieldsCollected);
-  });
+
+    it('collects field data successfully and indicates next required field', async () => {
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                updates: [{ path: 'firstName', value: 'John' }],
+                current_data: {}
+            },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(result.template).to.equal(ResponseTemplate.fieldCollectedNext);
+        expect(result.data.message).to.equal('Form data collected successfully!');
+        expect(result.data.progress).to.exist;
+        expect(result.data.progress.collected).to.equal(1);
+    });
+
+    it('merges updates with existing current_data', async () => {
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                updates: [{ path: 'email', value: 'john@example.com' }],
+                current_data: { firstName: 'John' }
+            },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(result.template).to.equal(ResponseTemplate.fieldCollectedNext);
+        expect(result.data.progress.collected).to.equal(2);
+    });
+
+    it('returns all fields collected when no required fields remain', async () => {
+        mockForm.getFields = async () => ({
+            required: [],
+            optional: [],
+            rules: {}
+        });
+
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                updates: [{ path: 'email', value: 'john@example.com' }],
+                current_data: { firstName: 'John' }
+            },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(result.template).to.equal(ResponseTemplate.allFieldsCollected);
+        expect(result.data.dataSummary).to.exist;
+    });
+
+    it('returns validation errors for invalid field data', async () => {
+        mockForm.validateData = async () => [
+            { path: 'email', message: 'Invalid email format' }
+        ];
+
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                updates: [{ path: 'email', value: 'invalid-email' }],
+                current_data: {}
+            },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(result.template).to.equal(ResponseTemplate.fieldValidationErrors);
+        expect(result.data.invalidFields).to.be.an('array');
+        expect(result.data.invalidFields.length).to.equal(1);
+    });
+
+    it('handles multiple field updates in single call', async () => {
+        // When we update both required fields, there are no required fields left
+        mockForm.getFields = async () => ({
+            required: [],
+            optional: [],
+            rules: {}
+        });
+
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                updates: [
+                    { path: 'firstName', value: 'John' },
+                    { path: 'email', value: 'john@example.com' }
+                ],
+                current_data: {}
+            },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(result.template).to.equal(ResponseTemplate.allFieldsCollected);
+    });
+
+    it('respects tool overrides from config', async () => {
+        mockProject.config = {
+            toolOverrides: {
+                collect_field_data: {
+                    name: 'custom_collect_data',
+                    title: 'Custom Collect'
+                }
+            }
+        };
+
+        const customTool = await collectData(mockProject);
+        expect(customTool.name).to.equal('custom_collect_data');
+        expect(customTool.title).to.equal('Custom Collect');
+    });
 });

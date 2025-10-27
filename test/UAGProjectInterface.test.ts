@@ -1,57 +1,275 @@
 import { expect } from 'chai';
 import { UAGProjectInterface } from '../src/UAGProjectInterface';
-import { ProjectInterface } from '@formio/appserver';
+import { ResponseTemplate } from '../src/template';
 
 describe('UAGProjectInterface', () => {
-  let proj: UAGProjectInterface;
+    let project: UAGProjectInterface;
 
-  beforeEach(() => {
-    // avoid running constructor logic that may require external setup
-    proj = Object.create(UAGProjectInterface.prototype) as any;
-    proj.user = null;
-    proj.formNames = [];
-    proj.uagTemplate = null;
-    proj.mcpServer = { registerTool: () => {} } as any;
-  });
+    beforeEach(() => {
+        // Create a mock project instance
+        project = Object.create(UAGProjectInterface.prototype);
+        project.forms = {};
+        project.formNames = [];
+        project.user = null;
+        project.mcpServer = {
+            registerTool: () => { }
+        } as any;
+        project.uagTemplate = {
+            renderTemplate: (templateName: string, data: any) => {
+                return `Template: ${templateName} with ${JSON.stringify(data)}`;
+            }
+        } as any;
+    });
 
-  it('mcpResponse renders template text and respects isError flag', () => {
-    proj.uagTemplate = { renderTemplate: (name: any, data: any) => `T:${name}:${JSON.stringify(data)}` } as any;
-    const res = proj.mcpResponse('formNotFound' as any, { id: 1 }, true);
-    expect(res).to.have.property('content');
-    expect(res.content[0].text).to.match(/^T:/);
-    expect(res).to.have.property('isError');
-  });
+    describe('mcpResponse', () => {
+        it('returns response with rendered template', () => {
+            const response = project.mcpResponse(ResponseTemplate.formSubmitted, { test: 'data' });
 
-  it('addForm registers UAG forms tagged with uag', () => {
-    const dummyForm: any = { tags: ['uag'], name: 'myform', title: 'My Form', properties: { description: 'desc' } };
-    // Stub ProjectInterface.addForm to avoid it accessing uninitialized internals
-    const orig = (ProjectInterface.prototype as any).addForm;
-    (ProjectInterface.prototype as any).addForm = function (form: any, key: string) {
-      return { __fakeFormInterface: true } as any;
-    };
-    try {
-      UAGProjectInterface.prototype.addForm.call(proj, dummyForm, 'myform');
-      // When tags include 'uag', addForm should push the form name into formNames
-      expect(Array.isArray(proj.formNames)).to.be.true;
-    } finally {
-      // restore original
-      (ProjectInterface.prototype as any).addForm = orig;
-    }
-  });
+            expect(response).to.have.property('content');
+            expect(response.content).to.be.an('array');
+            expect(response.content[0]).to.have.property('type', 'text');
+            expect(response.content[0].text).to.include('formSubmitted');
+        });
 
-  it('authorizeRequest responds with 401 when authorize throws', async () => {
-    // Mock request/response
-    const req: any = { get: () => 'Bearer token' };
-    let statusSet = 0;
-    const res: any = {
-      status: (s: number) => { statusSet = s; return res; },
-      set: () => res,
-      json: (obj: any) => obj
-    };
-    proj.authorizeRequest = async (_: any) => { throw new Error('bad token'); };
-    const next = () => { throw new Error('next called'); };
-    const out = await UAGProjectInterface.prototype.authorizeRequest.call(proj, req, res, next as any);
-    // authorizeRequest returns the response, check that status was set to 401
-    expect(statusSet).to.equal(401);
-  });
+        it('includes data in template rendering', () => {
+            const response = project.mcpResponse(ResponseTemplate.formSubmitted, { formName: 'testForm' });
+
+            expect(response.content[0].text).to.include('testForm');
+        });
+
+        it('sets isError flag when error is true', () => {
+            const response = project.mcpResponse(ResponseTemplate.formNotFound, {}, true);
+
+            expect(response).to.have.property('isError', true);
+        });
+
+        it('does not include isError when error is false', () => {
+            const response = project.mcpResponse(ResponseTemplate.formSubmitted, {}, false);
+
+            expect(response).to.not.have.property('isError');
+        });
+
+        it('handles empty data object', () => {
+            const response = project.mcpResponse(ResponseTemplate.noFormsAvailable);
+
+            expect(response).to.have.property('content');
+            expect(response.content[0]).to.have.property('text');
+        });
+    });
+
+    describe('addForm', () => {
+        it('registers form with uag tag', () => {
+            const mockForm = {
+                _id: 'form123',
+                title: 'Test Form',
+                name: 'testForm',
+                path: 'testform',
+                key: 'testForm',
+                tags: ['uag'],
+                components: []
+            } as any;
+
+            const formInterface = project.addForm(mockForm, 'testForm');
+
+            expect(formInterface).to.exist;
+            expect(formInterface?.uag).to.exist;
+            expect(formInterface?.uag?.name).to.equal('testForm');
+            expect(formInterface?.uag?.title).to.equal('Test Form');
+            expect(project.formNames).to.include('testForm');
+        });
+
+        it('uses form properties for uag configuration', () => {
+            const mockForm = {
+                _id: 'form123',
+                title: 'Contact Form',
+                name: 'contactForm',
+                path: 'contact',
+                key: 'contact',
+                tags: ['uag'],
+                properties: {
+                    description: 'A form for contact information'
+                },
+                components: []
+            } as any;
+
+            const formInterface = project.addForm(mockForm, 'contact');
+
+            expect(formInterface?.uag?.description).to.equal('A form for contact information');
+        });
+
+        it('does not register form without uag tag', () => {
+            const mockForm = {
+                _id: 'form123',
+                title: 'Regular Form',
+                name: 'regularForm',
+                key: 'regularForm',
+                tags: [],
+                components: []
+            } as any;
+
+            const formInterface = project.addForm(mockForm, 'regularForm');
+
+            expect(formInterface?.uag).to.not.exist;
+            expect(project.formNames).to.not.include('regularForm');
+        });
+
+        it('generates default description if not provided', () => {
+            const mockForm = {
+                _id: 'form123',
+                title: 'User Form',
+                name: 'userForm',
+                key: 'userForm',
+                tags: ['uag'],
+                components: []
+            } as any;
+
+            const formInterface = project.addForm(mockForm, 'userForm');
+
+            expect(formInterface?.uag?.description).to.include('User Form');
+        });
+    });
+
+    describe('authorizeRequest', () => {
+        it('calls next on successful authorization', async () => {
+            let nextCalled = false;
+            const mockReq: any = {
+                get: () => 'Bearer test-token'
+            };
+            const mockRes: any = {
+                status: () => mockRes,
+                set: () => mockRes,
+                json: () => mockRes
+            };
+            const mockNext = () => {
+                nextCalled = true;
+            };
+
+            // Mock provider
+            project.provider = () => ({
+                authorize: async () => ({
+                    user: { _id: 'user123' },
+                    token: 'test-token'
+                })
+            }) as any;
+
+            await project.authorizeRequest(mockReq, mockRes, mockNext);
+
+            expect(nextCalled).to.be.true;
+            expect(mockReq.auth).to.exist;
+        });
+
+        it('returns 401 when no PKCE provider configured', async () => {
+            let statusCode = 0;
+            let responseBody: any = null;
+
+            const mockReq: any = {
+                get: () => 'Bearer test-token'
+            };
+            const mockRes: any = {
+                status: (code: number) => {
+                    statusCode = code;
+                    return mockRes;
+                },
+                set: () => mockRes,
+                json: (body: any) => {
+                    responseBody = body;
+                    return mockRes;
+                }
+            };
+            const mockNext = () => { };
+
+            // Mock provider to return null
+            project.provider = () => null as any;
+
+            await project.authorizeRequest(mockReq, mockRes, mockNext);
+
+            expect(statusCode).to.equal(401);
+            expect(responseBody).to.have.property('detail');
+        });
+
+        it('returns 401 when authorization fails', async () => {
+            let statusCode = 0;
+            let responseBody: any = null;
+
+            const mockReq: any = {
+                get: () => 'Bearer invalid-token'
+            };
+            const mockRes: any = {
+                status: (code: number) => {
+                    statusCode = code;
+                    return mockRes;
+                },
+                set: () => mockRes,
+                json: (body: any) => {
+                    responseBody = body;
+                    return mockRes;
+                }
+            };
+            const mockNext = () => { };
+
+            // Mock provider that throws
+            project.provider = () => ({
+                authorize: async () => {
+                    throw new Error('Invalid token');
+                }
+            }) as any;
+
+            await project.authorizeRequest(mockReq, mockRes, mockNext);
+
+            expect(statusCode).to.equal(401);
+            expect(responseBody.detail).to.include('Invalid token');
+        });
+
+        it('returns 401 when user is missing', async () => {
+            let statusCode = 0;
+
+            const mockReq: any = {
+                get: () => 'Bearer test-token'
+            };
+            const mockRes: any = {
+                status: (code: number) => {
+                    statusCode = code;
+                    return mockRes;
+                },
+                set: () => mockRes,
+                json: () => mockRes
+            };
+            const mockNext = () => { };
+
+            // Mock provider that returns auth without user
+            project.provider = () => ({
+                authorize: async () => ({
+                    user: null
+                })
+            }) as any;
+
+            await project.authorizeRequest(mockReq, mockRes, mockNext);
+
+            expect(statusCode).to.equal(401);
+        });
+
+        it('sets WWW-Authenticate header on 401', async () => {
+            let headers: any = {};
+
+            const mockReq: any = {
+                get: () => null
+            };
+            const mockRes: any = {
+                status: () => mockRes,
+                set: (h: any) => {
+                    headers = { ...headers, ...h };
+                    return mockRes;
+                },
+                json: () => mockRes
+            };
+            const mockNext = () => { };
+
+            project.provider = () => null as any;
+
+            await project.authorizeRequest(mockReq, mockRes, mockNext);
+
+            expect(headers).to.have.property('WWW-Authenticate');
+            expect(headers['WWW-Authenticate']).to.include('Bearer');
+        });
+    });
 });

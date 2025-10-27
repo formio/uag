@@ -1,74 +1,172 @@
 import { expect } from 'chai';
 import { getFormFields } from '../../src/tools/getFormFields';
-import { UAGProjectInterface } from '../../src/UAGProjectInterface';
 import { ResponseTemplate } from '../../src/template';
 
-describe('getFormFields tool', () => {
-  let project: any;
-  let tool: any;
+describe('getFormFields Tool', () => {
+    let mockProject: any;
+    let mockForm: any;
+    let mockAuthInfo: any;
+    let tool: any;
 
-  beforeEach(async () => {
-    project = Object.create(UAGProjectInterface.prototype);
-    project.formNames = ['testform'];
-    project.mcpResponse = (template: ResponseTemplate, data: any, isError?: boolean) => ({
-      template,
-      data,
-      isError
-    });
-    project.uagTemplate = {
-      renderTemplate: (name: string, data: any) => `rendered:${name}`
-    };
-    project.getForm = async (name: string) => {
-      if (name === 'testform') {
-        return {
-          form: { name: 'testform', title: 'Test Form' },
-          getFields: () => ({
-            rules: { textfield: 'some rule', select: 'another rule' },
-            required: [{ path: 'name', label: 'Name', type: 'textfield' }],
-            optional: [{ path: 'email', label: 'Email', type: 'email' }]
-          })
+    beforeEach(async () => {
+        mockAuthInfo = {
+            formPermissions: () => ({ create: true, read: true, update: true })
         };
-      }
-      return null;
-    };
 
-    tool = await getFormFields(project);
-  });
+        mockForm = {
+            form: { title: 'Test Form', name: 'testForm' },
+            getFields: async () => ({
+                required: [
+                    { path: 'firstName', label: 'First Name', type: 'textfield' },
+                    { path: 'email', label: 'Email', type: 'email' }
+                ],
+                optional: [
+                    { path: 'phone', label: 'Phone', type: 'phoneNumber' }
+                ],
+                rules: {
+                    email: 'Must be a valid email address',
+                    phone: 'Format: (999) 999-9999'
+                }
+            })
+        };
 
-  it('returns tool metadata with correct name', () => {
-    expect(tool.name).to.equal('get_form_fields');
-    expect(tool.title).to.equal('Get Form Fields');
-  });
+        mockProject = {
+            formNames: ['testForm'],
+            forms: { testForm: mockForm },
+            getForm: async (name: string) => name === 'testForm' ? mockForm : null,
+            mcpResponse: (template: string, data: any, isError?: boolean) => ({
+                template,
+                data,
+                isError: !!isError
+            }),
+            uagTemplate: {
+                renderTemplate: (template: string, data: any) => JSON.stringify(data)
+            },
+            config: {}
+        };
 
-  it('has inputSchema requiring form_name', () => {
-    expect(tool.inputSchema).to.have.property('form_name');
-  });
-
-  it('returns formNotFound for non-existent form', async () => {
-    const result = await tool.execute({ form_name: 'nonexistent' });
-    expect(result.template).to.equal(ResponseTemplate.formNotFound);
-    expect(result.isError).to.be.true;
-  });
-
-  it('returns form fields successfully', async () => {
-    const result = await tool.execute({ form_name: 'testform' });
-    expect(result.template).to.equal(ResponseTemplate.getFormFields);
-    expect(result.data.form.name).to.equal('testform');
-    expect(result.data.totalFields).to.equal(2);
-    expect(result.data.totalRequired).to.equal(1);
-  });
-
-  it('handles errors during field extraction', async () => {
-    project.getForm = async () => ({
-      form: { name: 'errorform' },
-      getFields: () => {
-        throw new Error('Field extraction failed');
-      }
+        tool = await getFormFields(mockProject);
     });
 
-    const result = await tool.execute({ form_name: 'testform' });
-    expect(result.template).to.equal(ResponseTemplate.getFormFieldsError);
-    expect(result.isError).to.be.true;
-    expect(result.data.error).to.equal('Field extraction failed');
-  });
+    it('returns correct tool metadata', async () => {
+        expect(tool.name).to.equal('get_form_fields');
+        expect(tool.title).to.equal('Get Form Fields');
+        expect(tool.description).to.include('Get detailed information about all fields');
+        expect(tool.inputSchema).to.exist;
+        expect(tool.execute).to.be.a('function');
+    });
+
+    it('returns form not found error for invalid form', async () => {
+        const result = await tool.execute(
+            { form_name: 'invalidForm' },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(result.template).to.equal(ResponseTemplate.formNotFound);
+        expect(result.isError).to.be.true;
+    });
+
+    it('returns form fields successfully', async () => {
+        const result = await tool.execute(
+            { form_name: 'testForm' },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(result.template).to.equal(ResponseTemplate.getFormFields);
+        expect(result.data.form).to.equal(mockForm.form);
+        expect(result.data.totalFields).to.equal(3);
+        expect(result.data.totalRequired).to.equal(2);
+    });
+
+    it('includes field rules in response', async () => {
+        const result = await tool.execute(
+            { form_name: 'testForm' },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(result.template).to.equal(ResponseTemplate.getFormFields);
+        expect(result.data.rules).to.exist;
+    });
+
+    it('includes all fields (required and optional) in response', async () => {
+        const result = await tool.execute(
+            { form_name: 'testForm' },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(result.template).to.equal(ResponseTemplate.getFormFields);
+        expect(result.data.fields).to.exist;
+    });
+
+    it('includes list of required fields', async () => {
+        const result = await tool.execute(
+            { form_name: 'testForm' },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(result.template).to.equal(ResponseTemplate.getFormFields);
+        expect(result.data.requiredFields).to.exist;
+    });
+
+    it('handles forms with no fields', async () => {
+        mockForm.getFields = async () => ({
+            required: [],
+            optional: [],
+            rules: {}
+        });
+
+        const result = await tool.execute(
+            { form_name: 'testForm' },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(result.template).to.equal(ResponseTemplate.getFormFields);
+        expect(result.data.totalFields).to.equal(0);
+        expect(result.data.totalRequired).to.equal(0);
+    });
+
+    it('handles error during field extraction', async () => {
+        mockForm.getFields = async () => {
+            throw new Error('Failed to extract fields');
+        };
+
+        const result = await tool.execute(
+            { form_name: 'testForm' },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(result.template).to.equal(ResponseTemplate.getFormFieldsError);
+        expect(result.isError).to.be.true;
+        expect(result.data.error).to.include('Failed to extract fields');
+    });
+
+    it('passes authInfo to form.getFields', async () => {
+        let passedAuthInfo: any = null;
+        mockForm.getFields = async (submission: any, authInfo: any) => {
+            passedAuthInfo = authInfo;
+            return { required: [], optional: [], rules: {} };
+        };
+
+        await tool.execute(
+            { form_name: 'testForm' },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(passedAuthInfo).to.equal(mockAuthInfo);
+    });
+
+    it('respects tool overrides from config', async () => {
+        mockProject.config = {
+            toolOverrides: {
+                get_form_fields: {
+                    name: 'custom_get_fields',
+                    description: 'Custom field getter'
+                }
+            }
+        };
+
+        const customTool = await getFormFields(mockProject);
+        expect(customTool.name).to.equal('custom_get_fields');
+        expect(customTool.description).to.equal('Custom field getter');
+    });
 });
