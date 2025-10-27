@@ -78,13 +78,13 @@ This module can be configured in many ways. One of those ways is through the use
 | PROJECT | The API Endpoint to either an Enterprise project endpoint, or the OSS server url. | http://localhost:3000 |
 | PROJECT_KEY | (Enterprise Only) Either a Project API Key (for Form.io Enterprise) or the ADMIN_KEY for Community Edition. | CHANGEME |
 | ADMIN_KEY | (OSS Only) Allows you to provide the ADMIN_KEY to install and connect to the OSS Server. | CHANGEME |
+| UAG_LICENSE | The license to run the UAG against a Form.io Enterprise Deployment. | |
 | PORT | The port you wish to run the server on. | 3200 |
 | DEBUG | Variable used to perform debug logs of server activity | formio.* |
 | PORTAL_SECRET | Enterprise Only:  Allows you to connect to the UAG from the Form.io Enterprise Portal. | CHANGEME |
 | JWT_SECRET | A secret used to generate and validate JWT tokens generated through the authentication process of the UAG. This does not need to match the JWT_SECRET of the Enterprise Server that it is connected to. | CHANGEME |
 | PORTAL_SECRET | (Enterprise Only) Used to connect the UAG server with the Enterprise Portal | CHANGEME |
 | JWT_EXPIRE_TIME | The expiration for the jwt secret. | 3600 |
-| SUBMISSION_PROXY | (Required for OSS) Serves as a submission proxy to the PROJECT endpoint that it is connected to. This will forward all submission API's to the submission apis of the PROJECT. Without this, you will need to enable the database connection so that you can connect this UAG directly to your own database. | true |
 | MONGO | (Enterprise Only) Allows you to connect the UAG directly to a mongo database vs. having to redirect the submissions to the Form.io Submission APIs. | |
 | MONGO_CONFIG | JSON configuration for the Node.js Mongo Driver. | |
 | BASE_URL | The URL that the UAG is hosted on. This allows for proper OIDC authentication and allows for the authentication callbacks to point to the correct url. | https://ai.onform.io |
@@ -97,10 +97,26 @@ One of the more powerful ways to "control" and extend the UAG is through the use
 Extensive documentation for the UAG Module system can be found in the [Modules Readme](./module/Readme.md).
 
 ## Using with Form.io Enterprise Server
-If you are using the UAG with the Form.io Enterprise Server, you unlock several benefits with regards to managing the Forms and Resources within the UAG. Most of these additional features are unlocked by utilizing the Form.io Enterprise Developer Portal attached to the UAG through the Form.io Staging system. Here is how this works.
+If you are using the UAG with the Form.io Enterprise Server, you unlock several benefits with regards to managing the Forms and Resources within the UAG. Some of the features that you gain with our Enterprise Server are as follows:
+
+ - **Form Revisions** - Our form revision system provides a way to keep track of any changes made to any forms, and associate those changes with the submission data that is submitted against those revisions. This feature enables you to ensure that if any form schemas change, that the data submitted for that form correlates with the revision of the form in which it was submitted. In addition to this powerful feature, you can also leverage Form Revisions as a method to "roll-back" any mistakes or regressions caused by form changes. Instead of having to re-train or un-train an AI Agent with any schema, you simply revert to previous revisions and the AI Agent will adjust accordingly.
+ - **Submission Revisions** - Submission revisions provides a way to keep track of any data changes that have been made to a submission and provides information on who changed the data. This combined with the power of the UAG provides any system the ability to audit any changes in data made by both AI Agents as well as humans in the workflow processes.
+ - **Stage Versions and Deployments** - Stage versions provides a way to create a "tag" version accross all forms and resources within a project. This ensures that you can stamp a point in time where your AI Agent (which may consume many different forms and resources) interfaces with your whole project in a deterministic way. It also provides a much more elegant "roll-back" mechansism where the entire project of forms and resources can be versioned and deployed independently.
+
+### Running the UAG against the Enterprise Server
+In order to run the UAG against an Enterprise Server, you need to provide a few Environment variables that are different from the OSS runtime of this module. The following environment variables are required to run against an Enterprise Project.
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| PROJECT | For the Enterprise Server, this points to the Project Endpoint you wish to bind the UAG to. | https://mydeployment.com/myproject |
+| PROJECT_KEY | An API Key for that project, provided within the Project Settings | CHANGEME |
+| UAG_LICENSE | This is the licnese provided to you from the Form.io License team. Contact support@form.io to acquire a "temporary" or full license. | |
+| PORTAL_SECRET | This enables you to "connect" your Form.io Developer Portal to the UAG so that you can view any custom actions as well as perform deployments to the UAG. | |
+
+Once you have these environment variables in place, you should be able to run the UAG pointed to your Enterprise Project. You can now connect to this UAG from the Developer Portal as follows.
 
 ### Connecting your Developer Portal to the UAG.
-Before you spin up the UAG, you will need to make sure you provide a PORTAL_SECRET environment variable when it is deployed to your own environment. Once you have the UAG running in your own environment with a PORTAL_SECRET, you will now create a new Stage within your Developer portal. We can call this UAG.
+Once you have the UAG running in your own environment with a PORTAL_SECRET, you will now create a new Stage within your Developer portal. We can call this UAG.
 
 <div align="center">
   <img src="./examples/images/uag-create-stage.png" alt="Create UAG Stage" width="600">
