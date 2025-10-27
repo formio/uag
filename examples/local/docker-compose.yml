@@ -47,7 +47,6 @@ services:
       PROJECT: http://formio:3001
       ADMIN_KEY: CHANGEME
       JWT_SECRET: CHANGEME
-      PORTAL_SECRET: CHANGEME
       JWT_EXPIRE_TIME: 525600
       LOGIN_FORM: http://localhost:3000/employee/login
       BASE_URL: http://localhost:3000

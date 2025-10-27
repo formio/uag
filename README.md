@@ -68,6 +68,104 @@ formio/uag
 
 This container can be ran as a standalone container using the common **docker run** command, or inside of a **docker-compose.yml** (for Docker Compose). To see an example of using UAG with Docker Compose, we recommend taking a look at the [Local Example](./examples/local). 
 
+#### Docker Run
+Here are some examples of running the UAG using the ```docker run``` command.
+
+**UAG pointed to an Open Source server**
+```
+docker run -d \
+  -e "PROJECT=https://forms.mysite.com" \
+  -e "ADMIN_KEY=CHANGEME" \
+  -e "JWT_SECRET=CHANGEME" \
+  -e "BASE_URL=https://forms.mysite.com" \
+  -e "LOGIN_FORM=https://forms.mysite.com/user/login" \
+  -e "PORT=3200" \
+  --restart unless-stopped \
+  --network formio \
+  --name formio-uag \
+  -p 3200:3200 \
+  formio/uag:rc
+```
+
+**UAG pointed to an Form.io Enterprise Server**
+```
+docker run -d \
+  -e "PROJECT=https://forms.mysite.com/myproject" \
+  -e "PROJECT_KEY=CHANGEME" \
+  -e "UAG_LICENSE=YOUR-LICENSE" \
+  -e "JWT_SECRET=CHANGEME" \
+  -e "PORTAL_SECRET=CHANGEME" \
+  -e "BASE_URL=https://forms.mysite.com" \
+  -e "LOGIN_FORM=https://forms.mysite.com/myproject/user/login" \
+  -e "PORT=3200" \
+  --restart unless-stopped \
+  --network formio \
+  --name formio-uag \
+  -p 3200:3200 \
+  formio/uag:rc
+```
+
+### Docker Compose (Recommended)
+The recommended way to launching the UAG is through Docker Compose. This enables you to orchestrate several of the containers to run within a single instance to provide a more seamless and simple way of managing your deployments. Here is a simple example of how to run both the Form.io UAG + Form.io OSS server on the same instance.
+
+docker-compose.yml
+```
+version: "3.8"
+services:
+  mongo:
+    image: mongo
+    restart: always
+    volumes:
+      - ./data/db:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME
+      - MONGO_INITDB_ROOT_PASSWORD
+  formio:
+    image: formio/formio:rc
+    restart: always
+    links:
+      - mongo
+    depends_on:
+      - mongo
+    environment:
+      PORT: 3000
+      DEBUG: formio.*
+      NODE_CONFIG: '{"mongo": "mongodb://mongo:27017/formio-oss", "jwt": {"secret": "CHANGEME"}, "mongoSecret": "CHANGEME"}'
+      ROOT_EMAIL: admin@example.com
+      ROOT_PASSWORD: CHANGEME
+      ADMIN_KEY: CHANGEME
+    ports:
+      - "3000:3000"
+  formio-uag:
+    image: formio/uag:rc
+    restart: always
+    links:
+      - formio
+    depends_on:
+      - formio
+    environment:
+      PORT: 3200
+      DEBUG: formio.*
+      PROJECT: http://formio:3000
+      ADMIN_KEY: CHANGEME
+      JWT_SECRET: CHANGEME
+      JWT_EXPIRE_TIME: 525600
+      LOGIN_FORM: http://localhost:3000/employee/login
+      BASE_URL: http://localhost:3000
+    ports:
+      - "3200:3200"
+```
+
+This can be run by typing the following...
+
+```
+docker compose up -d
+```
+
+Once it is running, you can then navigate to the following to access both the OSS Deployment + UAG Server
+ - http://localhost:3000:  The Form.io OSS Server
+ - http://localhost:3200:  The UAG Server
+
 In both the Node.js runtime environemnt as well as Docker, the way to control the UAG is thorugh the use of **Environment Variables** and **Modules**.
 
 ### Environment Variables
@@ -87,9 +185,107 @@ This module can be configured in many ways. One of those ways is through the use
 | JWT_EXPIRE_TIME | The expiration for the jwt secret. | 3600 |
 | MONGO | (Enterprise Only) Allows you to connect the UAG directly to a mongo database vs. having to redirect the submissions to the Form.io Submission APIs. | |
 | MONGO_CONFIG | JSON configuration for the Node.js Mongo Driver. | |
-| BASE_URL | The URL that the UAG is hosted on. This allows for proper OIDC authentication and allows for the authentication callbacks to point to the correct url. | https://ai.onform.io |
-| LOGIN_FORM | The public url to the Login Form JSON endpoint. | https://mysite.com/project/user/login |
+| BASE_URL | The public URL that the UAG is hosted on. This allows for proper OIDC authentication and allows for the authentication callbacks to point to the correct url. | https://ai.onform.io |
+| LOGIN_FORM | The public URL to the Login Form JSON endpoint. | https://mysite.com/project/user/login |
 | CORS | The cors domain, or the JSON configuration to configure the "cors" node.js module cross domain resource sharing. | *.* |
+
+## Running on Public Domain
+In order to run the UAG on a public domain, it is very important to provide the proper configurations so that any AI Agent can properly authenticate. There are 3 different "domain" environment variables that matter, and it is important to understand how to configure them depending on your use case:
+
+### PROJECT
+The ```PROJECT``` environment variable is used to establish a connetion from the UAG server to the project endpoint (for Enterprise) or OSS base url. This does NOT need to be a public DNS entry, but rather a URL that connects the UAG container to the Server container.  The following examples illustrate how this would be configured.
+
+#### Local connection to OSS Server
+If you are using a local connection, such as within a Docker Compose file, you can configure the ```PROJECT``` environment variable to point directly to the local url as follows.
+
+docker-compose.yml
+```
+version: "3.8"
+services:
+  formio:
+    image: formio/formio:rc
+    restart: always
+    environment:
+      PORT: 3000
+      ADMIN_KEY: CHANGEME
+  formio-uag:
+    image: formio/uag:rc
+    restart: always
+    links:
+      - formio
+    depends_on:
+      - formio
+    environment:
+      PROJECT: http://formio:3000
+      ADMIN_KEY: CHANGEME
+```
+
+In this example, we have Docker Compose launching the OSS Form.io container with the ADMIN_KEY set for this deployment, the UAG is connected using ```http://formio:3000``` which is the local Docker network name (provided using the "links" property in the docker compose file)
+
+#### Local Connection to Enterprise Server Project
+If you are using the Enterprise Form.io server within a local environment to the UAG, then you will need to ensure that the UAG connects to an independent project using the PROJECT_KEY as follows.
+
+docker-compose.yml
+```
+version: "3.8"
+services:
+  formio-enterprise:
+    image: formio/formio-enterprise
+    restart: always
+    environment:
+      PORT: 3000
+  formio-uag:
+    image: formio/uag:rc
+    restart: always
+    links:
+      - formio-enterprise
+    depends_on:
+      - formio-enterprise
+    environment:
+      PROJECT: http://formio-enterprise:3000/myproject
+      PROJECT_KEY: CHANGEME
+```
+
+#### Public DNS
+If your project does not reside on the same network as the UAG, you can provide the domain name as the PROJECT as follows.
+
+docker-compose.yml: Connected to Enterprise (formio/formio-enterprise)
+```
+version: "3.8"
+services:
+  formio-uag:
+    image: formio/uag:rc
+    restart: always
+    environment:
+      PROJECT: https://forms.mydomain.com/myproject
+      PROJECT_KEY: CHANGEME
+```
+
+docker-compose.yml: Connected to Open Source (formio/formio)
+```
+version: "3.8"
+services:
+  formio-uag:
+    image: formio/uag:rc
+    restart: always
+    environment:
+      PROJECT: https://forms.mydomain.com
+      ADMIN_KEY: CHANGEME
+```
+
+### BASE_URL
+The ```BASE_URL``` is used to communicate to the AI Agent the public domain that is hosting the UAG server. This value is provided within the ```.well-known``` definitions for the OIDC (PKCE) authentication. If this is not correct, then the AI Agent will not be able to authenticate into the UAG.
+
+**This needs to be the publically accessible domain that you are hosting your UAG.**
+
+For example, ```BASE_URL: https://forms.mysite.com```.
+
+### LOGIN_FORM
+This is the publically accessible URL to the Login form of your Project or OSS deployment. This provides the URL that is loaded when the user navigates to ```{{ BASE_URL }}/auth/authorize```.  If you navigate to this URL, and the page says that you cannot load the form, then this is because your LOGIN_FORM environment variable is not pointing to the correct form JSON endpoint of your project. 
+
+For example:
+ - Enterprise Example: ```LOGIN_FORM: https://forms.mysite.com/myproject/user/login```
+ - OSS Example:  ```LOGIN_FORM: https://forms.mysite.com/user/login```
 
 ## Modules
 One of the more powerful ways to "control" and extend the UAG is through the use of Modules. This allows you to provide custom Resources, Forms, as well as custom actions and configurations to ensure that the UAG behaves exactly as you wish for it to behave for your use case.
