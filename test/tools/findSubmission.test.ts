@@ -60,7 +60,7 @@ describe('findSubmission Tool', () => {
     });
 
     it('returns correct tool metadata', async () => {
-        expect(tool.name).to.equal('find_submission_by_field');
+        expect(tool.name).to.equal('find_submissions');
         expect(tool.title).to.equal('Find Submission by Field Data');
         expect(tool.description).to.include('Find existing form submissions');
         expect(tool.inputSchema).to.exist;

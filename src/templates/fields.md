@@ -1,9 +1,10 @@
 <% fields.forEach(function(field, index) { %>
 <%= index + 1 %>. **<%= field.label %>**
-  - **Data Path (field_path)**: "<%= field.path %>"
+  - **Data Path (data_path)**: "<%= field.path %>"
   - **Label**: <%= field.label %>
   - **Type**: <%= field.type %>
-  - **Required**: <% if (field.validation.required) { %>✅ Yes<% } else { %>❌ No<% } %><% if (field.description) { %>
+  - **Required**: <% if (field.validation.required) { %>✅ Yes<% } else { %>❌ No<% } %>
+  - **Has Nested Components**:  <% if (field.nested) { %>✅ Yes<% } else { %>❌ No<% } %><% if (field.description) { %>
   - **Description**: <%= field.description %><% } %><% if (field.prompt) { %>
   - **Prompt**: <%= field.prompt %><% } %><% if (field.format) { %>
   - **Format**: <%= field.format %><% } %><% if (field.options) { %>

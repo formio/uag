@@ -1,26 +1,28 @@
-import z from "zod";
 import { ResponseTemplate } from "../template";
 import { UAGProjectInterface } from "../UAGProjectInterface";
-import { ToolInfo } from "./types";
+import { getParentLabel, ToolInfo } from "./utils";
 import { UAGFormInterface } from "../UAGFormInterface";
 import { defaultsDeep } from "lodash";
+import { SchemaBuilder } from "./SchemaBuilder";
 export const confirmSubmission = async (project: UAGProjectInterface): Promise<ToolInfo> => {
     return defaultsDeep(project.config?.toolOverrides?.confirm_form_submission || {}, {
         name: 'confirm_form_submission',
         title: 'Confirm Form Submission',
         description: 'Show a summary of the collected form data and ask the user for confirmation before submitting',
-        inputSchema: {
-            form_name: z.enum((project?.formNames || []) as [string, ...string[]]).describe('The name/key of the form to confirm'),
-            current_data: z.record(z.any()).describe('The completed collected form data (using field paths as keys)')
-        },
-        execute: async ({ form_name, current_data }: any, extra: any) => {
+        inputSchema: (new SchemaBuilder(project))
+            .form_name()
+            .form_data().schema,
+        execute: async ({ form_name, form_data }: {
+            form_name: string;
+            form_data: Record<string, any>;
+        }, extra: any) => {
             const form = await project.getForm(form_name) as UAGFormInterface;
             if (!form) {
                 return project.mcpResponse(ResponseTemplate.formNotFound, { formName: form_name }, true);
             }
 
             // Perform a validation check.
-            const submission = form.convertToSubmission(current_data);
+            const submission = form.convertToSubmission(form_data);
             const invalidFields = await form.validateData(submission, extra.authInfo);
             if (invalidFields.length > 0) {
                 return project.mcpResponse(ResponseTemplate.fieldValidationErrors, { invalidFields });
@@ -30,14 +32,19 @@ export const confirmSubmission = async (project: UAGProjectInterface): Promise<T
             const fields = await form.getFields(submission, extra.authInfo);
 
             // See if there are still required fields to fill out...
-            if (fields.required.length) {
+            if (fields.required.components.length) {
                 return project.mcpResponse(ResponseTemplate.fieldCollectedNext, {
+                    parent: undefined,
+                    parentLabel: getParentLabel(undefined, form.form),
                     message: 'There is additional data that needs to be collected before submission.',
-                    rules: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldRules, { rules: Object.entries(fields.rules) }),
-                    requiredFields: project.uagTemplate?.renderTemplate(ResponseTemplate.fields, { fields: fields.required }),
+                    rules: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldRules, { rules: Object.entries(fields.required.rules) }),
+                    fields: project.uagTemplate?.renderTemplate(ResponseTemplate.fields, { fields: fields.required.components }),
+                    dataSummary: project.uagTemplate?.renderTemplate(ResponseTemplate.collectedData, {
+                        data: form.formatData(submission.data)
+                    }),
                     progress: {
-                        collected: Object.keys(current_data).length,
-                        total: fields.required.length + Object.keys(current_data).length
+                        collected: Object.keys(form_data).length,
+                        total: fields.required.components.length + Object.keys(form_data).length
                     }
                 });
             }
@@ -46,9 +53,9 @@ export const confirmSubmission = async (project: UAGProjectInterface): Promise<T
             return project.mcpResponse(ResponseTemplate.confirmFormSubmission, {
                 form,
                 dataSummary: project.uagTemplate?.renderTemplate(ResponseTemplate.collectedData, {
-                    data: form.formatSubmission(submission).data
+                    data: form.formatData(submission.data)
                 }),
-                currentData: current_data
+                currentData: form_data
             });
         }
     });

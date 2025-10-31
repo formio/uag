@@ -16,7 +16,7 @@ Found <%= resultCount %> submissions for <%= form.title %> matching "<%= searchQ
 1. **Be more specific** in your search query to find just one record, OR
 2. **Provide the last 4 characters** of the submission ID you want to update (shown above as "ID ends with")
 
-Example: "Update the submission ending in **abc1**" or use `find_submission_by_field` with `submission_id_partial: "abc1"`
+Example: "Update the submission ending in **abc1**" or use `find_submissions` with `submission_id_partial: "abc1"`
 
 **Note:** All <%= fieldUpdates.length %> field update(s) will be applied to whichever submission you select.
 <% } else { %>

@@ -7,10 +7,13 @@ import {
     SelectComponent,
     Utils,
     Submission,
-    Processors
+    Processors,
+    DataObject,
+    componentHasValue
 } from "@formio/core";
-import { set, get } from "lodash";
+import { set, get, isObjectLike } from "lodash";
 import { UAGForm } from "./config";
+import { ParentInfo } from "./tools";
 
 export type UAGComponentInfo = {
     path: string;
@@ -21,9 +24,10 @@ export type UAGComponentInfo = {
     validation: any;
     options?: { label: string; value: string }[];
     prompt?: string;
+    nested?: boolean;
 };
 
-export type UAGData = Array<{ label: string; value: any, path: string }>;
+export type UAGData = Array<{ label: string; value: any, path: string, prefix?: string }>;
 export type UAGSubmission = {
     _id?: string;
     data: UAGData;
@@ -32,9 +36,15 @@ export type UAGSubmission = {
 }
 
 export type FormFieldInfo = {
-    rules: Record<string, string>;
-    required: UAGComponentInfo[];
-    optional: UAGComponentInfo[];
+    rowIndex: number;
+    required: {
+        rules: Record<string, string>,
+        components: UAGComponentInfo[]
+    },
+    optional: {
+        rules: Record<string, string>,
+        components: UAGComponentInfo[]
+    };
 }
 
 export class UAGFormInterface extends FormInterface {
@@ -86,6 +96,7 @@ export class UAGFormInterface extends FormInterface {
                 }
             }
         }
+        fieldInfo.nested = this.isNestedComponent(component);
         return fieldInfo;
     }
 
@@ -94,8 +105,37 @@ export class UAGFormInterface extends FormInterface {
         return !!component.multiple || component.type === 'selectboxes' || component.type === 'tags';
     }
 
+    getParentToolDescription(parent: ParentInfo | undefined): string {
+        if (!parent) return '';
+        return `To collect data for this component, separately use the \`collect_field_data\` tool with the following set for the \`parent\` parameter: \`parent=${JSON.stringify(parent)}\`. Use the \`get_form_fields\` tool with the same \`parent\` parameter to retrieve all the fields within this parent field. `;
+    }
+
     getComponentValueRule(component: Component) {
         let rule = '';
+        const parent: ParentInfo = {
+            type: component.type,
+            label: component.label || component.key,
+            data_path: '<data_path>'
+        };
+        if (
+            (component as any).tree ||
+            component.type === 'datagrid' ||
+            component.type === 'editgrid'
+        ) {
+            parent.isTable = true;
+            rule += 'The value is a table of rows (array of objects). ' + this.getParentToolDescription(parent) + 'All `data_path`(s) for the components within this table should contain the current row index (e.g. `dataGrid[0].a`, `dataGrid[0].b`, `dataGrid[1].b`, etc.).';
+            return rule;
+        }
+        if (component.type === 'form') {
+            parent.isForm = true;
+            rule += 'The value is a nested form submission in the format `{data: {...}}` where `{...}` is the values for the child components. ' + this.getParentToolDescription(parent) + 'All `data_path`(s) for the components within this nested form should be prefixed with `data` (e.g. `nestedForm.data.exampleField`).';
+            return rule;
+        }
+        if (component.type === 'container') {
+            parent.isContainer = true;
+            rule += 'The value is an object/map of nested component values in the format `{...}`. ' + this.getParentToolDescription(parent) + 'All `data_path`(s) for the components within this container should be prefixed with the container\'s `data_path` (e.g. `container.exampleField`).';
+            return rule;
+        }
         switch (component.type) {
             case 'tags':
                 rule += 'The value can be any alphanumeric string, containing letters, numbers, but no white space characters or symbols. Multiple tags should be comma-separated.';
@@ -129,13 +169,13 @@ export class UAGFormInterface extends FormInterface {
                 rule += `The value must be ${this.isMultiple(component) ? 'one or more (as comma separated values)' : 'one'} of the following options provided in the "**Options**" section of that component, formatted as " - Label (value)":`;
                 break;
             case 'datetime':
-                rule += 'The value must be a valid date and time and in the format provided by the **Format** section of that component.';
+                rule += 'The value must be a valid date and time string in the format provided by the **Format** section of that component.';
                 break;
             case 'day':
                 rule += 'The value must be a valid day string in the format provided by the **Format** section of that component.';
                 break;
             case 'time':
-                rule += 'The value must be a valid time in the format provided by the **Format** section of that component.';
+                rule += 'The value must be a valid time string in the format provided by the **Format** section of that component.';
                 break;
             case 'url':
                 rule += 'The value must be a valid URL, starting with http:// or https://';
@@ -149,37 +189,143 @@ export class UAGFormInterface extends FormInterface {
         return rule;
     }
 
-    async getFields(submission: Submission, authInfo: AuthRequest): Promise<FormFieldInfo> {
+    /**
+     * Determine if the component is a nested data components. For these components, the UAG treats them as 
+     * separate data collection units where the agent will explicitely call out to collect data for these components.
+     * 
+     * @import { Component } from "@formio/core";
+     * @param component { Component } - The component to check.
+     * @returns { boolean } - True if the component is a nested data component, false otherwise.
+     */
+    isNestedComponent(component: Component): boolean {
+        if (
+            (component as any).tree ||
+            component.type === 'datagrid' ||
+            component.type === 'editgrid' ||
+            component.type === 'form'
+        ) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Determine if the component is a non-input component that should be skipped when collecting fields.
+     * 
+     * @import { Component } from "@formio/core";
+     * @param component { Component } - The component to check.
+     * @returns { boolean } - True if the component is an input component, false otherwise.
+     */
+    inputComponent(component: Component): boolean {
+        const modelType = Utils.getModelType(component);
+        if (component.input === false || component.type === 'button') {
+            return false;
+        }
+        if (!component.type || modelType === 'none' || modelType === 'content') {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Get the relevant fields from the current form. This will return any non-nested input components whose
+     * values have not already been set within the data model. This allows the agent to know what fields still need to be 
+     * collected from the user, as well as provides a mechanism to break up large forms into smaller chunks of data collection
+     * using the 'nested' components (datagrid, editgrid, nested form, etc.).
+     * 
+     * @import { Submission } from "@formio/core";
+     * @import { AuthRequest } from "@formio/appserver";
+     * @param submission { Submission } - The current submission data model.
+     * @param authInfo { AuthRequest } - The current authentication information.
+     * @param within { string | string[] } - Optional data path or array of data paths to limit the field extraction within.
+     *  - If within is an array, then it works like "includes". 
+     *  - If within is a string, then it is a single path to limit components within (non-inclusive).
+     * @returns { Promise<FormFieldInfo> } - The extracted form field information.
+     */
+    async getFields(
+        submission: Submission,
+        authInfo: AuthRequest,
+        within: string | string[] = ''
+    ): Promise<FormFieldInfo> {
         const fieldInfo: FormFieldInfo = {
-            rules: {},
-            required: [],
-            optional: []
+            rowIndex: -1,
+            required: { components: [], rules: {} },
+            optional: { components: [], rules: {} }
         };
-        const context = await this.process(submission, authInfo, null, null, null, [
+        const nestedPaths: string[] = [];
+        await this.process(submission, authInfo, null, null, null, [
             ...Processors,
             {
                 name: 'getFields',
                 shouldProcess: () => true,
+                process: async (context) => {
+                    const { component, path, value } = context;
+                    if (this.isNestedComponent(component)) {
+                        nestedPaths.push(path);
+                    }
+                },
                 postProcess: async (context: any) => {
                     const { component, path, value } = context;
-                    if (
-                        component.type !== 'button' &&
-                        !component.scope?.conditionallyHidden
-                    ) {
-                        fieldInfo.rules[component.type] = this.getComponentValueRule(component);
-                        if (component.validate?.required && (!value || Array.isArray(value) && value.length === 0)) {
-                            fieldInfo.required.push(this.getComponentInfo(component, path));
+
+                    // Get the current nested path (if any).
+                    const nestedPath = nestedPaths?.length ? nestedPaths[nestedPaths.length - 1] : null;
+
+                    // If the nested path IS the nested component, then pop it off the stack and skip it.
+                    if (nestedPath === path) {
+                        nestedPaths.pop();
+                    }
+
+                    if (within) {
+                        // If within is an array, then this works like "includes".
+                        if (Array.isArray(within) && !within.includes(path)) {
+                            return;
                         }
-                        else {
-                            fieldInfo.optional.push(this.getComponentInfo(component, path));
+                        if (typeof within === 'string') {
+                            if (path.startsWith(within) && (path !== within)) {
+                                // Make sure to set the largest index for the nested component.
+                                const indexMatch = path.match(/\[(\d+)\]/);
+                                fieldInfo.rowIndex = indexMatch?.length ? parseInt(indexMatch[indexMatch.length - 1], 10) : 0;
+                            }
+                            else {
+                                return;
+                            }
+                        }
+
+                        // If within is a string, then it is a single path to limit components within (non-inclusive).
+                        if ((typeof within === 'string') && (!path.startsWith(within) || (path === within))) {
+                            return;
                         }
                     }
+                    // If this is a component within the nested path, then skip it...
+                    else if (nestedPath && path.startsWith(nestedPath) && (path !== nestedPath)) {
+                        return;
+                    }
+
+                    // Skip non-input components and conditionally hidden components.
+                    if (!this.inputComponent(component) || component.scope?.conditionallyHidden) {
+                        return;
+                    }
+
+                    // If the component has a value, then skip it.
+                    if (componentHasValue(component, value)) {
+                        return;
+                    }
+
+                    // Add the component info to the appropriate list.
+                    const criteria = component.validate?.required ? 'required' : 'optional';
+                    fieldInfo[criteria].rules[component.type] = this.getComponentValueRule(component);
+                    fieldInfo[criteria].components.push(this.getComponentInfo(component, path));
                 }
             }
         ]);
         return fieldInfo;
     }
 
+    /**
+     * Return the component at the specified data path.
+     * @param path { string } - The data path of the component to retrieve.
+     * @returns { Component | undefined } - The component at the specified path, or undefined if not found.
+     */
     getComponent(path: string): Component | undefined {
         return Utils.getComponent(this.form.components, path);
     }
@@ -212,13 +358,13 @@ export class UAGFormInterface extends FormInterface {
         const submission: any = { data: {} };
         for (let [path, value] of Object.entries(data)) {
             const comp = this.getComponent(path);
-            if (comp?.type === 'selectboxes') {
+            if (value && comp?.type === 'selectboxes' && typeof value === 'string') {
                 value = value.split(',').reduce((obj: any, v: string) => {
                     obj[v.trim()] = true;
                     return obj;
                 }, {});
             }
-            else if (this.isMultiple(comp)) {
+            else if (value && this.isMultiple(comp) && typeof value === 'string') {
                 value = value.split(',').map((v: string) => v.trim());
             }
             set(submission.data, path, value);
@@ -226,23 +372,42 @@ export class UAGFormInterface extends FormInterface {
         return submission as Submission;
     }
 
+    formatData(data: DataObject = {}): UAGData {
+        const uagData: UAGData = [];
+        let prefix = '';
+        Utils.eachComponentData(this.form?.components || [], data, (component, data, row, path) => {
+            let value = get(data, path);
+            if (this.isNestedComponent(component)) {
+                uagData.push({
+                    prefix,
+                    path,
+                    label: component.label || component.key || path,
+                    value: ''
+                });
+                prefix += '  ';
+            }
+            else if (this.inputComponent(component) && componentHasValue(component, value)) {
+                uagData.push({
+                    prefix,
+                    path,
+                    label: component.label || component.key || path,
+                    value: isObjectLike(value) ? JSON.stringify(value) : value
+                });
+            }
+        }, false, false, undefined, undefined, undefined, (component, data) => {
+            if (this.isNestedComponent(component)) {
+                prefix = prefix.slice(0, -3);
+            }
+        });
+        return uagData;
+    }
+
     formatSubmission(submission: Submission): UAGSubmission {
-        const uagSubmission = {
+        return {
             _id: submission._id,
-            data: [] as UAGData,
+            data: this.formatData(submission.data),
             created: submission.created,
             modified: submission.modified
         };
-        Utils.eachComponentData(this.form?.components || [], submission.data || {}, (component, data, row, path) => {
-            const value = get(data, path);
-            if (component.input !== false && value !== undefined && value !== null && value !== '') {
-                uagSubmission.data.push({
-                    path,
-                    label: component.label || component.key || path,
-                    value
-                });
-            }
-        });
-        return uagSubmission;
     }
 }

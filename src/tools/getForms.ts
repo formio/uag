@@ -2,7 +2,7 @@ import { defaultsDeep } from "lodash";
 import { UAGFormInterface } from "../UAGFormInterface";
 import { UAGProjectInterface } from "../UAGProjectInterface";
 import { ResponseTemplate } from "../template";
-import { ToolInfo } from "./types";
+import { ToolInfo } from "./utils";
 export const getForms = async (project: UAGProjectInterface): Promise<ToolInfo> => {
     return defaultsDeep(project.config?.toolOverrides?.get_forms || {}, {
         name: 'get_forms',

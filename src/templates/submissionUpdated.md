@@ -5,7 +5,7 @@ Successfully updated the record in <%= form.title %>!
 
 **Updated Fields (<%= totalFieldsUpdated %> total):** (It is VERY important to show the values to the user exactly as they were submitted/posted)
 <% updateSummary.forEach(function(update) { %>
-- **<%= update.field_label %>:**
+- **<%= update.data_path %>:**
   - Previous: "<%= update.previous_value %>"
   - New: "<%= update.new_value %>"
 <% }); %>

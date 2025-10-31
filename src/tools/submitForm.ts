@@ -1,27 +1,31 @@
-import z from "zod";
 import { ResponseTemplate } from "../template";
 import { Submission } from "@formio/core";
-import { ToolInfo } from "./types";
+import { ToolInfo } from "./utils";
 import { UAGProjectInterface } from "../UAGProjectInterface";
 import { UAGFormInterface } from "../UAGFormInterface";
 import { defaultsDeep } from "lodash";
+import { SchemaBuilder } from "./SchemaBuilder";
 const debug = require('debug')('formio:uag:submitForm');
 export const submitCompletedForm = async (project: UAGProjectInterface): Promise<ToolInfo> => {
     return defaultsDeep(project.config?.toolOverrides?.submit_completed_form || {}, {
         name: 'submit_completed_form',
         title: 'Submit Completed Form',
         description: 'Submit the completed form data to Form.io API ONLY after the user has explicitly confirmed submission (said "yes", "confirm", etc.)',
-        inputSchema: {
-            form_name: z.enum((project?.formNames || []) as [string, ...string[]]).describe('The name/key of the form being submitted'),
-            current_data: z.record(z.any()).describe('The completed collected form data as key-value pairs (using field paths as keys)')
-        },
-        execute: async ({ form_name, current_data }: any, extra: any) => {
+        inputSchema: (new SchemaBuilder(project))
+            .form_name()
+            .form_data().schema,
+        execute: async ({ form_name, form_data }: {
+            form_name: string;
+            form_data: Record<string, any>;
+        }, extra: any) => {
             const form = await project.getForm(form_name) as UAGFormInterface;
             if (!form) {
                 return project.mcpResponse(ResponseTemplate.formNotFound, { formName: form_name }, true);
             }
             try {
-                const submission: Submission | null = await form.submit(form.convertToSubmission(current_data), extra.authInfo);
+                let submission = form.convertToSubmission(form_data);
+                const submitted: Submission | null = await form.submit(submission, extra.authInfo);
+                if (submitted) submission = submitted;
                 if (!submission) {
                     return project.mcpResponse(ResponseTemplate.submitValidationError, {
                         validationErrors: ['Unknown error during submission']
@@ -31,11 +35,11 @@ export const submitCompletedForm = async (project: UAGProjectInterface): Promise
                 return project.mcpResponse(ResponseTemplate.formSubmitted, {
                     form: form.form,
                     data: submission.data,
-                    submissionId: submission._id || 'N/A',
-                    submittedFieldsCount: Object.keys(current_data).length,
+                    submissionId: submission._id,
+                    submittedFieldsCount: Object.keys(form_data).length,
                     dataSummary: project.uagTemplate?.renderTemplate(ResponseTemplate.collectedData, {
-                        data: form.formatSubmission(submission).data
-                    })
+                        data: form.formatData(submission.data)
+                    }),
                 });
             } catch (err: any) {
                 const errors = [];

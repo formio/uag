@@ -14,4 +14,5 @@ Please review the following data before submission:
 
 Only use `submit_completed_form` if the user explicitly confirms (says "yes", "confirm", "submit", etc.).
 
-**Current Data**: <%= JSON.stringify(currentData, null, 2) %>
+**Current Data**:
+<%= JSON.stringify(currentData, null, 2) %>

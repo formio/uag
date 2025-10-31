@@ -1,6 +1,6 @@
 # Optional Fields Available
 
-Great! All required fields have been collected for your **<%= form.title %>** form.
+All required fields have been collected for your **<%= form.title %>** form.
 
 **Would you like to fill out any optional fields?**
 
@@ -17,5 +17,3 @@ If values for any of these fields are already provided, then skip to the `collec
 Use the `collect_field_data` tool to collect any optional fields the user wants to fill.
 
 If they wish to skip the collection of optional fields, then use the `submit_completed_form` to submit the required data to the form.
-
-<%= dataSummary %>

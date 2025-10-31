@@ -139,12 +139,12 @@
   resolved "https://registry.yarnpkg.com/@esbuild/win32-x64/-/win32-x64-0.25.11.tgz#5ecda6f3fe138b7e456f4e429edde33c823f392f"
   integrity sha512-D7Hpz6A2L4hzsRpPaCYkQnGOotdUpDzSGRIv9I+1ITdHROSFUWW95ZPZWQmGka1Fg7W3zFJowyn9WGwMJ0+KPA==
 
-"@formio/appserver-core@^2.2.0":
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/@formio/appserver-core/-/appserver-core-2.2.0.tgz#1191543e942fee7f37cea7f7fa200afbb1b2c66a"
-  integrity sha512-67Kb+fa4AxFSfgAWH9Awzir8zRU/D9VXTc2hipGpBqrZpNUDsCM18+mDNu903PDAey2IEiMW5bkExUvGG7gTEg==
+"@formio/appserver-core@^2.2.1":
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/@formio/appserver-core/-/appserver-core-2.2.1.tgz#579cba8499c2f4a16139de7850c9517bf7547164"
+  integrity sha512-HjUq2HoOX3KM4KxuyozFlCKO0yLYbo4sPfDeicf6H85fVoO08RSxuJd3Jf5KnO7wcNRywjy1PTmJyo/XygLUIg==
   dependencies:
-    "@formio/core" "2.5.1-dev.291.98f47af"
+    "@formio/core" "2.5.1-dev.291.6557e4e"
     "@formio/js" "^5.2.2"
     "@formio/license" "2.0.2-dev.tt-1"
     "@formio/node-fetch-http-proxy" "^1.1.0"
@@ -170,13 +170,13 @@
     statuses "^2.0.2"
     xss "^1.0.15"
 
-"@formio/appserver@^2.2.0":
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/@formio/appserver/-/appserver-2.2.0.tgz#6ad982f31d84bb79dcc17995868eb858a97de742"
-  integrity sha512-gzocCaRv+8XoWgghymWh2d6nQoHQPk9aJ19azkzzJb8D9F/747CT6r7ygJXWrhLZ4WSxGrT0wTIfMpyzFESs1Q==
+"@formio/appserver@^2.2.1":
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/@formio/appserver/-/appserver-2.2.1.tgz#0f5e258b4bc5555dbb4e64db63a7992f60be6d1c"
+  integrity sha512-SyL2sF0kY+PCNry3KFkPVOL3J8FPZ7XJ5xYW+Dgfm/MJjYZPkFx08eBTItXC4argHl7F324s8hEZ/LyD/7EvJg==
   dependencies:
-    "@formio/appserver-core" "^2.2.0"
-    "@formio/core" "2.5.1-dev.291.98f47af"
+    "@formio/appserver-core" "^2.2.1"
+    "@formio/core" "2.5.1-dev.291.6557e4e"
     async "^3.2.6"
     bcryptjs "^3.0.2"
     debug "^4.4.3"
@@ -208,15 +208,15 @@
     lodash "^4.17.21"
     moment "^2.29.4"
 
-"@formio/core@2.5.1-dev.291.98f47af":
-  version "2.5.1-dev.291.98f47af"
-  resolved "https://registry.yarnpkg.com/@formio/core/-/core-2.5.1-dev.291.98f47af.tgz#53a434ab01208a3146155953bfc8fcb2e1eee7a5"
-  integrity sha512-JR85TidjVVOEM+ZLxXrHOWMJZUg5aGbLpor3ESL9NYB9SJm8YeEhudZB75/UnGE2WW5jF9A1pmwJZfbJdTCxgw==
+"@formio/core@2.5.1-dev.291.6557e4e":
+  version "2.5.1-dev.291.6557e4e"
+  resolved "https://registry.yarnpkg.com/@formio/core/-/core-2.5.1-dev.291.6557e4e.tgz#09c84848b8ba02da01d85e0721cce1909014d3c0"
+  integrity sha512-2Pm1GJ6iPzvVE0t+C4ke35D6urwYtE31hoJ0c3f8DJ34wWOXEQD9N7AchMwJeVLXMvdypEoiBlsK3TXELr8+cg==
   dependencies:
     browser-cookies "^1.2.0"
-    core-js "^3.39.0"
-    dayjs "^1.11.12"
-    dompurify "^3.2.4"
+    core-js "^3.46.0"
+    dayjs "^1.11.19"
+    dompurify "3.2.4"
     eventemitter3 "^5.0.0"
     fast-json-patch "^3.1.1"
     fetch-ponyfill "^7.1.0"
@@ -1016,7 +1016,7 @@ cookiejar@^2.1.4:
   resolved "https://registry.yarnpkg.com/cookiejar/-/cookiejar-2.1.4.tgz#ee669c1fea2cf42dc31585469d193fef0d65771b"
   integrity sha512-LDx6oHrK+PhzLKJU9j5S7/Y3jM/mUHvD/DeI1WQmJn652iPC5Y4TBzC9l+5OMOXlyTTA+SmVUPm0HQUwpD5Jqw==
 
-core-js@^3.37.1, core-js@^3.39.0:
+core-js@^3.37.1, core-js@^3.39.0, core-js@^3.46.0:
   version "3.46.0"
   resolved "https://registry.yarnpkg.com/core-js/-/core-js-3.46.0.tgz#323a092b96381a9184d0cd49ee9083b2f93373bb"
   integrity sha512-vDMm9B0xnqqZ8uSBpZ8sNtRtOdmfShrvT6h2TuQGLs0Is+cR0DYbj/KWP6ALVNbWPpqA/qPLoOuppJN07humpA==
@@ -1071,6 +1071,11 @@ dayjs@^1.11.12, dayjs@^1.11.18:
   version "1.11.18"
   resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.11.18.tgz#835fa712aac52ab9dec8b1494098774ed7070a11"
   integrity sha512-zFBQ7WFRvVRhKcWoUh+ZA1g2HVgUbsZm9sbddh8EC5iv93sui8DVVz1Npvz+r6meo9VKfa8NyLWBsQK1VvIKPA==
+
+dayjs@^1.11.19:
+  version "1.11.19"
+  resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.11.19.tgz#15dc98e854bb43917f12021806af897c58ae2938"
+  integrity sha512-t5EcLVS6QPBNqM2z8fakk/NKel+Xzshgt8FFKAn+qwlD1pzZWxh0nVCrvFK7ZDb6XucZeF9z8C7CBWTRIVApAw==
 
 debug@4, debug@^4.3.4, debug@^4.3.5, debug@^4.3.6, debug@^4.3.7, debug@^4.4.0, debug@^4.4.1, debug@^4.4.3:
   version "4.4.3"
@@ -1166,6 +1171,13 @@ dom-set@^1.0.1:
     array-from "^2.1.1"
     is-array "^1.0.1"
     iselement "^1.1.4"
+
+dompurify@3.2.4:
+  version "3.2.4"
+  resolved "https://registry.yarnpkg.com/dompurify/-/dompurify-3.2.4.tgz#af5a5a11407524431456cf18836c55d13441cd8e"
+  integrity sha512-ysFSFEDVduQpyhzAob/kkuJjf5zWkZD8/A9ywSp1byueyuCfHamrCBa14/Oc2iiB0e51B+NpxSl5gmzn+Ms/mg==
+  optionalDependencies:
+    "@types/trusted-types" "^2.0.7"
 
 dompurify@^3.2.4:
   version "3.3.0"

@@ -1,9 +1,14 @@
 <%= message %>
+<% if (parent) { %>
+The following data is being collected for the nested component **<%= parent.label %> (<%= parent.type %>)**.  The parent `data_path` is **parent.data_path**, and all of the child data is collected within the path of **<%= parentDataPath %>**.
+<% } %>
+## Progress: <%= progress.collected %>/<%= progress.total %> required fields collected for <%= parentLabel %>.
 
-**Progress**: <%= progress.collected %>/<%= progress.total %> required fields collected
+## Remaining required fields for <%= parentLabel %>:
+<%= fields %>
+Use the `collect_field_data` tool to provide values for the remaining required fields for <%= parentLabel %>. You can collect multiple fields at once by providing an array of field updates.
 
-**Remaining required fields to complete:**
-<%= requiredFields %>
-Use the `collect_field_data` tool to provide values for the remaining required fields. You can collect multiple fields at once by providing an array of field updates.
+<%= dataSummary %>
 
-**Next Steps**: Ask the user for the next required field(s) or collect multiple fields simultaneously to complete the form submission process.
+**Next Steps**:
+1. Ask the user for any remaining required fields for <%= parentLabel %>.

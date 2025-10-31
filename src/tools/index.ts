@@ -1,20 +1,20 @@
 import { getForms } from "./getForms";
 import { getFormFields } from "./getFormFields";
+import { getFieldInfo } from "./getFieldInfo";
 import { collectData } from "./collectData";
-import { getOptionalFields } from "./getOptionalFields";
 import { confirmSubmission } from "./confirmSubmission";
 import { submitCompletedForm } from "./submitForm";
 import { findSubmission } from "./findSubmission";
 import { submissionUpdate } from "./submissionUpdate";
-import { ToolInfo } from "./types";
+import { ToolInfo } from "./utils";
 import { UAGProjectInterface } from "../UAGProjectInterface";
-export * from './types';
-export { getForms, getFormFields, collectData, getOptionalFields, confirmSubmission, submitCompletedForm, findSubmission, submissionUpdate };
+export * from './utils';
+export { getForms, getFormFields, getFieldInfo, collectData, confirmSubmission, submitCompletedForm, findSubmission, submissionUpdate };
 export const getTools =  async (project: UAGProjectInterface): Promise<ToolInfo[]> => {
     return [
         await getForms(project),
         await getFormFields(project),
-        await getOptionalFields(project),
+        await getFieldInfo(project),
         await collectData(project),
         await confirmSubmission(project),
         await submitCompletedForm(project),

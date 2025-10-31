@@ -1,5 +1,5 @@
 import { ServerConfig } from '@formio/appserver';
-import { ToolInfo } from './tools/types';
+import { ToolInfo } from './tools/utils';
 export type UAGForm = {
   name: string;
   title: string;
@@ -32,7 +32,6 @@ export type UAGTemplateConfig = {
   getFormFieldsError?: string;
   fieldValidationErrors?: string;
   fields?: string;
-  fieldList?: string;
   getAvailableForms?: string;
   noFormsAvailable?: string;
   [key: string]: string | undefined; // Needed for custom templates.
@@ -41,12 +40,12 @@ export type UAGTemplateConfig = {
 export type UAGToolOverride = {
   get_forms?: ToolInfo;
   get_form_fields?: ToolInfo;
-  get_optional_fields?: ToolInfo;
+  get_field_info?: ToolInfo;
   collect_field_data?: ToolInfo;
   confirm_form_submission?: ToolInfo;
   submit_completed_form?: ToolInfo;
   submission_update?: ToolInfo;
-  find_submission_by_field?: ToolInfo;
+  find_submissions?: ToolInfo;
 };
 
 export interface UAGConfig extends ServerConfig {

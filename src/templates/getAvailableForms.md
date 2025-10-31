@@ -1,13 +1,11 @@
 Total forms (<%= totalForms %> total):
 
 <% _.forEach(forms, function(form) { %>
-**<%= form.title %> (<%= form.name %>)** - <%= form.description %>
-<% if (!form.hasAccess) { %>
- - You do not have access to this form.
-<% } else { %>
- - Permissions: <% if (form.permissions.create) { %>Create<% } %><% if (form.permissions.read) { %><% if (form.permissions.create) { %>, <% } %>Read<% } %><% if (form.permissions.update) { %><% if (form.permissions.create || form.permissions.read) { %>, <% } %>Update<% } %> submissions (records)
-<% } %>
-<% }); %>
+- <%= form.title %> (**<%= form.name %>**):<% if (form.description) { %>
+  - **Description**: <%= form.description %><% } %><% if (!form.hasAccess) { %>
+  - **Permissions**: You do not have access to this form.<% } else { %>
+  - **Permissions**: <% if (form.permissions.create) { %>Create<% } %><% if (form.permissions.read) { %><% if (form.permissions.create) { %>, <% } %>Read<% } %><% if (form.permissions.update) { %><% if (form.permissions.create || form.permissions.read) { %>, <% } %>Update<% } %> submissions (records)
+<% } %><% }); %>
 
 If the user wishes to submit a form they do not have the "Create" permission, then let them know that they do not have the permission to submit that form.
 

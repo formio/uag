@@ -1,5 +1,4 @@
-### Field Rules
-The following rules should apply to establish the value for every field (**Type**) within this form.
+**Field Type Rules**
+The following rules should be used for the value of every field type (field_type) within this form.
 <% rules.forEach(function([type, rule]) { %>
-  - **<%= type %>**: <%= rule %>
-<% }) %>
+  - **<%= type %>**: <%= rule %><% }) %>

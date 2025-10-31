@@ -11,6 +11,8 @@ export enum ResponseTemplate {
     submittedData = 'submittedData',
     fieldRules = 'fieldRules',
     allFieldsCollected = 'allFieldsCollected',
+    getFormFieldsEmpty = 'getFormFieldsEmpty',
+    getFormFieldsInfo = 'getFormFieldsInfo',
     fieldCollectedNext = 'fieldCollectedNext',
     submitValidationError = 'submitValidationError',
     formSubmitted = 'formSubmitted',
