@@ -98,24 +98,6 @@ describe('getFormFields Tool', () => {
         expect(result.data.type).to.equal('Required');
     });
 
-    it('Returns a prompt to finish with Required fields first if none are provided.', async () => {
-        const result = await tool.execute(
-            {
-                form_name: 'testForm',
-                criteria: 'optional'
-            },
-            { authInfo: mockAuthInfo }
-        );
-
-        expect(result.template).to.equal(ResponseTemplate.getFormFields);
-        expect(result.data.totalFields).to.equal(3);
-        expect(result.data.totalType).to.equal(2);
-        expect(result.data.totalCollected).to.equal(0);
-        expect(result.data.totalTypeCollected).to.equal(0);
-        expect(result.data.message).to.contain('Please finish collecting the following required fields first.');
-        expect(result.data.type).to.equal('Required');
-    });
-
     it('Returns the optional fields if all required have been collected.', async () => {
         const result = await tool.execute(
             {

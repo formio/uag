@@ -37,14 +37,6 @@ export const getFormFields = async (project: UAGProjectInterface): Promise<ToolI
                 // Get the fields at the specified data path (or root if not provided).
                 const fields = await form.getFields(submission, extra.authInfo, parent?.data_path);
 
-                // If the agent requests optional fields, but there are still requird fields to fill out, then force required
-                // and inform the agent of this change.
-                let message = '';
-                if (criteria == 'optional' && fields.required.components.length > 0) {
-                    criteria = 'required';
-                    message = 'You requested "optional" fields, but the user is not finished collecting required information. Please finish collecting the following required fields first.\n\n';
-                }
-
                 // Determine which fields to show based on the criteria.
                 const criteriaFields = criteria === 'all' ? 
                     [...fields.required.components, ...fields.optional.components] :
@@ -82,7 +74,6 @@ export const getFormFields = async (project: UAGProjectInterface): Promise<ToolI
 
                 // Show the form fields based on the criteria.
                 return project.mcpResponse(ResponseTemplate.getFormFields, {
-                    message,
                     parent,
                     parentLabel: getParentLabel(parent, form.form),
                     parentDataPath: getParentDataPath(parent, fields.rowIndex),

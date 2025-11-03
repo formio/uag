@@ -3,7 +3,6 @@
 This data was collected within the data path of **<%= parentDataPath %>**.
 <% } %>
 <%= dataSummary %>
-
 **Next Steps**:
 <% if (parent && parent.isTable) { %>
 1. Use the `get_form_fields` tool with the same `parent` parameter and `criteria` set to "optional" to check if there are optional fields. If so, ask the user if they wish to fill any of them out for this row.
