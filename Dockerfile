@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:24-alpine
 COPY src/ /app/src/
 COPY module/ /app/module/
 COPY index.js /app/
@@ -11,7 +11,7 @@ RUN apk update && \
     apk add python3 && \
     apk add g++ && \
     apk add git
-RUN npm install
-RUN npm run build
+RUN yarn
+RUN yarn run build
 RUN apk del git g++ make python3
 ENTRYPOINT [ "npm", "run", "start" ]

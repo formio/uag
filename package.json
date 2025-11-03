@@ -23,9 +23,6 @@
   },
   "author": "",
   "license": "MIT",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "dependencies": {
     "@formio/appserver": "^2.3.1",
     "@formio/core": "2.5.1-dev.291.6557e4e",
