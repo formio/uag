@@ -1,5 +1,5 @@
 ## Example UAG Module
-This demonstrates how you can create your own custom modules to produce customized agent behaviors through the introduction of new Forms, Resources, Actions, and Configurations. This particular example, provides Employee's and Customers to an AI Agent where you can both onboard new Employees, and then they in turn can onboard new Customers.
+This demonstrates how you can create your own custom modules to produce customized agent behaviors through the introduction of new Forms, Resources, Actions, and Configurations. This particular example, provides Employee's and Customers to an AI Agent where you can both onboard new Employees, and then they in turn can onboard new Customers. The entirety of this example leverages only the Open Source elements of [Form.io](https://form.io) so no subscriptions or license keys required to run this example.
 
 ## Pre-requisites
 To run this example, there are a few things that you will need to have ready to go.
@@ -71,7 +71,13 @@ If for any reason, you wish to log in as a different user, you can reset the "mc
 rm -rf ~/.mcp-auth
 ```
 
-Next, we will open up the **Claude Desktop**, where we will click on the **Developer** application bar item and then click on **Open App Config File**.  This should open up the ***claude_desktop_config.json*** file, which is used to configure locally ran MCP servers. We need to add an entry to run the "mcp-remote" proxy to call our lcoally running UAG server. We can do this by setting this file to read as follows.
+Next, we will open up the **Claude Desktop**, where we will click on the **Developer** application bar item and then click on **Open App Config File**.  This should open up the ***claude_desktop_config.json*** file, which is used to configure locally ran MCP servers. 
+
+<div align="center">
+  <img src="../images/claude-app-config.png" alt="Claude app config" width="600">
+</div>
+
+We need to add an entry to run the "mcp-remote" proxy to call our lcoally running UAG server. We can do this by setting this file to read as follows.
 
 ```json
 {
@@ -119,7 +125,6 @@ Here is an example of a real chat made with Claude AI connected to the UAG.
 </div>
 
 From this point forward, the AI Agent will use your configured Form.io Resources as a "rule book" for the AI Agent to follow. It will fetch a list of forms, determine if you have permissions, fetch the necessary fields, and then determine how to properly engage with the human interfacing it. This is a similar effect to if you were engaging with a fully trained AI Agent connected to a bespoke dataset, only this time, the training is done dynamically using the power of Form.io!
-
 
 ### Claude Remote MCP Configurations
 If you have upgrade your Claude to Pro level, or have onboarded your Enterprise through the Claude Enterprise Plan, you will want to deploy the UAG to a remote server with a Public URL. Once you do this, you will connect to the UAG through the Remote MCP connectors within the Claude AI portal.  To do this, we will open up Claude, and go to the "Connectors" section in the Settings and then click "Add Custom Connector". We will then need to provide the following.

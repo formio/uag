@@ -23,7 +23,7 @@ The quickest way to become familar with the UAG is to first walk through our Loc
 **[Go to Local Example &raquo;](examples/local)**
 
 ## Runtime Environments
-There are two environments that you can current run and work with the UAG.
+There are currently two run-time environments that work with the UAG.  **Node.js (Express)** and **Docker**.
 
 ### Node.js (Express):
 With the Node.js environment, you can import the UAG within a locally running Node.js and Express.js envioronment. This works by first importing the UAG module and "use"ing it within an Express.js application. First, you will install the uag inside of your Node.js Express application like the following.
@@ -60,7 +60,7 @@ try {
 There is also a way to extend the functionality of the UAG through the use of modules, which is documented in the [Modules Readme](./module/Readme.md)
 
 ### Docker
-In addition to running the UAG in node.js, you can also run the UAG within the Docker environment. This enables a wide range of deployment options into common hosting environments such as AWS and Azure as well as allow for the use in common orchestration runtimes such as Kubernetes and Docker Compose. The container that you will use for running the UAG is as follows.
+In addition to running the UAG in Node.js, you can also run the UAG within the Docker environment. This enables a wide range of deployment options into common hosting environments such as AWS and Azure as well as allow for the use in common orchestration runtimes such as Kubernetes and Docker Compose. The container that you will use for running the UAG is as follows.
 
 ```
 formio/uag
