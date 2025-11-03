@@ -1,6 +1,6 @@
 FROM node:24-alpine
-COPY src/ /app/src/
-COPY module/ /app/module/
+COPY src/ /app/src
+COPY module/ /app/module
 COPY index.js /app/
 COPY package.json /app/
 COPY tsconfig.json /app/
