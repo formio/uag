@@ -16,6 +16,7 @@
     "build:copy-templates": "mkdir -p lib/templates && cp src/templates/*.md lib/templates/",
     "build": "npm run clean && npm run build:ts && npm run build:copy-templates",
     "build:docker": "npm run build && docker build -t formio/uag:rc --platform=linux/amd64 .",
+    "prepublish": "npm run build && npm run test",
     "test": "TS_NODE_PROJECT=tsconfig.test.json mocha --no-node-snapshot",
     "dev": "tsx --no-node-snapshot index.js",
     "start": "node --no-node-snapshot index.js"
