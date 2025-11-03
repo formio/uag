@@ -9,7 +9,7 @@ export const getFieldInfo = async (project: UAGProjectInterface): Promise<ToolIn
     return defaultsDeep(project.config?.toolOverrides?.get_field_info || {}, {
         name: 'get_field_info',
         title: 'Get Field(s) Info',
-        description: 'Get detailed information about a specific field(s) that have been provided from the user. It is used to understand the properties, validation rules, and options of the specific field(s) the user has provided values for. PREREQUISITE: This tool should be called after the `get_form_fields` tool has been called AND once the user has provided some values for the provided fields.',
+        description: 'Get detailed information about a specific field(s) that have been provided from the user. It is used to understand the properties, validation rules, and options of the specific field(s) the user has provided values for. This purpose of this tool is to provide detailed information for any field(s) (provided using the `field_paths` parameter) to help understand the structure and requirements of a form. PREREQUISITE: This tool should be called after the `get_form_fields` tool has been called AND once the user has provided some values for the provided fields.',
         inputSchema: (new SchemaBuilder(project))
             .form_name()
             .field_paths().schema,

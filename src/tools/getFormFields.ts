@@ -9,7 +9,7 @@ export const getFormFields = async (project: UAGProjectInterface): Promise<ToolI
     return defaultsDeep(project.config?.toolOverrides?.get_form_fields || {}, {
         name: 'get_form_fields',
         title: 'Get Form Fields',
-        description: 'Get detailed information about all fields in a form including their types, validation rules, options, and properties. This helps understand the structure and requirements of a form. PREREQUISITE: You must call the `get_forms` tool first to understand what forms are available to submit and the permissions associated with those forms.',
+        description: 'Get high level overview of the fields that are present in a form, and to understand the "rules" on how the data for each field type should be collected. The purpose of this tool is to determine what fields the user is requesting (and to understand how to format that values for that data), and use that to create a list of field data_path\'s that the user is providing context for. This list can then be provided to the `get_field_info` tool to determine the specific field level information for those fields (validation, required, collection rules, etc). PREREQUISITE: You must call the `get_forms` tool first to understand what forms are available to submit and the permissions associated with those forms.',
         inputSchema: (new SchemaBuilder(project))
             .form_name()
             .form_data()
