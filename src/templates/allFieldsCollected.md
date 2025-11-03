@@ -1,4 +1,4 @@
-**All required fields have been collected for <%= parentLabel %>!**
+**All required fields have been collected for <%= parentLabel %>.**
 <% if (parentDataPath) { %>
 This data was collected within the data path of **<%= parentDataPath %>**.
 <% } %>

@@ -2,11 +2,6 @@
 <% if (parent) { %>
 All values for these fields should be stored within the `data_path`="<%= parentDataPath %>" (e.g. "<%= parentDataPath %>.exampleField")
 <% } %>
-### Summary of field totals and collected fields for <% parentLabel %>
-- Total fields: <%= totalFields %>
-- Total fields collected: <% totalCollected %>
-- Number of <%= type %> fields: <%= totalType %>
-- Number of <%= type %> fields collected: <%= totalTypeCollected %>
 
 <%= rules %>
 

@@ -12,12 +12,10 @@ export const getFormFields = async (project: UAGProjectInterface): Promise<ToolI
         description: 'Get high level overview of the fields that are present in a form, and to understand the "rules" on how the data for each field type should be collected. The purpose of this tool is to determine what fields the user is requesting (and to understand how to format that values for that data), and use that to create a list of field data_path\'s that the user is providing context for. This list can then be provided to the `get_field_info` tool to determine the specific field level information for those fields (validation, required, collection rules, etc). PREREQUISITE: You must call the `get_forms` tool first to understand what forms are available to submit and the permissions associated with those forms.',
         inputSchema: (new SchemaBuilder(project))
             .form_name()
-            .form_data()
             .criteria()
             .parent().schema,
-        execute: async ({ form_name, form_data, criteria, parent }: {
+        execute: async ({ form_name, criteria, parent }: {
             form_name: string;
-            form_data?: Record<string, any>;
             criteria?: 'all' | 'required' | 'optional';
             parent?: ParentInfo | undefined;
         }, extra: any) => {
@@ -31,11 +29,8 @@ export const getFormFields = async (project: UAGProjectInterface): Promise<ToolI
                     parent = undefined;
                 }
 
-                // Get the submission data.
-                const submission = form.convertToSubmission(form_data);
-
                 // Get the fields at the specified data path (or root if not provided).
-                const fields = await form.getFields(submission, extra.authInfo, parent?.data_path);
+                const fields = await form.getFields({data: {}}, extra.authInfo, parent?.data_path);
 
                 // Determine which fields to show based on the criteria.
                 const criteriaFields = criteria === 'all' ? 
@@ -55,23 +50,6 @@ export const getFormFields = async (project: UAGProjectInterface): Promise<ToolI
                     {...fields.required.rules, ...fields.optional.rules} :
                     criteria === 'required' ? fields.required.rules : fields.optional.rules;
 
-                let totalType = fields.total;
-                if (criteria === 'required') {
-                    totalType = fields.totalRequired;
-                } else if (criteria === 'optional') {
-                    totalType = fields.total - fields.totalRequired;
-                }
-
-                const totalCollected = Object.keys(form_data || {}).length;
-                let totalTypeCollected = 0;
-                if (criteria === 'required') {
-                    totalTypeCollected = fields.totalRequiredCollected;
-                } else if (criteria === 'optional') {
-                    totalTypeCollected = totalCollected - fields.totalRequiredCollected;
-                } else {
-                    totalTypeCollected = totalCollected;
-                }
-
                 // Show the form fields based on the criteria.
                 return project.mcpResponse(ResponseTemplate.getFormFields, {
                     parent,
@@ -79,11 +57,7 @@ export const getFormFields = async (project: UAGProjectInterface): Promise<ToolI
                     parentDataPath: getParentDataPath(parent, fields.rowIndex),
                     type: upperFirst(criteria),
                     rules: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldRules, { rules: Object.entries(criteriaRules) }),
-                    fieldList: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldList, { fields: criteriaFields }),
-                    totalFields: fields.total,
-                    totalType,
-                    totalCollected,
-                    totalTypeCollected
+                    fieldList: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldList, { fields: criteriaFields })
                 });
             } catch (err) {
                 error('Error extracting form fields:', err);

@@ -74,7 +74,7 @@ export const collectData = async (project: UAGProjectInterface): Promise<ToolInf
                 }),
                 progress: {
                     collected: Object.keys(form_data).length,
-                    total: fields.required.components.length + Object.keys(form_data).length
+                    total: fields.total
                 }
             });
         }
