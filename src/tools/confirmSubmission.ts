@@ -23,13 +23,12 @@ export const confirmSubmission = async (project: UAGProjectInterface): Promise<T
 
             // Perform a validation check.
             const submission = form.convertToSubmission(form_data);
-            const invalidFields = await form.validateData(submission, extra.authInfo);
-            if (invalidFields.length > 0) {
-                return project.mcpResponse(ResponseTemplate.fieldValidationErrors, { invalidFields });
-            }
 
             // See which fields need to be filled out.
             const fields = await form.getFields(submission, extra.authInfo);
+            if (fields.errors.length > 0) {
+                return project.mcpResponse(ResponseTemplate.fieldValidationErrors, { invalidFields: fields.errors });
+            }
 
             // See if there are still required fields to fill out...
             if (fields.required.components.length) {

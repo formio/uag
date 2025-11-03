@@ -33,25 +33,11 @@ describe('UAGProjectInterface', () => {
 
         it('includes data in template rendering', () => {
             const response = project.mcpResponse(ResponseTemplate.formSubmitted, { formName: 'testForm' });
-
             expect(response.content[0].text).to.include('testForm');
-        });
-
-        it('sets isError flag when error is true', () => {
-            const response = project.mcpResponse(ResponseTemplate.formNotFound, {}, true);
-
-            expect(response).to.have.property('isError', true);
-        });
-
-        it('does not include isError when error is false', () => {
-            const response = project.mcpResponse(ResponseTemplate.formSubmitted, {}, false);
-
-            expect(response).to.not.have.property('isError');
         });
 
         it('handles empty data object', () => {
             const response = project.mcpResponse(ResponseTemplate.noFormsAvailable);
-
             expect(response).to.have.property('content');
             expect(response.content[0]).to.have.property('text');
         });

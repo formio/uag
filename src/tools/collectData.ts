@@ -38,13 +38,13 @@ export const collectData = async (project: UAGProjectInterface): Promise<ToolInf
 
             // Get any form errors.
             const submission = form.convertToSubmission(form_data);
-            const invalidFields = await form.validateData(submission, extra.authInfo);
-            if (invalidFields.length > 0) {
-                return project.mcpResponse(ResponseTemplate.fieldValidationErrors, { invalidFields });
-            }
 
             // Find next required field that hasn't been filled
             const fields = await form.getFields(submission, extra.authInfo, parent?.data_path);
+            if (fields.errors.length > 0) {
+                return project.mcpResponse(ResponseTemplate.fieldValidationErrors, { invalidFields: fields.errors });
+            }
+
             const collectedData = parent ? get(submission, parent.data_path || '') : submission.data;
 
             // If no required fields remain, then we can move onto a new tool.

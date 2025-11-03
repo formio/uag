@@ -12,10 +12,12 @@ export const getFormFields = async (project: UAGProjectInterface): Promise<ToolI
         description: 'Get detailed information about all fields in a form including their types, validation rules, options, and properties. This helps understand the structure and requirements of a form. PREREQUISITE: You must call the `get_forms` tool first to understand what forms are available to submit and the permissions associated with those forms.',
         inputSchema: (new SchemaBuilder(project))
             .form_name()
+            .form_data()
             .criteria()
             .parent().schema,
-        execute: async ({ form_name, criteria, parent }: {
+        execute: async ({ form_name, form_data, criteria, parent }: {
             form_name: string;
+            form_data?: Record<string, any>;
             criteria?: 'all' | 'required' | 'optional';
             parent?: ParentInfo | undefined;
         }, extra: any) => {
@@ -29,8 +31,11 @@ export const getFormFields = async (project: UAGProjectInterface): Promise<ToolI
                     parent = undefined;
                 }
 
+                // Get the submission data.
+                const submission = form.convertToSubmission(form_data);
+
                 // Get the fields at the specified data path (or root if not provided).
-                const fields = await form.getFields({data: {}}, extra.authInfo, parent?.data_path);
+                const fields = await form.getFields(submission, extra.authInfo, parent?.data_path);
 
                 // If the agent requests optional fields, but there are still requird fields to fill out, then force required
                 // and inform the agent of this change.
@@ -58,6 +63,23 @@ export const getFormFields = async (project: UAGProjectInterface): Promise<ToolI
                     {...fields.required.rules, ...fields.optional.rules} :
                     criteria === 'required' ? fields.required.rules : fields.optional.rules;
 
+                let totalType = fields.total;
+                if (criteria === 'required') {
+                    totalType = fields.totalRequired;
+                } else if (criteria === 'optional') {
+                    totalType = fields.total - fields.totalRequired;
+                }
+
+                const totalCollected = Object.keys(form_data || {}).length;
+                let totalTypeCollected = 0;
+                if (criteria === 'required') {
+                    totalTypeCollected = fields.totalRequiredCollected;
+                } else if (criteria === 'optional') {
+                    totalTypeCollected = totalCollected - fields.totalRequiredCollected;
+                } else {
+                    totalTypeCollected = totalCollected;
+                }
+
                 // Show the form fields based on the criteria.
                 return project.mcpResponse(ResponseTemplate.getFormFields, {
                     message,
@@ -67,8 +89,10 @@ export const getFormFields = async (project: UAGProjectInterface): Promise<ToolI
                     type: upperFirst(criteria),
                     rules: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldRules, { rules: Object.entries(criteriaRules) }),
                     fieldList: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldList, { fields: criteriaFields }),
-                    totalType: criteriaFields.length,
-                    totalFields: fields.required.components.length + fields.optional.components.length,
+                    totalFields: fields.total,
+                    totalType,
+                    totalCollected,
+                    totalTypeCollected
                 });
             } catch (err) {
                 error('Error extracting form fields:', err);

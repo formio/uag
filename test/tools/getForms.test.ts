@@ -1,9 +1,10 @@
 import { expect } from 'chai';
 import { getForms } from '../../src/tools/getForms';
 import { ResponseTemplate } from '../../src/template';
+import { MockProjectInterface } from './mock';
 
 describe('getForms Tool', () => {
-    let mockProject: any;
+    let mockProject: MockProjectInterface;
     let mockAuthInfo: any;
     let tool: any;
 
@@ -17,35 +18,35 @@ describe('getForms Tool', () => {
             })
         };
 
-        mockProject = {
-            forms: {
-                testForm1: {
-                    form: { title: 'Test Form 1', name: 'testForm1' },
-                    uag: {
-                        name: 'testForm1',
-                        title: 'Test Form 1',
-                        description: 'First test form'
-                    }
+        // Create forms with UAG tags
+        const mockForms = {
+            testForm1: {
+                title: 'Test Form 1',
+                name: 'testForm1',
+                tags: ['uag'],
+                properties: {
+                    description: 'First test form'
                 },
-                testForm2: {
-                    form: { title: 'Test Form 2', name: 'testForm2' },
-                    uag: {
-                        name: 'testForm2',
-                        title: 'Test Form 2',
-                        description: 'Second test form'
-                    }
-                },
-                nonUagForm: {
-                    form: { title: 'Non-UAG Form', name: 'nonUagForm' }
-                }
+                components: []
             },
-            mcpResponse: (template: string, data: any, isError?: boolean) => ({
-                template,
-                data,
-                isError: !!isError
-            }),
-            config: {}
+            testForm2: {
+                title: 'Test Form 2',
+                name: 'testForm2',
+                tags: ['uag'],
+                properties: {
+                    description: 'Second test form'
+                },
+                components: []
+            },
+            nonUagForm: {
+                title: 'Non-UAG Form',
+                name: 'nonUagForm',
+                tags: [],
+                components: []
+            }
         };
+
+        mockProject = new MockProjectInterface(mockForms);
 
         tool = await getForms(mockProject);
     });
@@ -108,23 +109,38 @@ describe('getForms Tool', () => {
     });
 
     it('provides default description when not specified', async () => {
-        mockProject.forms.testForm1.uag.description = undefined;
+        const mockFormsNoDesc = {
+            testForm1: {
+                title: 'Test Form 1',
+                name: 'testForm1',
+                tags: ['uag'],
+                properties: {},
+                components: []
+            }
+        };
+        const projectNoDesc = new MockProjectInterface(mockFormsNoDesc);
+        const toolNoDesc = await getForms(projectNoDesc);
 
-        const result = await tool.execute({}, { authInfo: mockAuthInfo });
+        const result = await toolNoDesc.execute({}, { authInfo: mockAuthInfo });
 
         expect(result.template).to.equal(ResponseTemplate.getAvailableForms);
         const form = result.data.forms.find((f: any) => f.name === 'testForm1');
-        expect(form.description).to.include('Form for');
+        expect(form.description).to.equal('A form to submit new Test Form 1 records.');
     });
 
     it('returns no forms available when project has no UAG forms', async () => {
-        mockProject.forms = {
+        const noUagForms = {
             nonUagForm: {
-                form: { title: 'Non-UAG Form', name: 'nonUagForm' }
+                title: 'Non-UAG Form',
+                name: 'nonUagForm',
+                tags: [],
+                components: []
             }
         };
+        const projectNoUag = new MockProjectInterface(noUagForms);
+        const toolNoUag = await getForms(projectNoUag);
 
-        const result = await tool.execute({}, { authInfo: mockAuthInfo });
+        const result = await toolNoUag.execute({}, { authInfo: mockAuthInfo });
 
         expect(result.template).to.equal(ResponseTemplate.noFormsAvailable);
         expect(result.data.message).to.include('No forms are currently available');
@@ -163,16 +179,29 @@ describe('getForms Tool', () => {
     });
 
     it('respects tool overrides from config', async () => {
-        mockProject.config = {
-            toolOverrides: {
-                get_forms: {
-                    name: 'custom_get_forms',
-                    description: 'Custom forms getter'
-                }
+        const mockFormsConfig = {
+            testForm1: {
+                title: 'Test Form 1',
+                name: 'testForm1',
+                tags: ['uag'],
+                components: []
             }
         };
+        const projectWithConfig = new MockProjectInterface(mockFormsConfig);
+        
+        // Override the config getter
+        Object.defineProperty(projectWithConfig, 'config', {
+            get: () => ({
+                toolOverrides: {
+                    get_forms: {
+                        name: 'custom_get_forms',
+                        description: 'Custom forms getter'
+                    }
+                }
+            })
+        });
 
-        const customTool = await getForms(mockProject);
+        const customTool = await getForms(projectWithConfig);
         expect(customTool.name).to.equal('custom_get_forms');
         expect(customTool.description).to.equal('Custom forms getter');
     });

@@ -325,11 +325,12 @@ describe('UAGFormInterface', () => {
             const submission = { data: {} } as Submission;
             const fields = await uagForm.getFields(submission, mockAuthInfo);
 
-            expect(fields.required).to.be.an('array');
-            expect(fields.optional).to.be.an('array');
-            expect(fields.rules).to.be.an('object');
+            expect(fields.required.components).to.be.an('array');
+            expect(fields.optional.components).to.be.an('array');
+            expect(fields.required.rules).to.be.an('object');
+            expect(fields.optional.rules).to.be.an('object');
 
-            const requiredPaths = fields.required.map(f => f.path);
+            const requiredPaths = fields.required.components.map(f => f.path);
             expect(requiredPaths).to.include('firstName');
             expect(requiredPaths).to.include('email');
         });
@@ -338,7 +339,7 @@ describe('UAGFormInterface', () => {
             const submission = { data: {} } as Submission;
             const fields = await uagForm.getFields(submission, mockAuthInfo);
 
-            const allPaths = [...fields.required, ...fields.optional].map(f => f.path);
+            const allPaths = [...fields.required.components, ...fields.optional.components].map(f => f.path);
             expect(allPaths).to.not.include('submit');
         });
 
@@ -351,7 +352,7 @@ describe('UAGFormInterface', () => {
             } as Submission;
             const fields = await uagForm.getFields(submission, mockAuthInfo);
 
-            const requiredPaths = fields.required.map(f => f.path);
+            const requiredPaths = fields.required.components.map(f => f.path);
             expect(requiredPaths).to.not.include('firstName');
             expect(requiredPaths).to.not.include('email');
         });
@@ -360,9 +361,9 @@ describe('UAGFormInterface', () => {
             const submission = { data: {} } as Submission;
             const fields = await uagForm.getFields(submission, mockAuthInfo);
 
-            expect(fields.rules).to.have.property('textfield');
-            expect(fields.rules).to.have.property('email');
-            expect(fields.rules).to.have.property('checkbox');
+            expect(fields.required.rules).to.have.property('textfield');
+            expect(fields.required.rules).to.have.property('email');
+            expect(fields.optional.rules).to.have.property('phoneNumber');
         });
     });
 

@@ -14,8 +14,8 @@ export class UAGProjectInterface extends ProjectInterface {
     public uagTemplate: UAGTemplate | null = null;
     public mcpServer = new McpServer({ name: 'formio-uag', version: '1.0.0' });
     get config(): UAGConfig { return ProjectInterface.module?.config || {}; }
-    constructor() {
-        super();
+    constructor(endpoint?: string) {
+        super(endpoint);
     }
 
     async initialize(): Promise<void> {

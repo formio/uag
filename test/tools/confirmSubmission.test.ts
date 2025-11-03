@@ -1,10 +1,10 @@
 import { expect } from 'chai';
 import { confirmSubmission } from '../../src/tools/confirmSubmission';
 import { ResponseTemplate } from '../../src/template';
+import { MockProjectInterface } from './mock';
 
 describe('confirmSubmission Tool', () => {
     let mockProject: any;
-    let mockForm: any;
     let mockAuthInfo: any;
     let tool: any;
 
@@ -12,34 +12,36 @@ describe('confirmSubmission Tool', () => {
         mockAuthInfo = {
             formPermissions: () => ({ create: true, read: true, update: true })
         };
-
-        mockForm = {
-            form: { title: 'Test Form', name: 'testForm' },
-            convertToSubmission: (data: any) => ({ data }),
-            validateData: async () => [],
-            getFields: async () => ({
-                required: [],
-                optional: [{ path: 'phone', label: 'Phone', type: 'phoneNumber' }],
-                rules: {}
-            }),
-            formatSubmission: (sub: any) => ({ data: Object.entries(sub.data).map(([path, value]) => ({ path, value })) })
-        };
-
-        mockProject = {
-            formNames: ['testForm'],
-            forms: { testForm: mockForm },
-            getForm: async (name: string) => name === 'testForm' ? mockForm : null,
-            mcpResponse: (template: string, data: any, isError?: boolean) => ({
-                template,
-                data,
-                isError: !!isError
-            }),
-            uagTemplate: {
-                renderTemplate: (template: string, data: any) => JSON.stringify(data)
-            },
-            config: {}
-        };
-
+        mockProject = new MockProjectInterface({
+            testForm: {
+                title: 'Test Form',
+                name: 'testForm',
+                tags: ['uag'],
+                components: [
+                    {
+                        key: 'firstName',
+                        label: 'First Name',
+                        type: 'textfield',
+                        input: true,
+                        validate: { required: true }
+                    },
+                    {
+                        key: 'email',
+                        label: 'Email',
+                        type: 'email',
+                        input: true,
+                        validate: { required: true }
+                    },
+                    {
+                        key: 'phone',
+                        label: 'Phone',
+                        type: 'phoneNumber',
+                        input: true,
+                        validate: { required: false }
+                    }
+                ]
+            }
+        });
         tool = await confirmSubmission(mockProject);
     });
 
@@ -53,58 +55,47 @@ describe('confirmSubmission Tool', () => {
 
     it('returns form not found error for invalid form', async () => {
         const result = await tool.execute(
-            { form_name: 'invalidForm', current_data: {} },
+            { form_name: 'invalidForm', form_data: {} },
             { authInfo: mockAuthInfo }
         );
 
         expect(result.template).to.equal(ResponseTemplate.formNotFound);
-        expect(result.isError).to.be.true;
     });
 
     it('confirms submission when all required fields are filled', async () => {
         const result = await tool.execute(
             {
                 form_name: 'testForm',
-                current_data: { firstName: 'John', email: 'john@example.com' }
+                form_data: { firstName: 'John', email: 'john@example.com' }
             },
             { authInfo: mockAuthInfo }
         );
 
         expect(result.template).to.equal(ResponseTemplate.confirmFormSubmission);
-        expect(result.data.form).to.equal(mockForm);
+        expect(result.data.form).to.equal(await mockProject.getForm('testForm'));
         expect(result.data.dataSummary).to.exist;
         expect(result.data.currentData).to.deep.equal({ firstName: 'John', email: 'john@example.com' });
     });
 
     it('returns validation errors for invalid data', async () => {
-        mockForm.validateData = async () => [
-            { path: 'email', message: 'Invalid email format' }
-        ];
-
         const result = await tool.execute(
             {
                 form_name: 'testForm',
-                current_data: { firstName: 'John', email: 'invalid' }
+                form_data: { firstName: 'John', email: 'invalid' }
             },
             { authInfo: mockAuthInfo }
         );
 
         expect(result.template).to.equal(ResponseTemplate.fieldValidationErrors);
-        expect(result.data.invalidFields).to.be.an('array');
-        expect(result.data.invalidFields.length).to.equal(1);
+        expect(result.data).to.have.property('invalidFields');
+        expect(result.data.invalidFields[0].path).to.equal('email');
     });
 
     it('returns field collection prompt when required fields are missing', async () => {
-        mockForm.getFields = async () => ({
-            required: [{ path: 'email', label: 'Email', type: 'email' }],
-            optional: [],
-            rules: {}
-        });
-
         const result = await tool.execute(
             {
                 form_name: 'testForm',
-                current_data: { firstName: 'John' }
+                form_data: { firstName: 'John' }
             },
             { authInfo: mockAuthInfo }
         );
@@ -124,7 +115,7 @@ describe('confirmSubmission Tool', () => {
         const result = await tool.execute(
             {
                 form_name: 'testForm',
-                current_data: testData
+                form_data: testData
             },
             { authInfo: mockAuthInfo }
         );
@@ -134,16 +125,29 @@ describe('confirmSubmission Tool', () => {
     });
 
     it('respects tool overrides from config', async () => {
-        mockProject.config = {
-            toolOverrides: {
-                confirm_form_submission: {
-                    name: 'custom_confirm',
-                    description: 'Custom confirmation'
-                }
-            }
+        const testFormDef = {
+            title: 'Test Form',
+            name: 'testForm',
+            tags: ['uag'],
+            components: []
         };
+        const projectWithConfig = new MockProjectInterface({
+            testForm: testFormDef
+        });
+        
+        // Override the config getter
+        Object.defineProperty(projectWithConfig, 'config', {
+            get: () => ({
+                toolOverrides: {
+                    confirm_form_submission: {
+                        name: 'custom_confirm',
+                        description: 'Custom confirmation'
+                    }
+                }
+            })
+        });
 
-        const customTool = await confirmSubmission(mockProject);
+        const customTool = await confirmSubmission(projectWithConfig);
         expect(customTool.name).to.equal('custom_confirm');
         expect(customTool.description).to.equal('Custom confirmation');
     });

@@ -9,7 +9,8 @@ import {
     Submission,
     Processors,
     DataObject,
-    componentHasValue
+    componentHasValue,
+    interpolateErrors
 } from "@formio/core";
 import { set, get, isObjectLike } from "lodash";
 import { UAGForm } from "./config";
@@ -35,8 +36,18 @@ export type UAGSubmission = {
     modified?: string | Date;
 }
 
+export type FormFieldError = {
+    label: string,
+    path: string,
+    error: string
+};
+
 export type FormFieldInfo = {
     rowIndex: number;
+    total: number;
+    totalRequired: number;
+    totalRequiredCollected: number;
+    errors: FormFieldError[];
     required: {
         rules: Record<string, string>,
         components: UAGComponentInfo[]
@@ -249,11 +260,15 @@ export class UAGFormInterface extends FormInterface {
     ): Promise<FormFieldInfo> {
         const fieldInfo: FormFieldInfo = {
             rowIndex: -1,
+            total: 0,
+            totalRequired: 0,
+            totalRequiredCollected: 0,
+            errors: [],
             required: { components: [], rules: {} },
             optional: { components: [], rules: {} }
         };
         const nestedPaths: string[] = [];
-        await this.process(submission, authInfo, null, null, null, [
+        const context = await this.process(submission, authInfo, null, null, null, [
             ...Processors,
             {
                 name: 'getFields',
@@ -306,8 +321,17 @@ export class UAGFormInterface extends FormInterface {
                         return;
                     }
 
-                    // If the component has a value, then skip it.
+                    // Increment the total field count regardless of whether it has a value or not.
+                    fieldInfo.total++;
+                    if (component.validate?.required) {
+                        fieldInfo.totalRequired++;
+                    }
+
+                    // If the component hass a value, then skip it.
                     if (componentHasValue(component, value)) {
+                        if (component.validate?.required) {
+                            fieldInfo.totalRequiredCollected++;
+                        }
                         return;
                     }
 
@@ -318,6 +342,13 @@ export class UAGFormInterface extends FormInterface {
                 }
             }
         ]);
+        if (context.scope?.errors?.length) {
+            // Filter the "required" validation since those are added to the fieldInfo separately.
+            context.scope.errors = context.scope.errors.filter((error: any) => (error.ruleName !== 'required'));
+            if (context.scope.errors?.length) {
+                fieldInfo.errors = this.convertToFormFieldErrors(interpolateErrors(context.scope.errors));
+            }
+        }
         return fieldInfo;
     }
 
@@ -331,6 +362,21 @@ export class UAGFormInterface extends FormInterface {
     }
 
     /**
+     * Convert a list of InterpolatedErrors into FormFieldErrors.
+     * @param errors 
+     * @returns 
+     */
+    convertToFormFieldErrors(errors: InterpolatedError[]): FormFieldError[] {
+        return errors.map((error) => {
+            return {
+                label: error.context?.label || 'Field',
+                path: error.context?.path,
+                error: error.message || 'Unknown validation error'
+            };
+        });
+    }
+
+    /**
      * Perform a validation process on the collected form data.
      * @param data 
      * @param auth 
@@ -339,24 +385,13 @@ export class UAGFormInterface extends FormInterface {
     async validateData(
         submission: Submission,
         auth: AuthRequest
-    ): Promise<{ label: string, path: string, error: string }[]> {
-        const invalidFields: { label: string, path: string, error: string }[] = [];
-        const validation = await this.validate(submission, auth);
-        if (validation.length > 0) {
-            validation.forEach((error: InterpolatedError) => {
-                invalidFields.push({
-                    label: error.context?.label || 'Field',
-                    path: error.context?.path,
-                    error: error.message || 'Unknown validation error'
-                });
-            });
-        }
-        return invalidFields;
+    ): Promise<FormFieldError[]> {
+        return this.convertToFormFieldErrors(await this.validate(submission, auth));
     }
 
-    convertToSubmission(data: Record<string, any>): Submission {
+    convertToSubmission(data?: Record<string, any>): Submission {
         const submission: any = { data: {} };
-        for (let [path, value] of Object.entries(data)) {
+        for (let [path, value] of Object.entries(data || {})) {
             const comp = this.getComponent(path);
             if (value && comp?.type === 'selectboxes' && typeof value === 'string') {
                 value = value.split(',').reduce((obj: any, v: string) => {

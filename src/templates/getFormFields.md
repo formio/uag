@@ -4,7 +4,9 @@ All values for these fields should be stored within the `data_path`="<%= parentD
 <% } %>
 ### Summary
 - Total fields for <%= parentLabel %>: <%= totalFields %>
-- Number of <%=type %> fields for <%= parentLabel %>: <%= totalType %>
+- Total fields collected for <%= parentLabel %>: <% totalCollected %>
+- Number of <%= type %> fields for <%= parentLabel %>: <%= totalType %>
+- Number of <%= type %> fields collected for <%= parentLabel %>: <%= totalTypeCollected %>
 
 <%= rules %>
 

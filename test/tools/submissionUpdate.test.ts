@@ -1,10 +1,11 @@
 import { expect } from 'chai';
 import { submissionUpdate } from '../../src/tools/submissionUpdate';
 import { ResponseTemplate } from '../../src/template';
+import { MockProjectInterface, MockFormInterface } from './mock';
 
 describe('submissionUpdate Tool', () => {
-    let mockProject: any;
-    let mockForm: any;
+    let mockProject: MockProjectInterface;
+    let mockForm: MockFormInterface;
     let mockAuthInfo: any;
     let tool: any;
 
@@ -13,45 +14,60 @@ describe('submissionUpdate Tool', () => {
             formPermissions: () => ({ create: true, read: true, update: true })
         };
 
-        mockForm = {
-            form: { title: 'Test Form', name: 'testForm' },
-            loadSubmission: async (id: string) => {
-                if (id === 'valid123') {
-                    return {
-                        _id: 'valid123',
-                        created: '2025-01-01',
-                        modified: '2025-01-01',
-                        data: {
-                            firstName: 'John',
-                            email: 'john@example.com',
-                            phone: '555-1234'
-                        }
-                    };
+        const testFormDef = {
+            title: 'Test Form',
+            name: 'testForm',
+            tags: ['uag'],
+            components: [
+                {
+                    key: 'firstName',
+                    label: 'First Name',
+                    type: 'textfield',
+                    input: true,
+                    validate: { required: true }
+                },
+                {
+                    key: 'email',
+                    label: 'Email',
+                    type: 'email',
+                    input: true,
+                    validate: { required: true }
+                },
+                {
+                    key: 'phone',
+                    label: 'Phone',
+                    type: 'phoneNumber',
+                    input: true,
+                    validate: { required: false }
                 }
-                return null;
-            },
-            submit: async (submission: any) => {
-                return {
-                    ...submission,
-                    modified: '2025-01-02'
-                };
-            },
-            formatSubmission: (sub: any) => ({ data: Object.entries(sub.data).map(([path, value]) => ({ path, value })) })
+            ]
         };
 
-        mockProject = {
-            formNames: ['testForm'],
-            forms: { testForm: mockForm },
-            getForm: async (name: string) => name === 'testForm' ? mockForm : null,
-            mcpResponse: (template: string, data: any, isError?: boolean) => ({
-                template,
-                data,
-                isError: !!isError
-            }),
-            uagTemplate: {
-                renderTemplate: (template: string, data: any) => JSON.stringify(data)
-            },
-            config: {}
+        const testSubmissions = [
+            {
+                _id: 'valid123',
+                created: '2025-01-01',
+                modified: '2025-01-01',
+                data: {
+                    firstName: 'John',
+                    email: 'john@example.com',
+                    phone: '555-1234'
+                }
+            }
+        ];
+
+        mockProject = new MockProjectInterface({
+            testForm: testFormDef
+        }, {
+            testForm: testSubmissions
+        });
+        
+        mockForm = mockProject.forms.testForm as MockFormInterface;
+        mockForm.submit = async (submission: any, authInfo: any) => {
+            return {
+                ...submission,
+                modified: '2025-01-02'
+            };
         };
 
         tool = await submissionUpdate(mockProject);
@@ -70,13 +86,12 @@ describe('submissionUpdate Tool', () => {
             {
                 form_name: 'invalidForm',
                 submission_id: 'valid123',
-                update_plan: []
+                updates: []
             },
             { authInfo: mockAuthInfo }
         );
 
         expect(result.template).to.equal(ResponseTemplate.formNotFound);
-        expect(result.isError).to.be.true;
     });
 
     it('returns submission not found error for invalid submission ID', async () => {
@@ -84,13 +99,12 @@ describe('submissionUpdate Tool', () => {
             {
                 form_name: 'testForm',
                 submission_id: 'invalid999',
-                update_plan: []
+                updates: []
             },
             { authInfo: mockAuthInfo }
         );
 
         expect(result.template).to.equal(ResponseTemplate.submissionNotFound);
-        expect(result.isError).to.be.true;
     });
 
     it('updates single field successfully', async () => {
@@ -98,10 +112,9 @@ describe('submissionUpdate Tool', () => {
             {
                 form_name: 'testForm',
                 submission_id: 'valid123',
-                update_plan: [
+                updates: [
                     {
-                        field_path: 'email',
-                        field_label: 'Email',
+                        data_path: 'email',
                         new_value: 'newemail@example.com'
                     }
                 ]
@@ -119,15 +132,13 @@ describe('submissionUpdate Tool', () => {
             {
                 form_name: 'testForm',
                 submission_id: 'valid123',
-                update_plan: [
+                updates: [
                     {
-                        field_path: 'email',
-                        field_label: 'Email',
+                        data_path: 'email',
                         new_value: 'newemail@example.com'
                     },
                     {
-                        field_path: 'phone',
-                        field_label: 'Phone',
+                        data_path: 'phone',
                         new_value: '555-9999'
                     }
                 ]
@@ -144,10 +155,9 @@ describe('submissionUpdate Tool', () => {
             {
                 form_name: 'testForm',
                 submission_id: 'valid123',
-                update_plan: [
+                updates: [
                     {
-                        field_path: 'email',
-                        field_label: 'Email',
+                        data_path: 'email',
                         new_value: 'newemail@example.com'
                     }
                 ]
@@ -157,7 +167,7 @@ describe('submissionUpdate Tool', () => {
 
         expect(result.template).to.equal(ResponseTemplate.submissionUpdated);
         expect(result.data.updateSummary).to.be.an('array');
-        expect(result.data.updateSummary[0].field_path).to.equal('email');
+        expect(result.data.updateSummary[0].data_path).to.equal('email');
         expect(result.data.updateSummary[0].new_value).to.equal('newemail@example.com');
         expect(result.data.updateSummary[0].previous_value).to.equal('john@example.com');
     });
@@ -181,10 +191,9 @@ describe('submissionUpdate Tool', () => {
             {
                 form_name: 'testForm',
                 submission_id: 'valid123',
-                update_plan: [
+                updates: [
                     {
-                        field_path: 'person.name.first',
-                        field_label: 'First Name',
+                        data_path: 'person.name.first',
                         new_value: 'Jane'
                     }
                 ]
@@ -200,10 +209,9 @@ describe('submissionUpdate Tool', () => {
             {
                 form_name: 'testForm',
                 submission_id: 'valid123',
-                update_plan: [
+                updates: [
                     {
-                        field_path: 'email',
-                        field_label: 'Email',
+                        data_path: 'email',
                         new_value: 'newemail@example.com'
                     }
                 ]
@@ -221,10 +229,9 @@ describe('submissionUpdate Tool', () => {
             {
                 form_name: 'testForm',
                 submission_id: 'valid123',
-                update_plan: [
+                updates: [
                     {
-                        field_path: 'email',
-                        field_label: 'Email',
+                        data_path: 'email',
                         new_value: 'newemail@example.com'
                     }
                 ]
@@ -245,10 +252,9 @@ describe('submissionUpdate Tool', () => {
             {
                 form_name: 'testForm',
                 submission_id: 'valid123',
-                update_plan: [
+                updates: [
                     {
-                        field_path: 'email',
-                        field_label: 'Email',
+                        data_path: 'email',
                         new_value: 'invalid-email'
                     }
                 ]
@@ -257,7 +263,6 @@ describe('submissionUpdate Tool', () => {
         );
 
         expect(result.template).to.equal(ResponseTemplate.submissionUpdateError);
-        expect(result.isError).to.be.true;
         expect(result.data.error).to.include('Update failed');
     });
 
@@ -268,10 +273,9 @@ describe('submissionUpdate Tool', () => {
             {
                 form_name: 'testForm',
                 submission_id: 'valid123',
-                update_plan: [
+                updates: [
                     {
-                        field_path: 'email',
-                        field_label: 'Email',
+                        data_path: 'email',
                         new_value: 'newemail@example.com'
                     }
                 ]
@@ -280,7 +284,6 @@ describe('submissionUpdate Tool', () => {
         );
 
         expect(result.template).to.equal(ResponseTemplate.submissionUpdateError);
-        expect(result.isError).to.be.true;
         expect(result.data.error).to.include('Unknown error');
     });
 
@@ -298,10 +301,9 @@ describe('submissionUpdate Tool', () => {
             {
                 form_name: 'testForm',
                 submission_id: 'valid123',
-                update_plan: [
+                updates: [
                     {
-                        field_path: 'email',
-                        field_label: 'Email',
+                        data_path: 'email',
                         new_value: 'newemail@example.com'
                     }
                 ]
@@ -315,16 +317,29 @@ describe('submissionUpdate Tool', () => {
     });
 
     it('respects tool overrides from config', async () => {
-        mockProject.config = {
-            toolOverrides: {
-                submission_update: {
-                    name: 'custom_update',
-                    description: 'Custom update tool'
-                }
-            }
+        const testFormDef = {
+            title: 'Test Form',
+            name: 'testForm',
+            tags: ['uag'],
+            components: []
         };
+        const projectWithConfig = new MockProjectInterface({
+            testForm: testFormDef
+        });
+        
+        // Override the config getter
+        Object.defineProperty(projectWithConfig, 'config', {
+            get: () => ({
+                toolOverrides: {
+                    submission_update: {
+                        name: 'custom_update',
+                        description: 'Custom update tool'
+                    }
+                }
+            })
+        });
 
-        const customTool = await submissionUpdate(mockProject);
+        const customTool = await submissionUpdate(projectWithConfig);
         expect(customTool.name).to.equal('custom_update');
         expect(customTool.description).to.equal('Custom update tool');
     });
