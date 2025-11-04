@@ -50,7 +50,7 @@ describe('getFormFields Tool', () => {
     it('returns correct tool metadata', async () => {
         expect(tool.name).to.equal('get_form_fields');
         expect(tool.title).to.equal('Get Form Fields');
-        expect(tool.description).to.include('Get detailed information about all fields');
+        expect(tool.description).to.include('Get high level overview of the fields');
         expect(tool.inputSchema).to.exist;
         expect(tool.execute).to.be.a('function');
     });
@@ -74,10 +74,6 @@ describe('getFormFields Tool', () => {
         );
 
         expect(result.template).to.equal(ResponseTemplate.getFormFields);
-        expect(result.data.totalFields).to.equal(3);
-        expect(result.data.totalType).to.equal(3);
-        expect(result.data.totalCollected).to.equal(0);
-        expect(result.data.totalTypeCollected).to.equal(0);
         expect(result.data.type).to.equal('All');
     });
 
@@ -91,10 +87,6 @@ describe('getFormFields Tool', () => {
         );
 
         expect(result.template).to.equal(ResponseTemplate.getFormFields);
-        expect(result.data.totalFields).to.equal(3);
-        expect(result.data.totalType).to.equal(2);
-        expect(result.data.totalCollected).to.equal(0);
-        expect(result.data.totalTypeCollected).to.equal(0);
         expect(result.data.type).to.equal('Required');
     });
 
@@ -102,17 +94,12 @@ describe('getFormFields Tool', () => {
         const result = await tool.execute(
             {
                 form_name: 'testForm',
-                criteria: 'optional',
-                form_data: { firstName: 'John', email: 'john@example.com' }
+                criteria: 'optional'
             },
             { authInfo: mockAuthInfo }
         );
 
         expect(result.template).to.equal(ResponseTemplate.getFormFields);
-        expect(result.data.totalFields).to.equal(3);
-        expect(result.data.totalType).to.equal(1);
-        expect(result.data.totalCollected).to.equal(2);
-        expect(result.data.totalTypeCollected).to.equal(0);
         expect(result.data.type).to.equal('Optional');
     });
 
