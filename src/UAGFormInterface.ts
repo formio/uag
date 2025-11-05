@@ -172,7 +172,7 @@ export class UAGFormInterface extends FormInterface {
 
     getParentToolDescription(parent: ParentInfo | undefined): string {
         if (!parent) return '';
-        return `To determine what fields are within this component, use the \`get_form_fields\` tool with \`parent_path\`="${parent.data_path}". To collect data for this component, use the \`collect_field_data\` tool with the \`parent_path\`="${parent.data_path}".`;
+        return `To determine what fields are within this component, use the \`get_form_fields\` tool with \`parent_path\`="<data_path>" (e.g. \`parent_path\`="${parent.data_path}"). To collect data for this component, use the \`collect_field_data\` tool with the \`parent_path\` set for the parent's data_path.`;
     }
 
     getComponentValueRule(component: Component, data_path?: string) {
@@ -474,7 +474,7 @@ export class UAGFormInterface extends FormInterface {
             }
         }, false, false, undefined, undefined, undefined, (component, data) => {
             if (this.isNestedComponent(component)) {
-                prefix = prefix.slice(0, -3);
+                prefix = prefix.slice(0, -3) + "\n";
             }
         });
         return uagData;
