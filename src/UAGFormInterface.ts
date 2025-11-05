@@ -10,7 +10,8 @@ import {
     Processors,
     DataObject,
     componentHasValue,
-    interpolateErrors
+    interpolateErrors,
+    Form
 } from "@formio/core";
 import { set, get, isObjectLike } from "lodash";
 import { UAGForm } from "./config";
@@ -116,34 +117,76 @@ export class UAGFormInterface extends FormInterface {
         return !!component.multiple || component.type === 'selectboxes' || component.type === 'tags';
     }
 
-    getParentToolDescription(parent: ParentInfo | undefined): string {
-        if (!parent) return '';
-        return `To collect data for this component, separately use the \`collect_field_data\` tool with the following set for the \`parent\` parameter: \`parent=${JSON.stringify(parent)}\`. Use the \`get_form_fields\` tool with the same \`parent\` parameter to retrieve all the fields within this parent field. `;
-    }
-
-    getComponentValueRule(component: Component) {
-        let rule = '';
-        const parent: ParentInfo = {
-            type: component.type,
-            label: component.label || component.key,
-            data_path: '<data_path>'
+    getParentInfoFromComponent(parent: Component | undefined, parent_path?: string): ParentInfo | undefined {
+        if (!parent || !parent_path) return undefined;
+        const parentInfo: ParentInfo = {
+            type: parent.type,
+            label: parent.label || parent.key,
+            data_path: parent_path
         };
         if (
-            (component as any).tree ||
-            component.type === 'datagrid' ||
-            component.type === 'editgrid'
+            (parent as any).tree ||
+            parent.type === 'datagrid' ||
+            parent.type === 'editgrid'
         ) {
-            parent.isTable = true;
-            rule += 'The value is a table of rows (array of objects). ' + this.getParentToolDescription(parent) + 'All `data_path`(s) for the components within this table should contain the current row index (e.g. `dataGrid[0].a`, `dataGrid[0].b`, `dataGrid[1].b`, etc.).';
+            parentInfo.isTable = true;
+            return parentInfo;
+        }
+        if (parent.type === 'form') {
+            parentInfo.isForm = true;
+            return parentInfo;
+        }
+        if (parent.type === 'container') {
+            parentInfo.isContainer = true;
+            return parentInfo;
+        }
+        return parentInfo;
+    }
+
+    getParentInfo(parent_path?: string): ParentInfo | undefined {
+        if (!parent_path) return undefined;
+        const parent = this.getComponent(parent_path);
+        return this.getParentInfoFromComponent(parent, parent_path);
+    }
+
+    getParentLabel(parent?: ParentInfo): string {
+        if (parent?.isTable) {
+            return `this row within the **${parent.label}** component`;
+        } else if (parent?.isForm) {
+            return `the **${parent.label}** nested form`;
+        } else if (parent?.isContainer) {
+            return `the **${parent.label}** container component`;
+        }
+        return `the **${this.form.title} (${this.form.name})** form`;
+    }
+
+    getParentDataPath(parent: ParentInfo | undefined, rowIndex: number = -1): string {
+        if (parent?.isTable && (rowIndex >= 0)) {
+            return `${parent.data_path}[${rowIndex}]`;
+        }
+        if (parent?.isForm) {
+            return `${parent.data_path}.data`;
+        }
+        return parent?.data_path || '';
+    }
+
+    getParentToolDescription(parent: ParentInfo | undefined): string {
+        if (!parent) return '';
+        return `To determine what fields are within this component, use the \`get_form_fields\` tool with \`parent_path\`="${parent.data_path}". To collect data for this component, use the \`collect_field_data\` tool with the \`parent_path\`="${parent.data_path}".`;
+    }
+
+    getComponentValueRule(component: Component, data_path?: string) {
+        let rule = '';
+        const parent = this.getParentInfoFromComponent(component, data_path);
+        if (parent?.isTable) {
+            rule += 'The value is a table of rows (array of objects), where each row is a new instance of data values for the child components. ' + this.getParentToolDescription(parent) + 'All `data_path`(s) for the components within this table should contain the current row index (e.g. `dataGrid[0].a`, `dataGrid[0].b`, `dataGrid[1].b`, etc.).';
             return rule;
         }
-        if (component.type === 'form') {
-            parent.isForm = true;
+        if (parent?.isForm) {
             rule += 'The value is a nested form submission in the format `{data: {...}}` where `{...}` is the values for the child components. ' + this.getParentToolDescription(parent) + 'All `data_path`(s) for the components within this nested form should be prefixed with `data` (e.g. `nestedForm.data.exampleField`).';
             return rule;
         }
-        if (component.type === 'container') {
-            parent.isContainer = true;
+        if (parent?.isContainer) {
             rule += 'The value is an object/map of nested component values in the format `{...}`. ' + this.getParentToolDescription(parent) + 'All `data_path`(s) for the components within this container should be prefixed with the container\'s `data_path` (e.g. `container.exampleField`).';
             return rule;
         }
@@ -337,7 +380,7 @@ export class UAGFormInterface extends FormInterface {
 
                     // Add the component info to the appropriate list.
                     const criteria = component.validate?.required ? 'required' : 'optional';
-                    fieldInfo[criteria].rules[component.type] = this.getComponentValueRule(component);
+                    fieldInfo[criteria].rules[component.type] = this.getComponentValueRule(component, path);
                     fieldInfo[criteria].components.push(this.getComponentInfo(component, path));
                 }
             }

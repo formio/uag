@@ -151,26 +151,11 @@ export class SchemaBuilder {
     }
 
     /**
-     * Optional parent component information if collecting data for a specific nested component within a form.
-     * If not provided, the tool assumes data is being collected for the root form.
-     * 
-     * ```json
-     * {
-     *   "type": "datagrid",
-     *   "isTable": true,
-     *   "data_path": "children"
-     * }
-     * ```
+     * The path of the parent component that contains nested components to collect spcific data for.
+     * @returns 
      */
-    parent() {
-        this.schema.parent = z.object({
-            type: z.string().describe('The type of the parent component that contains nested components to collect data for. To find the type, you can use the `get_form_fields` tool for this path and look at the **Type** of that field.'),
-            label: z.string().optional().describe('The label of the parent component that contains nested components to collect data for. This comes from the **Label** property of the field provided by the `get_form_fields` tool.'),
-            isTable: z.boolean().optional().describe('Indicates if the parent component is a table-like component (datagrid or editgrid). This means that the value of this component is an array of objects, where each row is a new context of data for the fields within. Set this value to `true` if the `get_form_fields` tool says to use `parent.isTable=true`.'),
-            isForm: z.boolean().optional().describe('Indicates if the parent component is a nested form-like component. This means that the value of this component is in the format of `{data: {...}}` where `{...}` is the context of data for the fields within. Set this value to `true` if the `get_form_fields` tool says to use `parent.isForm=true`.'),
-            isContainer: z.boolean().optional().describe('Indicates if the parent component is a container-like component. This means that the value of this component is in the format of `{...}` where `{...}` is the context of data for the fields within. Set this value to `true` if the `get_form_fields` tool says to use `parent.isContainer=true`.'),
-            data_path: z.string().describe('The `data_path` of the parent component that contains nested components to collect data for. To find the data_path, you can use the `get_form_fields` tool.')
-        }).optional().describe('Optional parent component information if collecting data for a specific nested component within a form. If not provided, the tool assumes data is being collected for the root form.');
+    parent_path() {
+        this.schema.parent_path = z.string().optional().describe('The `data_path` of the parent component that contains nested components. Use this parameter if collecting data for fields within a specific nested component within a form. To find the `parent_path`, you can use the `get_field_info` tool, and use the `data_path` of any component that ****Has Nested Components**** = ✅ Yes. If not provided, the tool assumes data is being collected for the root form.');
         return this;
     }
 

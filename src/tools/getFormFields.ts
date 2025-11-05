@@ -1,6 +1,6 @@
 import { ResponseTemplate } from "../template";
 import { UAGProjectInterface } from "../UAGProjectInterface";
-import { ToolInfo, ParentInfo, getParentLabel, getParentDataPath } from "./utils";
+import { ToolInfo, ParentInfo } from "./utils";
 import { UAGFormInterface } from "../UAGFormInterface";
 import { defaultsDeep, upperFirst } from "lodash";
 import { SchemaBuilder } from './SchemaBuilder';
@@ -13,21 +13,19 @@ export const getFormFields = async (project: UAGProjectInterface): Promise<ToolI
         inputSchema: (new SchemaBuilder(project))
             .form_name()
             .criteria()
-            .parent().schema,
-        execute: async ({ form_name, criteria, parent }: {
+            .parent_path().schema,
+        execute: async ({ form_name, criteria, parent_path }: {
             form_name: string;
             criteria?: 'all' | 'required' | 'optional';
-            parent?: ParentInfo | undefined;
+            parent_path?: string | undefined;
         }, extra: any) => {
             const form = await project.getForm(form_name) as UAGFormInterface;
             if (!form) {
                 return project.mcpResponse(ResponseTemplate.formNotFound, { formName: form_name }, true);
             }
             try {
-                // Ensure the parent is null if the type or data_path is missing.
-                if (!parent?.data_path || !parent.type) {
-                    parent = undefined;
-                }
+                // Get the parent info if a path was provided.
+                const parent = form.getParentInfo(parent_path);
 
                 // Get the fields at the specified data path (or root if not provided).
                 const fields = await form.getFields({data: {}}, extra.authInfo, parent?.data_path);
@@ -39,7 +37,8 @@ export const getFormFields = async (project: UAGProjectInterface): Promise<ToolI
                 if (criteriaFields.length === 0) {
                     return project.mcpResponse(ResponseTemplate.getFormFieldsEmpty, {
                         parent,
-                        parentLabel: getParentLabel(parent),
+                        parentLabel: form.getParentLabel(parent),
+                        criteria,
                         type: upperFirst(criteria),
                         form: form.form,
                     });
@@ -53,8 +52,8 @@ export const getFormFields = async (project: UAGProjectInterface): Promise<ToolI
                 // Show the form fields based on the criteria.
                 return project.mcpResponse(ResponseTemplate.getFormFields, {
                     parent,
-                    parentLabel: getParentLabel(parent, form.form),
-                    parentDataPath: getParentDataPath(parent, fields.rowIndex),
+                    parentLabel: form.getParentLabel(parent),
+                    parentDataPath: form.getParentDataPath(parent, fields.rowIndex),
                     type: upperFirst(criteria),
                     rules: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldRules, { rules: Object.entries(criteriaRules) }),
                     fieldList: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldList, { fields: criteriaFields })

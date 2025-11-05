@@ -1,6 +1,6 @@
 import { ResponseTemplate } from "../template";
 import { UAGProjectInterface } from "../UAGProjectInterface";
-import { getParentLabel, ToolInfo } from "./utils";
+import { ToolInfo } from "./utils";
 import { UAGFormInterface } from "../UAGFormInterface";
 import { defaultsDeep } from "lodash";
 import { SchemaBuilder } from "./SchemaBuilder";
@@ -34,7 +34,7 @@ export const confirmSubmission = async (project: UAGProjectInterface): Promise<T
             if (fields.required.components.length) {
                 return project.mcpResponse(ResponseTemplate.fieldCollectedNext, {
                     parent: undefined,
-                    parentLabel: getParentLabel(undefined, form.form),
+                    parentLabel: form.getParentLabel(),
                     message: 'There is additional data that needs to be collected before submission.',
                     rules: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldRules, { rules: Object.entries(fields.required.rules) }),
                     fields: project.uagTemplate?.renderTemplate(ResponseTemplate.fields, { fields: fields.required.components }),

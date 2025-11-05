@@ -1,6 +1,6 @@
 <%= message %>
 <% if (parent) { %>
-The following data is being collected for the nested component **<%= parent.label %> (<%= parent.type %>)**.  The parent `data_path` is **parent.data_path**, and all of the child data is collected within the path of **<%= parentDataPath %>**.
+The following data is being collected for the nested component **<%= parent.label %> (<%= parent.type %>)**.  The parent `data_path` is **<%= parent.data_path %>**, and all of the child data is collected within the path of **<%= parentDataPath %>**.
 <% } %>
 ## Progress: <%= progress.collected %>/<%= progress.total %> all fields (required and optional) collected for <%= parentLabel %>.
 

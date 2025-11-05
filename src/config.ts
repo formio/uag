@@ -17,7 +17,6 @@ export type UAGTemplateConfig = {
   formSubmitted?: string;
   listAvailableForms?: string;
   confirmFormSubmission?: string;
-  getOptionalFields?: string;
   formNotFound?: string;
   noSubmissionsFound?: string;
   submissionsFound?: string;

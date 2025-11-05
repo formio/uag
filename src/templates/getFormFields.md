@@ -8,4 +8,4 @@ All values for these fields should be stored within the `data_path`="<%= parentD
 
 <%= rules %>
 
-Once the user provides provides some context, use the `get_field_info` tool to understand how to validate and process the data that was collected. Make sure to set the `field_paths` to only the paths of the fields that the user has provided values for.
+Once the user provides provides some context, use the `get_field_info` tool<% if (parent) { %> with the `parent_path`="<%= parent.data_path %>"<% } %> to understand how to validate and process the data that was collected. Make sure to set the `field_paths` to only the paths of the fields that the user has provided values for.

@@ -1,6 +1,6 @@
 import { UAGProjectInterface } from "../UAGProjectInterface";
 import { ResponseTemplate } from "../template";
-import { ToolInfo, ParentInfo, DataUpdate, getParentLabel, getParentDataPath } from "./utils";
+import { ToolInfo, DataUpdate } from "./utils";
 import { UAGFormInterface } from "../UAGFormInterface";
 import { defaultsDeep } from "lodash";
 import { SchemaBuilder } from "./SchemaBuilder";
@@ -13,12 +13,12 @@ export const collectData = async (project: UAGProjectInterface): Promise<ToolInf
         inputSchema: (new SchemaBuilder(project))
             .form_name()
             .form_data()
-            .parent()
+            .parent_path()
             .updates().schema,
-        execute: async ({ form_name, form_data, parent, updates }: {
+        execute: async ({ form_name, form_data, parent_path, updates }: {
             form_name: string;
             form_data: Record<string, any>;
-            parent: ParentInfo | undefined;
+            parent_path: string | undefined;
             updates: DataUpdate[]
         }, extra: any) => {
             const form = await project.getForm(form_name) as UAGFormInterface;
@@ -27,9 +27,7 @@ export const collectData = async (project: UAGProjectInterface): Promise<ToolInf
             }
 
             // Ensure the parent is undefined if the type or data_path is missing.
-            if (!parent?.data_path || !parent.type) {
-                parent = undefined;
-            }
+            const parent = form.getParentInfo(parent_path);
 
             // Merge the updates into the current data.
             for (const { data_path, new_value } of updates) {
@@ -45,18 +43,16 @@ export const collectData = async (project: UAGProjectInterface): Promise<ToolInf
                 return project.mcpResponse(ResponseTemplate.fieldValidationErrors, { invalidFields: fields.errors });
             }
 
-            const collectedData = parent ? get(submission, parent.data_path || '') : submission.data;
-
             // If no required fields remain, then we can move onto a new tool.
             if (!fields.required.components.length) {
                 return project.mcpResponse(ResponseTemplate.allFieldsCollected, {
                     form: form.form,
                     parent,
-                    parentDataPath: getParentDataPath(parent, fields.rowIndex),
-                    parentLabel: getParentLabel(parent),
+                    parentDataPath: form.getParentDataPath(parent, fields.rowIndex),
+                    parentLabel: form.getParentLabel(parent),
                     rowIndex: fields.rowIndex,
                     dataSummary: project.uagTemplate?.renderTemplate(ResponseTemplate.collectedData, {
-                        data: form.formatData(collectedData)
+                        data: form.formatData(submission.data)
                     })
                 });
             }
@@ -64,13 +60,13 @@ export const collectData = async (project: UAGProjectInterface): Promise<ToolInf
             // Collect more required fields.
             return project.mcpResponse(ResponseTemplate.fieldCollectedNext, {
                 parent,
-                parentDataPath: getParentDataPath(parent, fields.rowIndex),
-                parentLabel: getParentLabel(parent, form.form),
+                parentDataPath: form.getParentDataPath(parent, fields.rowIndex),
+                parentLabel: form.getParentLabel(parent),
                 message: 'Form data collected successfully!',
                 rules: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldRules, { rules: Object.entries(fields.required.rules) }),
                 fields: project.uagTemplate?.renderTemplate(ResponseTemplate.fields, { fields: fields.required.components }),
                 dataSummary: project.uagTemplate?.renderTemplate(ResponseTemplate.collectedData, {
-                    data: form.formatData(collectedData)
+                    data: form.formatData(submission.data)
                 }),
                 progress: {
                     collected: Object.keys(form_data).length,
