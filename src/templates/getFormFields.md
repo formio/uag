@@ -1,9 +1,6 @@
-## <%= type %> fields for <%= parentLabel %>
-<% if (parent) { %>
-All values for these fields should be stored within the `data_path`="<%= parentDataPath %>" (e.g. "<%= parentDataPath %>.exampleField")
-<% } %>
+## <%= type %> fields for <%= parentLabel %><% if (parent) { %>
 
-### <%= type %> fields for <%= parentLabel %>
+All values for these fields should be stored within the `data_path`="<%= parentDataPath %>" (e.g. "<%= parentDataPath %>.exampleField")<% } %>
 <%= fieldList %>
 
 <%= rules %>

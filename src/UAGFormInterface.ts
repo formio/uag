@@ -161,8 +161,8 @@ export class UAGFormInterface extends FormInterface {
     }
 
     getParentDataPath(parent: ParentInfo | undefined, rowIndex: number = -1): string {
-        if (parent?.isTable && (rowIndex >= 0)) {
-            return `${parent.data_path}[${rowIndex}]`;
+        if (parent?.isTable) {
+            return (rowIndex >= 0) ? `${parent.data_path}[${rowIndex}]` : `${parent.data_path}[0]`;
         }
         if (parent?.isForm) {
             return `${parent.data_path}.data`;
@@ -179,15 +179,15 @@ export class UAGFormInterface extends FormInterface {
         let rule = '';
         const parent = this.getParentInfoFromComponent(component, data_path);
         if (parent?.isTable) {
-            rule += 'The value is a table of rows (array of objects), where each row is a new instance of data values for the child components. ' + this.getParentToolDescription(parent) + 'All `data_path`(s) for the components within this table should contain the current row index (e.g. `dataGrid[0].a`, `dataGrid[0].b`, `dataGrid[1].b`, etc.).';
+            rule += 'The value is a table of rows (array of objects), where each row is a new instance of data values for the child components. ' + this.getParentToolDescription(parent) + ' All `data_path`(s) for the components within this table should contain the current row index (e.g. `dataGrid[0].a`, `dataGrid[0].b`, `dataGrid[1].b`, etc.).';
             return rule;
         }
         if (parent?.isForm) {
-            rule += 'The value is a nested form submission in the format `{data: {...}}` where `{...}` is the values for the child components. ' + this.getParentToolDescription(parent) + 'All `data_path`(s) for the components within this nested form should be prefixed with `data` (e.g. `nestedForm.data.exampleField`).';
+            rule += 'The value is a nested form submission in the format `{data: {...}}` where `{...}` is the values for the child components. ' + this.getParentToolDescription(parent) + ' All `data_path`(s) for the components within this nested form should be prefixed with `data` (e.g. `nestedForm.data.exampleField`).';
             return rule;
         }
         if (parent?.isContainer) {
-            rule += 'The value is an object/map of nested component values in the format `{...}`. ' + this.getParentToolDescription(parent) + 'All `data_path`(s) for the components within this container should be prefixed with the container\'s `data_path` (e.g. `container.exampleField`).';
+            rule += 'The value is an object/map of nested component values in the format `{...}`. ' + this.getParentToolDescription(parent) + ' All `data_path`(s) for the components within this container should be prefixed with the container\'s `data_path` (e.g. `container.exampleField`).';
             return rule;
         }
         switch (component.type) {
@@ -474,7 +474,7 @@ export class UAGFormInterface extends FormInterface {
             }
         }, false, false, undefined, undefined, undefined, (component, data) => {
             if (this.isNestedComponent(component)) {
-                prefix = prefix.slice(0, -3) + "\n";
+                prefix = prefix.slice(0, -3);
             }
         });
         return uagData;

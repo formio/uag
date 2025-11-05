@@ -29,12 +29,14 @@ export const getFieldInfo = async (project: UAGProjectInterface): Promise<ToolIn
 
                 // Get the fields at the specified data path (or root if not provided).
                 const fields = await form.getFields({data: {}}, extra.authInfo, field_paths);
+                const allRules = {...fields.required.rules, ...fields.optional.rules};
 
                 // Show the form fields based on the criteria.
                 return project.mcpResponse(ResponseTemplate.getFormFieldsInfo, {
                     parent,
                     parentLabel: form.getParentLabel(parent),
                     parentDataPath: form.getParentDataPath(parent, fields.rowIndex),
+                    rules: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldRules, { rules: Object.entries(allRules) }),
                     fields: project.uagTemplate?.renderTemplate(ResponseTemplate.fields, { 
                         fields: fields.required.components.concat(fields.optional.components)
                     }),

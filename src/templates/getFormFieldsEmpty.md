@@ -2,7 +2,7 @@ No fields were found matching `criteria`="<%= criteria %>" for <%= parentLabel %
 
 **Next Steps**:
 <% if (parent && parent.isTable) { %>
- - Ask the user if they wish to "Add Another" row to the table of data. If they affirm, then use the `collect_field_data` tool to collect the next row's data. Make sure to increment the row index for the fields within this parent component (e.g. <%= parent.data_path %>[<%= rowIndex %>] => <%= parent.data_path %>[<%= (rowIndex + 1) %>]) when collecting data for the next row.
+ - Ask the user if they wish to "Add Another" (add another row to the **<%= parent.label %>** component). If they affirm, then use the `collect_field_data` tool to collect the next row's data. Make sure to increment the row index for the fields within **<%= parent.data_path %>** data_path when collecting data for the next row (e.g. <%= parent.data_path %>[<%= rowIndex %>] => <%= parent.data_path %>[<%= (rowIndex + 1) %>]).
 <% } else if (parent) { %>
  - Considering the search was made using a `parent_path` context, try the search again at a higher `parent_path` context.
 <% } else if (criteria === "optional") { %>

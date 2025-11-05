@@ -50,11 +50,10 @@ export const confirmSubmission = async (project: UAGProjectInterface): Promise<T
 
             // Confirm the submission.
             return project.mcpResponse(ResponseTemplate.confirmFormSubmission, {
-                form,
+                parentLabel: form.getParentLabel(),
                 dataSummary: project.uagTemplate?.renderTemplate(ResponseTemplate.collectedData, {
                     data: form.formatData(submission.data)
-                }),
-                currentData: form_data
+                })
             });
         }
     });

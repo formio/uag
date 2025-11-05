@@ -6,6 +6,8 @@ The following data is being collected for the nested component **<%= parent.labe
 
 ## Remaining required fields for <%= parentLabel %>:
 <%= fields %>
+<%= rules %>
+
 Use the `collect_field_data` tool to provide values for the remaining required fields for <%= parentLabel %>. You can collect multiple fields at once by providing an array of field updates.
 
 <%= dataSummary %>
