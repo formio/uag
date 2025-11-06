@@ -147,6 +147,10 @@ Of of the more powerful features of Modules is the ability to develop custom act
 A Basic Action "implements" the Action interface from @formio/uag and should follow the following type rules.
 
 ```ts
+import { NextFunction } from 'express';
+import { Component, FormAction } from '@formio/core';
+import { FormInterface, SubmissionRequest, SubmissionResponse } from '@formio/uag';
+
 export type ActionInfo = {
     name: string;
     title: string;
@@ -167,6 +171,7 @@ export interface Action {
     [key: string]: any;
     info: ActionInfo;
     settingsForm: (form: FormInterface) => Promise<Component[]>;
+    projectSettings: (form: FormInterface) => Promise<Component[]>;
     executor: (form: FormInterface, action: FormAction, handler: string, method: string) => Promise<(req: SubmissionRequest, res: SubmissionResponse, next: NextFunction) => Promise<any>>;
 }
 ```
