@@ -139,10 +139,10 @@
   resolved "https://registry.yarnpkg.com/@esbuild/win32-x64/-/win32-x64-0.25.11.tgz#5ecda6f3fe138b7e456f4e429edde33c823f392f"
   integrity sha512-D7Hpz6A2L4hzsRpPaCYkQnGOotdUpDzSGRIv9I+1ITdHROSFUWW95ZPZWQmGka1Fg7W3zFJowyn9WGwMJ0+KPA==
 
-"@formio/appserver-core@^2.3.1":
-  version "2.3.1"
-  resolved "https://registry.npmjs.org/@formio/appserver-core/-/appserver-core-2.3.1.tgz"
-  integrity sha512-XwEjMfC7ZRvzr9VYfltCrI/T/pQzAh2CniY3E9G6gZOvgpWYorS65BR64iAzwvSYGQAgGHECI+8MD9rpCUHang==
+"@formio/appserver-core@^2.3.2":
+  version "2.3.2"
+  resolved "https://registry.yarnpkg.com/@formio/appserver-core/-/appserver-core-2.3.2.tgz#da53e2200901cf0e794eabe6b0a2db77c8e03327"
+  integrity sha512-np0dyDr5WeFS709pkX+0jnL24hqKj5Pir3dtQBTUqkwVrknzgJto1/5pRhxnTXyDbvnvfj3yyF6Byms7wSP+gQ==
   dependencies:
     "@formio/core" "2.5.1-dev.291.6557e4e"
     "@formio/js" "^5.2.3"
@@ -170,12 +170,12 @@
     statuses "^2.0.2"
     xss "^1.0.15"
 
-"@formio/appserver@^2.3.1":
-  version "2.3.1"
-  resolved "https://registry.npmjs.org/@formio/appserver/-/appserver-2.3.1.tgz"
-  integrity sha512-VD8mX+VwDCKyML+APxh+gf2e68IW0JoXEU/ZR1zxcJkhY2UIdBklMpkcTLXmAGAHS4WQen5n+zZhWlvu8J5FhQ==
+"@formio/appserver@^2.3.2":
+  version "2.3.2"
+  resolved "https://registry.yarnpkg.com/@formio/appserver/-/appserver-2.3.2.tgz#427d2ff5e1ead0c613b996a4013644425d1a0167"
+  integrity sha512-aDcYHVszfvlOG/weOhYu0E2u2KsQZK11MtKjdSu/kuKG3HlhF6qrvs4njeK+SS4f9vj9VDHrsJKRHxr/GcryIg==
   dependencies:
-    "@formio/appserver-core" "^2.3.1"
+    "@formio/appserver-core" "^2.3.2"
     "@formio/core" "2.5.1-dev.291.6557e4e"
     async "^3.2.6"
     bcryptjs "^3.0.3"
