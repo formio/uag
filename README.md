@@ -1,9 +1,12 @@
 # The Form.io "Universal Agent Gateway" (UAG)
-The Universal Agent Gateway (uag) is an exciting new technology that enables the exposure of Form.io forms to AI Agents. Leveraging the power of MCP, this library provides AI Agents with dynamic context of how to interface with any backend system using Form.io JSON Forms as the common language between these agents and enterprise systems. 
+The Universal Agent Gateway (UAG) is an exciting new technology that brings JSON powered (model driven) [Form.io](https://form.io) forms to AI Agents. Leveraging the power of the [**Model Context Protocol (MCP)**](https://modelcontextprotocol.io/docs/getting-started/intro), this library provides AI Agents with **dynamic context** of how to interface with any backend system using Form.io JSON Forms as the common language between these agents and Enterprise systems. 
 
-This library can be used in many ways, either by deploying it directly via the Docker container, or by extending the interfaces and introducing your own custom Actions and providers.
+## Introduction
+The core purpose of the UAG is to provide AI Agents the ability to understand dynamic data structures defined from JSON form definitions. It accomplishes this goal by combining two innovative Open Source technologies.
 
-## How it works
+ - [**Form.io JSON Forms**](https://form.io): The Form.io platform enables deterministic data collection through the use of JSON form definitions created with a drag-and-drop form builder interface. Once created, these forms serve as more than just a front-end interface for humans to "fill out", but rather serve as a standard data model contract between applications and any backend processes that depend on that data. It ensures that every system is speaking the same language and provides human-in-the-loop experiences (through rendered forms) to collect, audit, and report on the data exchanges between many complex data driven systems. Here is a visual graphic showing how the Form JSON serves as the "centerpiece" for many 
+ - [**Model Context Protocol (MCP)**](https://modelcontextprotocol.io/docs/getting-started/intro) - 
+
 The UAG leverages the [**Model Context Protocol (MCP)**](https://modelcontextprotocol.io/docs/getting-started/intro) to provide AI Agents the ability to understand the dynamic data structures provided from [Form.io](https://form.io) JSON form definitions. It achieves this though the introduction of new MCP "tools" to provide an AI Agent with dynamic "form" based context. This cabability allows for Developers to treat AI Agents as they would any other Human who is submitting a form, and ensure that the AI Agents stay "on the rails" without requiring extensive domain specific agent training methods to accomplish the same goal. But more imporantly, the UAG offers Enterprises the ability to create trustworthy data interfaces through the use of dynamic and composable JSON data model definitions via Forms. This not only enforces deterministic data interactions from AI Agents, but also provides an auditable human-in-the-loop experiences through the Form.io portal applications. 
 
 Here is a visual graphic of how the UAG operates.
