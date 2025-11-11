@@ -4,7 +4,13 @@ The Universal Agent Gateway (uag) is an exciting new technology that enables the
 This library can be used in many ways, either by deploying it directly via the Docker container, or by extending the interfaces and introducing your own custom Actions and providers.
 
 ## How it works
-The UAG leverages the [**Model Context Protocol (MCP)**](https://modelcontextprotocol.io/docs/getting-started/intro) to provide AI Agents the ability to understand the dynamic data structures provided from [Form.io](https://form.io) JSON form definitions. It achieves this though the introduction of new MCP "tools" to provide an AI Agent with dynamic "form" based context. This cabability allows for Developers to treat AI Agents as they would any other Human who is submitting a form, and ensure that the AI Agents stay "on the rails" without requiring extensive domain specific agent training methods to accomplish the same goal. It achieves this by exposing the following MCP tools to an AI Agent.
+The UAG leverages the [**Model Context Protocol (MCP)**](https://modelcontextprotocol.io/docs/getting-started/intro) to provide AI Agents the ability to understand the dynamic data structures provided from [Form.io](https://form.io) JSON form definitions. It achieves this though the introduction of new MCP "tools" to provide an AI Agent with dynamic "form" based context. This cabability allows for Developers to treat AI Agents as they would any other Human who is submitting a form, and ensure that the AI Agents stay "on the rails" without requiring extensive domain specific agent training methods to accomplish the same goal. But more imporantly, the UAG offers Enterprises the ability to create trustworthy data interfaces through the use of dynamic and composable JSON data model definitions via Forms. This not only enforces deterministic data interactions from AI Agents, but also provides an auditable human-in-the-loop experiences through the Form.io portal applications. 
+
+Here is a visual graphic of how the UAG operates.
+
+![](./examples/images/uag-overview.png)
+
+The following tools provided by the UAG can be described as follows:
 
 | Tool Name         | Tool Description                                                                 |
 |-------------------|----------------------------------------------------------------------------------|
