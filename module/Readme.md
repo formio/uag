@@ -1,12 +1,12 @@
-## UAG Modules
+# UAG Modules
 A module is a way to extend the functionality and provide default forms and resources to accomplish specific goals using the UAG (Universal Agent Gateway). This capability enables developers to create their own domain-specific implementations of agent behaviors through custom actions, resources, and forms that produce deterministic behaviors from Generalized pre-trained agents (ChatGPT, Claude, etc).
 
 A module can also be published via NPM or Github and used by other developers to automatically configure their own software to work with the systems covered by that module.
 
-### Using a module
+## Using a module
 There are two ways that a module can be "used".  Importing into an Express application, or mounting a module with Docker. 
 
-#### Importing a module
+### Importing a module
 To import an existing module, you simply need to install that module via NPM and then use it within an Express.js application as follows.
 
 ```
@@ -39,7 +39,7 @@ try {
 
 In this example, the UAG Server will load all of the forms, resources, custom actions, and configurations provided from the Example UAG module.
 
-### Using a module with Docker
+## Using a module with Docker
 You can also use a module with Docker. The way this works is when you mount a volume, it will by default, override any existing "folder" that exists within that Docker container.  Our Docker containers are released to mount the "default" module provided in the **module** folder of this repo. When you mount a folder at the same path as that folder, it will use your mounted module instead of the one that is built within a container. This will then run your custom module within the Docker container so that your custom forms, resources, actions and configurations are applied to the UAG running through Docker. It is for this reason, you will see many examples (in the **examples** folder contain a "module" folder next to a docker-compose.yml file).
 
 ### Using with Docker Compose (preferred)
