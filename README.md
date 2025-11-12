@@ -1,6 +1,26 @@
 # The Form.io "Universal Agent Gateway" (UAG)
 The Universal Agent Gateway (UAG) is an exciting new technology that brings JSON powered (model driven) [Form.io](https://form.io) forms to AI Agents. Leveraging the power of the [**Model Context Protocol (MCP)**](https://modelcontextprotocol.io/docs/getting-started/intro), this library provides AI Agents with **dynamic context** of how to interface with any backend system using Form.io JSON Forms as the common language between these agents and Enterprise systems. 
 
+---
+
+## 📑 Table of Contents
+
+- [The Form.io "Universal Agent Gateway" (UAG)](#the-formio-universal-agent-gateway-uag)
+  - [Introduction](#introduction)
+  - [How it works](#how-it-works)
+  - [Technical Overview](#technical-overview)
+    - [MCP Tools](#pre-defined-mcp-tools-providing-dynamic-context)
+    - [Custom Modules](#custom-modules)
+  - [Getting Started](#getting-started)
+  - [Runtime Environments](#runtime-environments)
+    - [Node.js (Express):](#nodejs-express)
+    - [Docker](#docker)
+    - [Environment Variables](#environment-variables)
+    - [Running on Public Domain](#running-on-public-domain)
+  - [Using with Form.io Enterprise Server](#using-with-formio-enterprise-server)
+
+---
+
 ## Introduction
 The core purpose of the UAG is to provide AI Agents the ability to understand dynamic data structures defined from JSON form definitions. It accomplishes this goal by combining two innovative Open Source technologies.
 
@@ -188,7 +208,7 @@ docker run -d \
   formio/uag:rc
 ```
 
-### Docker Compose (Recommended)
+#### Docker Compose (Recommended)
 The recommended way to launching the UAG is through Docker Compose. This enables you to orchestrate several of the containers to run within a single instance to provide a more seamless and simple way of managing your deployments. Here is a simple example of how to run both the Form.io UAG + Form.io OSS server on the same instance.
 
 docker-compose.yml
@@ -272,13 +292,13 @@ This module can be configured in many ways. One of those ways is through the use
 | LOGIN_FORM | The public URL to the Login Form JSON endpoint. | https://mysite.com/project/user/login |
 | CORS | The cors domain, or the JSON configuration to configure the "cors" node.js module cross domain resource sharing. | *.* |
 
-## Running on Public Domain
+### Running on Public Domain
 In order to run the UAG on a public domain, it is very important to provide the proper configurations so that any AI Agent can properly authenticate. There are 3 different "domain" environment variables that matter, and it is important to understand how to configure them depending on your use case:
 
-### PROJECT
+#### PROJECT
 The ```PROJECT``` environment variable is used to establish a connetion from the UAG server to the project endpoint (for Enterprise) or OSS base url. This does NOT need to be a public DNS entry, but rather a URL that connects the UAG container to the Server container.  The following examples illustrate how this would be configured.
 
-#### Local connection to OSS Server
+##### Local connection to OSS Server
 If you are using a local connection, such as within a Docker Compose file, you can configure the ```PROJECT``` environment variable to point directly to the local url as follows.
 
 docker-compose.yml
@@ -305,7 +325,7 @@ services:
 
 In this example, we have Docker Compose launching the OSS Form.io container with the ADMIN_KEY set for this deployment, the UAG is connected using ```http://formio:3000``` which is the local Docker network name (provided using the "links" property in the docker compose file)
 
-#### Local Connection to Enterprise Server Project
+##### Local Connection to Enterprise Server Project
 If you are using the Enterprise Form.io server within a local environment to the UAG, then you will need to ensure that the UAG connects to an independent project using the PROJECT_KEY as follows.
 
 docker-compose.yml
@@ -329,7 +349,7 @@ services:
       PROJECT_KEY: CHANGEME
 ```
 
-#### Public DNS
+##### Public DNS
 If your project does not reside on the same network as the UAG, you can provide the domain name as the PROJECT as follows.
 
 docker-compose.yml: Connected to Enterprise (formio/formio-enterprise)
@@ -356,14 +376,14 @@ services:
       ADMIN_KEY: CHANGEME
 ```
 
-### BASE_URL
+#### BASE_URL
 The ```BASE_URL``` is used to communicate to the AI Agent the public domain that is hosting the UAG server. This value is provided within the ```.well-known``` definitions for the OIDC (PKCE) authentication. If this is not correct, then the AI Agent will not be able to authenticate into the UAG.
 
 **This needs to be the publically accessible domain that you are hosting your UAG.**
 
 For example, ```BASE_URL: https://forms.mysite.com```.
 
-### LOGIN_FORM
+#### LOGIN_FORM
 This is the publically accessible URL to the Login form of your Project or OSS deployment. This provides the URL that is loaded when the user navigates to ```{{ BASE_URL }}/auth/authorize```.  If you navigate to this URL, and the page says that you cannot load the form, then this is because your LOGIN_FORM environment variable is not pointing to the correct form JSON endpoint of your project. 
 
 For example:
@@ -408,7 +428,7 @@ Now that the UAG is connected, you can then navigate to any Forms and Resources.
 ### Deploying changes to your UAG using Stage Versions
 Next, you will simply use the existing Staging and Deployment system from your Developer portal to "deploy" any changes to your UAG. This will allow you to treat the UAG just like you would treat any other stage within your Enterprise deployment. This will allow you to track and any forms and resource changes using the Tag system, and then deploy new versions as well as "roll-back" to any previous versions if a change is made that does to perform as you would expect within the AI Agent enviornment. This is a stark contrast to what Enterprises must deal with "Trained Agents" where it is much harder to "roll back" any training that an agent has gone through. 
 
-### Custom Actions
+### Custom Actions within Developer Portal
 In addition to managing Tags and Versions within the Developer portal, you can also use the Developer Portal to add Custom Actions to any forms and resources. Within the stage that is connected to the UAG, you can navigate to any Form or Resource, and then click on **Actions**.  From there, any actions that show up in the Drop-down list of Actions that you can add to this form, you will see any Custom Actions that are part of your **Module** that you can also attach to your Forms and Resources. From here, you can add custom configurations and settings for each Action instance. It can also be versioned just like any other standard action using the tagging and versioning system.
 
 
