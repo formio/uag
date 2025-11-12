@@ -11,6 +11,7 @@ The Universal Agent Gateway (UAG) is an exciting new technology that brings JSON
   - [Technical Overview](#technical-overview)
     - [MCP Tools](#pre-defined-mcp-tools-providing-dynamic-context)
     - [Custom Modules](#custom-modules)
+    - [Module Documentation](./module)
   - [Getting Started](#getting-started)
   - [Runtime Environments](#runtime-environments)
     - [Node.js (Express):](#nodejs-express)
