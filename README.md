@@ -3,7 +3,7 @@ The Universal Agent Gateway (UAG) is an exciting new technology that brings JSON
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 
 - [The Form.io "Universal Agent Gateway" (UAG)](#the-formio-universal-agent-gateway-uag)
   - [Introduction](#introduction)
