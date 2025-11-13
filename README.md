@@ -13,6 +13,7 @@ The Universal Agent Gateway (UAG) is an exciting new technology that brings JSON
     - [Custom Modules](#custom-modules)
     - [Module Documentation](./module)
   - [Getting Started](#getting-started)
+  - [Example Local Deployment](./examples/local)
   - [Runtime Environments](#runtime-environments)
     - [Node.js (Express):](#nodejs-express)
     - [Docker](#docker)
