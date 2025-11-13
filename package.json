@@ -1,6 +1,6 @@
 {
   "name": "@formio/uag",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "The Form.io Universal Agent Gateway (UAG).",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -25,7 +25,7 @@
   "dependencies": {
     "@formio/appserver": "^2.3.2",
     "@formio/core": "2.5.1-dev.291.6557e4e",
-    "@modelcontextprotocol/sdk": "^1.21.0",
+    "@modelcontextprotocol/sdk": "^1.21.1",
     "cors": "^2.8.5",
     "debug": "^4.4.1",
     "dotenv": "^17.2.1",
@@ -44,12 +44,12 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/lodash": "^4.17.20",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^24.10.0",
+    "@types/node": "^24.10.1",
     "@types/supertest": "^6.0.3",
-    "chai": "^6.0.1",
-    "mocha": "^11.7.4",
+    "chai": "^6.2.1",
+    "mocha": "^11.7.5",
     "supertest": "^7.1.4",
-    "terser": "^5.43.1",
+    "terser": "^5.44.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.4",
     "typescript": "^5.9.3"
