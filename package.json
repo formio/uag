@@ -1,6 +1,6 @@
 {
   "name": "@formio/uag",
-  "version": "1.4.3",
+  "version": "1.5.0",
   "description": "The Form.io Universal Agent Gateway (UAG).",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -23,9 +23,9 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@formio/appserver": "^2.3.2",
+    "@formio/appserver": "^2.4.0",
     "@formio/core": "2.5.1-dev.291.6557e4e",
-    "@modelcontextprotocol/sdk": "^1.21.1",
+    "@modelcontextprotocol/sdk": "^1.22.0",
     "cors": "^2.8.5",
     "debug": "^4.4.1",
     "dotenv": "^17.2.1",

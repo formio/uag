@@ -139,10 +139,10 @@
   resolved "https://registry.yarnpkg.com/@esbuild/win32-x64/-/win32-x64-0.25.11.tgz#5ecda6f3fe138b7e456f4e429edde33c823f392f"
   integrity sha512-D7Hpz6A2L4hzsRpPaCYkQnGOotdUpDzSGRIv9I+1ITdHROSFUWW95ZPZWQmGka1Fg7W3zFJowyn9WGwMJ0+KPA==
 
-"@formio/appserver-core@^2.3.2":
-  version "2.3.2"
-  resolved "https://registry.yarnpkg.com/@formio/appserver-core/-/appserver-core-2.3.2.tgz#da53e2200901cf0e794eabe6b0a2db77c8e03327"
-  integrity sha512-np0dyDr5WeFS709pkX+0jnL24hqKj5Pir3dtQBTUqkwVrknzgJto1/5pRhxnTXyDbvnvfj3yyF6Byms7wSP+gQ==
+"@formio/appserver-core@^2.4.0":
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/@formio/appserver-core/-/appserver-core-2.4.0.tgz#3021133003e2e2ecb00fd23dce9dc3f2165e44b9"
+  integrity sha512-C9oJdKfnZ27RNsB9a5wGHYq0tQ+k5ZGTMtrgE29NFceVlPDHJy0zL7GnaEcmDHEPOvKG7RGzDZL9Iq5+xNiZLQ==
   dependencies:
     "@formio/core" "2.5.1-dev.291.6557e4e"
     "@formio/js" "^5.2.3"
@@ -157,7 +157,7 @@
     express "^5.1.0"
     fast-json-patch "^3.1.1"
     inputmask "^5.0.8"
-    jose "^6.1.0"
+    jose "^6.1.2"
     json-logic-js "^2.0.2"
     jsonwebtoken "^9.0.2"
     lodash "^4.17.21"
@@ -165,17 +165,17 @@
     node-cache "^5.1.2"
     nodemailer "^7.0.9"
     nunjucks "^3.2.4"
-    oidc-client-ts "^3.3.0"
+    oidc-client-ts "^3.4.1"
     resolve "^1.22.10"
     statuses "^2.0.2"
     xss "^1.0.15"
 
-"@formio/appserver@^2.3.2":
-  version "2.3.2"
-  resolved "https://registry.yarnpkg.com/@formio/appserver/-/appserver-2.3.2.tgz#427d2ff5e1ead0c613b996a4013644425d1a0167"
-  integrity sha512-aDcYHVszfvlOG/weOhYu0E2u2KsQZK11MtKjdSu/kuKG3HlhF6qrvs4njeK+SS4f9vj9VDHrsJKRHxr/GcryIg==
+"@formio/appserver@^2.4.0":
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/@formio/appserver/-/appserver-2.4.0.tgz#271d46fda9d7a93c25700811f0aade29d566a143"
+  integrity sha512-VLZUK717778Q5cEIBYVL3OSvmRSYDhL2L386+kytqq6hIrTwiQu9B+vAnpIZmcYOKnGgSgGSuy37DrWHbM/Ujg==
   dependencies:
-    "@formio/appserver-core" "^2.3.2"
+    "@formio/appserver-core" "^2.4.0"
     "@formio/core" "2.5.1-dev.291.6557e4e"
     async "^3.2.6"
     bcryptjs "^3.0.3"
@@ -184,7 +184,7 @@
     express "^5.1.0"
     jsonwebtoken "^9.0.2"
     lodash "^4.17.21"
-    mongodb "^6.19.0"
+    mongodb "^7.0.0"
 
 "@formio/bootstrap@^3.1.3":
   version "3.1.3"
@@ -394,10 +394,10 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@modelcontextprotocol/sdk@^1.21.1":
-  version "1.21.1"
-  resolved "https://registry.yarnpkg.com/@modelcontextprotocol/sdk/-/sdk-1.21.1.tgz#8fba02e7581d49cc9b047aab0cfd334043321fe5"
-  integrity sha512-UyLFcJLDvUuZbGnaQqXFT32CpPpGj7VS19roLut6gkQVhb439xUzYWbsUvdI3ZPL+2hnFosuugtYWE0Mcs1rmQ==
+"@modelcontextprotocol/sdk@^1.22.0":
+  version "1.22.0"
+  resolved "https://registry.yarnpkg.com/@modelcontextprotocol/sdk/-/sdk-1.22.0.tgz#b982143dfd36ef096b311d8ffadb2f91aabbbb1d"
+  integrity sha512-VUpl106XVTCpDmTBil2ehgJZjhyLY2QZikzF8NvTXtLRF1CvO5iEE2UNZdVIUer35vFOwMKYeUGbjJtvPWan3g==
   dependencies:
     ajv "^8.17.1"
     ajv-formats "^3.0.1"
@@ -654,10 +654,10 @@
   resolved "https://registry.npmjs.org/@types/webidl-conversions/-/webidl-conversions-7.0.3.tgz"
   integrity sha512-CiJJvcRtIgzadHCYXw7dqEnMNRjhGZlYK05Mj9OyktqV8uVT8fD2BFOB7S1uwBE3Kj2Z+4UyPmFw/Ixgw/LAlA==
 
-"@types/whatwg-url@^11.0.2":
-  version "11.0.5"
-  resolved "https://registry.npmjs.org/@types/whatwg-url/-/whatwg-url-11.0.5.tgz"
-  integrity sha512-coYR071JRaHa+xoEvvYqvnIHaVqaYrLPbsufM9BF63HkwI5Lgmy2QR8Q5K/lYDYo5AK82wOvSOS0UsLTpTG7uQ==
+"@types/whatwg-url@^13.0.0":
+  version "13.0.0"
+  resolved "https://registry.yarnpkg.com/@types/whatwg-url/-/whatwg-url-13.0.0.tgz#2b11e32772fd321c0dedf4d655953ea8ce587b2a"
+  integrity sha512-N8WXpbE6Wgri7KUSvrmQcqrMllKZ9uxkYWMt+mCSGwNc0Hsw9VQTW7ApqI4XNrx6/SaM2QQJCzMPDEXE058s+Q==
   dependencies:
     "@types/webidl-conversions" "*"
 
@@ -862,10 +862,10 @@ browser-stdout@^1.3.1:
   resolved "https://registry.npmjs.org/browser-stdout/-/browser-stdout-1.3.1.tgz"
   integrity sha512-qhAVI1+Av2X7qelOfAIYwXONood6XlZE/fXaBSmW/T5SzLAmCgzi+eiWE7fUvbHaeNBQH13UftjpXxsfLkMpgw==
 
-bson@^6.10.4:
-  version "6.10.4"
-  resolved "https://registry.npmjs.org/bson/-/bson-6.10.4.tgz"
-  integrity sha512-WIsKqkSC0ABoBJuT1LEX+2HEvNmNKKgnTAyd0fL8qzK4SH2i9NXg+t08YtdZp/V9IZ33cxe3iV4yM0qg8lMQng==
+bson@^7.0.0:
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/bson/-/bson-7.0.0.tgz#2ee7ac8296d61739a8d3d1799724a10d9f8afa8d"
+  integrity sha512-Kwc6Wh4lQ5OmkqqKhYGKIuELXl+EPYSCObVE6bWsp1T/cGkOCBN0I8wF/T44BiuhHyNi1mmKVPXk60d41xZ7kw==
 
 buffer-equal-constant-time@^1.0.1:
   version "1.0.1"
@@ -1749,10 +1749,10 @@ jose@^5.6.3:
   resolved "https://registry.npmjs.org/jose/-/jose-5.10.0.tgz"
   integrity sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg==
 
-jose@^6.1.0:
-  version "6.1.0"
-  resolved "https://registry.npmjs.org/jose/-/jose-6.1.0.tgz"
-  integrity sha512-TTQJyoEoKcC1lscpVDCSsVgYzUDg/0Bt3WE//WiTPK6uOCQC2KZS4MpugbMWt/zyjkopgZoXhZuCi00gLudfUA==
+jose@^6.1.2:
+  version "6.1.2"
+  resolved "https://registry.yarnpkg.com/jose/-/jose-6.1.2.tgz#05f75a3bcdf352d07ebdffcfb11d4e835f6f95c6"
+  integrity sha512-MpcPtHLE5EmztuFIqB0vzHAWJPpmN1E6L4oo+kze56LIs3MyXIj9ZHMDxqOvkP38gBR7K1v3jqd4WU2+nrfONQ==
 
 js-yaml@^4.1.0:
   version "4.1.0"
@@ -2019,22 +2019,22 @@ moment@^2.29.4, moment@^2.30.1:
   resolved "https://registry.npmjs.org/moment/-/moment-2.30.1.tgz"
   integrity sha512-uEmtNhbDOrWPFS+hdjFCBfy9f2YoyzRpwcl+DqpC6taX21FzsTLQVbMV/W7PzNSX6x/bhC1zA3c2UQ5NzH6how==
 
-mongodb-connection-string-url@^3.0.2:
-  version "3.0.2"
-  resolved "https://registry.npmjs.org/mongodb-connection-string-url/-/mongodb-connection-string-url-3.0.2.tgz"
-  integrity sha512-rMO7CGo/9BFwyZABcKAWL8UJwH/Kc2x0g72uhDWzG48URRax5TCIcJ7Rc3RZqffZzO/Gwff/jyKwCU9TN8gehA==
+mongodb-connection-string-url@^7.0.0:
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/mongodb-connection-string-url/-/mongodb-connection-string-url-7.0.0.tgz#aad7291d191c52e3b5e2765eb9d218b6efcad655"
+  integrity sha512-irhhjRVLE20hbkRl4zpAYLnDMM+zIZnp0IDB9akAFFUZp/3XdOfwwddc7y6cNvF2WCEtfTYRwYbIfYa2kVY0og==
   dependencies:
-    "@types/whatwg-url" "^11.0.2"
-    whatwg-url "^14.1.0 || ^13.0.0"
+    "@types/whatwg-url" "^13.0.0"
+    whatwg-url "^14.1.0"
 
-mongodb@^6.19.0:
-  version "6.20.0"
-  resolved "https://registry.npmjs.org/mongodb/-/mongodb-6.20.0.tgz"
-  integrity sha512-Tl6MEIU3K4Rq3TSHd+sZQqRBoGlFsOgNrH5ltAcFBV62Re3Fd+FcaVf8uSEQFOJ51SDowDVttBTONMfoYWrWlQ==
+mongodb@^7.0.0:
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/mongodb/-/mongodb-7.0.0.tgz#33b381dc9fdca208a38ea03340d57244c776573f"
+  integrity sha512-vG/A5cQrvGGvZm2mTnCSz1LUcbOPl83hfB6bxULKQ8oFZauyox/2xbZOoGNl+64m8VBrETkdGCDBdOsCr3F3jg==
   dependencies:
     "@mongodb-js/saslprep" "^1.3.0"
-    bson "^6.10.4"
-    mongodb-connection-string-url "^3.0.2"
+    bson "^7.0.0"
+    mongodb-connection-string-url "^7.0.0"
 
 ms@^2.1.1, ms@^2.1.3:
   version "2.1.3"
@@ -2103,10 +2103,10 @@ object-inspect@^1.13.3:
   resolved "https://registry.npmjs.org/object-inspect/-/object-inspect-1.13.4.tgz"
   integrity sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==
 
-oidc-client-ts@^3.3.0:
-  version "3.3.0"
-  resolved "https://registry.npmjs.org/oidc-client-ts/-/oidc-client-ts-3.3.0.tgz"
-  integrity sha512-t13S540ZwFOEZKLYHJwSfITugupW4uYLwuQSSXyKH/wHwZ+7FvgHE7gnNJh1YQIZ1Yd1hKSRjqeXGSUtS0r9JA==
+oidc-client-ts@^3.4.1:
+  version "3.4.1"
+  resolved "https://registry.yarnpkg.com/oidc-client-ts/-/oidc-client-ts-3.4.1.tgz#7cad95ba7213cb93b7c141965ce03ad658baa30f"
+  integrity sha512-jNdst/U28Iasukx/L5MP6b274Vr7ftQs6qAhPBCvz6Wt5rPCA+Q/tUmCzfCHHWweWw5szeMy2Gfrm1rITwUKrw==
   dependencies:
     jwt-decode "^4.0.0"
 
@@ -2794,9 +2794,9 @@ webidl-conversions@^7.0.0:
   resolved "https://registry.npmjs.org/webidl-conversions/-/webidl-conversions-7.0.0.tgz"
   integrity sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==
 
-"whatwg-url@^14.1.0 || ^13.0.0":
+whatwg-url@^14.1.0:
   version "14.2.0"
-  resolved "https://registry.npmjs.org/whatwg-url/-/whatwg-url-14.2.0.tgz"
+  resolved "https://registry.yarnpkg.com/whatwg-url/-/whatwg-url-14.2.0.tgz#4ee02d5d725155dae004f6ae95c73e7ef5d95663"
   integrity sha512-De72GdQZzNTUBBChsXueQUnPKDkg/5A5zp7pFDuQAj5UFoENpiACU0wlCvzpAGnTkj++ihpKwKyYewn/XNUbKw==
   dependencies:
     tr46 "^5.1.0"

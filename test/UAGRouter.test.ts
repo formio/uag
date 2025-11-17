@@ -59,7 +59,9 @@ describe('UAGRouter', () => {
             const mockRes: any = {
                 status: () => mockRes,
                 json: () => mockRes,
-                send: () => mockRes
+                send: () => mockRes,
+                writeHead: () => mockRes,
+                end: () => mockRes
             };
 
             const postRoute = router.stack.find((layer: any) =>
@@ -97,7 +99,9 @@ describe('UAGRouter', () => {
                     responseBody = body;
                     return mockRes;
                 },
-                send: () => mockRes
+                send: () => mockRes,
+                writeHead: () => mockRes,
+                end: () => mockRes
             };
 
             const postRoute = router.stack.find((layer: any) =>
@@ -124,7 +128,9 @@ describe('UAGRouter', () => {
             const mockRes: any = {
                 status: () => mockRes,
                 json: () => mockRes,
-                send: () => mockRes
+                send: () => mockRes,
+                writeHead: () => mockRes,
+                end: () => mockRes
             };
 
             const getRoute = router.stack.find((layer: any) =>
@@ -152,7 +158,9 @@ describe('UAGRouter', () => {
             const mockRes: any = {
                 status: () => mockRes,
                 json: () => mockRes,
-                send: () => mockRes
+                send: () => mockRes,
+                writeHead: () => mockRes,
+                end: () => mockRes
             };
 
             const getRoute = router.stack.find((layer: any) =>
@@ -206,7 +214,9 @@ describe('UAGRouter', () => {
                     responseText = text;
                     return mockRes;
                 },
-                json: () => mockRes
+                json: () => mockRes,
+                writeHead: () => mockRes,
+                end: () => mockRes
             };
 
             const postRoute = router.stack.find((layer: any) =>
@@ -240,7 +250,9 @@ describe('UAGRouter', () => {
                     responseBody = body;
                     return mockRes;
                 },
-                send: () => mockRes
+                send: () => mockRes,
+                writeHead: () => mockRes,
+                end: () => mockRes
             };
 
             const postRoute = router.stack.find((layer: any) =>
@@ -271,7 +283,9 @@ describe('UAGRouter', () => {
                     responseBody = body;
                     return mockRes;
                 },
-                send: () => mockRes
+                send: () => mockRes,
+                writeHead: () => mockRes,
+                end: () => mockRes
             };
 
             const postRoute = router.stack.find((layer: any) =>
@@ -283,6 +297,8 @@ describe('UAGRouter', () => {
             }
 
             expect(responseBody).to.have.property('jsonrpc', '2.0');
+            expect(responseBody.error).to.have.property('code', -32603);
+            expect(responseBody.error).to.have.property('message', 'Internal Server Error');
         });
     });
 
@@ -294,7 +310,9 @@ describe('UAGRouter', () => {
             const mockRes: any = {
                 status: () => mockRes,
                 json: () => mockRes,
-                send: () => mockRes
+                send: () => mockRes,
+                writeHead: () => mockRes,
+                end: () => mockRes
             };
 
             const postRoute = router.stack.find((layer: any) =>

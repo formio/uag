@@ -72,9 +72,12 @@ describe('confirmSubmission Tool', () => {
         );
 
         expect(result.template).to.equal(ResponseTemplate.confirmFormSubmission);
-        expect(result.data.form).to.equal(await mockProject.getForm('testForm'));
-        expect(result.data.dataSummary).to.exist;
-        expect(result.data.currentData).to.deep.equal({ firstName: 'John', email: 'john@example.com' });
+        expect(result.data.dataSummary).to.equal(JSON.stringify({
+            data: [
+                {prefix:"",path:"firstName",label:"First Name",value:"John"},
+                {prefix:"",path:"email",label:"Email",value:"john@example.com"}
+            ]
+        }));
     });
 
     it('returns validation errors for invalid data', async () => {
