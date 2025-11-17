@@ -272,6 +272,7 @@ This module can be configured in many ways. One of those ways is through the use
 | PROJECT_KEY | (Enterprise Only) Either a Project API Key (for Form.io Enterprise) or the ADMIN_KEY for Open Source. | CHANGEME |
 | ADMIN_KEY | (Open Source Only) Allows you to provide the ADMIN_KEY to install and connect to the OSS Server. | CHANGEME |
 | UAG_LICENSE | The license to run the UAG against a Form.io Enterprise Deployment. | |
+| PROJECT_TTL | The project cache TTL in seconds. This controls the amount of time to check for any "changes" that have been made to the project to refresh any forms and resources within the UAG. | 900 |
 | PORT | The port you wish to run the server on. | 3200 |
 | DEBUG | Variable used to perform debug logs of server activity | formio.* |
 | PORTAL_SECRET | Enterprise Only:  Allows you to connect to the UAG from the Form.io Enterprise Portal. | CHANGEME |
@@ -283,6 +284,16 @@ This module can be configured in many ways. One of those ways is through the use
 | BASE_URL | The public URL that the UAG is hosted on. This allows for proper OIDC authentication and allows for the authentication callbacks to point to the correct url. | https://ai.onform.io |
 | LOGIN_FORM | The public URL to the Login Form JSON endpoint. | https://mysite.com/project/user/login |
 | CORS | The cors domain, or the JSON configuration to configure the "cors" node.js module cross domain resource sharing. | *.* |
+
+### Project Cache and TTL
+By default, the UAG uses a TTL to "fetch" any of the project assets and register them and cache them into the UAG. What this means is that if you make any changes to your underlying project forms and resources (either directly or through a deployment), you need to wait a maximum of the TTL setting (in seconds) to see any updates that have been made. For example, if the TTL is set to 900 (or 15 minutes), and you make a change to any forms and resources, you must wait at most 15 minutes to see any of these changes take effect into the UAG. It should be noted that when a "refresh" occurs, an API call to the "export" method is called on the underlying project endpoint. This is a processor intensive API call, so it is not recommended to set the TTL to any value less than 60.  A value of 0 is interpreted as "No TTL", which means the only way to refresh the project forms and resourcs, a UAG reboot is necessary.
+
+Here is a table explaining how this parameter can be used.
+
+|----------|-------------|----------|
+| PROJECT_TTL | 0 | No TTL (refresh) will occur.  This can be used to "disable" any refresh and ensure the ONLY way to refetch updated forms and resources, you must reboot the UAG server. |
+| PROJECT_TTL | 60 | Check for changes every minute |
+| PROJECT_TTL | 3600 | Check for changes every hour |
 
 ### Running on Public Domain
 In order to run the UAG on a public domain, it is very important to provide the proper configurations so that any AI agent can properly authenticate. There are 3 different "domain" environment variables that matter, and it is important to understand how to configure them depending on your use case:
