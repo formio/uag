@@ -443,7 +443,6 @@ In order to run the UAG against an Enterprise Server, you need to provide a few 
 | PROJECT | For the Enterprise Server, this points to the Project Endpoint you wish to bind the UAG to. | https://mydeployment.com/myproject |
 | PROJECT_KEY | An API Key for that project, provided within the Project Settings | CHANGEME |
 | UAG_LICENSE | This is the license provided to you from the Form.io License team. Contact support@form.io to acquire a "temporary" or full license. | |
-| PORTAL_SECRET | This enables you to "connect" your Form.io Developer Portal to the UAG so that you can view any custom actions as well as perform deployments to the UAG. | |
 
 Once you have these environment variables in place, you should be able to run the UAG pointed to your Enterprise Project.
 
