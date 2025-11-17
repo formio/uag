@@ -290,7 +290,8 @@ By default, the UAG uses a TTL to "fetch" any of the project assets and register
 
 Here is a table explaining how this parameter can be used.
 
-|----------|-------------|----------|
+| Environment Variable | Value | Result |
+|----------|-------------|---------|
 | PROJECT_TTL | 0 | No TTL (refresh) will occur.  This can be used to "disable" any refresh and ensure the ONLY way to refetch updated forms and resources, you must reboot the UAG server. |
 | PROJECT_TTL | 60 | Check for changes every minute |
 | PROJECT_TTL | 3600 | Check for changes every hour |
