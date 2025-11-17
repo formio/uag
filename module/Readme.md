@@ -99,6 +99,35 @@ With this configuration, you can introduce new MCP tools to the UAG to further e
 
 For an example of how to create a tool, simply look inside the [Tools Directory](../src/tools)
 
+This is an example of introducing a new tool called ```lookup_customers``` that can then be used to send an API call to specific customers.
+
+```js
+import { UAGProjectInterface, ResponseTemplate, ToolInfo, DataUpdate, UAGFormInterface } from "@formio/uag";
+import z from "zod";
+import { defaultsDeep, get } from "lodash";
+import { MyCustomerService } from './services';
+export const lookupCustomers = async (project: UAGProjectInterface): Promise<ToolInfo> => {
+    return {
+        name: 'lookup_customers',
+        title: 'Lookup Customer Information',
+        description: 'Lookup specific customer information. Use this tool if you are trying to determine the available options for any field with the type=`customer_lookup`',
+        inputSchema: {
+          industry: z.string().optional().describe('The industry that the customer is within. If any collected data contains a field with type=`industry`, then use that as the value for this input.')
+        },
+        execute: async ({ industry }: {
+            industry: string;
+        }, extra: any) => {
+            const customers = await MyCustomerService.lookupCustomers(industry);
+
+            // Use the "customerLookup" template to show all the customers to the agent.
+            return project.mcpResponse(ResponseTemplate.customerLookup, {
+                customers
+            });
+        }
+    };
+};
+```
+
 ### **responseTemplates**: Override and Create new Response Templates.
 The response templates provide the outputs that are sent to the AI Agent to establish the context it needs to accomplish custom goals. These templates use the [Lodash Template](https://lodash.com/docs/4.17.15#template) system to create a very flexible and powerful way to produce output text provided a data structure input. 
 
