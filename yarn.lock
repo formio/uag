@@ -394,10 +394,10 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@modelcontextprotocol/sdk@^1.21.0":
-  version "1.21.0"
-  resolved "https://registry.npmjs.org/@modelcontextprotocol/sdk/-/sdk-1.21.0.tgz"
-  integrity sha512-YFBsXJMFCyI1zP98u7gezMFKX4lgu/XpoZJk7ufI6UlFKXLj2hAMUuRlQX/nrmIPOmhRrG6tw2OQ2ZA/ZlXYpQ==
+"@modelcontextprotocol/sdk@^1.21.1":
+  version "1.21.1"
+  resolved "https://registry.yarnpkg.com/@modelcontextprotocol/sdk/-/sdk-1.21.1.tgz#8fba02e7581d49cc9b047aab0cfd334043321fe5"
+  integrity sha512-UyLFcJLDvUuZbGnaQqXFT32CpPpGj7VS19roLut6gkQVhb439xUzYWbsUvdI3ZPL+2hnFosuugtYWE0Mcs1rmQ==
   dependencies:
     ajv "^8.17.1"
     ajv-formats "^3.0.1"
@@ -578,10 +578,17 @@
   resolved "https://registry.npmjs.org/@types/ms/-/ms-2.1.0.tgz"
   integrity sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==
 
-"@types/node@*", "@types/node@^24.10.0":
+"@types/node@*":
   version "24.10.0"
   resolved "https://registry.npmjs.org/@types/node/-/node-24.10.0.tgz"
   integrity sha512-qzQZRBqkFsYyaSWXuEHc2WR9c0a0CXwiE5FWUvn7ZM+vdy1uZLfCunD38UzhuB7YN/J11ndbDBcTmOdxJo9Q7A==
+  dependencies:
+    undici-types "~7.16.0"
+
+"@types/node@^24.10.1":
+  version "24.10.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-24.10.1.tgz#91e92182c93db8bd6224fca031e2370cef9a8f01"
+  integrity sha512-GNWcUTRBgIRJD5zj+Tq0fKOJ5XZajIiBroOF0yvj2bSU1WvNdYS/dn9UxwsujGW4JX06dnHyjV2y9rRaybH0iQ==
   dependencies:
     undici-types "~7.16.0"
 
@@ -904,10 +911,10 @@ camelcase@^6.0.0:
   resolved "https://registry.npmjs.org/camelcase/-/camelcase-6.3.0.tgz"
   integrity sha512-Gmy6FhYlCY7uOElZUSbxo2UCDH8owEk996gkbrpsgGtrJLM3J7jGxl9Ic7Qwwj4ivOE5AWZWRMecDdF7hqGjFA==
 
-chai@^6.0.1:
-  version "6.2.0"
-  resolved "https://registry.npmjs.org/chai/-/chai-6.2.0.tgz"
-  integrity sha512-aUTnJc/JipRzJrNADXVvpVqi6CO0dn3nx4EVPxijri+fj3LUUDyZQOgVeW54Ob3Y1Xh9Iz8f+CgaCl8v0mn9bA==
+chai@^6.2.1:
+  version "6.2.1"
+  resolved "https://registry.yarnpkg.com/chai/-/chai-6.2.1.tgz#d1e64bc42433fbee6175ad5346799682060b5b6a"
+  integrity sha512-p4Z49OGG5W/WBCPSS/dH3jQ73kD6tiMmUM+bckNK6Jr5JHMG3k9bg/BvKR8lKmtVBKmOiuVaV2ws8s9oSbwysg==
 
 chalk@^4.1.0:
   version "4.1.2"
@@ -1973,10 +1980,10 @@ mkdirp-classic@^0.5.2, mkdirp-classic@^0.5.3:
   resolved "https://registry.npmjs.org/mkdirp-classic/-/mkdirp-classic-0.5.3.tgz"
   integrity sha512-gKLcREMhtuZRwRAfqP3RFW+TK4JqApVBtOIftVgjuABpAtpxhPGaDcfvbhNvD0B8iD1oUr/txX35NjcaY6Ns/A==
 
-mocha@^11.7.4:
-  version "11.7.4"
-  resolved "https://registry.npmjs.org/mocha/-/mocha-11.7.4.tgz"
-  integrity sha512-1jYAaY8x0kAZ0XszLWu14pzsf4KV740Gld4HXkhNTXwcHx4AUEDkPzgEHg9CM5dVcW+zv036tjpsEbLraPJj4w==
+mocha@^11.7.5:
+  version "11.7.5"
+  resolved "https://registry.yarnpkg.com/mocha/-/mocha-11.7.5.tgz#58f5bbfa5e0211ce7e5ee6128107cefc2515a627"
+  integrity sha512-mTT6RgopEYABzXWFx+GcJ+ZQ32kp4fMf0xvpZIIfSq9Z8lC/++MtcCnQ9t5FP2veYEP95FIYSvW+U9fV4xrlig==
   dependencies:
     browser-stdout "^1.3.1"
     chokidar "^4.0.1"
@@ -2646,10 +2653,10 @@ tar-stream@^2.1.4:
     inherits "^2.0.3"
     readable-stream "^3.1.1"
 
-terser@^5.43.1:
-  version "5.44.0"
-  resolved "https://registry.npmjs.org/terser/-/terser-5.44.0.tgz"
-  integrity sha512-nIVck8DK+GM/0Frwd+nIhZ84pR/BX7rmXMfYwyg+Sri5oGVE99/E3KvXqpC2xHFxyqXyGHTKBSioxxplrO4I4w==
+terser@^5.44.1:
+  version "5.44.1"
+  resolved "https://registry.yarnpkg.com/terser/-/terser-5.44.1.tgz#e391e92175c299b8c284ad6ded609e37303b0a9c"
+  integrity sha512-t/R3R/n0MSwnnazuPpPNVO60LX0SKL45pyl9YlvxIdkH0Of7D5qM2EVe+yASRIlY5pZ73nclYJfNANGWPwFDZw==
   dependencies:
     "@jridgewell/source-map" "^0.3.3"
     acorn "^8.15.0"

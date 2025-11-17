@@ -1,12 +1,12 @@
-## UAG Modules
+# UAG Modules
 A module is a way to extend the functionality and provide default forms and resources to accomplish specific goals using the UAG (Universal Agent Gateway). This capability enables developers to create their own domain-specific implementations of agent behaviors through custom actions, resources, and forms that produce deterministic behaviors from Generalized pre-trained agents (ChatGPT, Claude, etc).
 
 A module can also be published via NPM or Github and used by other developers to automatically configure their own software to work with the systems covered by that module.
 
-### Using a module
+## Using a module
 There are two ways that a module can be "used".  Importing into an Express application, or mounting a module with Docker. 
 
-#### Importing a module
+### Importing a module
 To import an existing module, you simply need to install that module via NPM and then use it within an Express.js application as follows.
 
 ```
@@ -39,7 +39,7 @@ try {
 
 In this example, the UAG Server will load all of the forms, resources, custom actions, and configurations provided from the Example UAG module.
 
-### Using a module with Docker
+## Using a module with Docker
 You can also use a module with Docker. The way this works is when you mount a volume, it will by default, override any existing "folder" that exists within that Docker container.  Our Docker containers are released to mount the "default" module provided in the **module** folder of this repo. When you mount a folder at the same path as that folder, it will use your mounted module instead of the one that is built within a container. This will then run your custom module within the Docker container so that your custom forms, resources, actions and configurations are applied to the UAG running through Docker. It is for this reason, you will see many examples (in the **examples** folder contain a "module" folder next to a docker-compose.yml file).
 
 ### Using with Docker Compose (preferred)
@@ -99,6 +99,35 @@ With this configuration, you can introduce new MCP tools to the UAG to further e
 
 For an example of how to create a tool, simply look inside the [Tools Directory](../src/tools)
 
+This is an example of introducing a new tool called ```lookup_customers``` that can then be used to send an API call to specific customers.
+
+```js
+import { UAGProjectInterface, ResponseTemplate, ToolInfo, DataUpdate, UAGFormInterface } from "@formio/uag";
+import z from "zod";
+import { defaultsDeep, get } from "lodash";
+import { MyCustomerService } from './services';
+export const lookupCustomers = async (project: UAGProjectInterface): Promise<ToolInfo> => {
+    return {
+        name: 'lookup_customers',
+        title: 'Lookup Customer Information',
+        description: 'Lookup specific customer information. Use this tool if you are trying to determine the available options for any field with the type=`customer_lookup`',
+        inputSchema: {
+          industry: z.string().optional().describe('The industry that the customer is within. If any collected data contains a field with type=`industry`, then use that as the value for this input.')
+        },
+        execute: async ({ industry }: {
+            industry: string;
+        }, extra: any) => {
+            const customers = await MyCustomerService.lookupCustomers(industry);
+
+            // Use the "customerLookup" template to show all the customers to the agent.
+            return project.mcpResponse(ResponseTemplate.customerLookup, {
+                customers
+            });
+        }
+    };
+};
+```
+
 ### **responseTemplates**: Override and Create new Response Templates.
 The response templates provide the outputs that are sent to the AI Agent to establish the context it needs to accomplish custom goals. These templates use the [Lodash Template](https://lodash.com/docs/4.17.15#template) system to create a very flexible and powerful way to produce output text provided a data structure input. 
 
@@ -147,6 +176,10 @@ Of of the more powerful features of Modules is the ability to develop custom act
 A Basic Action "implements" the Action interface from @formio/uag and should follow the following type rules.
 
 ```ts
+import { NextFunction } from 'express';
+import { Component, FormAction } from '@formio/core';
+import { FormInterface, SubmissionRequest, SubmissionResponse } from '@formio/uag';
+
 export type ActionInfo = {
     name: string;
     title: string;
@@ -217,31 +250,6 @@ export const ExampleAction = {
     },
 
     /**
-     * Enterprise Only:  For the Enterprise Only deployments, you can also store "secret" configurations necessary for 
-     * secure integrations within the encrypted Project Settings. If you action implements this method, they can provide
-     * a special form for that Action where the value of this form will be saved in the Project Settings of that project. 
-     * It should be noted, that this value is not per-instance but rather is treated as a Global value. This is good for 
-     * any API Keys or secrets that are needed for integration purposes.
-     * 
-     * Once a value is saved, it can be fetched via "form.project.settings?.myservice?.secret" variable.
-     * 
-     * @import { Form } from '@formio/core';
-     * @import { FormInterface } from '@formio/uag';
-     * @param { FormInterface } form - The form interface for this action.
-     * @return { Form.components } - The form.io form components for the project settings.
-     */
-    async projectSettings(form) {
-      return [
-        {
-          type: 'textfield',
-          label: 'Custom Integration API Key',
-          description: 'Enter a secret API Key that will be stored as an encrypted setting in the Project Settings.',
-          key: 'myservice.secret'
-        }
-      ]
-    },
-
-    /**
      * The executor method for this action. This method is called when the action is loading. It provides a 
      * moment to asynchronously load anything that is needed for the action before the action is executed. The executors
      * for all actions will be evaluated while the server is "booting" up to provide a single execution to load any async 
@@ -260,6 +268,10 @@ export const ExampleAction = {
 
         // This is the value configured in the settings form for this action instance.
         console.log(settings.example);
+
+        // For Enterprise deployments, you also have "encrypted" project settings to store any secret
+        // keys for 3rd party configuration. This can be found within the following property.
+        console.log(form.project?.settings);
 
         /**
          * Return the "run-time" middleware function for this action.
@@ -313,8 +325,6 @@ async settingsForm(form) {
   ];
 }
 ```
-
-The **projectSettings** is an Enterprise Only feature. For the Enterprise Only deployments, you can also store "secret" configurations necessary for secure integrations within the encrypted Project Settings. If you action implements this method, they can provide a special form for that Action where the value of this form will be saved in the Project Settings of that project. It should be noted, that this value is not per-instance but rather is treated as a Global value. This is good for any API Keys or secrets that are needed for integration purposes. Once a value is saved, it can be fetched via ```form.project.settings?.myservice?.secret``` variable.
 
 The **executor** is a **pre-load function** that returns a **run-time middleware function**.  This would allow you to pre-load any necessary elements that need to occur as the server is "booting" up so that it does not consume time during the runtime function operation. Anything that is within the **runtime middleware function** which is shows as ```(req, res, next) => {}``` is executed during runtime. Because of this, you should not do anything that is processor intensive within this part of the function. 
 
@@ -390,8 +400,3 @@ BODY:
 ```
 
 You will need to make sure you replace **FORM_ID** and **ADMIN_KEY** with the Form ID you wish to add the action instance to, and the ADMIN_KEY of your OSS deployment.
-
-Currently there is not a UI way of adding an Action instance to your OSS Server. However, if you are using the Enterprise Server, then you can easily add actions with the Developer portal.
-
-#### Configuring actions: Enterprise Server
-If you are using the Enterprise Server, then adding and managing Custom action is much simpler. When you connect to the UAG (like a stage), then you can simply navigate to the form and use the Developer Portal to add your actions instances using the UI of the Developer portal. See the main [Readme](../README.md) for documentation on how to achieve this with the Enterprise Developer Portal. 
