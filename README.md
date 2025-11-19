@@ -1,4 +1,4 @@
-# The Form.io "Universal Agent Gateway" (UAG)
+# The Form.io Universal Agent Gateway (UAG)
 The Universal Agent Gateway (UAG) introduces the power of [Form.io](https://form.io) forms to AI agents.  
 
 The Form.io UAG uses the [**Model Context Protocol (MCP)**](https://modelcontextprotocol.io/docs/getting-started/intro) to enable Form.io interaction through an AI agent workflow. By providing AI agents with the **dynamic context** of how to use Form.io JSON forms,  the UAG allows a user to interact with any aspect of their enterprise system served by the Form.io Platform directly through their AI agent.
@@ -7,7 +7,7 @@ The Form.io UAG uses the [**Model Context Protocol (MCP)**](https://modelcontext
 
 ## Table of Contents
 
-- [The Form.io "Universal Agent Gateway" (UAG)](#the-formio-universal-agent-gateway-uag)
+- [The Form.io Universal Agent Gateway (UAG)](#the-formio-universal-agent-gateway-uag)
   - [Introduction](#introduction)  
     - [The Model Context Protocol (MCP)](#the-model-context-protocol-mcp)  
     - [Dynamic Context](#dynamic-context)  
@@ -27,7 +27,7 @@ The Form.io UAG uses the [**Model Context Protocol (MCP)**](https://modelcontext
 ---
 
 ## Introduction
-The core purpose of the UAG is to equip AI agents with the ability to fluidly apply a user's natural language instructions to the Form.io platform's capabilities as defined by selected forms and fields.
+The core purpose of the UAG is to equip AI agents with the ability to forward a user's inputs to the Form.io platform. It allows the AI agent to apply natural language requests, scanned documents, and any other input it can parse into Form.io functionality, as defined by selected forms and fields.
 
   ### The Model Context Protocol (MCP)
   The Model Context Protocol (MCP) is an open-source standard for connecting AI applications to external systems.  
@@ -37,7 +37,7 @@ The core purpose of the UAG is to equip AI agents with the ability to fluidly ap
   ### Dynamic Context
   What does it mean to say MCP provides a dynamic context for how to use these tools?
 
-  The power of AI agents is their ability to parse natural language and infer a user's intent rather than  take rote input like a command line. The dynamic context delivered by MCP gives the AI agent guidance on how to correlate the user's prompt to the tools and data available. When the AI agent receives a prompt, it uses this dynamic context to determine what tool it should use, what elements of the prompt are inputs to that tool, and what additional input might be necessary.
+  The power of AI agents is their ability to parse free-form inputs, like natural language, and infer a user's intent rather than  take rote input like a command line. The dynamic context delivered by MCP gives the AI agent guidance on how to correlate the user's prompt to the tools and data available within Form.io. When the AI agent receives a prompt, it uses this dynamic context to determine what tool it should use, what elements of the prompt are inputs to that tool, and what additional input might be necessary. 
 
   ### The Role of the UAG
   The UAG is the package that contains everything sitting between the Form.io Platform and the AI agent.
@@ -47,8 +47,10 @@ The core purpose of the UAG is to equip AI agents with the ability to fluidly ap
   Form.io's drag-and-drop Form Builder simultaneously defines the look of the form and the structure of the data. This makes it easy to use data collected through Form.io forms elsewhere in an application or as an input to other enterprise systems.  
   ![](./examples/images/form-interfaces.png)
  
-  When the UAG is able to map the natural language inputs that an AI agent receives to the data model defined by a form, it means that data can be quickly supplied to the enterprise tools that depend on the Form.io platform without additional interpretation or transformation.  
+  When the UAG is able to map the freeform inputs that an AI agent receives to the data model defined by a form, it means that data can be quickly supplied to the enterprise tools that depend on the Form.io platform without additional interpretation or transformation.  
   This allows the UAG and Form.io to serve as a reliable middleware between an AI agent and countless other systems.
+
+ The same role-based access control that governs all Form.io forms and submissions still applies to any interaction through the UAG. This addresses many potential issues some users may have with connecting AI agents to enterprise systems.
 
   Here is a visual graphic of the layers provided by the UAG to achieve a trusted and deterministic interface between AI Agents to external systems through the UAG + Form.io Server.
 
