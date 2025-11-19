@@ -1,4 +1,4 @@
-# The Form.io "Universal Agent Gateway" (UAG)
+# The Form.io Universal Agent Gateway (UAG)
 The Universal Agent Gateway (UAG) introduces the power of [Form.io](https://form.io) forms to AI agents.  
 
 The Form.io UAG uses the [**Model Context Protocol (MCP)**](https://modelcontextprotocol.io/docs/getting-started/intro) to enable Form.io interaction through an AI agent workflow. By providing AI agents with the **dynamic context** of how to use Form.io JSON forms,  the UAG allows a user to interact with any aspect of their enterprise system served by the Form.io Platform directly through their AI agent.
@@ -7,7 +7,7 @@ The Form.io UAG uses the [**Model Context Protocol (MCP)**](https://modelcontext
 
 ## Table of Contents
 
-- [The Form.io "Universal Agent Gateway" (UAG)](#the-formio-universal-agent-gateway-uag)
+- [The Form.io Universal Agent Gateway (UAG)](#the-formio-universal-agent-gateway-uag)
   - [Introduction](#introduction)  
     - [The Model Context Protocol (MCP)](#the-model-context-protocol-mcp)  
     - [Dynamic Context](#dynamic-context)  
@@ -27,7 +27,7 @@ The Form.io UAG uses the [**Model Context Protocol (MCP)**](https://modelcontext
 ---
 
 ## Introduction
-The core purpose of the UAG is to equip AI agents with the ability to fluidly apply a user's natural language instructions to the Form.io platform's capabilities as defined by selected forms and fields.
+The core purpose of the UAG is to equip AI agents with the ability to forward a user's inputs to the Form.io platform. It allows the AI agent to apply natural language requests, scanned documents, and any other input it can parse into Form.io functionality, as defined by selected forms and fields.
 
   ### The Model Context Protocol (MCP)
   The Model Context Protocol (MCP) is an open-source standard for connecting AI applications to external systems.  
@@ -37,7 +37,7 @@ The core purpose of the UAG is to equip AI agents with the ability to fluidly ap
   ### Dynamic Context
   What does it mean to say MCP provides a dynamic context for how to use these tools?
 
-  The power of AI agents is their ability to parse natural language and infer a user's intent rather than  take rote input like a command line. The dynamic context delivered by MCP gives the AI agent guidance on how to correlate the user's prompt to the tools and data available. When the AI agent receives a prompt, it uses this dynamic context to determine what tool it should use, what elements of the prompt are inputs to that tool, and what additional input might be necessary.
+  The power of AI agents is their ability to parse free-form inputs, like natural language, and infer a user's intent rather than  take rote input like a command line. The dynamic context delivered by MCP gives the AI agent guidance on how to correlate the user's prompt to the tools and data available within Form.io. When the AI agent receives a prompt, it uses this dynamic context to determine what tool it should use, what elements of the prompt are inputs to that tool, and what additional input might be necessary. 
 
   ### The Role of the UAG
   The UAG is the package that contains everything sitting between the Form.io Platform and the AI agent.
@@ -47,8 +47,10 @@ The core purpose of the UAG is to equip AI agents with the ability to fluidly ap
   Form.io's drag-and-drop Form Builder simultaneously defines the look of the form and the structure of the data. This makes it easy to use data collected through Form.io forms elsewhere in an application or as an input to other enterprise systems.  
   ![](./examples/images/form-interfaces.png)
  
-  When the UAG is able to map the natural language inputs that an AI agent receives to the data model defined by a form, it means that data can be quickly supplied to the enterprise tools that depend on the Form.io platform without additional interpretation or transformation.  
+  When the UAG is able to map the freeform inputs that an AI agent receives to the data model defined by a form, it means that data can be quickly supplied to the enterprise tools that depend on the Form.io platform without additional interpretation or transformation.  
   This allows the UAG and Form.io to serve as a reliable middleware between an AI agent and countless other systems.
+
+ The same role-based access control that governs all Form.io forms and submissions still applies to any interaction through the UAG. This addresses many potential issues some users may have with connecting AI agents to enterprise systems.
 
   Here is a visual graphic of the layers provided by the UAG to achieve a trusted and deterministic interface between AI Agents to external systems through the UAG + Form.io Server.
 
@@ -195,7 +197,7 @@ services:
     ports:
       - "3000:3000"
   formio-uag:
-    image: formio/uag
+    image: formio/uag:rc
     restart: always
     links:
       - formio
@@ -236,7 +238,7 @@ docker run -d \
   --network formio \
   --name formio-uag \
   -p 3200:3200 \
-  formio/uag
+  formio/uag:rc
 ```
 
 **UAG pointed to an Form.io Enterprise Server**
@@ -254,7 +256,7 @@ docker run -d \
   --network formio \
   --name formio-uag \
   -p 3200:3200 \
-  formio/uag
+  formio/uag:rc
 ```
 
 Once it is running, you can then navigate to the following to access both the OSS Deployment + UAG Server
@@ -272,7 +274,6 @@ This module can be configured in many ways. One of those ways is through the use
 | PROJECT_KEY | (Enterprise Only) Either a Project API Key (for Form.io Enterprise) or the ADMIN_KEY for Open Source. | CHANGEME |
 | ADMIN_KEY | (Open Source Only) Allows you to provide the ADMIN_KEY to install and connect to the OSS Server. | CHANGEME |
 | UAG_LICENSE | The license to run the UAG against a Form.io Enterprise Deployment. | |
-| PROJECT_TTL | The project cache TTL in seconds. This controls the amount of time to check for any "changes" that have been made to the project to refresh any forms and resources within the UAG. | 900 |
 | PORT | The port you wish to run the server on. | 3200 |
 | DEBUG | Variable used to perform debug logs of server activity | formio.* |
 | PORTAL_SECRET | Enterprise Only:  Allows you to connect to the UAG from the Form.io Enterprise Portal. | CHANGEME |
@@ -281,20 +282,9 @@ This module can be configured in many ways. One of those ways is through the use
 | JWT_EXPIRE_TIME | The expiration for the jwt secret. | 3600 |
 | MONGO | (Enterprise Only) Allows you to connect the UAG directly to a mongo database, rather than having to redirect the submissions to the Form.io Submission APIs. | |
 | MONGO_CONFIG | JSON configuration for the Node.js Mongo Driver. | |
-| BASE_URL | The public URL that the UAG is hosted on. This allows for proper OIDC authentication and allows for the authentication callbacks to point to the correct url. | https://forms.yoursite.com |
+| BASE_URL | The public URL that the UAG is hosted on. This allows for proper OIDC authentication and allows for the authentication callbacks to point to the correct url. | https://ai.onform.io |
 | LOGIN_FORM | The public URL to the Login Form JSON endpoint. | https://mysite.com/project/user/login |
 | CORS | The cors domain, or the JSON configuration to configure the "cors" node.js module cross domain resource sharing. | *.* |
-
-### Project Cache and TTL
-By default, the UAG uses a TTL to "fetch" any of the project assets and register them and cache them into the UAG. What this means is that if you make any changes to your underlying project forms and resources (either directly or through a deployment), you need to wait a maximum of the TTL setting (in seconds) to see any updates that have been made. For example, if the TTL is set to 900 (or 15 minutes), and you make a change to any forms and resources, you must wait at most 15 minutes to see any of these changes take effect into the UAG. It should be noted that when a "refresh" occurs, an API call to the "export" method is called on the underlying project endpoint. This is a processor intensive API call, so it is not recommended to set the TTL to any value less than 60.  A value of 0 is interpreted as "No TTL", which means the only way to refresh the project forms and resourcs, a UAG reboot is necessary.
-
-Here is a table explaining how this parameter can be used.
-
-| Environment Variable | Value | Result |
-|----------|-------------|---------|
-| PROJECT_TTL | 0 | No TTL (refresh) will occur.  This can be used to "disable" any refresh and ensure the ONLY way to refetch updated forms and resources, you must reboot the UAG server. |
-| PROJECT_TTL | 60 | Check for changes every minute |
-| PROJECT_TTL | 3600 | Check for changes every hour |
 
 ### Running on Public Domain
 In order to run the UAG on a public domain, it is very important to provide the proper configurations so that any AI agent can properly authenticate. There are 3 different "domain" environment variables that matter, and it is important to understand how to configure them depending on your use case:
@@ -316,7 +306,7 @@ services:
       PORT: 3000
       ADMIN_KEY: CHANGEME
   formio-uag:
-    image: formio/uag
+    image: formio/uag:rc
     restart: always
     links:
       - formio
@@ -342,7 +332,7 @@ services:
     environment:
       PORT: 3000
   formio-uag:
-    image: formio/uag
+    image: formio/uag:rc
     restart: always
     links:
       - formio-enterprise
@@ -361,7 +351,7 @@ docker-compose.yml: Connected to Enterprise (formio/formio-enterprise)
 version: "3.8"
 services:
   formio-uag:
-    image: formio/uag
+    image: formio/uag:rc
     restart: always
     environment:
       PROJECT: https://forms.mydomain.com/myproject
@@ -373,7 +363,7 @@ docker-compose.yml: Connected to Open Source (formio/formio)
 version: "3.8"
 services:
   formio-uag:
-    image: formio/uag
+    image: formio/uag:rc
     restart: always
     environment:
       PROJECT: https://forms.mydomain.com
@@ -428,12 +418,15 @@ try {
 
 There is also a way to extend the functionality of the UAG through the use of modules, which is documented in the [Modules Readme](./module/Readme.md)
 
+
+
 ## Using with Form.io Enterprise Server
 When using the UAG with the Form.io Enterprise Server, you unlock several benefits with regards to managing the Forms and Resources within the UAG. Some of the features that you gain with our Enterprise Server include:
 
  - **Form Revisions** - Our form revision system provides a way to keep track of any changes made to any forms, and associate those changes with the submission data that is submitted against those revisions. This feature enables you to ensure that if any form schemas change, that the data submitted for that form correlates with the revision of the form in which it was submitted. In addition to this powerful feature, you can also leverage Form Revisions as a method to "roll-back" any mistakes or regressions caused by form changes. Instead of having to re-train or un-train an AI agent with any schema, you simply revert to previous revisions and the AI agent will adjust accordingly.
  - **Submission Revisions** - Submission revisions provides a way to keep track of any data changes that have been made to a submission and provides information on who changed the data. This combined with the power of the UAG provides any system the ability to audit any changes in data made by both AI agents as well as humans in the workflow processes.
  - **Stage Versions and Deployments** - Stage versions provides a way to create a "tag" version across all forms and resources within a project. This ensures that you can stamp a point in time where your AI agent (which may consume many different forms and resources) interfaces with your whole project in a deterministic way. It also provides a much more elegant "roll-back" mechanism where the entire project of forms and resources can be versioned and deployed independently.
+ - **Custom Actions** - Through the use of the Developer Portal and remote connections, you can use the Actions UI to manage and configure any custom actions that are configured within your UAG. Once a custom action is registered, via the **Modules** system, you can add that action to a form and configure it using the Form.io Developer Portal.
 
 ### Running the UAG against the Enterprise Server
 In order to run the UAG against an Enterprise Server, you need to provide a few Environment variables that are different from the OSS runtime of this module. The following environment variables are required to run against an Enterprise Project.
@@ -443,6 +436,31 @@ In order to run the UAG against an Enterprise Server, you need to provide a few 
 | PROJECT | For the Enterprise Server, this points to the Project Endpoint you wish to bind the UAG to. | https://mydeployment.com/myproject |
 | PROJECT_KEY | An API Key for that project, provided within the Project Settings | CHANGEME |
 | UAG_LICENSE | This is the license provided to you from the Form.io License team. Contact support@form.io to acquire a "temporary" or full license. | |
+| PORTAL_SECRET | This enables you to "connect" your Form.io Developer Portal to the UAG so that you can view any custom actions as well as perform deployments to the UAG. | |
 
-Once you have these environment variables in place, you should be able to run the UAG pointed to your Enterprise Project.
+Once you have these environment variables in place, you should be able to run the UAG pointed to your Enterprise Project. You can now connect to this UAG from the Developer Portal as follows.
+
+### Connecting your Developer Portal to the UAG.
+Once you have the UAG running in your own environment with a PORTAL_SECRET, you will now create a new Stage within your Developer portal. We can call this UAG.
+
+<div align="center">
+  <img src="./examples/images/uag-create-stage.png" alt="Create UAG Stage" width="600">
+</div>
+
+Next, you will click on **Staging** and then connect to your UAG server by providing the PORTAL_SECRET as follows.
+
+<div align="center">
+  <img src="./examples/images/connect-uag.png" alt="Connect to UAG" width="600">
+</div>
+
+Now that the UAG is connected, you can navigate to any Forms and Resources. These are the forms and resources hosted through the UAG.
+
+### Deploying changes to your UAG using Stage Versions
+Next, you will simply use the existing Staging and Deployment system from your Developer Portal to "deploy" any changes to your UAG. This will allow you to treat the UAG just like you would treat any other stage within your Enterprise deployment. This will allow you to track and any forms and resource changes using the Tag system, and then deploy new versions or roll-back to a previous version. This is much more practical than "agent training" models, where AI agent training is difficult to reverse or roll back.. 
+
+### Custom Actions within Developer Portal
+In addition to managing Tags and Versions within the Developer Portal, you can also use the Developer Portal to add Custom Actions to forms and resources.  
+Within the stage that is connected to the UAG, navigate to any Form or Resource, and then click on **Actions**.  The drop-down list displays any actions that can be added to this form. This will display Custom Actions that are part of your **Module**, which can also be attached to your Forms and Resources.  
+From here, you can add custom configurations and settings for each Action instance. It can also be versioned just like any other standard action using the tagging and versioning system.
+
 
