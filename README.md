@@ -281,7 +281,7 @@ This module can be configured in many ways. One of those ways is through the use
 | JWT_EXPIRE_TIME | The expiration for the jwt secret. | 3600 |
 | MONGO | (Enterprise Only) Allows you to connect the UAG directly to a mongo database, rather than having to redirect the submissions to the Form.io Submission APIs. | |
 | MONGO_CONFIG | JSON configuration for the Node.js Mongo Driver. | |
-| BASE_URL | The public URL that the UAG is hosted on. This allows for proper OIDC authentication and allows for the authentication callbacks to point to the correct url. | https://ai.onform.io |
+| BASE_URL | The public URL that the UAG is hosted on. This allows for proper OIDC authentication and allows for the authentication callbacks to point to the correct url. | https://forms.yoursite.com |
 | LOGIN_FORM | The public URL to the Login Form JSON endpoint. | https://mysite.com/project/user/login |
 | CORS | The cors domain, or the JSON configuration to configure the "cors" node.js module cross domain resource sharing. | *.* |
 
