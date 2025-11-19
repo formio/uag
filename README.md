@@ -195,7 +195,7 @@ services:
     ports:
       - "3000:3000"
   formio-uag:
-    image: formio/uag:rc
+    image: formio/uag
     restart: always
     links:
       - formio
@@ -236,7 +236,7 @@ docker run -d \
   --network formio \
   --name formio-uag \
   -p 3200:3200 \
-  formio/uag:rc
+  formio/uag
 ```
 
 **UAG pointed to an Form.io Enterprise Server**
@@ -254,7 +254,7 @@ docker run -d \
   --network formio \
   --name formio-uag \
   -p 3200:3200 \
-  formio/uag:rc
+  formio/uag
 ```
 
 Once it is running, you can then navigate to the following to access both the OSS Deployment + UAG Server
@@ -316,7 +316,7 @@ services:
       PORT: 3000
       ADMIN_KEY: CHANGEME
   formio-uag:
-    image: formio/uag:rc
+    image: formio/uag
     restart: always
     links:
       - formio
@@ -342,7 +342,7 @@ services:
     environment:
       PORT: 3000
   formio-uag:
-    image: formio/uag:rc
+    image: formio/uag
     restart: always
     links:
       - formio-enterprise
@@ -361,7 +361,7 @@ docker-compose.yml: Connected to Enterprise (formio/formio-enterprise)
 version: "3.8"
 services:
   formio-uag:
-    image: formio/uag:rc
+    image: formio/uag
     restart: always
     environment:
       PROJECT: https://forms.mydomain.com/myproject
@@ -373,7 +373,7 @@ docker-compose.yml: Connected to Open Source (formio/formio)
 version: "3.8"
 services:
   formio-uag:
-    image: formio/uag:rc
+    image: formio/uag
     restart: always
     environment:
       PROJECT: https://forms.mydomain.com

@@ -47,7 +47,7 @@ The preferred method of using a custom module with Docker is to utilize the Dock
 
 ```yml
 formio-uag:
-  image: formio/uag:rc
+  image: formio/uag
   restart: always
   links:
     - formio
@@ -66,7 +66,7 @@ This will ensure that your custom module is mounted instead of the default (empt
 You can also mount a module using Docker with the -v flag.
 
 ```
-docker run -v ./module:/app/module -e PORT=3200 -e DEBUG=formio.* formio/uag:rc
+docker run -v ./module:/app/module -e PORT=3200 -e DEBUG=formio.* formio/uag
 ```
 
 ## Module Structure

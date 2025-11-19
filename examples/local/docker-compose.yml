@@ -34,7 +34,7 @@ services:
       ROOT_PASSWORD: CHANGEME
       ADMIN_KEY: CHANGEME
   formio-uag:
-    image: formio/uag:rc
+    image: formio/uag
     restart: always
     links:
       - formio
