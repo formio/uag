@@ -93,7 +93,7 @@ We need to add an entry to run the "mcp-remote" proxy to call our lcoally runnin
 }
 ```
 
-We then need to close and re-open Claude Desktop.
+We then need to close and re-open Claude Desktop. Claude may bring up the login screen again, so if it does, then just re-login to your account you setup previously.
 
 Once you have re-opened Claude Desktop, you can then click on User | Settings, where you will see the following under the Connections section.
 
