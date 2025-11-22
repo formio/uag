@@ -2,8 +2,6 @@ import { UAGProjectInterface } from "../../src/UAGProjectInterface";
 import { UAGFormInterface } from "../../src/UAGFormInterface";
 import { ResponseTemplate } from "../../src/template";
 import { get } from "lodash";
-import { parse } from "path";
-
 export class MockProjectInterface extends UAGProjectInterface {
     constructor(
         mockForms: Record<string, any> = {},

@@ -3,5 +3,6 @@
   "extensions": ["ts"],
   "spec": "test/**/*.ts",
   "recursive": true,
-  "timeout": 5000
+  "timeout": 5000,
+  "node-option": ["no-experimental-strip-types"]
 }

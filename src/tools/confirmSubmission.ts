@@ -8,7 +8,7 @@ export const confirmSubmission = async (project: UAGProjectInterface): Promise<T
     return defaultsDeep(project.config?.toolOverrides?.confirm_form_submission || {}, {
         name: 'confirm_form_submission',
         title: 'Confirm Form Submission',
-        description: 'Show a summary of the collected form data and ask the user for confirmation before submitting',
+        description: 'Show a summary of the collected form data if the user wishes to see a summary of the collected data',
         inputSchema: (new SchemaBuilder(project))
             .form_name()
             .form_data().schema,

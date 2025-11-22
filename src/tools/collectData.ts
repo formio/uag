@@ -4,7 +4,6 @@ import { ToolInfo, DataUpdate } from "./utils";
 import { UAGFormInterface } from "../UAGFormInterface";
 import { defaultsDeep } from "lodash";
 import { SchemaBuilder } from "./SchemaBuilder";
-import { get } from 'lodash';
 export const collectData = async (project: UAGProjectInterface): Promise<ToolInfo> => {
     return defaultsDeep(project.config?.toolOverrides?.collect_field_data || {}, {
         name: 'collect_field_data',

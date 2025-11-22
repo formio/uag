@@ -6,9 +6,9 @@ No fields were found matching `criteria`="<%= criteria %>" for <%= parentLabel %
 <% } else if (parent) { %>
  - Considering the search was made using a `parent_path` context, try the search again at a higher `parent_path` context.
 <% } else if (criteria === "optional") { %>
- - Since there are no more "optional" fields, use the `confirm_form_submission` tool to ensure all the collected information is correct.
+ - Since there are no more "optional" fields, use the `submit_completed_form` tool to submit all the information if the user confirms they wish to do so, if necessary use the `confirm_form_submission` tool to ensure all the collected information is correct.
 <% } else if (criteria === "required") { %>
  - Use the `get_form_fields` tool, with `criteria`="optional" to determine if there are any optional fields they wish to provide information for.
 <% } else { %>
- - Use the `confirm_form_submission` tool to ensure all the collected information is correct.
+ - Use the `submit_completed_form` tool to submit all the information if the user confirms they wish to do so, if necessary use the `confirm_form_submission` tool to ensure all the collected information is correct.
 <% } %>

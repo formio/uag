@@ -81,8 +81,8 @@ The following tools provided by the UAG can be described as follows:
 | get_form_fields | When the AI agent infers the user intends to use a specific form, this tool provides the agent with a high level overview of all the fields needed (along with the field data path) to submit that form. |
 | get_field_info | Once the fields have been determined using `get_form_fields`, this tool provides specific information about the requested fields, such as validation, conditionals, input formats, etc. <br/>This tool instructs the AI agent on how to format and structure the data that is sent to the MCP server. |
 | collect_field_data  | Provides the AI agent with a mechanism to dynamically collect the required information from the user. It can parse the user's input into multiple fields at once, and will identify additional inputs from the user if needed. <br/>This tool supports complex and structured data collection and is compatible with nested or multi-value fields like nested forms, data grids, etc.       |
-| confirm_form_submission     | When the AI agent is ready to submit a form, this tool allows it to confirm all the information it has collected before a submission has been made to the form. |
-| submit_completed_form    | Provides the AI agent with the ability to submit all of the data collected from the user to create the form submission. |
+| confirm_form_submission | This tool is used to provide a summary of all data collected before a submission is made to the form. |
+| submit_completed_form | Provides the AI agent with the ability to submit all of the data collected from the user to create the form submission. |
 | find_submissions | Enables the agent to parse a user's natural language request into a query for a submission, or a specific field of a particular submission. |
 | submission_update | Provides the AI agent with the ability to update an existing submission, either by supplying unfilled fields or updating existing ones if allowed. Provides the AI agent with the context of the existing field values, allowing inline changes or edits. | 
 
