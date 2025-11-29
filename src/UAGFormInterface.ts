@@ -10,10 +10,9 @@ import {
     Processors,
     DataObject,
     componentHasValue,
-    interpolateErrors,
-    Form
+    interpolateErrors
 } from "@formio/core";
-import { set, get, isObjectLike } from "lodash";
+import { set, get, isObjectLike, isEqual } from "lodash";
 import { UAGForm } from "./config";
 import { ParentInfo } from "./tools";
 
@@ -281,6 +280,23 @@ export class UAGFormInterface extends FormInterface {
         return true;
     }
 
+    getEmptyValue(component: Component) {
+        const modelType = Utils.getModelType(component);
+        switch (modelType) {
+            case 'nestedArray':
+                return [{}];
+            case 'nestedDataArray':
+                return [{ data: {} }];
+            case 'dataObject':
+                return { data: {} };
+            case 'object':
+            case 'map':
+                return {};
+            default:
+                return null;
+        }
+    }
+
     /**
      * Get the relevant fields from the current form. This will return any non-nested input components whose
      * values have not already been set within the data model. This allows the agent to know what fields still need to be 
@@ -317,8 +333,16 @@ export class UAGFormInterface extends FormInterface {
                 name: 'getFields',
                 shouldProcess: () => true,
                 process: async (context) => {
-                    const { component, path, value } = context;
+                    const { component, path, value, data } = context;
                     if (this.isNestedComponent(component)) {
+                        // For nested components, we need to always have a value so that the child components
+                        // are added to the list of fields needing data.
+                        if (Utils.isComponentDataEmpty(component, data, path)) {
+                            const emptyValue = this.getEmptyValue(component);
+                            if (emptyValue !== null) {
+                                set(data, path, emptyValue);
+                            }
+                        }
                         nestedPaths.push(path);
                     }
                 },
@@ -370,8 +394,10 @@ export class UAGFormInterface extends FormInterface {
                         fieldInfo.totalRequired++;
                     }
 
-                    // If the component hass a value, then skip it.
-                    if (componentHasValue(component, value)) {
+                    // If the value is not empty, then we can skip this field.
+                    const emptyValue = this.getEmptyValue(component);
+                    const hasValue = emptyValue === null ? componentHasValue(component, value) : !isEqual(value, emptyValue);
+                    if (hasValue) {
                         if (component.validate?.required) {
                             fieldInfo.totalRequiredCollected++;
                         }

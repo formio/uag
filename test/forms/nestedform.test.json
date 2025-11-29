@@ -1,0 +1,63 @@
+{
+    "title": "Nested Form Test",
+    "path": "nestedform",
+    "type": "form",
+    "tags": ["uag"],
+    "components": [
+        {
+            "type": "textfield",
+            "key": "firstName",
+            "label": "First Name",
+            "input": true,
+            "validate": {
+                "required": true
+            }
+        },
+        {
+            "type": "textfield",
+            "key": "lastName",
+            "label": "Last Name",
+            "input": true,
+            "validate": {
+                "required": true
+            }
+        },
+        {
+            "type": "email",
+            "key": "email",
+            "label": "Email",
+            "input": true,
+            "validate": {
+                "required": true
+            }
+        },
+        {
+            "type": "form",
+            "key": "company",
+            "label": "Company",
+            "input": true,
+            "validate": {
+                "required": true
+            },
+            "components": [
+                {
+                    "type": "textfield",
+                    "key": "name",
+                    "label": "Company Name",
+                    "input": true,
+                    "validate": {
+                        "required": true
+                    }
+                }
+            ]
+        },
+        {
+            "type": "button",
+            "action": "submit",
+            "label": "Submit",
+            "key": "submit",
+            "input": true,
+            "disableOnInvalid": true
+        }
+    ]
+}
