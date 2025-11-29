@@ -208,7 +208,7 @@
     lodash "^4.17.21"
     moment "^2.29.4"
 
-"@formio/core@^2.5.2":
+"@formio/core@2.5.2", "@formio/core@^2.5.2":
   version "2.5.2"
   resolved "https://registry.npmjs.org/@formio/core/-/core-2.5.2.tgz"
   integrity sha512-izOAwUSqjxeEtHjvym3/Xn01uDh6c+7bfzfaKLzTo012czvh21sglOASDROxvzopTxgzWFtKKRs/RwcAOw+1fw==
