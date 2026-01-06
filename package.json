@@ -33,7 +33,7 @@
     "jsonwebtoken": "^9.0.2",
     "lodash": "^4.17.21",
     "node-cache": "^5.1.2",
-    "zod": "^4.1.13"
+    "zod": "^4.2.0"
   },
   "devDependencies": {
     "@types/chai": "^5.2.3",
