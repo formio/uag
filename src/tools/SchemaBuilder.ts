@@ -78,6 +78,11 @@ export class SchemaBuilder {
         return this;
     }
 
+    as_json() {
+        this.schema.as_json = z.boolean().optional().default(false).describe('If true, the submission data will be returned as a JSON object result instead of formatted text. Any errors will also be returned as a structured JSON array. Set this property to `true` ONLY if the prompt indicates that JSON output of the submission data is required.');
+        return this;
+    }
+
     /**
      * An array of search criteria to find matching submissions.
      * All criteria must match (AND logic).

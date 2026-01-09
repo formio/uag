@@ -13,11 +13,13 @@ export const collectData = async (project: UAGProjectInterface): Promise<ToolInf
             .form_name()
             .form_data()
             .parent_path()
+            .as_json()
             .updates().schema,
-        execute: async ({ form_name, form_data, parent_path, updates }: {
+        execute: async ({ form_name, form_data, parent_path, as_json, updates }: {
             form_name: string;
             form_data: Record<string, any>;
             parent_path: string | undefined;
+            as_json: boolean;
             updates: DataUpdate[]
         }, extra: any) => {
             const form = await project.getForm(form_name) as UAGFormInterface;
@@ -39,7 +41,15 @@ export const collectData = async (project: UAGProjectInterface): Promise<ToolInf
             // Find next required field that hasn't been filled
             const fields = await form.getFields(submission, extra.authInfo, parent?.data_path);
             if (fields.errors.length > 0) {
+                if (as_json) {
+                    return project.mcpJSONResponse(fields.errors);
+                }
                 return project.mcpResponse(ResponseTemplate.fieldValidationErrors, { invalidFields: fields.errors });
+            }
+
+            // If JSON output is requested, return the raw submission data.
+            if (as_json) {
+                return project.mcpJSONResponse(submission);
             }
 
             // If no required fields remain, then we can move onto a new tool.
