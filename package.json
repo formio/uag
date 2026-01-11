@@ -24,7 +24,7 @@
   "license": "MIT",
   "dependencies": {
     "@formio/appserver": "^2.9.0",
-    "@formio/core": "2.5.1-dev.291.6557e4e",
+    "@formio/core": "2.5.3",
     "@modelcontextprotocol/sdk": "^1.25.2",
     "cors": "^2.8.5",
     "debug": "^4.4.1",

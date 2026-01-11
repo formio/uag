@@ -207,7 +207,7 @@
     lodash "^4.17.21"
     moment "^2.29.4"
 
-"@formio/core@^2.5.3":
+"@formio/core@2.5.3", "@formio/core@^2.5.3":
   version "2.5.3"
   resolved "https://registry.yarnpkg.com/@formio/core/-/core-2.5.3.tgz#1b48ce60fe91043396d29c8b0e23284ef2fc34a4"
   integrity sha512-WFpwCP8LpA+ItEdPdQhCZf2ct6hm5ZcfAkRWcPeXAP0x0KBCUTmbQvRqtY0ayIUejQhzqVAAhN66DJwz6zb95Q==
