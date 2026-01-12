@@ -72,7 +72,22 @@ export const submissionUpdate = async (project: UAGProjectInterface): Promise<To
                     }),
                 });
 
-            } catch (err) {
+            } catch (err: any) {
+                if (err && err.name === 'ValidationError' && err.details) {
+                    const errors = [];
+                    for (const detail of err.details) {
+                        if (detail.message) {
+                            errors.push({
+                                label: detail.context?.label || 'Field',
+                                path: detail.context?.path,
+                                message: detail.message
+                            });
+                        }
+                    }
+                    return project.mcpResponse(ResponseTemplate.submitValidationError, {
+                        validationErrors: errors.length ? errors : [{ message: err.message || 'Unknown error during submission' }]
+                    }, true);
+                }
                 error('Error updating submission:', err);
                 return project.mcpResponse(ResponseTemplate.submissionUpdateError, {
                     form: form.form,
