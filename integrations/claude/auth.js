@@ -24,13 +24,16 @@ function decodeJWT(token) {
  */
 export async function authenticate(req, res, next) {
     // They must ALWAYS provide an x-token header.
-    if (!req.headers['x-token']) {
-        res.status(401).json({ error: 'Unauthorized: Missing X-Token header' });
+    if (!req.headers['x-token'] && !req.headers['x-admin-key']) {
+        res.sendStatus(401);
         return;
     }
     // The x-token header must match our project key.
-    if (req.headers['x-token'] && req.headers['x-token'] !== process.env.UAG_PROJECT_KEY) {
-        res.status(401).json({ error: 'Unauthorized: Invalid X-Token header' });
+    if (
+        (req.headers['x-token'] && req.headers['x-token'] !== process.env.PROJECT_KEY) ||
+        (req.headers['x-admin-key'] && req.headers['x-admin-key'] !== process.env.ADMIN_KEY)  
+    ) {
+        res.sendStatus(401);
         return;
     }
 
@@ -49,17 +52,25 @@ export async function authenticate(req, res, next) {
     }
 
     // Fetch a new auth token from the UAG server.
-    const resp = await fetch(`${process.env.UAG_SERVER}/${process.env.UAG_PROJECT_NAME}/auth/token`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            grant_type: 'client_credentials',
-            client_id: 'x-token',
-            client_secret: process.env.UAG_PROJECT_KEY,
-        })
-    });
+    const auth = {
+        grant_type: 'client_credentials',
+    };
+    if (process.env.PROJECT_KEY) {
+        auth.client_id = 'x-token';
+        auth.client_secret = process.env.PROJECT_KEY;
+    }
+    if (process.env.ADMIN_KEY) {
+        auth.client_id = 'x-admin-key';
+        auth.client_secret = process.env.ADMIN_KEY;
+    }
+    const resp = await fetch(
+        `${process.env.UAG_SERVER}/${process.env.PROJECT_NAME || 'formio'}/auth/token`, 
+        {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(auth),
+        }
+    );
     const data = await resp.json();
     authToken = req.authToken = data.access_token;
     next();

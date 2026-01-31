@@ -1,10 +1,10 @@
 {
   "name": "@formio/uag-claude",
-  "version": "1.0.0",
+  "version": "1.0.0-rc.1",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "build": "docker build -t formio/uag-claude --platform=linux/amd64 .",
+    "build": "docker build -t formio/uag-claude:rc --platform=linux/amd64 .",
     "start": "node --no-node-snapshot index.js"
   },
   "dependencies": {

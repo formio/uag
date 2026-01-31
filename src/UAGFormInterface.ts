@@ -7,7 +7,7 @@ import {
     ContentComponent,
     DayComponent,
     SelectComponent,
-    ContainerComponent,
+    HasChildComponents,
     Utils,
     Submission,
     Processors,
@@ -66,23 +66,21 @@ export type FormFieldInfo = {
 export type UAGFields = {
     persona: string;
     criteria: string;
-    components: Component[];
+    components: Record<string, UAGComponentInfo>;
 }
 
 export class UAGFormInterface extends FormInterface {
     public uag: UAGForm | null = null;
     public uagFields: Record<string, UAGFields> = {};
     setComponent(form: AppServerForm, component: Component, path: string): void {
-        if (
-            form.tags?.includes('uag') &&
-            component.properties?.uag
-        ) {
+        if (form.tags?.includes('uag') && component.properties?.uag) {
+            const persona = component.properties?.uag;
             if (!this.uagFields) {
                 this.uagFields = {};
             }
-            let uagFields: any = this.uagFields[component.properties?.uag];
+            let uagFields: any = this.uagFields[persona];
             if (!uagFields) {
-                uagFields = { components: (component as ContainerComponent).components };
+                uagFields = { components: {} };
             }
             if (component.properties?.uagField) {
                 const property = component.properties?.uagField;
@@ -90,7 +88,21 @@ export class UAGFormInterface extends FormInterface {
                     uagFields[property] = this.htmlToMarkdown((component as ContentComponent).html);
                 }
             }
-            this.uagFields[component.properties?.uag] = uagFields;
+            else {
+                if ((component as HasChildComponents).components) {
+                    Utils.eachComponent((component as HasChildComponents).components, (subComp, subPath) => {
+                        const compInfo = this.getComponentInfo(subComp, `${path}.${subPath}`);
+                        compInfo.rule = this.getComponentValueRule(subComp);
+                        uagFields.components[compInfo.path] = compInfo;
+                    });
+                }
+                else {
+                    const compInfo = this.getComponentInfo(component, path);
+                    compInfo.rule = this.getComponentValueRule(component);
+                    uagFields.components[compInfo.path] = compInfo;
+                }
+            }
+            this.uagFields[persona] = uagFields;
         }
         return super.setComponent(form, component, path);
     }

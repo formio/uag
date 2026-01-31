@@ -1,6 +1,6 @@
 {
   "name": "@formio/uag",
-  "version": "1.9.0-rc.3",
+  "version": "1.9.0-rc.4",
   "description": "The Form.io Universal Agent Gateway (UAG).",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

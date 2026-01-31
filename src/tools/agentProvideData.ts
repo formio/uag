@@ -4,7 +4,6 @@ import { ToolInfo } from "./utils";
 import { UAGComponentInfo, UAGFormInterface } from "../UAGFormInterface";
 import { defaultsDeep } from "lodash";
 import { SchemaBuilder } from "./SchemaBuilder";
-import { Utils } from '@formio/core';
 export const agentProvideData = async (project: UAGProjectInterface): Promise<ToolInfo> => {
     return defaultsDeep(project.config?.toolOverrides?.agent_provide_data || {}, {
         name: 'agent_provide_data',
@@ -27,8 +26,8 @@ export const agentProvideData = async (project: UAGProjectInterface): Promise<To
             const uag = persona ? form.uagFields[persona] : Object.values(form.uagFields)[0];
             if (!uag) {
                 return project.mcpResponse(ResponseTemplate.uagComponentNotFound, {
-                    form: form.form,
-                    persona: persona || 'default'
+                    persona: persona || 'default',
+                    error: 'no_uag'
                 }, true);
             }
 
@@ -40,21 +39,24 @@ export const agentProvideData = async (project: UAGProjectInterface): Promise<To
                 }, true);
             }
 
-            let agentFields: UAGComponentInfo[] = [];
-            Utils.eachComponent(uag.components, (component, path) => {
-                const compInfo = form.getComponentInfo(component, `uag.${path}`);
-                compInfo.rule = form.getComponentValueRule(component);
-                agentFields.push(compInfo);
-            });
+            if (!uag.criteria) {
+                return project.mcpResponse(ResponseTemplate.uagComponentNotFound, {
+                    persona: persona || 'default',
+                    error: 'no_criteria'
+                }, true);
+            }
 
-            // We must have agent fields, persona, and criteria to proceed.
-            if (!uag.persona || !uag.criteria || agentFields.length === 0) {
-                return project.mcpResponse(ResponseTemplate.uagComponentNotFound, { form: form.form }, true);
+            const agentFields: UAGComponentInfo[] = Object.values<UAGComponentInfo>(uag.components);
+            if (agentFields.length === 0) {
+                return project.mcpResponse(ResponseTemplate.uagComponentNotFound, {
+                    persona: persona || 'default',
+                    error: 'no_fields'
+                }, true);
             }
 
             // Collect more required fields.
             return project.mcpResponse(ResponseTemplate.agentProcessData, {
-                persona: uag.persona,
+                persona: persona || 'default',
                 criteria: uag.criteria,
                 values: project.uagTemplate?.renderTemplate(ResponseTemplate.fieldValues, {
                     data: form.formatData(submission.data)

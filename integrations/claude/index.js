@@ -3,7 +3,7 @@ import Express from 'express';
 import bodyParser from 'body-parser';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { authenticate } from './auth.js';
-import { commands } from './commands';
+import { commands } from './commands/index.js';
 const app = Express();
 const anthropic = new Anthropic({
     apiKey: process.env.CLAUDE_API_KEY || '',
@@ -44,6 +44,12 @@ async function agentCommand(req, res) {
     });
     res.json(resp);
 }
+
+// General endpoint to post some command to the claude agent.
+app.post('/agent/claude', authenticate, async (req, res) => {
+    req.agentCommand = req.body.command;
+    return agentCommand(req, res);
+});
 
 /**
  * Post some commands to the claude agent to perform actions while using the UAG toolset.
