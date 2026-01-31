@@ -1,10 +1,13 @@
-import { AuthRequest, FormInterface, InterpolatedError } from "@formio/appserver";
+import { AppServerForm, AuthRequest, FormInterface, InterpolatedError } from "@formio/appserver";
 import {
     Component,
     TextFieldComponent,
+    TextAreaComponent,
     DateTimeComponent,
+    ContentComponent,
     DayComponent,
     SelectComponent,
+    ContainerComponent,
     Utils,
     Submission,
     Processors,
@@ -15,6 +18,7 @@ import {
 import { set, get, isObjectLike, isEqual } from "lodash";
 import { UAGForm } from "./config";
 import { ParentInfo } from "./tools";
+import { NodeHtmlMarkdown } from 'node-html-markdown'
 
 export type UAGComponentInfo = {
     path: string;
@@ -26,6 +30,7 @@ export type UAGComponentInfo = {
     options?: { label: string; value: string }[];
     prompt?: string;
     nested?: boolean;
+    rule?: string;
 };
 
 export type UAGData = Array<{ label: string; value: any, path: string, prefix?: string }>;
@@ -58,8 +63,38 @@ export type FormFieldInfo = {
     };
 }
 
+export type UAGFields = {
+    persona: string;
+    criteria: string;
+    components: Component[];
+}
+
 export class UAGFormInterface extends FormInterface {
     public uag: UAGForm | null = null;
+    public uagFields: Record<string, UAGFields> = {};
+    setComponent(form: AppServerForm, component: Component, path: string): void {
+        if (
+            form.tags?.includes('uag') &&
+            component.properties?.uag
+        ) {
+            if (!this.uagFields) {
+                this.uagFields = {};
+            }
+            let uagFields: any = this.uagFields[component.properties?.uag];
+            if (!uagFields) {
+                uagFields = { components: (component as ContainerComponent).components };
+            }
+            if (component.properties?.uagField) {
+                const property = component.properties?.uagField;
+                if ((component as ContentComponent)?.html) {
+                    uagFields[property] = this.htmlToMarkdown((component as ContentComponent).html);
+                }
+            }
+            this.uagFields[component.properties?.uag] = uagFields;
+        }
+        return super.setComponent(form, component, path);
+    }
+
     getComponentFormat(component: Component): string {
         switch (component.type) {
             case 'phoneNumber':
@@ -479,8 +514,13 @@ export class UAGFormInterface extends FormInterface {
     formatData(data: DataObject = {}): UAGData {
         const uagData: UAGData = [];
         let prefix = '';
+        let withinUAG = false;
         Utils.eachComponentData(this.form?.components || [], data, (component, data, row, path) => {
             let value = get(data, path);
+            if (component.key === 'uag' || withinUAG) {
+                withinUAG = true;
+                return true;
+            }
             if (this.isNestedComponent(component)) {
                 uagData.push({
                     prefix,
@@ -491,6 +531,15 @@ export class UAGFormInterface extends FormInterface {
                 prefix += '  ';
             }
             else if (this.inputComponent(component) && componentHasValue(component, value)) {
+                if (
+                    typeof value === 'string' &&
+                    (
+                        ((component as TextAreaComponent).editor === 'ckeditor') ||
+                        ((component as TextAreaComponent).editor === 'quill')
+                    )
+                ) {
+                    value = this.htmlToMarkdown(value);
+                }
                 uagData.push({
                     prefix,
                     path,
@@ -501,6 +550,9 @@ export class UAGFormInterface extends FormInterface {
         }, false, false, undefined, undefined, undefined, (component, data) => {
             if (this.isNestedComponent(component)) {
                 prefix = prefix.slice(0, -3);
+            }
+            if (component.key === 'uag' || withinUAG) {
+                withinUAG = false;
             }
         });
         return uagData;
@@ -513,5 +565,14 @@ export class UAGFormInterface extends FormInterface {
             created: submission.created,
             modified: submission.modified
         };
+    }
+
+    htmlToMarkdown(html: string): string {
+        return NodeHtmlMarkdown.translate(html, {
+            bulletMarker: '-',
+            emDelimiter: '*',
+            strongDelimiter: '**',
+            indent: '  '
+        });
     }
 }

@@ -84,7 +84,8 @@ The following tools provided by the UAG can be described as follows:
 | confirm_form_submission | This tool is used to provide a summary of all data collected before a submission is made to the form. |
 | submit_completed_form | Provides the AI agent with the ability to submit all of the data collected from the user to create the form submission. |
 | find_submissions | Enables the agent to parse a user's natural language request into a query for a submission, or a specific field of a particular submission. |
-| submission_update | Provides the AI agent with the ability to update an existing submission, either by supplying unfilled fields or updating existing ones if allowed. Provides the AI agent with the context of the existing field values, allowing inline changes or edits. | 
+| submission_update | Provides the AI agent with the ability to update an existing submission, either by supplying unfilled fields or updating existing ones if allowed. Provides the AI agent with the context of the existing field values, allowing inline changes or edits. |
+| agent_provide_data | Enables an AI Agent to be able to assume a provided configurable **Persona** as it analyzes existing submission data according to rules defined with a configurable **Criteria**. It will then instruct the Agent to provide generated supplimental data using the `submission_update` tool. Please read the [**Agent Provided Data**](#agent-provide-data) section for more information about this toolset. |
 
 ### Custom Modules
 While the UAG can be used as a stand-alone system to enable the interaction between AI agents and dynamic JSON forms, the true power of this platform will be realized when developers extend the capabilities of this platform to solve industry specific use cases through the use of Custom Modules and Tools. It is possible for a developer to create a **Module** that introduces a number of custom tools, actions, and pre-defined resources and forms to achieve interactions with industry specific technologies.
@@ -428,6 +429,26 @@ try {
 ```
 
 There is also a way to extend the functionality of the UAG through the use of modules, which is documented in the [Modules Readme](./module/Readme.md)
+
+## Agentic Workflows
+Another major feature of the UAG is the `agent_process_data` tool, which introduces the ability to instruct a generically trained agent to analyze and produce its own data, which historically could only be achieved using a specifically trained agent. It achieves this goal by providing a generally trained agent with the necessary "context" it needs to be able to accurately produce its own data as part of an automated workflow. This feature is particularly helpful if you wish to utilize the UAG within an Agentic Workflow, where the AI Agent is capable of understanding structured data, and then produces its own data by following the **Persona** and **Criteria** "context" provided by the UAG. 
+
+For example, let's suppose you wish to automate the backend administration behind a College Application Process. In this example, a potential student submits an application that consists of many different fields of data, such as Academnics, Extra curricular activities, Honors, Volunteer work, as well as possibly written Essays. Historically, these applications would be reviewed by an administrator in order to assess the candidates qualifications for acceptance. With the `agent_provide_data` tool, it is now possible to automate this process as the following diagram illustrates.
+
+![](./examples/images/uag-agent-provide-data.png)
+
+To achieve this feat, the `agent_provide_data` tool utilizes the following information, which is then fed to the Generally trained agent to produce its own submission data.
+
+ - **Existing Submission Data**: In order for the agent to be able to contribute its own data, it must first have an existing submission to be used as the data that it will analyze according to the **Persona** and **Criteria**.
+ - **Persona**: This is the role that the AI Agent is to assume when analyzing the data that is submitted.
+ - **Criteria**: This is a piece of content that provides the agent the **Criteria** to follow when analyzing the data, but also provides instructions on how the agent should populate the **Required Fields**.
+ - **Required Fields**: These are the form fields which the Agent is required to fill out as part of the `agent_provide_data` process.
+
+To see real world examples of this in action, we have introduced our **integrations** section, which can be found inside of the integrations folder. The following **integrations** are provided to enable automated Agentic workflows.
+
+  - [Claude Integration](./integrations/claude)
+
+Please click on one of these integration links to read how they work.
 
 ## Using with Form.io Enterprise Server
 When using the UAG with the Form.io Enterprise Server, you unlock several benefits with regards to managing the Forms and Resources within the UAG. Some of the features that you gain with our Enterprise Server include:
