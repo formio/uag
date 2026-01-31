@@ -35,7 +35,6 @@ To run this integration, you will launch the `formio/uag-claude` docker containe
 ```
 docker run -d \
   -e "UAG_SERVER=https://uag.mysite.com" \
-  -e "PROJECT_NAME=myproject" \
   -e "PROJECT_KEY=CHANGEME" \
   -e "CLAUDE_MODEL=claude-sonnet-4-5" \
   -e "CLAUDE_MAX_TOKENS=10000" \
@@ -102,8 +101,7 @@ The following environment variables are used to configure the Claude Integration
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| UAG_SERVER | The API Endpoint to the deployed UAG Server | https://uag.mysite.com |
-| PROJECT_NAME | (Enterprise Only) The name of the project within the UAG server to connect to. | myproject |
+| UAG_SERVER | The "public" API Endpoint to the deployed UAG Server. NOTE: If you do not provide this value, and already have a BASE_URL enviornment variable set, this server will use that as the UAG_SERVER. | https://uag.mysite.com |
 | PROJECT_KEY | (Enterprise Only) The Project's API Key | CHANGEME |
 | ADMIN_KEY | (OSS Only) The Form.io OSS ADMIN_KEY | CHANGEME |
 | CLAUDE_MODEL | The model within Claude to use when performing the Agentic analysis | claude-sonnet-4-5 |

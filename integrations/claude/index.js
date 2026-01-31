@@ -29,7 +29,7 @@ async function agentCommand(req, res) {
         mcp_servers: [
             {
                 type: "url",
-                url: `${process.env.UAG_SERVER}/mcp`,
+                url: `${process.env.UAG_SERVER || process.env.BASE_URL}/mcp`,
                 name: "formio-uag",
                 authorization_token: req.authToken,
             },

@@ -63,12 +63,7 @@ export async function authenticate(req, res, next) {
         auth.client_id = 'x-admin-key';
         auth.client_secret = process.env.ADMIN_KEY;
     }
-    let authUrl = process.env.UAG_SERVER;
-    if (process.env.PROJECT_NAME) {
-        authUrl += `/${process.env.PROJECT_NAME}`;
-    }
-    authUrl += '/auth/token';
-    const resp = await fetch(authUrl, {
+    const resp = await fetch(`${process.env.UAG_SERVER || process.env.BASE_URL}/auth/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(auth),
