@@ -1,4 +1,4 @@
-FROM node:24-alpine
+FROM node:lts-alpine
 COPY index.js /app/
 COPY auth.js /app/
 COPY commands/ /app/commands

@@ -31,7 +31,7 @@ export async function authenticate(req, res, next) {
     // The x-token header must match our project key.
     if (
         (req.headers['x-token'] && req.headers['x-token'] !== process.env.PROJECT_KEY) ||
-        (req.headers['x-admin-key'] && req.headers['x-admin-key'] !== process.env.ADMIN_KEY)  
+        (req.headers['x-admin-key'] && req.headers['x-admin-key'] !== process.env.ADMIN_KEY)
     ) {
         res.sendStatus(401);
         return;
@@ -63,14 +63,16 @@ export async function authenticate(req, res, next) {
         auth.client_id = 'x-admin-key';
         auth.client_secret = process.env.ADMIN_KEY;
     }
-    const resp = await fetch(
-        `${process.env.UAG_SERVER}/${process.env.PROJECT_NAME || 'formio'}/auth/token`, 
-        {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(auth),
-        }
-    );
+    let authUrl = process.env.UAG_SERVER;
+    if (process.env.PROJECT_NAME) {
+        authUrl += `/${process.env.PROJECT_NAME}`;
+    }
+    authUrl += '/auth/token';
+    const resp = await fetch(authUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(auth),
+    });
     const data = await resp.json();
     authToken = req.authToken = data.access_token;
     next();
