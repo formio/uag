@@ -34,7 +34,7 @@ services:
       ROOT_PASSWORD: CHANGEME
       ADMIN_KEY: CHANGEME
   formio-uag:
-    image: formio/uag
+    image: formio/uag:rc
     restart: always
     links:
       - formio
@@ -43,6 +43,7 @@ services:
     volumes:
       - ./module:/app/module
     environment:
+      PORT: 3200
       DEBUG: formio.*
       PROJECT: http://formio:3001
       ADMIN_KEY: CHANGEME
@@ -50,5 +51,19 @@ services:
       JWT_EXPIRE_TIME: 525600
       LOGIN_FORM: http://localhost:3000/employee/login
       BASE_URL: http://localhost:3000
+      PROJECT_TTL: 10
+  formio-uag-claude:
+    image: formio/uag-claude:rc
+    restart: always
+    links:
+      - formio-uag
+    depends_on:
+      - formio-uag
+    environment:
+      PORT: 3300
+      CLAUDE_MODEL: claude-sonnet-4-5
+      CLAUDE_API_KEY: sk-ant-api03-YOUR-KEY-HERE
+      UAG_SERVER: http://formio-uag:3200
+      ADMIN_KEY: CHANGEME
 volumes:
   uag-data:

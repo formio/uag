@@ -1,9 +1,8 @@
 FROM node:lts-alpine
-COPY src/ /app/src
-COPY module/ /app/module
 COPY index.js /app/
+COPY auth.js /app/
+COPY commands/ /app/commands
 COPY package.json /app/
-COPY tsconfig.json /app/
 WORKDIR /app
 RUN apk update && \
     apk upgrade && \
@@ -12,6 +11,5 @@ RUN apk update && \
     apk add g++ && \
     apk add git
 RUN yarn
-RUN yarn run build
 RUN apk del git g++ make python3
-ENTRYPOINT [ "npm", "run", "start" ]
+ENTRYPOINT [ "node", "index.js" ]

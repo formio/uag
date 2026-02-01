@@ -62,7 +62,6 @@ export class UAGProjectInterface extends ProjectInterface {
     async router(): Promise<any> {
         const router = await super.router();
         const uagRouter = UAGRouter(this);
-        router.use('/uag', (req: any, res: any, next: any) => this.authorizeRequest(req as SubmissionRequest, res, next), uagRouter as any);
         router.use('/mcp', (req: any, res: any, next: any) => this.authorizeRequest(req as SubmissionRequest, res, next), uagRouter as any);
         return router;
     }

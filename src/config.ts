@@ -45,6 +45,7 @@ export type UAGToolOverride = {
   submit_completed_form?: ToolInfo;
   submission_update?: ToolInfo;
   find_submissions?: ToolInfo;
+  agent_provide_data?: ToolInfo;
 };
 
 export interface UAGConfig extends ServerConfig {

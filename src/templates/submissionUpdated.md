@@ -3,7 +3,7 @@ Successfully updated the record in <%= form.title %>!
  - created: <%= created %>
  - modified: <%= modified %>
 
-**Updated Fields (<%= totalFieldsUpdated %> total):** (It is VERY important to show the values to the user exactly as they were submitted/posted)
+**Updated Fields (<%= totalFieldsUpdated %> total):**
 <% updateSummary.forEach(function(update) { %>
 - **<%= update.data_path %>:**
   - Previous: "<%= update.previous_value %>"

@@ -14,6 +14,8 @@ The Form.io UAG uses the [**Model Context Protocol (MCP)**](https://modelcontext
     - [The Role of the UAG](#the-role-of-the-uag)  
   - [Technical Overview](#technical-overview)
     - [MCP Tools](#pre-defined-mcp-tools-providing-dynamic-context)
+    - [Agentic Workflows](#agentic-workflows)
+    - [Claude Integration](#integrations)
     - [Custom Modules](#custom-modules)
     - [Module Documentation](./module)
   - [Deploying UAG](#deploying-uag)
@@ -84,7 +86,63 @@ The following tools provided by the UAG can be described as follows:
 | confirm_form_submission | This tool is used to provide a summary of all data collected before a submission is made to the form. |
 | submit_completed_form | Provides the AI agent with the ability to submit all of the data collected from the user to create the form submission. |
 | find_submissions | Enables the agent to parse a user's natural language request into a query for a submission, or a specific field of a particular submission. |
-| submission_update | Provides the AI agent with the ability to update an existing submission, either by supplying unfilled fields or updating existing ones if allowed. Provides the AI agent with the context of the existing field values, allowing inline changes or edits. | 
+| submission_update | Provides the AI agent with the ability to update an existing submission, either by supplying unfilled fields or updating existing ones if allowed. Provides the AI agent with the context of the existing field values, allowing inline changes or edits. |
+| agent_provide_data | Enables an AI Agent to be able to analyze existing submission data according to rules defined with a configurable **Criteria**. It will then instruct the Agent to provide generated data for fields configured for a specific **persona** using the `submission_update` tool. Please read the [**Agentic Workflows**](#agentic-workflows) section for more information about this toolset. |
+
+## Agentic Workflows
+One of the more powerful features of the **UAG** is the `agent_process_data` tool. This tool provides the ability to instruct a generically trained agent how to analyze existing submission data, and then produce its own data by following a configurable **Criteria**. This behavior historically could only be achieved using a specifically trained agent, which does not provide any benefits of dynamic configurability that the Form.io platform offers. This tool is able to achieve this goal by providing a generally trained agent with the necessary "context" it needs to accurately produce its own data as part of an automated workflow. This feature is particularly helpful if you wish to utilize the UAG within an Agentic Workflow, where the AI Agent is capable of understanding structured data, and then contribute its own data by following the configured **Criteria** "context" provided by the UAG. 
+
+For example, let's suppose you wish to automate the backend administration behind a College Application Process. In this example, a potential student submits an application that consists of many different fields of data, such as Academnics, Extra curricular activities, Honors, Volunteer work, as well as possibly written Essays. Historically, these applications would be reviewed by an administrator in order to assess the candidates qualifications for acceptance. With the `agent_provide_data` tool, it is now possible to automate this process as the following diagram illustrates.
+
+![](./examples/images/uag-agent-provide-data.png)
+
+To achieve this feat, the `agent_provide_data` tool utilizes the following information, which is then fed to the Generally trained agent to produce its own submission data.
+
+ - **Existing Submission Data**: In order for the agent to be able to contribute its own data, it must first have an existing submission to be used as the data that it will analyze according to the configured **Criteria**.
+ - **Criteria**: This is a piece of content that provides the agent the **Criteria** to follow when analyzing the data, but also provides instructions on how the agent should populate the **Required Fields**.
+ - **Required Fields**: These are the form fields which the Agent is required to fill out as part of the `agent_provide_data` process.
+
+### Setup
+ To configure a form to use the `agent_provide_data` tool, you must first designate a section of your form that will be read and used by the AI Agent. This is similar to what you would see in a form that says "For Office Use Only", but instead of a Human contributing to the values of this section, it will be an automated AI Agent. There are two types of fields that can be added to a form to configure it for use by the `agent_provide_data` tool:  **Criteria** and **Agent Fields**
+ 
+#### Agent "Criteria" component
+The first thing that needs to be configured is a special **Content Component** that instructs the AI Agent how to interpret the data. For example, here is a Criteria content block that was written to instruct an AI Agent on how to assess the submission of a College Application Essay.
+
+![](./examples/images/criteria-example.png)
+
+The goal of this content is to be written as you would write an instruction manual for a new employee who needs to learn how to analyze and understand the submission data that is provided. It is also used to instruct the AI Agent on how to populate the form values that are configured for that criteria.  Once this criteria is written, It will then need to be "flagged" as a UAG field by adding a property called `uag` and the value of that property is to be thought of as the `persona` of the Agent. This provides the ability to have more than one agent assume different roles as it analyzes the submission data to provide their own values. In addition, the "criteria" content will also need to be provided a `uagField` property with the value equal to `criteria`.  Below is what a properly configured `uag` criteria content component looks like.  
+
+![](./examples/images/criteria-properties.png)
+
+Once you have added this `Criteria` **Content Component** to your form, the next object is to add the fields you wish for the Agent to populate. These are called the **Agent Fields**. 
+
+#### Agent Fields
+Anywhere in your form, you can drag and drop fields that can be flagged as Agent fields. Using the example above, imagine your form has a "For Office Use Only" section (maybe a Panel).  Within this panel, the first thing you see is a Content Component with instructions on how the following fields should be filled out. This is the `Criteria` we just described. The next thing that follows are the fields that the Agent needs to populate. Any field that with a property of `uag` set to the same value as the `Criteria` content component will be used as the Agent fields. 
+
+For example, lets suppose that we have created a form for College Application essays. Below the **Criteria** may be some fields that the Agent needs to "score" the essays according to the provided **Criteria**.  This may look like the following...
+
+![](./examples/images/agent-fields.png)
+
+In order to "flag" each of these fields as Agent Fields, you simply need to add the `uag` property with the same persona flag that was giving to the `Criteria` content.
+
+![](./examples/images/agent-field-property.png)
+
+**Nested Components**
+It is also possible to "flag" a collection of fields with the `uag` property. This can be done by wrapping all of these fields within a **Nested Component** (such as Panel, Container, Fieldset, etc), and then all the fields within this nested component will be added to the context of that agent with that persona.
+
+### Multiple Persona's per form
+It is also possible to achieve multiple persona's per-form. This is very helpful if there are several isolated evaluations that need to occur within a process. For example, if we look at the flow chart diagram shown above, we can see a College Application Form. The first agentic evaluation occurs when the form is submitted by the applicant, where their application is assessed to be accepted or not. From that point, IF the applicant is accepted, a completely different evaluation needs to occur to award Financial Aid or even Scholarships to the applicant. These would require completely different criteria to assess the submission data differently from one another.
+
+To achieve this, you simply need to "flag" the components `uag` property value differently with the persona that applies for that field. For the example above, you would add a Content component to assess the if the applicant should be accepted, and then provide the following `uag` property to that content.  `uag="application"`.  Any fields that need to be filled out by the AI Agent for application approval would also be flagged with the property `uag="application"`.  Then, in a different section of the form, you would create a separate Content component with the criteria for the financial admin AI Agent. This content would be flagged with the property `uag="finance"`.  Any fields that the finance admin AI Agent need to fill out would also be flagged with `uag="finance"`.  This provides a truely flexible and dynamic AI engagement where multiple generically trained agents can be "taught" dynamically how to read and interpret data that is only relevant to that part of the agentic process.
+
+## Integrations
+In order to a aid in the "agentification" of the UAG, we have also provided some "integrations" that can be used to directly communicate with the Generically trained AI Agents to utilize the UAG to accomplish automated AI Agent behaviors. This involves providing a single API endpoint that is capable of triggering the AI Agent process along with the connections to your deployed UAG. These API endpoints can then be triggered using a simple Webhook action within a form to start an Agentic process as the result of a Form submission.
+
+These integrations can be found within the **integrations** folder. The following **integrations** are provided to enable automated Agentic workflows.
+
+  - [Claude Integration](./integrations/claude)
+
+Please click on one of these integration links to read how they work.
 
 ### Custom Modules
 While the UAG can be used as a stand-alone system to enable the interaction between AI agents and dynamic JSON forms, the true power of this platform will be realized when developers extend the capabilities of this platform to solve industry specific use cases through the use of Custom Modules and Tools. It is possible for a developer to create a **Module** that introduces a number of custom tools, actions, and pre-defined resources and forms to achieve interactions with industry specific technologies.

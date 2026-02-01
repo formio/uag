@@ -1,5 +1,4 @@
 import { ZodRawShape } from "zod";
-import { Form } from '@formio/core';
 export type ToolInfo = {
     name?: string;
     title?: string;
