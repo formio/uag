@@ -1,0 +1,16 @@
+{
+  "name": "@formio/uag-claude",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "docker build -t formio/uag-claude --platform=linux/amd64 .",
+    "start": "node --no-node-snapshot index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.72.1",
+    "body-parser": "^2.2.2",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1"
+  }
+}

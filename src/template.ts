@@ -34,8 +34,11 @@ export enum ResponseTemplate {
     fieldValidationErrors = 'fieldValidationErrors',
     fields = 'fields',
     fieldList = 'fieldList',
+    fieldValues = 'fieldValues',
     getAvailableForms = 'getAvailableForms',
     noFormsAvailable = 'noFormsAvailable',
+    uagComponentNotFound = 'uagComponentNotFound',
+    agentProcessData = 'agentProcessData'
 }
 
 export class UAGTemplate {
