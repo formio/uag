@@ -165,6 +165,15 @@ export class SchemaBuilder {
     }
 
     /**
+     * The agent persona "type" to use when processing the existing submission data. The persona provides context to the agent on how to interpret and understand the data within the form submission. If not provided, the default persona defined within the form's UAG settings will be used.
+     * @returns 
+     */
+    persona() {
+        this.schema.persona = z.string().optional().describe('The agent persona "type" to use when processing the existing submission data. The persona provides context to the agent on how to interpret and understand the data within the form submission. If not provided, the default persona defined within the form\'s UAG settings will be used.');
+        return this;
+    }
+
+    /**
      * An array of field updates to apply to the `form_data`.
      * Each update specifies the `data_path` and the complete new value.
      * 
