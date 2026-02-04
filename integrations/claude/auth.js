@@ -59,7 +59,7 @@ export async function authenticate(req, res, next) {
         auth.client_id = 'x-token';
         auth.client_secret = process.env.PROJECT_KEY;
     }
-    if (process.env.ADMIN_KEY) {
+    else if (process.env.ADMIN_KEY) {
         auth.client_id = 'x-admin-key';
         auth.client_secret = process.env.ADMIN_KEY;
     }
