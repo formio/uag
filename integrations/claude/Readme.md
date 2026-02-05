@@ -121,6 +121,8 @@ Finally, you will then just remove the `Delete` method from the **Methods** sinc
 
 ![](../../examples/images/webhook-methods.png)
 
+Now, anytime your form is submission with a new submission, it will AUTOMATICALLY trigger an AI Agent to review the submission and provide its own supplimental data for the submission.
+
 ## Environment Variables
 The following environment variables are used to configure the Claude Integration.
 
