@@ -96,6 +96,31 @@ This command instigates the Agent to use the `agent_provide_data` UAG tool in or
 }
 ```
 
+## Form.io Webhook Setup
+Once you have created a form that supports the `agent_provide_data` tool (see the main Readme for these instructions), you can configure a Webhook action so that this API is automatically triggered for that submission. The result of this approach, is that you can trigger an AI Agent to read a submission, analyze it according to the **Criteria** content, and then update that submission with its own provided data automatically. This would allow the creation of Agentic Workflows, where different Agents following different rules are capable of updating submissions with supplimental information, thus triggering other Webhooks if necessary. 
+
+To setup a Webhook Action to leverage this API, you first need to establish the API endpoint as follows.
+
+![](../../examples/images/webhook-endpoint.png)
+
+Once you have the webhook endpoint configured, the next objective is to set the Headers to include an **API Key** for your project.
+
+![](../../examples/images/webhook-headers.png)
+
+Next, you now need to simply transform the Webhook payload so that is matches the body shown above, this can be done using the following code within the transform section.
+
+```
+payload = {formName: 'collegeEssay', submissionId: payload.submission._id, persona: 'agent'};
+```
+
+Make sure that you provide the correct formName and "persona" that matches the `uag` custom properties that you added to your form.
+
+![](../../examples/images/webhook-transform.png)
+
+Finally, you will then just remove the `Delete` method from the **Methods** since you do NOT wish to fire this webhook when a submission is deleted (since the purpose is to suppliment submission data of an existing submission).
+
+![](../../examples/images/webhook-methods.png)
+
 ## Environment Variables
 The following environment variables are used to configure the Claude Integration.
 
