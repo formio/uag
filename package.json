@@ -26,7 +26,7 @@
   "dependencies": {
     "@formio/appserver": "^2.11.1",
     "@formio/core": "2.5.1-dev.291.6557e4e",
-    "@modelcontextprotocol/sdk": "^1.25.3",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "cors": "^2.8.6",
     "debug": "^4.4.1",
     "dotenv": "^17.2.1",
