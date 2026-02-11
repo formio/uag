@@ -4,4 +4,7 @@ dist/
 .DS_Store
 .vscode
 .env
+.env.*
+.yarn
+.yarn*
 *.log
