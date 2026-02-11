@@ -1,0 +1,87 @@
+{
+    "title": "Select Test Form",
+    "path": "selectTest",
+    "name": "selectTest",
+    "type": "form",
+    "tags": ["uag"],
+    "components": [
+        {
+            "type": "textfield",
+            "key": "name",
+            "label": "Name",
+            "input": true,
+            "validate": {
+                "required": true
+            }
+        },
+        {
+            "type": "select",
+            "key": "urlSelect",
+            "label": "URL Select",
+            "input": true,
+            "dataSrc": "url",
+            "data": {
+                "url": "https://api.example.com/items",
+                "headers": [
+                    { "key": "Accept", "value": "application/json" }
+                ]
+            },
+            "valueProperty": "id",
+            "template": "<span>{{ item.name }}</span>",
+            "searchField": "name",
+            "selectValues": "results",
+            "limit": 50,
+            "authenticate": false,
+            "validate": {
+                "required": true
+            }
+        },
+        {
+            "type": "select",
+            "key": "resourceSelect",
+            "label": "Resource Select",
+            "input": true,
+            "dataSrc": "resource",
+            "data": {
+                "resource": "res123abc"
+            },
+            "valueProperty": "data.email",
+            "template": "<span>{{ item.firstName }}</span>",
+            "searchField": "firstName",
+            "validate": {
+                "required": false
+            }
+        },
+        {
+            "type": "select",
+            "key": "staticSelect",
+            "label": "Static Select",
+            "input": true,
+            "dataSrc": "values",
+            "data": {
+                "values": [
+                    { "label": "Option A", "value": "a" },
+                    { "label": "Option B", "value": "b" }
+                ]
+            }
+        },
+        {
+            "type": "radio",
+            "key": "radioField",
+            "label": "Radio Field",
+            "input": true,
+            "values": [
+                { "label": "Yes", "value": "yes" },
+                { "label": "No", "value": "no" }
+            ]
+        },
+        {
+            "type": "button",
+            "action": "submit",
+            "label": "Submit",
+            "key": "submit",
+            "input": true,
+            "disableOnInvalid": true
+        }
+    ]
+}

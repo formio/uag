@@ -58,7 +58,7 @@ export class MockFormInterface extends UAGFormInterface {
     }
 
     async find(query: any) {
-        let found = [];
+        let found = [...this.submissions];
         delete query.limit;
         delete query.skip;
         for (const [key, value] of Object.entries(query)) {

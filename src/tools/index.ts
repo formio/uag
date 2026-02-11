@@ -9,8 +9,9 @@ import { submissionUpdate } from "./submissionUpdate";
 import { ToolInfo } from "./utils";
 import { UAGProjectInterface } from "../UAGProjectInterface";
 import { agentProvideData } from "./agentProvideData";
+import { fetchExternalData } from "./fetchExternalData";
 export * from './utils';
-export { getForms, getFormFields, getFieldInfo, collectData, confirmSubmission, submitCompletedForm, findSubmission, submissionUpdate };
+export { getForms, getFormFields, getFieldInfo, collectData, confirmSubmission, submitCompletedForm, findSubmission, submissionUpdate, fetchExternalData };
 export const getTools =  async (project: UAGProjectInterface): Promise<ToolInfo[]> => {
     return [
         await getForms(project),
@@ -21,6 +22,7 @@ export const getTools =  async (project: UAGProjectInterface): Promise<ToolInfo[
         await submitCompletedForm(project),
         await findSubmission(project),
         await submissionUpdate(project),
-        await agentProvideData(project)
+        await agentProvideData(project),
+        await fetchExternalData(project)
     ];
 };

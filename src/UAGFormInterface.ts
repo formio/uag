@@ -145,9 +145,9 @@ export class UAGFormInterface extends FormInterface {
         }
         if (component.type === 'select' || component.type === 'selectboxes') {
             if ((component as SelectComponent).dataSrc === 'url') {
-                fieldInfo.options = [{ label: '** ANY VALUE IS ALLOWED **', value: 'Options are loaded from a URL.' }];
+                fieldInfo.options = [{ label: '** USE fetch_external_data TOOL **', value: `Call the \`fetch_external_data\` tool with \`field_path\`="${path}" to retrieve available options from the external URL.` }];
             } else if ((component as SelectComponent).dataSrc === 'resource') {
-                fieldInfo.options = [{ label: '** ANY VALUE IS ALLOWED **', value: `Options are loaded from the Form.io resource (${((component as SelectComponent).data as any).resource}).` }];
+                fieldInfo.options = [{ label: '** USE fetch_external_data TOOL **', value: `Call the \`fetch_external_data\` tool with \`field_path\`="${path}" to retrieve available options from the Form.io resource (${((component as SelectComponent).data as any).resource}).` }];
             } else if ((component as SelectComponent).dataSrc === 'json') {
                 fieldInfo.options = [{ label: '** ANY VALUE IS ALLOWED **', value: 'Options are not dynamically defined.' }];
             } else {
@@ -162,6 +162,9 @@ export class UAGFormInterface extends FormInterface {
                     }, []);
                 }
             }
+        }
+        if (component.type === 'datasource') {
+            fieldInfo.options = [{ label: '** USE fetch_external_data TOOL **', value: `Call the \`fetch_external_data\` tool with \`field_path\`="${path}" to retrieve data from the external datasource.` }];
         }
         fieldInfo.nested = this.isNestedComponent(component);
         return fieldInfo;
@@ -274,6 +277,12 @@ export class UAGFormInterface extends FormInterface {
                 break;
             case 'selectboxes':
             case 'select':
+                if ((component as SelectComponent).dataSrc === 'url' || (component as SelectComponent).dataSrc === 'resource') {
+                    rule += `You MUST first call the \`fetch_external_data\` tool with the \`field_path\` set to this component's \`data_path\` to retrieve the available options, then select ${this.isMultiple(component) ? 'one or more (as comma separated values)' : 'one'} of the returned options. Use the **value** (not the label) when setting this field's data.`;
+                } else {
+                    rule += `The value must be ${this.isMultiple(component) ? 'one or more (as comma separated values)' : 'one'} of the following options provided in the "**Options**" section of that component, formatted as " - Label (value)":`;
+                }
+                break;
             case 'radio':
                 rule += `The value must be ${this.isMultiple(component) ? 'one or more (as comma separated values)' : 'one'} of the following options provided in the "**Options**" section of that component, formatted as " - Label (value)":`;
                 break;
@@ -291,6 +300,9 @@ export class UAGFormInterface extends FormInterface {
                 break;
             case 'email':
                 rule += 'The value must be a valid email address.';
+                break;
+            case 'datasource':
+                rule += 'You MUST first call the `fetch_external_data` tool with the `field_path` set to this component\'s `data_path` to retrieve the external data. The value will be set automatically from the fetched data.';
                 break;
             default:
                 rule += '';

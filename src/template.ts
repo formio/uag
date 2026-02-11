@@ -38,7 +38,9 @@ export enum ResponseTemplate {
     getAvailableForms = 'getAvailableForms',
     noFormsAvailable = 'noFormsAvailable',
     uagComponentNotFound = 'uagComponentNotFound',
-    agentProcessData = 'agentProcessData'
+    agentProcessData = 'agentProcessData',
+    fetchExternalData = 'fetchExternalData',
+    fetchExternalDataError = 'fetchExternalDataError'
 }
 
 export class UAGTemplate {

@@ -190,6 +190,22 @@ export class SchemaBuilder {
      * ]
      * ```
      */
+    /**
+     * The data_path of a specific field within the form.
+     */
+    field_path() {
+        this.schema.field_path = z.string().describe('The `data_path` of the field to fetch external data for. Use `get_form_fields` to find the `data_path` of the component.');
+        return this;
+    }
+
+    /**
+     * An optional search value to filter select options server-side.
+     */
+    search_value() {
+        this.schema.search_value = z.string().optional().describe('An optional search string to filter the select options server-side. The component must have a `searchField` configured for this to take effect.');
+        return this;
+    }
+
     updates() {
         this.schema.updates = z.array(
             z.object({
