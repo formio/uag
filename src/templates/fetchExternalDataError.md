@@ -1,6 +1,6 @@
-Error fetching external data for field `<%= fieldPath %>`: <%= error %>
+Error fetching external data for field `<%= dataPath %>`: <%= error %>
 
 Please verify:
-- The form name and field path are correct
+- The form name and `data_path` are correct
 - The field is a select component with `dataSrc` of "url" or "resource", or a datasource component
 - The external data source is accessible

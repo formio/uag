@@ -4,7 +4,7 @@ import { ToolInfo } from "./utils";
 import { UAGFormInterface } from "../UAGFormInterface";
 import { Component, SelectComponent, Evaluator } from "@formio/core";
 import { SchemaBuilder } from './SchemaBuilder';
-import { defaultsDeep, get } from "lodash";
+import { defaultsDeep, get, set } from "lodash";
 const error = require('debug')('formio:uag:fetchExternalData:error');
 
 /**
@@ -83,12 +83,12 @@ export const fetchExternalData = async (project: UAGProjectInterface): Promise<T
         description: 'Fetch external data for a component that loads data from an external URL, a Form.io Resource, or a DataSource. Use this tool when `get_form_fields` indicates that a field requires calling `fetch_external_data` to retrieve its data. For select components, this returns the available options. For datasource components, this returns the fetched data. You can optionally provide a `search_value` to filter results server-side. If the component\'s URL or headers contain interpolation tokens (e.g. `{{ data.someField }}`), you MUST provide `form_data` with the current collected data so the tokens can be resolved.',
         inputSchema: (new SchemaBuilder(project))
             .form_name()
-            .field_path()
+            .data_path()
             .form_data()
             .search_value().schema,
-        execute: async ({ form_name, field_path, form_data, search_value }: {
+        execute: async ({ form_name, data_path, form_data, search_value }: {
             form_name: string;
-            field_path: string;
+            data_path: string;
             form_data?: Record<string, any>;
             search_value?: string;
         }, extra: any) => {
@@ -98,11 +98,11 @@ export const fetchExternalData = async (project: UAGProjectInterface): Promise<T
             }
 
             try {
-                const component = form.getComponent(field_path) as Component | undefined;
+                const component = form.getComponent(data_path) as Component | undefined;
                 if (!component) {
                     return project.mcpResponse(ResponseTemplate.fetchExternalDataError, {
-                        fieldPath: field_path,
-                        error: `No component found at path "${field_path}".`
+                        dataPath: data_path,
+                        error: `No component found at path "${data_path}".`
                     }, true);
                 }
 
@@ -119,20 +119,25 @@ export const fetchExternalData = async (project: UAGProjectInterface): Promise<T
 
                 if (isDatasource(component)) {
                     const items = await fetchDatasourceData(component, extra.authInfo, evalContext);
+                    set(submission.data || {}, data_path, items);
+                    const errors = await form.validateData(submission, extra.authInfo);
+                    if (errors?.length > 0) {
+                        return project.mcpResponse(ResponseTemplate.fieldValidationErrors, { invalidFields: errors });
+                    }
                     return project.mcpResponse(ResponseTemplate.fetchExternalData, {
                         label: component.label || component.key,
-                        fieldPath: field_path,
-                        options: items.map((item: any) => ({
-                            label: item.name || item.label || item.title || JSON.stringify(item),
-                            value: item
-                        }))
+                        dataPath: data_path,
+                        options: false,
+                        formData: project.uagTemplate?.renderTemplate(ResponseTemplate.formData, {
+                            data: form.formatData(submission.data)
+                        })
                     });
                 }
 
                 if (!isExternalSelect(component)) {
                     return project.mcpResponse(ResponseTemplate.fetchExternalDataError, {
-                        fieldPath: field_path,
-                        error: `Component at "${field_path}" is of type "${component.type}" and does not load external data. This tool only supports select/selectboxes components with dataSrc "url" or "resource", and datasource components.`
+                        dataPath: data_path,
+                        error: `Component at "${data_path}" is of type "${component.type}" and does not load external data. This tool only supports select/selectboxes components with dataSrc "url" or "resource", and datasource components.`
                     }, true);
                 }
 
@@ -140,33 +145,30 @@ export const fetchExternalData = async (project: UAGProjectInterface): Promise<T
                 const dataSrc = selectComponent.dataSrc;
                 if (dataSrc !== 'url' && dataSrc !== 'resource') {
                     return project.mcpResponse(ResponseTemplate.fetchExternalDataError, {
-                        fieldPath: field_path,
-                        error: `Component at "${field_path}" has dataSrc "${dataSrc}". Only "url" and "resource" are supported by this tool.`
+                        dataPath: data_path,
+                        error: `Component at "${data_path}" has dataSrc "${dataSrc}". Only "url" and "resource" are supported by this tool.`
                     }, true);
                 }
-
                 let items: any[] = [];
-
                 if (dataSrc === 'url') {
                     items = await fetchUrlData(selectComponent, search_value, extra.authInfo, evalContext);
                 } else if (dataSrc === 'resource') {
                     items = await fetchResourceData(selectComponent, search_value, extra.authInfo, project, evalContext);
                 }
-
                 const options = items.map(item => ({
                     label: extractLabel(item, selectComponent, evalContext),
                     value: extractValue(item, selectComponent)
                 }));
-
                 return project.mcpResponse(ResponseTemplate.fetchExternalData, {
                     label: selectComponent.label || selectComponent.key,
-                    fieldPath: field_path,
-                    options
+                    dataPath: data_path,
+                    options,
+                    formData: {}
                 });
             } catch (err) {
                 error('Error fetching external data:', err);
                 return project.mcpResponse(ResponseTemplate.fetchExternalDataError, {
-                    fieldPath: field_path,
+                    dataPath: data_path,
                     error: err instanceof Error ? err.message : 'Unknown error'
                 }, true);
             }

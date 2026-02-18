@@ -8,7 +8,6 @@ import { UAGTemplateConfig } from './config';
  */
 export enum ResponseTemplate {
     collectedData = 'collectedData',
-    submittedData = 'submittedData',
     fieldRules = 'fieldRules',
     allFieldsCollected = 'allFieldsCollected',
     getFormFieldsEmpty = 'getFormFieldsEmpty',
@@ -35,6 +34,7 @@ export enum ResponseTemplate {
     fields = 'fields',
     fieldList = 'fieldList',
     fieldValues = 'fieldValues',
+    formData = 'formData',
     getAvailableForms = 'getAvailableForms',
     noFormsAvailable = 'noFormsAvailable',
     uagComponentNotFound = 'uagComponentNotFound',

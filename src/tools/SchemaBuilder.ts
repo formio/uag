@@ -1,5 +1,6 @@
 import z from "zod";
 import { UAGProjectInterface } from "../UAGProjectInterface";
+const DATA_PATH_DESCRIPTION = `The \`data_path\` (or "full path") to a component's instance value within a form submission (e.g., "customer.firstName"). Use \`get_form_fields\` to find the \`data_path\` of this component.`;
 
 /**
  * Schema builder for tool input schemas.
@@ -39,7 +40,7 @@ export class SchemaBuilder {
      */
     form_data() {
         this.schema.form_data = z.record(
-            z.string().describe('The `data_path` of collected field.'),
+            z.string().describe(DATA_PATH_DESCRIPTION),
             z.any().describe(`The value collected for the field. ${this.valueRules}`),
         ).optional().default({}).describe('The current data collected so far for the whole form without any updates applied. Include ALL previously collected field data to maintain session state.');
         return this;
@@ -63,7 +64,9 @@ export class SchemaBuilder {
      * ```
      */
     field_paths() {
-        this.schema.field_paths = z.array(z.string()).describe('An array of `data_path`s to get detailed information for specific fields. Each `data_path` within the array should correlate to the fields the user has provided values for. The `data_path`s can be found using the `get_form_fields` tool.');
+        this.schema.field_paths = z.array(
+            z.string().describe(DATA_PATH_DESCRIPTION)
+        ).describe("An array of `data_path`(s) to get detailed information for specific fields.");
         return this;
     }
 
@@ -105,11 +108,24 @@ export class SchemaBuilder {
     search_query() {
         this.schema.search_query = z.array(
             z.object({
-                data_path: z.string().describe('The data path of the field used to search (e.g., "email", "customer.firstName", or "parent.email")'),
-                operator: z.enum(['equals', 'not_equals', 'contains', 'starts_with', 'ends_with', 'regex', 'in', 'nin', 'greater_than', 'greater_than_equal', 'less_than', 'less_than_equal']).optional().default('contains').describe('The operator to use for matching. "equals" for exact match, "contains" for substring match, "starts_with" or "ends_with" for prefix/suffix match, "regex" for regular expression match, "greater_than" or "less_than" only for numeric values, "in" if searching for multiple values as comma-separated values, "nin" if excluding multiple values as comma-separated values.'),
+                data_path: z.string().describe(DATA_PATH_DESCRIPTION),
+                operator: z.enum([
+                    'equals',
+                    'not_equals',
+                    'contains',
+                    'starts_with',
+                    'ends_with',
+                    'regex',
+                    'in',
+                    'nin',
+                    'greater_than',
+                    'greater_than_equal',
+                    'less_than',
+                    'less_than_equal'
+                ]).optional().default('contains').describe('The operator to use for matching. "equals" for exact match, "contains" for substring match, "starts_with" or "ends_with" for prefix/suffix match, "regex" for regular expression match, "greater_than" or "less_than" only for numeric values, "in" if searching for multiple values as comma-separated values, "nin" if excluding multiple values as comma-separated values.'),
                 search_value: z.string().describe('The value of the field to use when searching.')
             }).describe('Object containing the `data_path` and search value. Use `get_form_fields` to get all the field information to populate this search query object.')
-        ).describe('Array of search criteria to find matching submissions. All criteria must match (AND logic). Use `get_form_fields` to get `data_path`s.');
+        ).describe('Array of search criteria to find matching submissions. All criteria must match (AND logic).');
         return this;
     }
 
@@ -119,13 +135,15 @@ export class SchemaBuilder {
      * 
      * ```json
      * [
-     *   "email",
-     *   "firstName",
-     *   "lastName"
+     *   "employee.email",
+     *   "employee.firstName",
+     *   "employee.lastName"
      * ]
      */
     fields_requested() {
-        this.schema.fields_requested = z.array(z.string()).optional().describe('An array of "data_path"(s) for values you wish to include in the result. If not provided, only submission IDs and timestamps are returned. Use `get_form_fields` to get valid `data_path`s. (e.g., ["email"] - "What is the email address for the employee Joe Smith?")');
+        this.schema.fields_requested = z.array(
+            z.string().describe(DATA_PATH_DESCRIPTION)
+        ).optional().describe("An array of `data_path`(s) for values you wish to include in the result. If not provided, only submission IDs and timestamps are returned. (e.g., [\"employee.email\"] - \"What is the email address for the employee Joe Smith?\")");
         return this;
     }
 
@@ -174,27 +192,10 @@ export class SchemaBuilder {
     }
 
     /**
-     * An array of field updates to apply to the `form_data`.
-     * Each update specifies the `data_path` and the complete new value.
-     * 
-     * ```json
-     * [
-     *   {
-     *     "data_path": "firstName",
-     *     "new_value": "John"
-     *   },
-     *   {
-     *     "data_path": "lastName",
-     *     "new_value": "Doe"
-     *   }
-     * ]
-     * ```
-     */
-    /**
      * The data_path of a specific field within the form.
      */
-    field_path() {
-        this.schema.field_path = z.string().describe('The `data_path` of the field to fetch external data for. Use `get_form_fields` to find the `data_path` of the component.');
+    data_path() {
+        this.schema.data_path = z.string().describe(DATA_PATH_DESCRIPTION);
         return this;
     }
 
@@ -206,10 +207,27 @@ export class SchemaBuilder {
         return this;
     }
 
+    /**
+     * An array of field updates to apply to the `form_data`.
+     * Each update specifies the `data_path` and the complete new value.
+     * 
+     * ```json
+     * [
+     *   {
+     *     "data_path": "customer.firstName",
+     *     "new_value": "John"
+     *   },
+     *   {
+     *     "data_path": "customer.lastName",
+     *     "new_value": "Doe"
+     *   }
+     * ]
+     * ```
+     */
     updates() {
         this.schema.updates = z.array(
             z.object({
-                data_path: z.string().describe('The `data_path` of the field to update. To find the data_path, you can use the `get_form_fields` tool.'),
+                data_path: z.string().describe(DATA_PATH_DESCRIPTION),
                 new_value: z.any().describe(`The complete new value for the field. ${this.valueRules}`)
             }).describe('A single field update including the `data_path` and new value.')
         ).describe('An array of field updates to apply to the `form_data`. Each update specifies the `data_path` and the complete new value.');

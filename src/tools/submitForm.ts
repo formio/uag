@@ -2,7 +2,7 @@ import { ResponseTemplate } from "../template";
 import { Submission } from "@formio/core";
 import { ToolInfo } from "./utils";
 import { UAGProjectInterface } from "../UAGProjectInterface";
-import { UAGFormInterface } from "../UAGFormInterface";
+import { FormFieldError, UAGFormInterface } from "../UAGFormInterface";
 import { defaultsDeep } from "lodash";
 import { SchemaBuilder } from "./SchemaBuilder";
 const debug = require('debug')('formio:uag:submitForm');
@@ -42,20 +42,12 @@ export const submitCompletedForm = async (project: UAGProjectInterface): Promise
                     }),
                 });
             } catch (err: any) {
-                const errors = [];
+                let errors: FormFieldError[] = [];
                 if (err && err.name === 'ValidationError' && err.details) {
-                    for (const detail of err.details) {
-                        if (detail.message) {
-                            errors.push({
-                                label: detail.context?.label || 'Field',
-                                path: detail.context?.path,
-                                message: detail.message
-                            });
-                        }
-                    }
+                    errors = form.convertToFormFieldErrors(err.details);
                 }
                 return project.mcpResponse(ResponseTemplate.submitValidationError, {
-                    validationErrors: errors.length ? errors : [{message: err.message || 'Unknown error during submission'}]
+                    validationErrors: errors.length ? errors : [{message: err.message || err.toString()}]
                 }, true);
             }
         }

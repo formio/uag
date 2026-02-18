@@ -316,6 +316,57 @@ describe('submissionUpdate Tool', () => {
         expect(submittedData.email).to.equal('newemail@example.com');
     });
 
+    it('handles ValidationError with details', async () => {
+        const validationError: any = new Error('Validation failed');
+        validationError.name = 'ValidationError';
+        validationError.details = [
+            {
+                message: 'Email is required',
+                context: {
+                    label: 'Email',
+                    path: 'email'
+                }
+            }
+        ];
+        mockForm.submit = async () => {
+            throw validationError;
+        };
+
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                submission_id: 'valid123',
+                updates: [
+                    { data_path: 'email', new_value: '' }
+                ]
+            },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(result.template).to.equal(ResponseTemplate.submitValidationError);
+        expect(result.data.validationErrors).to.be.an('array');
+        expect(result.data.validationErrors[0].label).to.equal('Email');
+        expect(result.data.validationErrors[0].message).to.equal('Email is required');
+    });
+
+    it('defaults empty previous value to empty string', async () => {
+        // Update a field that doesn't exist in current submission data
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                submission_id: 'valid123',
+                updates: [
+                    { data_path: 'nonExistentField', new_value: 'newValue' }
+                ]
+            },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(result.template).to.equal(ResponseTemplate.submissionUpdated);
+        expect(result.data.updateSummary[0].previous_value).to.equal('');
+        expect(result.data.updateSummary[0].new_value).to.equal('newValue');
+    });
+
     it('respects tool overrides from config', async () => {
         const testFormDef = {
             title: 'Test Form',

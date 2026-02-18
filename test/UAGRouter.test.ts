@@ -9,6 +9,7 @@ describe('UAGRouter', () => {
     beforeEach(() => {
         // Mock MCP Server
         const mockMcpServer = {
+            close: () => { },
             connect: () => { }
         };
 
@@ -45,6 +46,7 @@ describe('UAGRouter', () => {
     describe('POST / route', () => {
         it('handles MCP requests', async () => {
             let connectCalled = false;
+            mockProject.mcpServer.close = () => {};
             mockProject.mcpServer.connect = () => {
                 connectCalled = true;
             };
@@ -83,6 +85,7 @@ describe('UAGRouter', () => {
             let statusCode = 0;
             let responseBody: any = null;
 
+            mockProject.mcpServer.close = () => {};
             mockProject.mcpServer.connect = () => {
                 throw new Error('Connection failed');
             };
@@ -120,6 +123,7 @@ describe('UAGRouter', () => {
     describe('GET / route', () => {
         it('handles GET requests', async () => {
             let connectCalled = false;
+            mockProject.mcpServer.close = () => {};
             mockProject.mcpServer.connect = () => {
                 connectCalled = true;
             };
@@ -150,6 +154,7 @@ describe('UAGRouter', () => {
 
         it('connects MCP server on GET request', async () => {
             let transportConnected = false;
+            mockProject.mcpServer.close = () => {};
             mockProject.mcpServer.connect = () => {
                 transportConnected = true;
             };
@@ -194,6 +199,7 @@ describe('UAGRouter', () => {
                 })
             });
 
+            mockProject.mcpServer.close = () => {};
             mockProject.mcpServer.connect = () => {
                 throw mockResponseError;
             };
@@ -236,6 +242,7 @@ describe('UAGRouter', () => {
             let statusCode = 0;
             let responseBody: any = null;
 
+            mockProject.mcpServer.close = () => {};
             mockProject.mcpServer.connect = () => {
                 throw new Error('Generic error');
             };
@@ -272,6 +279,7 @@ describe('UAGRouter', () => {
         it('includes jsonrpc version in error response', async () => {
             let responseBody: any = null;
 
+            mockProject.mcpServer.close = () => {};
             mockProject.mcpServer.connect = () => {
                 throw new Error('Test error');
             };
@@ -335,6 +343,7 @@ describe('UAGRouter', () => {
         it('accepts different project configurations', () => {
             const customProject: any = {
                 mcpServer: {
+                    close: () => { },
                     connect: () => { },
                     registerTool: () => { }
                 }

@@ -148,7 +148,7 @@ describe('getFormFields Tool', () => {
             { authInfo: mockAuthInfo }
         );
 
-        expect(result.template).to.equal(ResponseTemplate.getFormFieldsEmpty);
+        expect(result.template).to.equal(ResponseTemplate.getFormFieldsError);
     });
 
     it('handles error during field extraction', async () => {

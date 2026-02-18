@@ -133,6 +133,41 @@ describe('collectData Tool', () => {
         expect(result.data).to.have.property('fields');
     });
 
+    it('returns JSON response when as_json is true', async () => {
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                updates: [{ data_path: 'email', new_value: 'john@example.com' }],
+                form_data: { firstName: 'John' },
+                as_json: true
+            },
+            { authInfo: mockAuthInfo }
+        );
+
+        // When as_json is true, the result is an mcpJSONResponse (has structuredContent)
+        expect(result.content).to.be.an('array');
+        expect(result.content[0].type).to.equal('text');
+        const parsed = JSON.parse(result.content[0].text);
+        expect(parsed.data).to.exist;
+    });
+
+    it('returns JSON errors when as_json is true with validation errors', async () => {
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                updates: [{ data_path: 'email', new_value: 'invalid-email' }],
+                form_data: { firstName: 'John' },
+                as_json: true
+            },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(result.content).to.be.an('array');
+        const parsed = JSON.parse(result.content[0].text);
+        expect(parsed).to.be.an('array');
+        expect(parsed[0].path).to.equal('email');
+    });
+
     it('respects tool overrides from config', async () => {
         const testFormDef = {
             title: 'Test Form',

@@ -74,8 +74,8 @@ describe('confirmSubmission Tool', () => {
         expect(result.template).to.equal(ResponseTemplate.confirmFormSubmission);
         expect(result.data.dataSummary).to.equal(JSON.stringify({
             data: [
-                {prefix:"",path:"firstName",label:"First Name",value:"John"},
-                {prefix:"",path:"email",label:"Email",value:"john@example.com"}
+                {prefix:"",path:"firstName",label:"First Name",value:"\"John\""},
+                {prefix:"",path:"email",label:"Email",value:"\"john@example.com\""}
             ]
         }));
     });

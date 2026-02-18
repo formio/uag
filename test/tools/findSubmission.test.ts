@@ -224,6 +224,141 @@ describe('findSubmission Tool', () => {
         expect(result.template).to.equal(ResponseTemplate.submissionSearchError);
     });
 
+    it('finds submissions with starts_with operator', async () => {
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                search_query: [{ data_path: 'firstName', operator: 'starts_with', search_value: 'Jo' }],
+                fields_requested: ['firstName']
+            },
+            { authInfo: mockAuthInfo }
+        );
+        expect(result.template).to.equal(ResponseTemplate.submissionsFound);
+        expect(result.data.resultCount).to.equal(1);
+        expect(result.data.submissions[0].data[0].value).to.equal('John');
+    });
+
+    it('finds submissions with ends_with operator', async () => {
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                search_query: [{ data_path: 'firstName', operator: 'ends_with', search_value: 'ne' }],
+                fields_requested: ['firstName']
+            },
+            { authInfo: mockAuthInfo }
+        );
+        expect(result.template).to.equal(ResponseTemplate.submissionsFound);
+        expect(result.data.resultCount).to.equal(1);
+        expect(result.data.submissions[0].data[0].value).to.equal('Jane');
+    });
+
+    it('finds submissions with not_equals operator', async () => {
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                search_query: [{ data_path: 'firstName', operator: 'not_equals', search_value: 'John' }],
+                fields_requested: ['firstName']
+            },
+            { authInfo: mockAuthInfo }
+        );
+        expect(result.template).to.equal(ResponseTemplate.submissionsFound);
+        expect(result.data.resultCount).to.equal(1);
+        expect(result.data.submissions[0].data[0].value).to.equal('Jane');
+    });
+
+    it('finds submissions with in operator', async () => {
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                search_query: [{ data_path: 'firstName', operator: 'in', search_value: 'John,Jane' }],
+                fields_requested: ['firstName']
+            },
+            { authInfo: mockAuthInfo }
+        );
+        expect(result.template).to.equal(ResponseTemplate.submissionsFound);
+        expect(result.data.resultCount).to.equal(2);
+    });
+
+    it('finds submissions with nin operator', async () => {
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                search_query: [{ data_path: 'firstName', operator: 'nin', search_value: 'John' }],
+                fields_requested: ['firstName']
+            },
+            { authInfo: mockAuthInfo }
+        );
+        expect(result.template).to.equal(ResponseTemplate.submissionsFound);
+        expect(result.data.resultCount).to.equal(1);
+        expect(result.data.submissions[0].data[0].value).to.equal('Jane');
+    });
+
+    it('returns error for unsupported operator', async () => {
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                search_query: [{ data_path: 'firstName', operator: 'invalid_op', search_value: 'John' }]
+            },
+            { authInfo: mockAuthInfo }
+        );
+        expect(result.template).to.equal(ResponseTemplate.submissionSearchError);
+        expect(result.data.error).to.include('Unsupported operator');
+    });
+
+    it('returns submissionPartialIdNotFound for non-matching partial ID', async () => {
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                search_query: [{ data_path: 'firstName', operator: 'contains', search_value: 'J' }],
+                submission_id_partial: 'zzzz'
+            },
+            { authInfo: mockAuthInfo }
+        );
+        expect(result.template).to.equal(ResponseTemplate.submissionPartialIdNotFound);
+    });
+
+    it('returns submissionPartialIdAmbiguous for ambiguous partial ID', async () => {
+        // Both IDs contain 'abcd' - create submissions with overlapping partial IDs
+        const ambiguousProject = new MockProjectInterface({
+            testForm: {
+                title: 'Test Form',
+                name: 'testForm',
+                tags: ['uag'],
+                components: [
+                    { path: 'firstName', label: 'First Name', type: 'textfield', validate: { required: true } }
+                ]
+            }
+        }, {
+            testForm: [
+                { _id: 'aaa1abcd', created: '2025-01-01', modified: '2025-01-01', data: { firstName: 'Alice' } },
+                { _id: 'bbb2abcd', created: '2025-01-02', modified: '2025-01-02', data: { firstName: 'Bob' } },
+                { _id: 'ccc3efgh', created: '2025-01-03', modified: '2025-01-03', data: { firstName: 'Charlie' } }
+            ]
+        });
+        const ambiguousTool = await findSubmission(ambiguousProject);
+        const result = await ambiguousTool.execute(
+            {
+                form_name: 'testForm',
+                search_query: [{ data_path: 'firstName', operator: 'regex', search_value: '.' }],
+                submission_id_partial: 'abcd'
+            },
+            { authInfo: mockAuthInfo }
+        );
+        expect(result.template).to.equal(ResponseTemplate.submissionPartialIdAmbiguous);
+    });
+
+    it('returns empty data arrays when no fields_requested', async () => {
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                search_query: [{ data_path: 'firstName', operator: 'contains', search_value: 'John' }]
+            },
+            { authInfo: mockAuthInfo }
+        );
+        expect(result.template).to.equal(ResponseTemplate.submissionsFound);
+        expect(result.data.submissions[0].data).to.deep.equal([]);
+    });
+
     it('includes partial ID in submission results', async () => {
         const result = await tool.execute(
             {

@@ -1,7 +1,7 @@
 import { AuthProviderInterface, ProjectInterface, SubmissionRequest } from "@formio/appserver";
 import { UAGConfig } from "./config";
 import { Form } from "@formio/core";
-import { NextFunction, Response } from "express";
+import { NextFunction, Response, Router } from "express";
 import { getTools } from "./tools";
 import { UAGRouter } from "./router";
 import { UAGFormInterface } from "./UAGFormInterface";
@@ -42,16 +42,16 @@ export class UAGProjectInterface extends ProjectInterface {
         }
     }
 
-    addForm(form: Form, key: string): UAGFormInterface | undefined {
-        const formInterface = super.addForm(form, key) as UAGFormInterface;
+    addForm(form: Form, machineName: string): UAGFormInterface | undefined {
+        const formInterface = super.addForm(form, machineName) as UAGFormInterface;
         if (!formInterface) return;
-        key = key || formInterface?.form?.key;
+        machineName = formInterface?.form?.machineName;
         if (form.tags?.includes('uag')) {
-            debug(`Registering UAG form: ${key}`);
+            debug(`Registering UAG form: ${machineName}`);
             formInterface.uag = {
-                machineName: key,
-                name: form.name || form.path || key,
-                title: form.title || form.name || key,
+                machineName: machineName,
+                name: form.name || form.path || machineName,
+                title: form.title || form.name || machineName,
                 description: form.properties?.description || `A form to submit new ${form.title} records.`
             };
             this.formNames.push(formInterface.uag.name)
@@ -59,8 +59,8 @@ export class UAGProjectInterface extends ProjectInterface {
         return formInterface;
     }
 
-    async router(): Promise<any> {
-        const router = await super.router();
+    uagRouter(): Router {
+        const router = Router();
         const uagRouter = UAGRouter(this);
         router.use('/mcp', (req: any, res: any, next: any) => this.authorizeRequest(req as SubmissionRequest, res, next), uagRouter as any);
         return router;

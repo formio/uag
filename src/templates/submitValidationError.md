@@ -1,4 +1,4 @@
-Cannot submit the form due to the following reasons:
+There are some validation errors in the data collected:
 <% validationErrors.forEach(function(error) { %>
  - <% if (error.label && error.path) { %>**<%= error.label %> (<%= error.path %>)**: <% } %><%= error.message %><% }); %>
 

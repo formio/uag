@@ -1,5 +1,5 @@
 ## Collected Data
-IMPORTANT: When presenting the values to the user, it must appear exactly as it will be submitted; e.g "user@example.com", "(555) 123-4560"
+Here is the data collected so far:
 
-<% data.forEach(function(item) { %><%= item.prefix %>- **<%= item.label %>**: <%= item.value %>
+<% data.forEach(function(item) { %><%= item.prefix %>- **<%= item.label %>** (`data_path`: "<%= item.path %>"): <%= item.value %>
 <% }); %>

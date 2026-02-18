@@ -16,7 +16,7 @@ import {
     interpolateErrors,
     ComponentPaths
 } from "@formio/core";
-import { set, get, isObjectLike, isEqual } from "lodash";
+import { set, get, isObjectLike, isEqual, isString } from "lodash";
 import { UAGForm } from "./config";
 import { ParentInfo } from "./tools";
 import { NodeHtmlMarkdown } from 'node-html-markdown'
@@ -304,6 +304,17 @@ export class UAGFormInterface extends FormInterface {
             case 'datasource':
                 rule += 'You MUST first call the `fetch_external_data` tool with the `field_path` set to this component\'s `data_path` to retrieve the external data. The value will be set automatically from the fetched data.';
                 break;
+            case 'survey':
+                rule += 'The value is an object of question/value pairs based on the following survey configuration.\n';
+                rule += '    **Keys**: The value `keys` will be the "value" property for each question in the survey configuration.';
+                (component as any).questions.forEach((question: any, index: number) => {
+                    rule += `\n      - **${question.label}** (${question.value}): ${question.tooltip || ''}`;
+                });
+                rule += '\n\n    **Values**: Only ONE of the the following values are allowed for each question.';
+                (component as any).values.forEach((value: any) => {
+                    rule += `\n      - **${value.label}** (${value.value})`;
+                });
+                break;
             default:
                 rule += '';
         }
@@ -366,6 +377,32 @@ export class UAGFormInterface extends FormInterface {
     }
 
     /**
+     * Override the process methods for the UAG.
+     */
+    override async process(
+        submission: Submission,
+        auth: AuthRequest,
+        headers: any = {},
+        findQuery: any = {},
+        additional: any[] = []
+    ) {
+        const processors = [...Processors, ...additional];
+
+        // Remove the 'fetch' processor since UAG handles this with the fetch_external_data tool.
+        const fetchIndex = processors.findIndex((p) => p.name === 'fetch');
+        if (fetchIndex !== -1) {
+            processors.splice(fetchIndex, 1);
+        }
+
+        // Return the processed submission data.
+        const context = await super.process(submission, auth, headers, findQuery, processors);
+
+        // Filter the "required" validation since the UAG retrieves required fields separately.
+        context.scope.errors = context.scope.errors.filter((error: any) => (error.ruleName !== 'required'));
+        return context;
+    }
+
+    /**
      * Get the relevant fields from the current form. This will return any non-nested input components whose
      * values have not already been set within the data model. This allows the agent to know what fields still need to be 
      * collected from the user, as well as provides a mechanism to break up large forms into smaller chunks of data collection
@@ -395,12 +432,11 @@ export class UAGFormInterface extends FormInterface {
             optional: { components: [], rules: {} }
         };
         const nestedPaths: string[] = [];
-        const context = await this.process(submission, authInfo, null, null, null, [
-            ...Processors,
+        const context = await this.process(submission, authInfo, null, null, [
             {
                 name: 'getFields',
                 shouldProcess: () => true,
-                process: async (context) => {
+                process: async (context: any) => {
                     const { component, path, value, data } = context;
                     if (this.isNestedComponent(component)) {
                         // For nested components, we need to always have a value so that the child components
@@ -480,11 +516,7 @@ export class UAGFormInterface extends FormInterface {
             }
         ]);
         if (context.scope?.errors?.length) {
-            // Filter the "required" validation since those are added to the fieldInfo separately.
-            context.scope.errors = context.scope.errors.filter((error: any) => (error.ruleName !== 'required'));
-            if (context.scope.errors?.length) {
-                fieldInfo.errors = this.convertToFormFieldErrors(interpolateErrors(context.scope.errors));
-            }
+            fieldInfo.errors = this.convertToFormFieldErrors(interpolateErrors(context.scope.errors));
         }
         return fieldInfo;
     }
@@ -564,20 +596,24 @@ export class UAGFormInterface extends FormInterface {
                 prefix += '  ';
             }
             else if (this.inputComponent(component) && componentHasValue(component, value)) {
-                if (
-                    typeof value === 'string' &&
-                    (
-                        ((component as TextAreaComponent).editor === 'ckeditor') ||
-                        ((component as TextAreaComponent).editor === 'quill')
-                    )
-                ) {
-                    value = this.htmlToMarkdown(value);
+                const modelType = Utils.getModelType(component);
+                if (isObjectLike(value)) {
+                    value = JSON.stringify(value);
+                }
+                else if (modelType === 'string' && isString(value)) {
+                    const editor = (component as TextAreaComponent).editor;
+                    if (editor === 'ckeditor' || editor === 'quill') {
+                        value = this.htmlToMarkdown(value);
+                    }
+                    else {
+                        value = `"${value.trim()}"`;
+                    }
                 }
                 uagData.push({
                     prefix,
                     path,
                     label: component.label || component.key || path,
-                    value: isObjectLike(value) ? JSON.stringify(value) : value
+                    value
                 });
             }
         }, false, false, undefined, undefined, undefined, (component, data) => {
