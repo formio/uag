@@ -21,7 +21,7 @@ services:
       - MONGO_INITDB_ROOT_USERNAME
       - MONGO_INITDB_ROOT_PASSWORD
   formio:
-    image: formio/formio:rc
+    image: formio/formio
     restart: always
     links:
       - mongo
@@ -34,7 +34,7 @@ services:
       ROOT_PASSWORD: CHANGEME
       ADMIN_KEY: CHANGEME
   formio-uag:
-    image: formio/uag:rc
+    image: formio/uag
     restart: always
     links:
       - formio
@@ -53,7 +53,7 @@ services:
       BASE_URL: http://localhost:3000
       PROJECT_TTL: 10
   formio-uag-claude:
-    image: formio/uag-claude:rc
+    image: formio/uag-claude
     restart: always
     links:
       - formio-uag

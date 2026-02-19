@@ -196,9 +196,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@formio/appserver-core@npm:^2.12.0-rc.5":
-  version: 2.12.0-rc.5
-  resolution: "@formio/appserver-core@npm:2.12.0-rc.5"
+"@formio/appserver-core@npm:^2.12.0":
+  version: 2.12.0
+  resolution: "@formio/appserver-core@npm:2.12.0"
   dependencies:
     "@formio/core": "npm:2.5.1-dev.291.6557e4e"
     "@formio/node-fetch-http-proxy": "npm:^1.1.0"
@@ -223,15 +223,15 @@ __metadata:
     resolve: "npm:^1.22.11"
     statuses: "npm:^2.0.2"
     xss: "npm:^1.0.15"
-  checksum: 10c0/7293ae1c72c4db359fc827225bd1acf01f81bd57a188b58b9d65a2ffb891ea56d3be93bffe9e8ad8648a457000c58d42b6088b5a8c29dfc527e43fa8a58b3beb
+  checksum: 10c0/dce02ae598fb5bcab901c1819838cecf5c0562cbac521fd0f793a87c20ea4158d70b040fb6ad00dbdc0da32c98dd76a297cd2ab549927df0a8ad94523bd08768
   languageName: node
   linkType: hard
 
-"@formio/appserver@npm:^2.12.0-rc.6":
-  version: 2.12.0-rc.6
-  resolution: "@formio/appserver@npm:2.12.0-rc.6"
+"@formio/appserver@npm:^2.12.0":
+  version: 2.12.0
+  resolution: "@formio/appserver@npm:2.12.0"
   dependencies:
-    "@formio/appserver-core": "npm:^2.12.0-rc.5"
+    "@formio/appserver-core": "npm:^2.12.0"
     "@formio/core": "npm:2.5.1-dev.291.6557e4e"
     async: "npm:^3.2.6"
     bcryptjs: "npm:^3.0.3"
@@ -241,7 +241,7 @@ __metadata:
     jsonwebtoken: "npm:^9.0.3"
     lodash: "npm:^4.17.23"
     mongodb: "npm:^7.1.0"
-  checksum: 10c0/8a1aca7169899ebd97a0d3e96a6aba8224aa8822ad20b24333ae25212b58dc99d09ad27b6a9ebd9580d4842d8ec5c2e0793fd3fd72e40de1c156e28fcb6dc793
+  checksum: 10c0/46d35c84a9cee4c4a8de020a8d78b8b597264ec51e6611862a6b66b35198d6717e23602ad11afdae4e7d746185cf3f60da1b454a9964c553f32a26794f9e690c
   languageName: node
   linkType: hard
 
@@ -280,7 +280,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@formio/uag@workspace:."
   dependencies:
-    "@formio/appserver": "npm:^2.12.0-rc.6"
+    "@formio/appserver": "npm:^2.12.0"
     "@formio/core": "npm:2.5.1-dev.291.6557e4e"
     "@modelcontextprotocol/sdk": "npm:1.27.0"
     "@types/chai": "npm:^5.2.3"
@@ -291,7 +291,7 @@ __metadata:
     "@types/jsonwebtoken": "npm:^9.0.10"
     "@types/lodash": "npm:^4.17.23"
     "@types/mocha": "npm:^10.0.10"
-    "@types/node": "npm:^25.2.3"
+    "@types/node": "npm:^25.3.0"
     "@types/supertest": "npm:^6.0.3"
     chai: "npm:^6.2.2"
     cors: "npm:^2.8.6"
@@ -713,12 +713,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:^25.2.3":
+"@types/node@npm:*":
   version: 25.2.3
   resolution: "@types/node@npm:25.2.3"
   dependencies:
     undici-types: "npm:~7.16.0"
   checksum: 10c0/925833029ce0bb4a72c36f90b93287184d3511aeb0fa60a994ae94b5430c22f9be6693d67d210df79267cb54c6f6978caaefb149d99ab5f83af5827ba7cb9822
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^25.3.0":
+  version: 25.3.0
+  resolution: "@types/node@npm:25.3.0"
+  dependencies:
+    undici-types: "npm:~7.18.0"
+  checksum: 10c0/7b2b18c9d68047157367fc2f786d4f166d22dc0ad9f82331ca02fb16f2f391854123dbe604dcb938cda119c87051e4bb71dcb9ece44a579f483a6f96d4bd41de
   languageName: node
   linkType: hard
 
@@ -3906,6 +3915,13 @@ __metadata:
   version: 7.16.0
   resolution: "undici-types@npm:7.16.0"
   checksum: 10c0/3033e2f2b5c9f1504bdc5934646cb54e37ecaca0f9249c983f7b1fc2e87c6d18399ebb05dc7fd5419e02b2e915f734d872a65da2e3eeed1813951c427d33cc9a
+  languageName: node
+  linkType: hard
+
+"undici-types@npm:~7.18.0":
+  version: 7.18.2
+  resolution: "undici-types@npm:7.18.2"
+  checksum: 10c0/85a79189113a238959d7a647368e4f7c5559c3a404ebdb8fc4488145ce9426fcd82252a844a302798dfc0e37e6fb178ff481ed03bc4caf634c5757d9ef43521d
   languageName: node
   linkType: hard
 
