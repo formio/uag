@@ -85,7 +85,7 @@ describe('findSubmission Tool', () => {
 
         expect(result.template).to.equal(ResponseTemplate.submissionsFound);
         expect(result.data.submissions).to.be.an('array');
-        expect(result.data.resultCount).to.equal(1);
+        expect(result.data.submissions.length).to.equal(1);
         expect(result.data.submissions[0].data).to.deep.equal([
             { path: 'firstName', value: 'John' },
             { path: 'email', value: 'john@example.com' }
@@ -104,7 +104,7 @@ describe('findSubmission Tool', () => {
 
         expect(result.template).to.equal(ResponseTemplate.submissionsFound);
         expect(result.data.submissions).to.be.an('array');
-        expect(result.data.resultCount).to.equal(1);
+        expect(result.data.submissions.length).to.equal(1);
         expect(result.data.submissions[0].data).to.deep.equal([
             { path: 'email', value: 'john@example.com' }
         ]);
@@ -122,7 +122,7 @@ describe('findSubmission Tool', () => {
 
         expect(result.template).to.equal(ResponseTemplate.submissionsFound);
         expect(result.data.submissions).to.be.an('array');
-        expect(result.data.resultCount).to.equal(1);
+        expect(result.data.submissions.length).to.equal(1);
         expect(result.data.submissions[0].data).to.deep.equal([
             { path: 'firstName', value: 'John' },
             { path: 'email', value: 'john@example.com' }
@@ -168,7 +168,7 @@ describe('findSubmission Tool', () => {
 
         expect(result.template).to.equal(ResponseTemplate.submissionsFound);
         expect(result.data.submissions.length).to.equal(2);
-        expect(result.data.resultCount).to.equal(2);
+        expect(result.data.submissions.length).to.equal(2);
         expect(result.data.submissions[0].data).to.deep.equal([
             { path: 'firstName', value: 'John' },
             { path: 'email', value: 'john@example.com' }
@@ -234,7 +234,7 @@ describe('findSubmission Tool', () => {
             { authInfo: mockAuthInfo }
         );
         expect(result.template).to.equal(ResponseTemplate.submissionsFound);
-        expect(result.data.resultCount).to.equal(1);
+        expect(result.data.submissions.length).to.equal(1);
         expect(result.data.submissions[0].data[0].value).to.equal('John');
     });
 
@@ -248,7 +248,7 @@ describe('findSubmission Tool', () => {
             { authInfo: mockAuthInfo }
         );
         expect(result.template).to.equal(ResponseTemplate.submissionsFound);
-        expect(result.data.resultCount).to.equal(1);
+        expect(result.data.submissions.length).to.equal(1);
         expect(result.data.submissions[0].data[0].value).to.equal('Jane');
     });
 
@@ -262,7 +262,7 @@ describe('findSubmission Tool', () => {
             { authInfo: mockAuthInfo }
         );
         expect(result.template).to.equal(ResponseTemplate.submissionsFound);
-        expect(result.data.resultCount).to.equal(1);
+        expect(result.data.submissions.length).to.equal(1);
         expect(result.data.submissions[0].data[0].value).to.equal('Jane');
     });
 
@@ -276,7 +276,7 @@ describe('findSubmission Tool', () => {
             { authInfo: mockAuthInfo }
         );
         expect(result.template).to.equal(ResponseTemplate.submissionsFound);
-        expect(result.data.resultCount).to.equal(2);
+        expect(result.data.submissions.length).to.equal(2);
     });
 
     it('finds submissions with nin operator', async () => {
@@ -289,7 +289,7 @@ describe('findSubmission Tool', () => {
             { authInfo: mockAuthInfo }
         );
         expect(result.template).to.equal(ResponseTemplate.submissionsFound);
-        expect(result.data.resultCount).to.equal(1);
+        expect(result.data.submissions.length).to.equal(1);
         expect(result.data.submissions[0].data[0].value).to.equal('Jane');
     });
 

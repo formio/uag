@@ -10,7 +10,7 @@ export const findSubmission = async (project: UAGProjectInterface): Promise<Tool
     return defaultsDeep(project.config?.toolOverrides?.find_submissions || {}, {
         name: 'find_submissions',
         title: 'Find submissions within a form',
-        description: 'Find existing form submissions based on field values (search query). Use this to search for people, records, or data by name, email, phone, position, company, or other field values. Examples: find a contact by name, find someone who works at a company, find records with specific criteria.',
+        description: 'Find existing form submissions based on field values (search query). Use this to search for people, records, or data by name, email, phone, position, company, or other field values. Examples: find a contact by name, find someone who works at a company, find records with specific criteria. To retrieve the total count of records within a form, use this tool without providing a `search_query`.',
         inputSchema: (new SchemaBuilder(project))
             .form_name()
             .search_query()
@@ -20,7 +20,7 @@ export const findSubmission = async (project: UAGProjectInterface): Promise<Tool
             .submission_id_partial().schema,
         execute: async ({ form_name, search_query, fields_requested, limit, submission_id, submission_id_partial }: {
             form_name: string;
-            search_query: SearchQuery[];
+            search_query?: SearchQuery[];
             fields_requested?: string[];
             limit?: number;
             submission_id?: string;
@@ -31,8 +31,9 @@ export const findSubmission = async (project: UAGProjectInterface): Promise<Tool
                 return project.mcpResponse(ResponseTemplate.formNotFound, { formName: form_name }, true);
             }
 
+            search_query = search_query || [];
             const query: any = {};
-            if (!submission_id) {
+            if (!submission_id && search_query.length > 0) {
                 for (const criterion of search_query) {
                     if (!criterion.data_path || !criterion.search_value) {
                         return project.mcpResponse(ResponseTemplate.submissionSearchError, {
@@ -90,17 +91,29 @@ export const findSubmission = async (project: UAGProjectInterface): Promise<Tool
             }
 
             try {
+                let submissionCount = 0;
                 let submissions: Submission[] = [];
                 if (submission_id) {
                     const result = await form.loadSubmission(submission_id, extra.authInfo);
                     if (result) {
                         submissions = [result];
+                        submissionCount = 1;
                     }
                 }
                 else {
                     query.limit = (isNumber(limit) && limit > 0) ? limit : 10;
-                    const result = await form.find(query, extra.authInfo);
-                    submissions = result.items;
+                    if (search_query.length > 0) {
+                        const result = await form.find(query, extra.authInfo);
+                        submissions = result.items;
+                        submissionCount = result.count;
+                    }
+                    else {
+                        submissionCount = await form.count({}, extra.authInfo);
+                        return project.mcpResponse(ResponseTemplate.submissionCount, {
+                            form: form.form,
+                            submissionCount
+                        });
+                    }
                 }
 
                 if (!submissions || submissions.length === 0) {
@@ -158,6 +171,7 @@ export const findSubmission = async (project: UAGProjectInterface): Promise<Tool
                 return project.mcpResponse(ResponseTemplate.submissionsFound, {
                     form: form.form,
                     searchQuery: JSON.stringify(search_query),
+                    submissionCount,
                     submissions: submissions.map(sub => {
                         return {
                             _id: sub._id,
@@ -166,8 +180,7 @@ export const findSubmission = async (project: UAGProjectInterface): Promise<Tool
                             data: getFieldValues(sub),
                             partialId: sub._id ? sub._id.toString().slice(-4) : 'N/A'
                         };
-                    }),
-                    resultCount: submissions.length
+                    })
                 });
             } catch (err) {
                 error('Error searching submissions:', err);

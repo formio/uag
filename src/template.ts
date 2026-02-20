@@ -21,6 +21,7 @@ export enum ResponseTemplate {
     formNotFound = 'formNotFound',
     noSubmissionsFound = 'noSubmissionsFound',
     submissionsFound = 'submissionsFound',
+    submissionCount = 'submissionCount',
     submissionSearchError = 'submissionSearchError',
     submissionNotFound = 'submissionNotFound',
     updateNotConfirmed = 'updateNotConfirmed',

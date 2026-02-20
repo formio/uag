@@ -5,9 +5,9 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@anthropic-ai/sdk@npm:^0.77.0":
-  version: 0.77.0
-  resolution: "@anthropic-ai/sdk@npm:0.77.0"
+"@anthropic-ai/sdk@npm:^0.78.0":
+  version: 0.78.0
+  resolution: "@anthropic-ai/sdk@npm:0.78.0"
   dependencies:
     json-schema-to-ts: "npm:^3.1.1"
   peerDependencies:
@@ -17,7 +17,7 @@ __metadata:
       optional: true
   bin:
     anthropic-ai-sdk: bin/cli
-  checksum: 10c0/45d6451f3d40d29ab149f3b16f262e2ddd27f4ec7226e0f9314fa1fb19a81c6321b888d0b9a71e441cb854098f0aa3381023c0dd39d80732d670f8997de6f9a3
+  checksum: 10c0/a43c83047d0f6ac8d50938e8a07aee27b8891cf51011fcbdb07159996762f262734e4839df00e57f713e25c8c740424939e13c91e6b3f5b12879b9cde1d9c835
   languageName: node
   linkType: hard
 
@@ -32,7 +32,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@formio/uag-claude@workspace:."
   dependencies:
-    "@anthropic-ai/sdk": "npm:^0.77.0"
+    "@anthropic-ai/sdk": "npm:^0.78.0"
     body-parser: "npm:^2.2.2"
     dotenv: "npm:^17.3.1"
     express: "npm:^5.2.1"

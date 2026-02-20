@@ -125,7 +125,7 @@ export class SchemaBuilder {
                 ]).optional().default('contains').describe('The operator to use for matching. "equals" for exact match, "contains" for substring match, "starts_with" or "ends_with" for prefix/suffix match, "regex" for regular expression match, "greater_than" or "less_than" only for numeric values, "in" if searching for multiple values as comma-separated values, "nin" if excluding multiple values as comma-separated values.'),
                 search_value: z.string().describe('The value of the field to use when searching.')
             }).describe('Object containing the `data_path` and search value. Use `get_form_fields` to get all the field information to populate this search query object.')
-        ).describe('Array of search criteria to find matching submissions. All criteria must match (AND logic).');
+        ).optional().describe('Array of search criteria to find matching submissions. All criteria must match (AND logic). Do not provide this parameter to get the total count of submissions without retrieving the submission details.');
         return this;
     }
 

@@ -1,0 +1,1 @@
+There are **<%= submissionCount %>** total submissions within the <%= form.title %> form.
