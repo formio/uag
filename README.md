@@ -1,7 +1,17 @@
 # The Form.io Universal Agent Gateway (UAG)
-The Universal Agent Gateway (UAG) introduces the power of [Form.io](https://form.io) forms to AI agents.  
+The Universal Agent Gateway (UAG) leverages the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/docs/getting-started/intro) to enable in-process agentic automation using Form.io. It provides to an AI Agent the same thing that our [JavaScript Renderer](https://github.com/formio/formio.js) provides to a human; an interpretation of the Form JSON schema into an understandable format. In the case of UAG, it transforms the Form JSON model into an AI readible markdown format so that the Agent can easily understand the purpose and structure of the data that needs to be collected.
 
-The Form.io UAG uses the [**Model Context Protocol (MCP)**](https://modelcontextprotocol.io/docs/getting-started/intro) to enable Form.io interaction through an AI agent workflow. By providing AI agents with the **dynamic context** of how to use Form.io JSON forms,  the UAG allows a user to interact with any aspect of their enterprise system served by the Form.io Platform directly through their AI agent.
+![Diagram showing how the UAG provides an AI Agent the ability to read and understand a Form.io Form JSON. Similar to how the JavaScript renderer provides a Human the ability to visually see a rendered form.](./examples/images/uag-agent-rendering.png)
+
+There are two primary scenarios that the UAG enables:
+
+ - **Unstructured content conversion to deterministic structured data**:  This capability uses the JSON schema of a Form.io form to produce a deterministic structured data object provided a Natural Language input. 
+
+ ![](./examples/images/uag-natural-language.png)
+
+ - **Agentic Form.io Workflows**: UAG provides an AI Agent the ability to take existing submission data + "context" criteria in order to prompt an AI Agent to provide its own data and analysis within a workflow scenario. The following example, which shows a college application process using a Form.io application form, shows how this primary scenario works.
+
+  ![](./examples/images/uag-agent-provide-data.png)
 
 ---
 
