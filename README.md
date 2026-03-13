@@ -160,7 +160,7 @@ To get started in building your own custom module, go to the help documentation 
 ## Deploying UAG
 The following sections describe the process of creating a running instance of UAG, connecting it to the Form.io Platform, and configuring an AI agent to use it.
 
-This documentation focuses on using UAG with Form.io Open Source. For documentation on using UAG with Form.io Enterprise, refer to [Help.Form.io/UAG](https://help.form.io/uag).
+This documentation focuses on using UAG with Form.io Open Source. For documentation on using UAG with Form.io Enterprise, refer to [https://help.form.io/uag](https://help.form.io/uag).
 
 ### Runtime Environments
 There are currently two run-time environments that work with the UAG:
