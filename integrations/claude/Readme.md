@@ -2,7 +2,7 @@
 
 The Claude Integration for UAG provides a number of API endpoints that produce commands for the Claude API that directly use a UAG tool to perform AI Agentic automation procedures. This provides the ability to deploy the UAG along with this integration, and then trigger any tool from a Form.io Webhook. By default, this integration offers a few API commands, but this can be easily configured by overriding the "command" directory within the deployed Docker container. To get an understanding of how this process works in conjunction with the Claude API and the UAG, the following "flow" diagram helps to visualize the flow of communication between Claude, the UAG, and the Form.io Platform.
 
-![](../../examples/images/agent-flow.png)
+![Visualization showing how Claude integration can be used to create a single API route that is capable of agentic automation.](../../examples/images/agent-flow.png)
 
 Following this diagram, we can see the following process:
 
@@ -101,11 +101,11 @@ Once you have created a form that supports the `agent_provide_data` tool (see th
 
 To setup a Webhook Action to leverage this API, you first need to establish the API endpoint as follows.
 
-![](../../examples/images/webhook-endpoint.png)
+![Image showing webhook setup for Claude Integration](../../examples/images/webhook-endpoint.png)
 
 Once you have the webhook endpoint configured, the next objective is to set the Headers to include an **API Key** for your project.
 
-![](../../examples/images/webhook-headers.png)
+![Image showing webhook setup for Claude Integration](../../examples/images/webhook-headers.png)
 
 Next, you now need to simply transform the Webhook payload so that is matches the body shown above, this can be done using the following code within the transform section.
 
@@ -115,11 +115,11 @@ payload = {formName: 'collegeEssay', submissionId: payload.submission._id, perso
 
 Make sure that you provide the correct formName and "persona" that matches the `uag` custom properties that you added to your form.
 
-![](../../examples/images/webhook-transform.png)
+![Image showing webhook setup for Claude Integration](../../examples/images/webhook-transform.png)
 
 Finally, you will then just remove the `Delete` method from the **Methods** since you do NOT wish to fire this webhook when a submission is deleted (since the purpose is to suppliment submission data of an existing submission).
 
-![](../../examples/images/webhook-methods.png)
+![Image showing webhook setup for Claude Integration](../../examples/images/webhook-methods.png)
 
 Now, anytime your form is submission with a new submission, it will AUTOMATICALLY trigger an AI Agent to review the submission and provide its own supplimental data for the submission.
 
