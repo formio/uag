@@ -101,9 +101,9 @@ describe('UAGFormInterface', () => {
         } as any;
 
         // Mock the process method for getFields
-        uagForm.process = async (submission: Submission, authInfo: any, method: any, status: any, next: any, processors: any) => {
+        uagForm.process = async (submission: Submission, auth: any, headers: any, findQuery: any, additional: any[]) => {
             // Execute the getFields processor
-            const getFieldsProcessor = processors.find((p: any) => p.name === 'getFields');
+            const getFieldsProcessor = additional.find((p: any) => p.name === 'getFields');
             if (getFieldsProcessor) {
                 for (const component of uagForm.form.components) {
                     if (component.input !== false) {
@@ -520,7 +520,7 @@ describe('UAGFormInterface', () => {
             const firstNameField = formatted.data.find(d => d.path === 'firstName');
             expect(firstNameField).to.exist;
             expect(firstNameField?.label).to.equal('First Name');
-            expect(firstNameField?.value).to.equal('John');
+            expect(firstNameField?.value).to.equal('"John"');
         });
 
         it('excludes empty and null values', () => {

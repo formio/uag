@@ -2,7 +2,6 @@ import { expect } from 'chai';
 import { submitCompletedForm } from '../../src/tools/submitForm';
 import { ResponseTemplate } from '../../src/template';
 import { MockProjectInterface, MockFormInterface } from './mock';
-import { mock } from 'node:test';
 
 describe('submitCompletedForm Tool', () => {
     let mockProject: MockProjectInterface;
@@ -162,7 +161,7 @@ describe('submitCompletedForm Tool', () => {
         expect(result.template).to.equal(ResponseTemplate.submitValidationError);
         expect(result.data.validationErrors).to.be.an('array');
         expect(result.data.validationErrors.length).to.equal(2);
-        expect(result.data.validationErrors[0].message).to.equal('Email is required');
+        expect(result.data.validationErrors[0].error).to.equal('Email is required');
         mockForm.submit = submit;
     });
 
@@ -254,6 +253,27 @@ describe('submitCompletedForm Tool', () => {
         );
 
         expect(passedAuthInfo).to.equal(mockAuthInfo);
+        mockForm.submit = submit;
+    });
+
+    it('uses original submission when form.submit returns null', async () => {
+        var submit = mockForm.submit;
+        mockForm.submit = async () => null as any;
+
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                form_data: {
+                    firstName: 'John',
+                    email: 'john@example.com'
+                }
+            },
+            { authInfo: mockAuthInfo }
+        );
+
+        // When submit returns null, the original converted submission is used
+        expect(result.template).to.equal(ResponseTemplate.formSubmitted);
+        expect(result.data.data).to.exist;
         mockForm.submit = submit;
     });
 

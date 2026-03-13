@@ -1,60 +1,89 @@
 # The Form.io Universal Agent Gateway (UAG)
-The Universal Agent Gateway (UAG) introduces the power of [Form.io](https://form.io) forms to AI agents.  
+The Universal Agent Gateway (UAG) leverages the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/docs/getting-started/intro) to enable in-process agentic automation using Form.io. It provides to an AI Agent the same thing that our [JavaScript Renderer](https://github.com/formio/formio.js) provides to a human; an interpretation of the Form JSON schema into an understandable format. In the case of UAG, it transforms the Form JSON model into an AI readible markdown format so that the Agent can easily understand the purpose and structure of the data that needs to be collected.
 
-The Form.io UAG uses the [**Model Context Protocol (MCP)**](https://modelcontextprotocol.io/docs/getting-started/intro) to enable Form.io interaction through an AI agent workflow. By providing AI agents with the **dynamic context** of how to use Form.io JSON forms,  the UAG allows a user to interact with any aspect of their enterprise system served by the Form.io Platform directly through their AI agent.
+![Diagram showing how the UAG provides an AI Agent the ability to read and understand a Form.io Form JSON. Similar to how the JavaScript renderer provides a Human the ability to visually see a rendered form.](./examples/images/uag-agent-rendering.png)
 
----
+There are two primary scenarios that the UAG enables:
 
-## Table of Contents
+ - **Unstructured content conversion to deterministic structured data**:  This capability uses the JSON schema of a Form.io form to produce a deterministic structured data object provided a Natural Language input. 
 
-- [The Form.io Universal Agent Gateway (UAG)](#the-formio-universal-agent-gateway-uag)
-  - [Introduction](#introduction)  
-    - [The Model Context Protocol (MCP)](#the-model-context-protocol-mcp)  
-    - [Dynamic Context](#dynamic-context)  
-    - [The Role of the UAG](#the-role-of-the-uag)  
-  - [Technical Overview](#technical-overview)
-    - [MCP Tools](#pre-defined-mcp-tools-providing-dynamic-context)
-    - [Custom Modules](#custom-modules)
-    - [Module Documentation](./module)
-  - [Deploying UAG](#deploying-uag)
-    - [Runtime Environments](#runtime-environments)
-      - [Docker](#docker)
-      - [Node.js (Express)](#nodejs-express)
-    - [Environment Variables](#environment-variables)
-    - [Running on Public Domain](#running-on-public-domain)
-  - [Using with Form.io Enterprise Server](#using-with-formio-enterprise-server)
+ ![Conversion of natural language to structured data using UAG.](./examples/images/uag-natural-language.png)
+
+ - **Agentic Form.io Workflows**: UAG provides an AI Agent the ability to take existing submission data + "context" criteria in order to prompt an AI Agent to provide its own data and analysis within a workflow scenario. The following example, which shows a college application process using a Form.io application form, shows how this primary scenario works.
+
+  ![Agentic workflow automation example diagram using UAG](./examples/images/uag-agent-provide-data.png)
+
+  For more information on Agentic workflows, checkout the dedicated [Agentic Workflows](#agentic-workflows) section
 
 ---
 
-## Introduction
-The core purpose of the UAG is to equip AI agents with the ability to forward a user's inputs to the Form.io platform. It allows the AI agent to apply natural language requests, scanned documents, and any other input it can parse into Form.io functionality, as defined by selected forms and fields.
+One of the many benefits that the UAG has to offer is the ability to inject **Dynamic Context** into an AI processing cycle. This is achieved from the dynamic nature of the Form JSON schemas that can easily be modified and deployed to any enviornment without the need to update your application or re-train the agents within the process. Because of this, dynamic context changes can be injected seamlessly into an existing running process which will automatically update the behaviors of the Agents utilzing the UAG.
 
-  ### The Model Context Protocol (MCP)
-  The Model Context Protocol (MCP) is an open-source standard for connecting AI applications to external systems.  
+## Try it out!
+The quickest way to try out the UAG run the [Local Example](examples/local) which will spin up a local instance of Form.io Open Source and UAG. This can then be connected to an AI agent, which will have the ability to interact with the included example forms. The local example can be run entirely free, with no trial or license required.
 
-  The MCP essentially puts an AI agent's hands on the controls of an external system. In the case of Form.io, the MCP describes a discrete set of tools the AI agent can use to interact with forms, fields, and submissions. While some tools are delivered off-the-shelf, this functionality can be extended, modified, or refined through custom built modules.
+**[Go to Local Example &raquo;](examples/local)**
 
-  ### Dynamic Context
-  What does it mean to say MCP provides a dynamic context for how to use these tools?
+---
 
-  The power of AI agents is their ability to parse free-form inputs, like natural language, and infer a user's intent rather than  take rote input like a command line. The dynamic context delivered by MCP gives the AI agent guidance on how to correlate the user's prompt to the tools and data available within Form.io. When the AI agent receives a prompt, it uses this dynamic context to determine what tool it should use, what elements of the prompt are inputs to that tool, and what additional input might be necessary. 
+## Agentic Workflows
+One of the more powerful features of the **UAG** is the `agent_process_data` tool. This tool provides the ability to instruct a generically trained agent how to analyze existing submission data, and then produce its own data by following a configurable **Criteria**. This behavior historically could only be achieved using a specifically trained agent, which does not provide any benefits of dynamic configurability that the Form.io platform offers. This tool is able to achieve this goal by providing a generally trained agent with the necessary "context" it needs to accurately produce its own data as part of an automated workflow. This feature is particularly helpful if you wish to utilize the UAG within an Agentic Workflow, where the AI Agent is capable of understanding structured data, and then contribute its own data by following the configured **Criteria** "context" provided by the UAG. 
 
-  ### The Role of the UAG
-  The UAG is the package that contains everything sitting between the Form.io Platform and the AI agent.
-  It contains the stock MCP server, the authorization infrastructure, and any custom tools or modules that extend the functionality.
+For example, let's suppose you wish to automate the backend administration behind a College Application Process. In this example, a potential student submits an application that consists of many different fields of data, such as Academnics, Extra curricular activities, Honors, Volunteer work, as well as possibly written Essays. Historically, these applications would be reviewed by an administrator in order to assess the candidates qualifications for acceptance. With the `agent_provide_data` tool, it is now possible to automate this process as the following diagram illustrates.
 
-  By equipping an AI agent with Form.io capabilities, the UAG brings the AI agent much deeper into the broader application ecosystem.  
-  Form.io's drag-and-drop Form Builder simultaneously defines the look of the form and the structure of the data. This makes it easy to use data collected through Form.io forms elsewhere in an application or as an input to other enterprise systems.  
-  ![](./examples/images/form-interfaces.png)
+![Process example of using the UAG `agent_provide_data` to achieve Agentic workflow automation](./examples/images/uag-agent-provide-data.png)
+
+To achieve this feat, the `agent_provide_data` tool utilizes the following information, which is then fed to the Generally trained agent to produce its own submission data.
+
+ - **Existing Submission Data**: In order for the agent to be able to contribute its own data, it must first have an existing submission to be used as the data that it will analyze according to the configured **Criteria**.
+ - **Criteria**: This is a piece of content that provides the agent the **Criteria** to follow when analyzing the data, but also provides instructions on how the agent should populate the **Required Fields**.
+ - **Required Fields**: These are the form fields which the Agent is required to fill out as part of the `agent_provide_data` process.
+
+### Setup
+ To configure a form to use the `agent_provide_data` tool, you must first designate a section of your form that will be read and used by the AI Agent. This is similar to what you would see in a form that says "For Office Use Only", but instead of a Human contributing to the values of this section, it will be an automated AI Agent. There are two types of fields that can be added to a form to configure it for use by the `agent_provide_data` tool:  **Criteria** and **Agent Fields**
  
-  When the UAG is able to map the freeform inputs that an AI agent receives to the data model defined by a form, it means that data can be quickly supplied to the enterprise tools that depend on the Form.io platform without additional interpretation or transformation.  
-  This allows the UAG and Form.io to serve as a reliable middleware between an AI agent and countless other systems.
+#### Agent "Criteria" component
+The first thing that needs to be configured is a special **Content Component** that instructs the AI Agent how to interpret the data. For example, here is a Criteria content block that was written to instruct an AI Agent on how to assess the submission of a College Application Essay.
 
- The same role-based access control that governs all Form.io forms and submissions still applies to any interaction through the UAG. This addresses many potential issues some users may have with connecting AI agents to enterprise systems.
+![An example content of criteria](./examples/images/criteria-example.png)
 
-  Here is a visual graphic of the layers provided by the UAG to achieve a trusted and deterministic interface between AI Agents to external systems through the UAG + Form.io Server.
+The goal of this content is to be written as you would write an instruction manual for a new employee who needs to learn how to analyze and understand the submission data that is provided. It is also used to instruct the AI Agent on how to populate the form values that are configured for that criteria.  Once this criteria is written, It will then need to be "flagged" as a UAG field by adding a property called `uag` and the value of that property is to be thought of as the `persona` of the Agent. This provides the ability to have more than one agent assume different roles as it analyzes the submission data to provide their own values. In addition, the "criteria" content will also need to be provided a `uagField` property with the value equal to `criteria`.  Below is what a properly configured `uag` criteria content component looks like.  
 
-  ![](./examples/images/agents_to_formio.png)
+![Image showing how to configure the "criteria" and "persona" fields within a form used within an agentic automation task.](./examples/images/criteria-properties.png)
+
+Once you have added this `Criteria` **Content Component** to your form, the next object is to add the fields you wish for the Agent to populate. These are called the **Agent Fields**. 
+
+#### Agent Fields
+Anywhere in your form, you can drag and drop fields that can be flagged as Agent fields. Using the example above, imagine your form has a "For Office Use Only" section (maybe a Panel).  Within this panel, the first thing you see is a Content Component with instructions on how the following fields should be filled out. This is the `Criteria` we just described. The next thing that follows are the fields that the Agent needs to populate. Any field that with a property of `uag` set to the same value as the `Criteria` content component will be used as the Agent fields. 
+
+For example, lets suppose that we have created a form for College Application essays. Below the **Criteria** may be some fields that the Agent needs to "score" the essays according to the provided **Criteria**.  This may look like the following...
+
+![Example showing how the agent fields are paired along with the criteria so that the agent is aware of what fields it can populate.](./examples/images/agent-fields.png)
+
+In order to "flag" each of these fields as Agent Fields, you simply need to add the `uag` property with the same persona flag that was giving to the `Criteria` content.
+
+![Image showing how the `uag` custom property is used to flag that this is a field that can be populated via the agent.](./examples/images/agent-field-property.png)
+
+**Nested Components**
+It is also possible to "flag" a collection of fields with the `uag` property. This can be done by wrapping all of these fields within a **Nested Component** (such as Panel, Container, Fieldset, etc), and then all the fields within this nested component will be added to the context of that agent with that persona.
+
+### Multiple Persona's per form
+It is also possible to achieve multiple persona's per-form. This is very helpful if there are several isolated evaluations that need to occur within a process. For example, if we look at the flow chart diagram shown above, we can see a College Application Form. The first agentic evaluation occurs when the form is submitted by the applicant, where their application is assessed to be accepted or not. From that point, IF the applicant is accepted, a completely different evaluation needs to occur to award Financial Aid or even Scholarships to the applicant. These would require completely different criteria to assess the submission data differently from one another.
+
+To achieve this, you simply need to "flag" the components `uag` property value differently with the persona that applies for that field. For the example above, you would add a Content component to assess the if the applicant should be accepted, and then provide the following `uag` property to that content.  `uag="application"`.  Any fields that need to be filled out by the AI Agent for application approval would also be flagged with the property `uag="application"`.  Then, in a different section of the form, you would create a separate Content component with the criteria for the financial admin AI Agent. This content would be flagged with the property `uag="finance"`.  Any fields that the finance admin AI Agent need to fill out would also be flagged with `uag="finance"`.  This provides a truely flexible and dynamic AI engagement where multiple generically trained agents can be "taught" dynamically how to read and interpret data that is only relevant to that part of the agentic process.
+
+## Integrations
+In order to a aid in the "agentification" of the UAG, we have also provided some "integrations" that can be used to directly communicate with the Generically trained AI Agents to utilize the UAG to accomplish automated AI Agent behaviors. This involves providing a single API endpoint that is capable of triggering the AI Agent process along with the connections to your deployed UAG. These API endpoints can then be triggered using a simple Webhook action within a form to start an Agentic process as the result of a Form submission. Here is a diagram of how specific integrations can be used to achieve a single API call to accomplish an agentic task.
+
+![Agentic process flow via single API call into Claude Integration](./examples/images/agent-flow.png)
+
+These integrations can be found within the **integrations** folder. The following **integrations** are provided to enable automated Agentic workflows.
+
+  - [Claude Integration](./integrations/claude)
+
+Please click on one of these integration links to read how they work.
+
+---
 
 ## Technical Overview
 The UAG can be thought of as consisting of many layers of functionality. Each layer is broadly either serving to fetch dynamic context, or submit deterministic data structures. The following layers are leveraged within the UAG:
@@ -70,7 +99,7 @@ The UAG can be thought of as consisting of many layers of functionality. Each la
    
 Here is a diagram to understand how all of these layers are organized to make up the UAG.
 
-![](./examples/images/uag-overview.png)
+![Technical diagram explaining the stack of UAG](./examples/images/uag-overview.png)
 
 ### Pre-defined MCP Tools providing Dynamic Context
 The following tools provided by the UAG can be described as follows:
@@ -84,17 +113,12 @@ The following tools provided by the UAG can be described as follows:
 | confirm_form_submission | This tool is used to provide a summary of all data collected before a submission is made to the form. |
 | submit_completed_form | Provides the AI agent with the ability to submit all of the data collected from the user to create the form submission. |
 | find_submissions | Enables the agent to parse a user's natural language request into a query for a submission, or a specific field of a particular submission. |
-| submission_update | Provides the AI agent with the ability to update an existing submission, either by supplying unfilled fields or updating existing ones if allowed. Provides the AI agent with the context of the existing field values, allowing inline changes or edits. | 
+| submission_update | Provides the AI agent with the ability to update an existing submission, either by supplying unfilled fields or updating existing ones if allowed. Provides the AI agent with the context of the existing field values, allowing inline changes or edits. |
+| agent_provide_data | Enables an AI Agent to be able to analyze existing submission data according to rules defined with a configurable **Criteria**. It will then instruct the Agent to provide generated data for fields configured for a specific **persona** using the `submission_update` tool. Please read the [**Agentic Workflows**](#agentic-workflows) section for more information about this toolset. |
+| fetch_external_data | This tool enables an AI Agent to pull external data into a form workflow through the use of either a Resource component, Select with URL, or a Data Source component. |
 
 ### Custom Modules
-While the UAG can be used as a stand-alone system to enable the interaction between AI agents and dynamic JSON forms, the true power of this platform will be realized when developers extend the capabilities of this platform to solve industry specific use cases through the use of Custom Modules and Tools. It is possible for a developer to create a **Module** that introduces a number of custom tools, actions, and pre-defined resources and forms to achieve interactions with industry specific technologies.
-
-For example, by creating a UAG Module for Salesforce, you can produce a system that can dynamically provide Customer and Company resource data structures to any AI agent, and then through the use of Custom Actions, you can integrate that structured data directly to Salesforce via their own API's as the following image illustrates.
-
-<sub>This is just an example.</sub>
-![](./examples/images/uag-custom-module.png)
-
-Custom modules are able to achieve this custom integration capabilities through the use of the following mechanisms:
+While the UAG can be used as a stand-alone system to enable the interaction between AI agents and dynamic JSON forms, the true power of this platform will be realized when developers extend the capabilities of this platform to solve industry specific use cases through the use of Custom Modules and Tools. It is possible for a developer to create a **Module** that introduces a number of custom tools, actions, and pre-defined resources and forms to achieve interactions with industry specific technologies. They are able to achieve this custom integration capabilities through the use of the following mechanisms:
 
  1. **Pre-defined Form and Resources**: Using the Form.io template system, a custom module can include a template export of a Form.io project that includes a number of Forms, Resources, and Actions (as well as any Roles and Permissions associated with them). By using the module, this will then automatically "register" these assets so that the AI agent is immediately aware of those assets.  
  For example, imagine a module includes a Customer resource with "First Name", "Last Name", and "Email" fields. If you then simply ask an AI agent, "I would like to add a new Customer" the agent will automatically be aware of the context for the customer data structures and know exactly what your intent is when making that request.
@@ -103,24 +127,20 @@ Custom modules are able to achieve this custom integration capabilities through 
  4. **Custom Authentication**: A module can also modify the "authentication" landing page to assist with any custom requirements that are needed around Authentication. 
  5. **Behavior Overrides**: A module also has the ability to "override" any default behavior from the UAG. This ensures that whomever is using a certain module can "tweak" certain tools and responses to achieve better results as it pertains their their industry specific needs.
 
-Form.io aims to enable developers to build and contribute their own custom modules to the broader community through GitHub and NPM. For example, once these modules proliferate, it may be possible to install the salesforce module for UAG with the following.
+Form.io aims to enable developers to build and contribute their own custom modules to the broader community through GitHub and NPM. 
 
-<sub>This is just an example.</sub>
-```
-npm install salesforce-uag
-```
-
-and then use it as follows.
+#### Using a Custom Module
+Once a custom module is developed, anyone can install that module (via NPM) and then easily use your module in the following way...
 
 <sub>This is just an example.</sub>
 ```js
 import { UAGServer } from '@formio/uag';
-import { SalesforceUAG } from 'salesforce-uag';
+import { ExampleUAG } from '@example/uag';
 import Express from 'express';
 try {
     (async function () {
         const server = new UAGServer();
-        server.use(SalesforceUAG);
+        server.use(ExampleUAG);
         const app = Express();
         app.use(await server.router());
         const port = process.env.PORT || 3200;
@@ -140,12 +160,7 @@ To get started in building your own custom module, go to the help documentation 
 ## Deploying UAG
 The following sections describe the process of creating a running instance of UAG, connecting it to the Form.io Platform, and configuring an AI agent to use it.
 
-This documentation focuses on using UAG with Form.io Open Source. For documentation on using UAG with Form.io Enterprise, refer to [Help.Form.io/UAG](https://help.form.io/uag).
-
-### Local Example
-The quickest way to become familiar with the UAG is to first walk through our Local Example, which will spin up a local instance of Form.io Open Source and UAG. This can then be connected to an AI agent, which will have the ability to interact with the included example forms. The local example can be run entirely free, with no trial or license required.
-
-**[Go to Local Example &raquo;](examples/local)**
+This documentation focuses on using UAG with Form.io Open Source. For documentation on using UAG with Form.io Enterprise, refer to [https://help.form.io/uag](https://help.form.io/uag).
 
 ### Runtime Environments
 There are currently two run-time environments that work with the UAG:

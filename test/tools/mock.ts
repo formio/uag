@@ -58,7 +58,7 @@ export class MockFormInterface extends UAGFormInterface {
     }
 
     async find(query: any) {
-        let found = [];
+        let found = [...this.submissions];
         delete query.limit;
         delete query.skip;
         for (const [key, value] of Object.entries(query)) {
@@ -76,10 +76,14 @@ export class MockFormInterface extends UAGFormInterface {
                     return fieldValue < parseFloat(value as string);
                 } else if (operator === 'lte') {
                     return fieldValue <= parseFloat(value as string);
+                } else if (operator === 'ne') {
+                    return fieldValue !== (value as string);
                 } else if (operator === 'in') {
-                    return ((value as string).split(',') as string[]).includes(fieldValue);
+                    const inValues = Array.isArray(value) ? value : (value as string).split(',');
+                    return inValues.includes(fieldValue);
                 } else if (operator === 'nin') {
-                    return !((value as string).split(',') as string[]).includes(fieldValue);
+                    const ninValues = Array.isArray(value) ? value : (value as string).split(',');
+                    return !ninValues.includes(fieldValue);
                 } else {
                     return fieldValue === (value as string);
                 }

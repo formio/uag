@@ -61,10 +61,10 @@ describe('Simple form tests', async () => {
         const summary = JSON.parse(result.data?.dataSummary || '{}');
         expect(summary.data.length).to.equal(3);
         expect(summary.data[0].path).to.equal('firstName');
-        expect(summary.data[0].value).to.equal('Joe');
+        expect(summary.data[0].value).to.equal('"Joe"');
         expect(summary.data[1].path).to.equal('lastName');
-        expect(summary.data[1].value).to.equal('Smith');
+        expect(summary.data[1].value).to.equal('"Smith"');
         expect(summary.data[2].path).to.equal('email');
-        expect(summary.data[2].value).to.equal('joe@example.com');
+        expect(summary.data[2].value).to.equal('"joe@example.com"');
     });
 });

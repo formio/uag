@@ -2,4 +2,5 @@
 - **<%= field.label %>**
   - data_path: "<%= field.path %>"
   - field_type: <%= field.type %><% if (field.description) { %>
-  - Description: <%= field.description %><% } %><% }); %>
+  - Description: <%= field.description %><% } %><% if (field.rule) { %>
+  - Value Rule: "<%= field.rule %>"<% } %><% }); %>

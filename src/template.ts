@@ -8,7 +8,6 @@ import { UAGTemplateConfig } from './config';
  */
 export enum ResponseTemplate {
     collectedData = 'collectedData',
-    submittedData = 'submittedData',
     fieldRules = 'fieldRules',
     allFieldsCollected = 'allFieldsCollected',
     getFormFieldsEmpty = 'getFormFieldsEmpty',
@@ -22,6 +21,7 @@ export enum ResponseTemplate {
     formNotFound = 'formNotFound',
     noSubmissionsFound = 'noSubmissionsFound',
     submissionsFound = 'submissionsFound',
+    submissionCount = 'submissionCount',
     submissionSearchError = 'submissionSearchError',
     submissionNotFound = 'submissionNotFound',
     updateNotConfirmed = 'updateNotConfirmed',
@@ -34,8 +34,14 @@ export enum ResponseTemplate {
     fieldValidationErrors = 'fieldValidationErrors',
     fields = 'fields',
     fieldList = 'fieldList',
+    fieldValues = 'fieldValues',
+    formData = 'formData',
     getAvailableForms = 'getAvailableForms',
     noFormsAvailable = 'noFormsAvailable',
+    uagComponentNotFound = 'uagComponentNotFound',
+    agentProcessData = 'agentProcessData',
+    fetchExternalData = 'fetchExternalData',
+    fetchExternalDataError = 'fetchExternalDataError'
 }
 
 export class UAGTemplate {

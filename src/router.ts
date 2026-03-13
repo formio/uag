@@ -41,7 +41,9 @@ export function UAGRouter(project: UAGProjectInterface): Router {
             const transport = new StreamableHTTPServerTransport({
                 sessionIdGenerator: undefined,  // Use "undefined" to trigger stateless mode.
             });
-            project.mcpServer.connect(transport);
+            // Close any existing connection before connecting to a new transport (required in SDK 1.26.0+)
+            await project.mcpServer.close();
+            await project.mcpServer.connect(transport);
             if (!transport) {
                 res.status(500).json(JSON.parse(createJsonRpcErrorResponse(-32603, "Unable to create MCP transport.")));
                 return;
@@ -59,7 +61,9 @@ export function UAGRouter(project: UAGProjectInterface): Router {
             const transport = new StreamableHTTPServerTransport({
                 sessionIdGenerator: undefined,  // Use "undefined" to trigger stateless mode.
             });
-            project.mcpServer.connect(transport);
+            // Close any existing connection before connecting to a new transport (required in SDK 1.26.0+)
+            await project.mcpServer.close();
+            await project.mcpServer.connect(transport);
             if (!transport) {
                 res.status(500).json(JSON.parse(createJsonRpcErrorResponse(-32603, "Unable to create MCP transport.")));
                 return;

@@ -13,12 +13,20 @@ export class UAGServer extends Server {
       baseUrl: get(process.env, 'BASE_URL', '').toString(),
       license: get(process.env, 'UAG_LICENSE', '').toString(),
       submissionProxy: true,
+      processAsClient: true,
       auth: { pkce: true }
     }));
     this.use({
       ProjectInterface: UAGProjectInterface,
       FormInterface: UAGFormInterface
     });
+  }
+
+  async router() {
+    const router = await super.router();
+    const uagProject = Object.values(this.projectRouter?.projects || {})[0] as UAGProjectInterface;
+    router.use(uagProject.uagRouter());
+    return router;
   }
 }
 

@@ -1,20 +1,25 @@
-import { AuthRequest, FormInterface, InterpolatedError } from "@formio/appserver";
+import { AppServerForm, AuthRequest, FormInterface, InterpolatedError } from "@formio/appserver";
 import {
     Component,
     TextFieldComponent,
+    TextAreaComponent,
     DateTimeComponent,
+    ContentComponent,
     DayComponent,
     SelectComponent,
+    HasChildComponents,
     Utils,
     Submission,
     Processors,
     DataObject,
     componentHasValue,
-    interpolateErrors
+    interpolateErrors,
+    ComponentPaths
 } from "@formio/core";
-import { set, get, isObjectLike, isEqual } from "lodash";
+import { set, get, isObjectLike, isEqual, isString } from "lodash";
 import { UAGForm } from "./config";
 import { ParentInfo } from "./tools";
+import { NodeHtmlMarkdown } from 'node-html-markdown'
 
 export type UAGComponentInfo = {
     path: string;
@@ -26,6 +31,7 @@ export type UAGComponentInfo = {
     options?: { label: string; value: string }[];
     prompt?: string;
     nested?: boolean;
+    rule?: string;
 };
 
 export type UAGData = Array<{ label: string; value: any, path: string, prefix?: string }>;
@@ -58,8 +64,58 @@ export type FormFieldInfo = {
     };
 }
 
+export type UAGFields = {
+    persona: string;
+    criteria: string;
+    components: Record<string, UAGComponentInfo>;
+}
+
 export class UAGFormInterface extends FormInterface {
     public uag: UAGForm | null = null;
+    public uagFields: Record<string, UAGFields> = {};
+    setComponent(
+        form: AppServerForm,
+        component: Component,
+        path: string,
+        components: Component[] | undefined,
+        parent: Component | undefined,
+        paths: ComponentPaths | undefined
+    ): void {
+        if (form.tags?.includes('uag') && component.properties?.uag) {
+            const persona = component.properties?.uag;
+            if (!this.uagFields) {
+                this.uagFields = {};
+            }
+            let uagFields: any = this.uagFields[persona];
+            if (!uagFields) {
+                uagFields = { components: {} };
+            }
+            if (component.properties?.uagField) {
+                const property = component.properties?.uagField;
+                if ((component as ContentComponent)?.html) {
+                    uagFields[property] = this.htmlToMarkdown((component as ContentComponent).html);
+                }
+            }
+            else {
+                if ((component as HasChildComponents).components) {
+                    Utils.eachComponent((component as HasChildComponents).components, (subComp, subPath) => {
+                        subPath = paths?.dataPath ? `${paths.dataPath}.${subPath}` : subPath;
+                        const compInfo = this.getComponentInfo(subComp, subPath);
+                        compInfo.rule = this.getComponentValueRule(subComp);
+                        uagFields.components[compInfo.path] = compInfo;
+                    });
+                }
+                else {
+                    const compInfo = this.getComponentInfo(component, paths?.dataPath || '');
+                    compInfo.rule = this.getComponentValueRule(component);
+                    uagFields.components[compInfo.path] = compInfo;
+                }
+            }
+            this.uagFields[persona] = uagFields;
+        }
+        return super.setComponent(form, component, path, components, parent, paths);
+    }
+
     getComponentFormat(component: Component): string {
         switch (component.type) {
             case 'phoneNumber':
@@ -89,9 +145,9 @@ export class UAGFormInterface extends FormInterface {
         }
         if (component.type === 'select' || component.type === 'selectboxes') {
             if ((component as SelectComponent).dataSrc === 'url') {
-                fieldInfo.options = [{ label: '** ANY VALUE IS ALLOWED **', value: 'Options are loaded from a URL.' }];
+                fieldInfo.options = [{ label: '** USE fetch_external_data TOOL **', value: `Call the \`fetch_external_data\` tool with \`field_path\`="${path}" to retrieve available options from the external URL.` }];
             } else if ((component as SelectComponent).dataSrc === 'resource') {
-                fieldInfo.options = [{ label: '** ANY VALUE IS ALLOWED **', value: `Options are loaded from the Form.io resource (${((component as SelectComponent).data as any).resource}).` }];
+                fieldInfo.options = [{ label: '** USE fetch_external_data TOOL **', value: `Call the \`fetch_external_data\` tool with \`field_path\`="${path}" to retrieve available options from the Form.io resource (${((component as SelectComponent).data as any).resource}).` }];
             } else if ((component as SelectComponent).dataSrc === 'json') {
                 fieldInfo.options = [{ label: '** ANY VALUE IS ALLOWED **', value: 'Options are not dynamically defined.' }];
             } else {
@@ -106,6 +162,9 @@ export class UAGFormInterface extends FormInterface {
                     }, []);
                 }
             }
+        }
+        if (component.type === 'datasource') {
+            fieldInfo.options = [{ label: '** USE fetch_external_data TOOL **', value: `Call the \`fetch_external_data\` tool with \`field_path\`="${path}" to retrieve data from the external datasource.` }];
         }
         fieldInfo.nested = this.isNestedComponent(component);
         return fieldInfo;
@@ -218,6 +277,12 @@ export class UAGFormInterface extends FormInterface {
                 break;
             case 'selectboxes':
             case 'select':
+                if ((component as SelectComponent).dataSrc === 'url' || (component as SelectComponent).dataSrc === 'resource') {
+                    rule += `You MUST first call the \`fetch_external_data\` tool with the \`field_path\` set to this component's \`data_path\` to retrieve the available options, then select ${this.isMultiple(component) ? 'one or more (as comma separated values)' : 'one'} of the returned options. Use the **value** (not the label) when setting this field's data.`;
+                } else {
+                    rule += `The value must be ${this.isMultiple(component) ? 'one or more (as comma separated values)' : 'one'} of the following options provided in the "**Options**" section of that component, formatted as " - Label (value)":`;
+                }
+                break;
             case 'radio':
                 rule += `The value must be ${this.isMultiple(component) ? 'one or more (as comma separated values)' : 'one'} of the following options provided in the "**Options**" section of that component, formatted as " - Label (value)":`;
                 break;
@@ -235,6 +300,20 @@ export class UAGFormInterface extends FormInterface {
                 break;
             case 'email':
                 rule += 'The value must be a valid email address.';
+                break;
+            case 'datasource':
+                rule += 'You MUST first call the `fetch_external_data` tool with the `field_path` set to this component\'s `data_path` to retrieve the external data. The value will be set automatically from the fetched data.';
+                break;
+            case 'survey':
+                rule += 'The value is an object of question/value pairs based on the following survey configuration.\n';
+                rule += '    **Keys**: The value `keys` will be the "value" property for each question in the survey configuration.';
+                (component as any).questions.forEach((question: any, index: number) => {
+                    rule += `\n      - **${question.label}** (${question.value}): ${question.tooltip || ''}`;
+                });
+                rule += '\n\n    **Values**: Only ONE of the the following values are allowed for each question.';
+                (component as any).values.forEach((value: any) => {
+                    rule += `\n      - **${value.label}** (${value.value})`;
+                });
                 break;
             default:
                 rule += '';
@@ -298,6 +377,32 @@ export class UAGFormInterface extends FormInterface {
     }
 
     /**
+     * Override the process methods for the UAG.
+     */
+    override async process(
+        submission: Submission,
+        auth: AuthRequest,
+        headers: any = {},
+        findQuery: any = {},
+        additional: any[] = []
+    ) {
+        const processors = [...Processors, ...additional];
+
+        // Remove the 'fetch' processor since UAG handles this with the fetch_external_data tool.
+        const fetchIndex = processors.findIndex((p) => p.name === 'fetch');
+        if (fetchIndex !== -1) {
+            processors.splice(fetchIndex, 1);
+        }
+
+        // Return the processed submission data.
+        const context = await super.process(submission, auth, headers, findQuery, processors);
+
+        // Filter the "required" validation since the UAG retrieves required fields separately.
+        context.scope.errors = context.scope.errors.filter((error: any) => (error.ruleName !== 'required'));
+        return context;
+    }
+
+    /**
      * Get the relevant fields from the current form. This will return any non-nested input components whose
      * values have not already been set within the data model. This allows the agent to know what fields still need to be 
      * collected from the user, as well as provides a mechanism to break up large forms into smaller chunks of data collection
@@ -327,12 +432,11 @@ export class UAGFormInterface extends FormInterface {
             optional: { components: [], rules: {} }
         };
         const nestedPaths: string[] = [];
-        const context = await this.process(submission, authInfo, null, null, null, [
-            ...Processors,
+        const context = await this.process(submission, authInfo, null, null, [
             {
                 name: 'getFields',
                 shouldProcess: () => true,
-                process: async (context) => {
+                process: async (context: any) => {
                     const { component, path, value, data } = context;
                     if (this.isNestedComponent(component)) {
                         // For nested components, we need to always have a value so that the child components
@@ -412,11 +516,7 @@ export class UAGFormInterface extends FormInterface {
             }
         ]);
         if (context.scope?.errors?.length) {
-            // Filter the "required" validation since those are added to the fieldInfo separately.
-            context.scope.errors = context.scope.errors.filter((error: any) => (error.ruleName !== 'required'));
-            if (context.scope.errors?.length) {
-                fieldInfo.errors = this.convertToFormFieldErrors(interpolateErrors(context.scope.errors));
-            }
+            fieldInfo.errors = this.convertToFormFieldErrors(interpolateErrors(context.scope.errors));
         }
         return fieldInfo;
     }
@@ -479,8 +579,13 @@ export class UAGFormInterface extends FormInterface {
     formatData(data: DataObject = {}): UAGData {
         const uagData: UAGData = [];
         let prefix = '';
+        let withinUAG = false;
         Utils.eachComponentData(this.form?.components || [], data, (component, data, row, path) => {
             let value = get(data, path);
+            if (component.key === 'uag' || withinUAG) {
+                withinUAG = true;
+                return true;
+            }
             if (this.isNestedComponent(component)) {
                 uagData.push({
                     prefix,
@@ -491,16 +596,32 @@ export class UAGFormInterface extends FormInterface {
                 prefix += '  ';
             }
             else if (this.inputComponent(component) && componentHasValue(component, value)) {
+                const modelType = Utils.getModelType(component);
+                if (isObjectLike(value)) {
+                    value = JSON.stringify(value);
+                }
+                else if (modelType === 'string' && isString(value)) {
+                    const editor = (component as TextAreaComponent).editor;
+                    if (editor === 'ckeditor' || editor === 'quill') {
+                        value = this.htmlToMarkdown(value);
+                    }
+                    else {
+                        value = `"${value.trim()}"`;
+                    }
+                }
                 uagData.push({
                     prefix,
                     path,
                     label: component.label || component.key || path,
-                    value: isObjectLike(value) ? JSON.stringify(value) : value
+                    value
                 });
             }
         }, false, false, undefined, undefined, undefined, (component, data) => {
             if (this.isNestedComponent(component)) {
                 prefix = prefix.slice(0, -3);
+            }
+            if (component.key === 'uag' || withinUAG) {
+                withinUAG = false;
             }
         });
         return uagData;
@@ -513,5 +634,14 @@ export class UAGFormInterface extends FormInterface {
             created: submission.created,
             modified: submission.modified
         };
+    }
+
+    htmlToMarkdown(html: string): string {
+        return NodeHtmlMarkdown.translate(html, {
+            bulletMarker: '-',
+            emDelimiter: '*',
+            strongDelimiter: '**',
+            indent: '  '
+        });
     }
 }
