@@ -1,0 +1,127 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.form/uag",
+  "description": "The Universal Agent Gateway (UAG) enables in-process agentic automation using Form.io.",
+  "repository": {
+    "url": "https://github.com/formio/uag",
+    "source": "github"
+  },
+  "version": "1.10.2",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@formio/uag",
+      "version": "1.10.2",
+      "transport": {
+        "type": "streamable-http"
+      },
+      "environmentVariables": [
+        {
+          "name": "PROJECT",
+          "description": "API endpoint to Enterprise project or OSS server",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "PROJECT_KEY",
+          "description": "Project API Key (Enterprise) or ADMIN_KEY (OSS)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "ADMIN_KEY",
+          "description": "Server admin key for Community Edition. Not required for Enterprise deployment.",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "UAG_LICENSE",
+          "description": "License for Enterprise deployment. Not required for Community Edition. ",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "JWT_SECRET",
+          "description": "Secret used to generate and validate JWT tokens",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "PORT",
+          "description": "Server port (default: 3200)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "PROJECT_TTL",
+          "description": "Project cache refresh interval in seconds (default: 900)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "JWT_EXPIRE_TIME",
+          "description": "JWT token expiration in seconds (default: 3600)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "PORTAL_SECRET",
+          "description": "Enterprise Portal connection secret",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "MONGO",
+          "description": "Direct MongoDB connection URI (Enterprise)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "MONGO_CONFIG",
+          "description": "MongoDB driver configuration (JSON)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "BASE_URL",
+          "description": "Public URL that the UAG is hosted on",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "LOGIN_FORM",
+          "description": "Public URL to login form JSON endpoint",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "CORS",
+          "description": "CORS domain or JSON configuration (default: *)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "DEBUG",
+          "description": "Debug logging filter (e.g. formio.*)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}

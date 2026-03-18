@@ -1,6 +1,7 @@
 {
   "name": "@formio/uag",
-  "version": "1.10.2",
+  "version": "1.11.0",
+  "mcpName": "io.form/uag",
   "description": "The Form.io Universal Agent Gateway (UAG).",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -21,7 +22,11 @@
     "start": "node --no-node-snapshot index.js",
     "claude": "node --no-node-snapshot ./integrations/claude/index.js"
   },
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/formio/uag.git"
+  },
+  "author": "Form.io Developers",
   "license": "MIT",
   "dependencies": {
     "@formio/appserver": "^2.12.2",
@@ -52,12 +57,12 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/lodash": "^4.17.24",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^25.3.2",
+    "@types/node": "^25.5.0",
     "@types/supertest": "^7.2.0",
     "chai": "^6.2.2",
     "mocha": "^11.7.5",
     "supertest": "^7.2.2",
-    "terser": "^5.46.0",
+    "terser": "^5.46.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
