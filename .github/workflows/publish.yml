@@ -31,7 +31,7 @@ jobs:
         run: yarn build --if-present
 
       - name: Publish package to npm
-        run: yarn publish
+        run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
