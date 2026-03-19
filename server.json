@@ -6,14 +6,15 @@
     "url": "https://github.com/formio/uag",
     "source": "github"
   },
-  "version": "1.10.2",
+  "version": "1.11.1",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@formio/uag",
-      "version": "1.10.2",
+      "version": "1.11.1",
       "transport": {
-        "type": "streamable-http"
+        "type": "streamable-http",
+        "url": "http://localhost:3200/mcp"
       },
       "environmentVariables": [
         {
