@@ -3,7 +3,7 @@
 FROM node:lts-alpine AS builder
 WORKDIR /app
 COPY package.json yarn.lock* ./
-RUN apk add --no-cache make python3 g++ git && yarn install
+RUN apk upgrade --no-cache && apk add --no-cache make python3 g++ git && yarn install
 COPY src/ ./src/
 COPY module/ ./module/
 COPY index.js tsconfig.json ./
@@ -11,7 +11,7 @@ RUN yarn run build
 
 # Production stage
 FROM node:lts-alpine
-RUN apk upgrade --no-cache
+RUN apk upgrade --no-cache && npm install -g npm@latest
 WORKDIR /app
 COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/module ./module
