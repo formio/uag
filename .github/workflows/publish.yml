@@ -38,7 +38,9 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Docker Build
-        run: docker build -t formio/uag --platform=linux/amd64 .
+        run: |
+          docker build -t formio/uag --platform=linux/amd64 .
+          docker tag formio/uag:latest formio/uag:${GITHUB_REF#refs/tags/v}
 
       - name: Docker Login
         uses: docker/login-action@v4
@@ -47,7 +49,9 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Docker Push
-        run: docker push formio/uag
+        run: |
+          docker push formio/uag:latest
+          docker push formio/uag:${GITHUB_REF#refs/tags/v}
 
       ### Publish MCP server:
       - name: Install mcp-publisher

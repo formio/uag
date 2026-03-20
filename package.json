@@ -1,6 +1,6 @@
 {
   "name": "@formio/uag",
-  "version": "1.11.1",
+  "version": "1.11.2",
   "mcpName": "io.form/uag",
   "description": "The Form.io Universal Agent Gateway (UAG).",
   "main": "lib/index.js",
@@ -46,7 +46,9 @@
     "tar": ">=7.5.12",
     "minimatch": ">=10.2.4",
     "brace-expansion": ">=5.0.1",
-    "diff": ">=8.0.3"
+    "diff": ">=8.0.3",
+    "serialize-javascript": ">=7.0.4",
+    "dompurify": ">=3.3.3"
   },
   "devDependencies": {
     "@types/chai": "^5.2.3",
