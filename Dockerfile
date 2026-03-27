@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Build stage
-FROM node:lts-alpine AS builder
+FROM node:24.14.1-alpine3.23 AS builder
 WORKDIR /app
 COPY package.json yarn.lock* ./
 RUN apk upgrade --no-cache && apk add --no-cache make python3 g++ git && yarn install
@@ -10,7 +10,7 @@ COPY index.js tsconfig.json ./
 RUN yarn run build
 
 # Production stage
-FROM node:lts-alpine
+FROM node:24.14.1-alpine3.23
 RUN apk upgrade --no-cache && npm install -g npm@latest
 WORKDIR /app
 COPY --from=builder /app/lib ./lib
