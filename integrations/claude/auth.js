@@ -55,15 +55,21 @@ export async function authenticate(req, res, next) {
     const auth = {
         grant_type: 'client_credentials',
     };
-    if (process.env.PROJECT_KEY) {
-        auth.client_id = 'x-token';
+    const projectName = process.env.PROJECT ? process.env.PROJECT.split('/').at(-1) : null;
+    if (process.env.PROJECT_KEY && projectName) {
+        auth.client_id = `${projectName}-x-token`;
         auth.client_secret = process.env.PROJECT_KEY;
     }
     else if (process.env.ADMIN_KEY) {
         auth.client_id = 'x-admin-key';
         auth.client_secret = process.env.ADMIN_KEY;
     }
-    const resp = await fetch(`${process.env.UAG_SERVER || process.env.BASE_URL}/auth/token`, {
+    let fetchUrl = process.env.UAG_SERVER || process.env.BASE_URL;
+    if (projectName) {
+        fetchUrl += `/${projectName}`;
+    }
+    fetchUrl += '/auth/token';
+    const resp = await fetch(fetchUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(auth),
