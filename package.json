@@ -40,7 +40,7 @@
     "lodash": "^4.17.23",
     "node-cache": "^5.1.2",
     "node-html-markdown": "^2.0.0",
-    "zod": "^4.3.6"
+    "zod": "^4.4.3"
   },
   "resolutions": {
     "tar": ">=7.5.12",
