@@ -6,6 +6,13 @@ The Universal Agent Gateway (UAG) leverages the [Model Context Protocol (MCP)](h
 
 ![Diagram showing how the UAG provides an AI Agent the ability to read and understand a Form.io Form JSON. Similar to how the JavaScript renderer provides a Human the ability to visually see a rendered form.](./examples/images/uag-agent-rendering.png)
 
+Official Documentation
+--------------------------
+For the latest documentation, release information, and guides, always refer to the official Form.io Help Documentation available here:
+
+**[https://help.form.io](https://help.form.io/dev/ai/uag)**
+
+--------------------------
 There are two primary scenarios that the UAG enables:
 
  - **Unstructured content conversion to deterministic structured data**:  This capability uses the JSON schema of a Form.io form to produce a deterministic structured data object provided a Natural Language input. 
