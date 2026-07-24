@@ -21,6 +21,13 @@ export class UAGProjectInterface extends ProjectInterface {
     async initialize(): Promise<void> {
         await super.initialize();
         this.uagTemplate = new UAGTemplate(this.config?.responseTemplates || {});
+        this.mcpServer = await this.buildMcpServer();
+    }
+
+    // Build a fresh McpServer with all tools registered. A new instance is created
+    // per request so concurrent requests never share (and overwrite) a transport.
+    async buildMcpServer(): Promise<McpServer> {
+        const server = new McpServer({ name: 'formio-uag', version: '1.0.0' });
 
         // Get the standard UAG tools.
         const tools = await getTools(this);
@@ -33,13 +40,14 @@ export class UAGProjectInterface extends ProjectInterface {
         // Iterate and register all the tools.
         for (const tool of tools) {
             if (tool?.name) {
-                this.mcpServer.registerTool(tool.name, {
+                server.registerTool(tool.name, {
                     title: tool.title,
                     description: tool.description,
                     inputSchema: tool.inputSchema
                 }, tool.execute);
             }
         }
+        return server;
     }
 
     addForm(form: Form, machineName: string): UAGFormInterface | undefined {
