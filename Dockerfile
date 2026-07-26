@@ -2,8 +2,8 @@
 # Build stage
 FROM node:lts-alpine AS builder
 WORKDIR /app
-COPY package.json yarn.lock* ./
-RUN apk upgrade --no-cache && apk add --no-cache make python3 g++ git && yarn install
+COPY package.json yarn.lock* .yarnrc.yml* ./
+RUN apk upgrade --no-cache && apk add --no-cache make python3 g++ git && corepack enable && yarn install
 COPY src/ ./src/
 COPY module/ ./module/
 COPY index.js tsconfig.json ./

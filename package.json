@@ -1,6 +1,6 @@
 {
   "name": "@formio/uag",
-  "version": "1.11.2",
+  "version": "1.12.0",
   "mcpName": "io.form/uag",
   "description": "The Form.io Universal Agent Gateway (UAG).",
   "main": "lib/index.js",
@@ -13,11 +13,11 @@
   ],
   "scripts": {
     "clean": "rm -rf lib",
-    "build:ts": "npx tsc",
+    "build:ts": "tsc",
     "build:copy-templates": "mkdir -p lib/templates && cp src/templates/*.md lib/templates/",
     "build": "npm run clean && npm run build:ts && npm run build:copy-templates",
     "build:docker": "docker build -t formio/uag$(node -p \"require('./package.json').version.includes('-rc.') ? ':rc' : ''\") --platform=linux/amd64 .",
-    "test": "TS_NODE_PROJECT=tsconfig.test.json mocha --no-node-snapshot",
+    "test": "tsc --noEmit -p tsconfig.test.json && mocha --no-node-snapshot",
     "dev": "tsx --no-node-snapshot index.js",
     "start": "node --no-node-snapshot index.js",
     "claude": "node --no-node-snapshot ./integrations/claude/index.js"
@@ -31,16 +31,16 @@
   "dependencies": {
     "@formio/appserver": "^2.12.2",
     "@formio/core": "2.5.1-dev.291.6557e4e",
-    "@modelcontextprotocol/sdk": "1.27.1",
+    "@modelcontextprotocol/sdk": "1.29.0",
     "cors": "^2.8.6",
     "debug": "^4.4.3",
-    "dotenv": "^17.3.1",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "lodash": "^4.17.23",
+    "lodash": "^4.18.1",
     "node-cache": "^5.1.2",
     "node-html-markdown": "^2.0.0",
-    "zod": "^4.3.6"
+    "zod": "^4.4.3"
   },
   "resolutions": {
     "tar": ">=7.5.12",
@@ -53,20 +53,20 @@
   "devDependencies": {
     "@types/chai": "^5.2.3",
     "@types/cors": "^2.8.19",
-    "@types/debug": "^4.1.12",
+    "@types/debug": "^4.1.13",
     "@types/dotenv": "^8.2.3",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/lodash": "^4.17.24",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^25.5.0",
-    "@types/supertest": "^7.2.0",
+    "@types/node": "^25.9.5",
+    "@types/supertest": "^7.2.1",
     "chai": "^6.2.2",
-    "mocha": "^11.7.5",
+    "mocha": "^11.7.6",
     "supertest": "^7.2.2",
-    "terser": "^5.46.1",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
-  }
+    "terser": "^5.49.0",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2"
+  },
+  "packageManager": "yarn@4.17.1"
 }

@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router, type Response as ExpressResponse } from 'express';
 import { UAGProjectInterface } from './UAGProjectInterface';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
@@ -18,7 +18,9 @@ const createJsonRpcErrorResponse = (code: number, message: string) => {
  * @param res The response object.
  * @returns True if the error was handled, false otherwise.
  */
-const handleResponseError = (error: unknown, res: Response): boolean => {
+const handleResponseError = (error: unknown, res: ExpressResponse): boolean => {
+    // A thrown fetch Response (the global Response, not Express's) carries the
+    // upstream status and headers that should be forwarded to the client.
     if (error instanceof Response) {
         const fixedHeaders: Record<string, string> = {};
         error.headers.forEach((value, key) => {
