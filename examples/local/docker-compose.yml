@@ -61,7 +61,7 @@ services:
       - formio-uag
     environment:
       PORT: 3300
-      CLAUDE_MODEL: claude-sonnet-4-5
+      CLAUDE_MODEL: claude-opus-5
       CLAUDE_API_KEY: sk-ant-api03-YOUR-KEY-HERE
       UAG_SERVER: http://formio-uag:3200
       ADMIN_KEY: CHANGEME

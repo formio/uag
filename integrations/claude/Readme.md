@@ -6,10 +6,10 @@ The Claude Integration for UAG provides a number of API endpoints that produce c
 
 Following this diagram, we can see the following process:
 
- - UAG is deployed connected to a Form.io project, or an OSS deployment. Forms tagged with "uag" are made available to the UAG. It needs to be web accessible.
+ - UAG is deployed connected to a Form.io project, or an OSS deployment. Forms tagged with "uag" are made available to the UAG. The UAG does **not** need to be publicly accessible — it only needs to be reachable by this integration server (e.g. on `localhost` or a private Docker network).
  - This integration server is also deployed alongside of the UAG, and is made web-accessible. See documentation below on how to deploy.
  - A POST request is then made to `/agent/claude/agent_provide_data` that contains the metadata that is handed to the `agent_provide_data.js` file within the "commands" folder. See documentation below on how to add new commands.
- - The command is then sent to the **Claude API** along with the connection details for the **UAG**.
+ - This integration connects to the UAG directly as an MCP client, then sends the command along with the UAG tool definitions to the **Claude API**. Whenever the Agent requests a tool, this integration executes it against the UAG and returns the result to the Agent — the Claude API only ever receives outbound requests and never connects back into your network.
  - The Agent then uses the UAG, which serves as an orchestrator for the AI Agentic behaviors.
  - The response from the Agent is then provided back to the response of the API and is then forwarded to the client.
 
@@ -34,9 +34,9 @@ To run this integration, you will launch the `formio/uag-claude` docker containe
 
 ```
 docker run -d \
-  -e "UAG_SERVER=https://uag.mysite.com" \
+  -e "UAG_SERVER=http://formio-uag:3200" \
   -e "PROJECT_KEY=CHANGEME" \
-  -e "CLAUDE_MODEL=claude-sonnet-4-5" \
+  -e "CLAUDE_MODEL=claude-opus-5" \
   -e "CLAUDE_MAX_TOKENS=10000" \
   -e "CLAUDE_API_KEY=sk-ant-api03-..." \
   -e "PORT=3300" \
@@ -128,10 +128,11 @@ The following environment variables are used to configure the Claude Integration
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| UAG_SERVER | The "public" API Endpoint to the deployed UAG Server. NOTE: If you do not provide this value, and already have a BASE_URL enviornment variable set, this server will use that as the UAG_SERVER. | https://uag.mysite.com |
+| UAG_SERVER | The API Endpoint to the deployed UAG Server. This only needs to be reachable from this integration server (e.g. `http://localhost:3200` or a private Docker network address) — it does not need to be publicly accessible. NOTE: If you do not provide this value, and already have a BASE_URL enviornment variable set, this server will use that as the UAG_SERVER. | http://formio-uag:3200 |
 | PROJECT_KEY | (Enterprise Only) The Project's API Key | CHANGEME |
 | ADMIN_KEY | (OSS Only) The Form.io OSS ADMIN_KEY | CHANGEME |
-| CLAUDE_MODEL | The model within Claude to use when performing the Agentic analysis | claude-sonnet-4-5 |
+| CLAUDE_MODEL | The model within Claude to use when performing the Agentic analysis | claude-opus-5 |
 | CLAUDE_MAX_TOKENS | The maximum amount of tokens to allow for the Agentic process to occur. | 10000 |
+| CLAUDE_MAX_ITERATIONS | The maximum number of Claude API round-trips (tool-use iterations) allowed for a single agent command. | 25 |
 | CLAUDE_API_KEY | The API Key for the Claude API | sk-ant-api03-... |
 | PORT | The port to run this integration server on. | 3300 |
