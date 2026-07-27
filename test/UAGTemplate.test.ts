@@ -180,6 +180,26 @@ describe('UAGTemplate', () => {
             }
         });
 
+        it('renders field-level validation errors from convertToFormFieldErrors', () => {
+            // convertToFormFieldErrors produces { label, path, error } — the
+            // rendered message must not be blank.
+            const result = template.renderTemplate(ResponseTemplate.submitValidationError, {
+                validationErrors: [
+                    { label: 'Last Name', path: 'lastName', error: 'Last Name is required' },
+                    { label: 'Email', path: 'email', error: 'Email is required' }
+                ]
+            });
+            expect(result).to.include('**Last Name (lastName)**: Last Name is required');
+            expect(result).to.include('**Email (email)**: Email is required');
+        });
+
+        it('renders general validation errors that carry only a message', () => {
+            const result = template.renderTemplate(ResponseTemplate.submitValidationError, {
+                validationErrors: [{ message: 'Network error while saving' }]
+            });
+            expect(result).to.include('Network error while saving');
+        });
+
         it('all ResponseTemplate enums have corresponding files or config', () => {
             const missingTemplates: string[] = [];
             

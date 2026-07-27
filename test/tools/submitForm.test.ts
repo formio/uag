@@ -256,7 +256,7 @@ describe('submitCompletedForm Tool', () => {
         mockForm.submit = submit;
     });
 
-    it('uses original submission when form.submit returns null', async () => {
+    it('reports success without an ID when form.submit returns null (action-only form)', async () => {
         var submit = mockForm.submit;
         mockForm.submit = async () => null as any;
 
@@ -271,9 +271,41 @@ describe('submitCompletedForm Tool', () => {
             { authInfo: mockAuthInfo }
         );
 
-        // When submit returns null, the original converted submission is used
+        // Forms without a Save Submission action (e.g. email or webhook only)
+        // legitimately return null — the data was processed but not persisted.
         expect(result.template).to.equal(ResponseTemplate.formSubmitted);
-        expect(result.data.data).to.exist;
+        expect(result.data.submissionId).to.equal(undefined);
+        mockForm.submit = submit;
+    });
+
+    it('reports a validation error when the server rejects the submission', async () => {
+        var submit = mockForm.submit;
+        // A rejected save comes back through the pipeline as the Form.io error
+        // body instead of a saved submission (no _id).
+        mockForm.submit = async () => ({
+            name: 'ValidationError',
+            details: [{
+                message: 'Email is required',
+                level: 'error',
+                path: ['email'],
+                context: { validator: 'required', key: 'email', label: 'Email', path: 'email' }
+            }]
+        }) as any;
+
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                form_data: {
+                    firstName: 'John'
+                }
+            },
+            { authInfo: mockAuthInfo }
+        );
+
+        expect(result.template).to.equal(ResponseTemplate.submitValidationError);
+        expect(result.data.validationErrors).to.be.an('array');
+        expect(result.data.validationErrors.length).to.equal(1);
+        expect(result.data.validationErrors[0].error).to.equal('Email is required');
         mockForm.submit = submit;
     });
 

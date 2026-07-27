@@ -25,12 +25,28 @@ export const submitCompletedForm = async (project: UAGProjectInterface): Promise
             try {
                 let submission = form.convertToSubmission(form_data);
                 const submitted: Submission | null = await form.submit(submission, extra.authInfo);
-                if (submitted) submission = submitted;
-                if (!submission) {
-                    return project.mcpResponse(ResponseTemplate.submitValidationError, {
-                        validationErrors: ['Unknown error during submission']
-                    }, true);
+                if (submitted) {
+                    // The submission save proxies to the Form.io server, and a rejection
+                    // (e.g. failed validation) can come back through the save pipeline as
+                    // the error response body instead of a saved submission. A result
+                    // without an _id was not persisted — report the failure to the agent
+                    // instead of a false success.
+                    const result: any = submitted;
+                    if (!result._id) {
+                        const errors: FormFieldError[] = (result.name === 'ValidationError' && result.details)
+                            ? form.convertToFormFieldErrors(result.details)
+                            : [];
+                        return project.mcpResponse(ResponseTemplate.submitValidationError, {
+                            validationErrors: errors.length ? errors : [{
+                                message: result.message || 'The submission was not saved by the server. Verify that all required fields have been collected and that every value conforms to its field rules, then try again.'
+                            }]
+                        }, true);
+                    }
+                    submission = submitted;
                 }
+                // A null result is still a valid outcome for "action" forms that have no
+                // Save Submission action (e.g. email or webhook only) — the data was
+                // processed but intentionally not persisted, so no submission ID exists.
                 debug(`Form submitted: ${form_name} with submission ID: ${submission._id}`);
                 return project.mcpResponse(ResponseTemplate.formSubmitted, {
                     form: form.form,

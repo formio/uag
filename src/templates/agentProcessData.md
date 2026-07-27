@@ -1,4 +1,4 @@
-Please read and understand the following **--- CRITERIA ---** section. This section provides instructions on how to analyze the **--- SUBMISSION ---** section that follows. Your objective is to provide values defined within the **--- REQUIRED FIELDS ---** section, and then to submit those values using the `agent_submit_data` tool.
+Please read and understand the following **--- CRITERIA ---** section. This section provides instructions on how to analyze the **--- SUBMISSION ---** section that follows. Your objective is to provide values defined within the **--- REQUIRED FIELDS ---** section, and then to submit those values using the `submission_update` tool.
 
 --- CRITERIA ---
 <%= criteria %>
