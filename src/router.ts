@@ -1,7 +1,6 @@
 import { Router, Response } from 'express';
 import { UAGProjectInterface } from './UAGProjectInterface';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 
 // Helper function to create JSON RPC error responses
 const createJsonRpcErrorResponse = (code: number, message: string) => {
@@ -32,23 +31,34 @@ const handleResponseError = (error: unknown, res: Response): boolean => {
     return false;
 };
 
+/**
+ * Build a per-request McpServer + transport (stateless mode) and tear both down
+ * when the response closes. A fresh instance per request keeps concurrent requests
+ * from overwriting each other's transport.
+ */
+const connectMcpTransport = async (
+    project: UAGProjectInterface,
+    res: Response,
+): Promise<StreamableHTTPServerTransport> => {
+    const server = await project.buildMcpServer();
+    const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,  // Use "undefined" to trigger stateless mode.
+    });
+    res.on('close', () => {
+        transport.close();
+        server.close();
+    });
+    await server.connect(transport);
+    return transport;
+};
+
 export function UAGRouter(project: UAGProjectInterface): Router {
     const router: Router = Router();
 
     // Handles the MCP post requests.
     router.post('/', async (req, res) => {
         try {
-            const transport = new StreamableHTTPServerTransport({
-                sessionIdGenerator: undefined,  // Use "undefined" to trigger stateless mode.
-            });
-            // Close any existing connection before connecting to a new transport (required in SDK 1.26.0+)
-            await project.mcpServer.close();
-            await project.mcpServer.connect(transport);
-            if (!transport) {
-                res.status(500).json(JSON.parse(createJsonRpcErrorResponse(-32603, "Unable to create MCP transport.")));
-                return;
-            }
-            isInitializeRequest(req.body);
+            const transport = await connectMcpTransport(project, res);
             await transport.handleRequest(req as any, res as any, req.body);
         } catch (error) {
             handleResponseError(error, res);
@@ -58,16 +68,7 @@ export function UAGRouter(project: UAGProjectInterface): Router {
     // Handles the MCP get requests (for health checks, etc).
     router.get('/', async (req, res) => {
         try {
-            const transport = new StreamableHTTPServerTransport({
-                sessionIdGenerator: undefined,  // Use "undefined" to trigger stateless mode.
-            });
-            // Close any existing connection before connecting to a new transport (required in SDK 1.26.0+)
-            await project.mcpServer.close();
-            await project.mcpServer.connect(transport);
-            if (!transport) {
-                res.status(500).json(JSON.parse(createJsonRpcErrorResponse(-32603, "Unable to create MCP transport.")));
-                return;
-            }
+            const transport = await connectMcpTransport(project, res);
             await transport.handleRequest(req as any, res as any);
         } catch (err) {
             handleResponseError(err, res);
