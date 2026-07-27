@@ -87,6 +87,8 @@ In order to a aid in the "agentification" of the UAG, we have also provided some
 
 ![Agentic process flow via single API call into Claude Integration](./examples/images/agent-flow.png)
 
+Each integration runs its own MCP client and connects *out* to the UAG, so the UAG does not need to be publicly accessible for these to work — it only needs to be reachable from the integration, such as over a private Docker network or on `localhost`.
+
 These integrations can be found within the **integrations** folder. The following **integrations** are provided to enable automated Agentic workflows.
 
   - [Claude Integration](./integrations/claude)
@@ -171,6 +173,40 @@ To get started in building your own custom module, go to the help documentation 
 The following sections describe the process of creating a running instance of UAG, connecting it to the Form.io Platform, and configuring an AI agent to use it.
 
 This documentation focuses on using UAG with Form.io Open Source. For documentation on using UAG with Form.io Enterprise, refer to [https://help.form.io/uag](https://help.form.io/uag).
+
+### How Agents Connect
+Before deploying, it is worth deciding **which side opens the connection** to the UAG's `/mcp` endpoint, because that single decision determines whether the UAG needs to be publicly accessible.
+
+| Connection model | Who runs the MCP client | Does the UAG need a public domain? |
+|------------------|-------------------------|------------------------------------|
+| **Local MCP client** | Your own application or integration, running alongside the UAG | **No.** The UAG only needs to be reachable from that process — `http://localhost:3200` or a private Docker network address is fine. |
+| **Remote MCP client** | A hosted agent that dials into your UAG (Claude.ai and Claude Desktop connectors, the Anthropic MCP connector, or any other remote MCP host) | **Yes.** The agent must be able to reach `/mcp` and the OAuth discovery endpoints over the public internet. |
+
+With a **local MCP client**, your application connects *out* to the UAG, calls the tools itself, and passes the results on to whichever model it is using. Nothing dials back in, so the UAG can stay entirely inside your network. This is how the [Claude Integration](./integrations/claude) works, and it is the recommended model for server-to-server and webhook-triggered automation — including running the whole stack on a developer machine.
+
+With a **remote MCP client**, the agent lives outside your network and connects in, so `/mcp` and the `.well-known` OAuth discovery endpoints must be publicly reachable over HTTPS, and `BASE_URL` must be that public URL. See [Domain and URL Configuration](#domain-and-url-configuration).
+
+Both models can be used against the same UAG deployment at the same time.
+
+#### Authenticating a local MCP client
+A remote agent authenticates through the browser-based OAuth (PKCE) flow. A local client has no browser, so it exchanges a server-side key for an access token using the `client_credentials` grant against `{{ BASE_URL }}/auth/token`, then sends that token as a `Bearer` token on its `/mcp` requests.
+
+The `client_id` must be prefixed with the project name — which is `formio-oss` for Open Source deployments:
+
+```
+POST /auth/token
+Content-Type: application/json
+
+{
+  "grant_type": "client_credentials",
+  "client_id": "formio-oss-x-admin-key",
+  "client_secret": "{{ ADMIN_KEY }}"
+}
+```
+
+For Enterprise, use the project name from your project endpoint together with the project API key — for example `"client_id": "myproject-x-token"` with `"client_secret": "{{ PROJECT_KEY }}"`.
+
+The response contains an `access_token`, which is passed to the UAG as `Authorization: Bearer {{ access_token }}`. Tokens expire according to `JWT_EXPIRE_TIME`, so long-running clients should cache the token and refresh it before it expires. See [`integrations/claude/auth.js`](./integrations/claude/auth.js) for a working implementation.
 
 ### Runtime Environments
 There are currently two run-time environments that work with the UAG:
@@ -307,8 +343,8 @@ This module can be configured in many ways. One of those ways is through the use
 | JWT_EXPIRE_TIME | The expiration for the jwt secret. | 3600 |
 | MONGO | (Enterprise Only) Allows you to connect the UAG directly to a mongo database, rather than having to redirect the submissions to the Form.io Submission APIs. | |
 | MONGO_CONFIG | JSON configuration for the Node.js Mongo Driver. | |
-| BASE_URL | The public URL that the UAG is hosted on. This allows for proper OIDC authentication and allows for the authentication callbacks to point to the correct url. | https://forms.yoursite.com |
-| LOGIN_FORM | The public URL to the Login Form JSON endpoint. | https://mysite.com/project/user/login |
+| BASE_URL | **Required.** The URL that the UAG is reachable at *by its clients*. It is published in the `.well-known` OIDC (PKCE) definitions and used for authentication callbacks. This must be a public URL when remote agents connect in; for a local MCP client, a private or localhost URL is fine. | https://forms.yoursite.com |
+| LOGIN_FORM | The URL to the Login Form JSON endpoint, loaded by the `/auth/authorize` page. Only used by the browser-based login flow, so it must be reachable by that browser. | https://mysite.com/project/user/login |
 | CORS | The cors domain, or the JSON configuration to configure the "cors" node.js module cross domain resource sharing. | *.* |
 
 ### Project Cache and TTL
@@ -322,8 +358,10 @@ Here is a table explaining how this parameter can be used.
 | PROJECT_TTL | 60 | Check for changes every minute |
 | PROJECT_TTL | 3600 | Check for changes every hour |
 
-### Running on Public Domain
-In order to run the UAG on a public domain, it is very important to provide the proper configurations so that any AI agent can properly authenticate. There are 3 different "domain" environment variables that matter, and it is important to understand how to configure them depending on your use case:
+### Domain and URL Configuration
+There are 3 different "domain" environment variables that matter, and it is important to understand how to configure them depending on your use case. Whether any of them need to be *public* depends on how agents connect — see [How Agents Connect](#how-agents-connect).
+
+If a remote agent connects into your UAG, these must be configured correctly and publicly, or the agent will not be able to authenticate. If you only use a local MCP client, all three can point at private or localhost addresses.
 
 #### PROJECT
 The ```PROJECT``` environment variable is used to establish a connection from the UAG server to the project endpoint (for Enterprise) or OSS base url. This does NOT need to be a public DNS entry, but rather a URL that connects the UAG container to the Server container.  The following examples illustrate how this would be configured.
@@ -407,14 +445,21 @@ services:
 ```
 
 #### BASE_URL
-The ```BASE_URL``` is used to communicate to the AI agent the public domain that is hosting the UAG server. This value is provided within the ```.well-known``` definitions for the OIDC (PKCE) authentication. If this is not correct, then the AI agent will not be able to authenticate into the UAG.
+The ```BASE_URL``` tells the UAG what URL it is reachable at. This value is published within the ```.well-known``` definitions for the OIDC (PKCE) authentication, and is used for the authentication callbacks.
 
-**This needs to be the publicly accessible domain that you are hosting your UAG.**
+**```BASE_URL``` is always required**, including for local clients. The UAG's authentication provider is only enabled when it is set, so if you omit it, ```/mcp``` returns a 401 for every request and the ```/auth/token``` and ```/.well-known/*``` endpoints do not exist at all (404). A 404 on ```/auth/token``` is the clearest signal that ```BASE_URL``` is missing.
 
-For example, ```BASE_URL: https://forms.mysite.com```.
+What it needs to be set to depends on how agents connect:
+
+ - **Remote agents connect in**: this must be the publicly accessible domain hosting your UAG, because that is the address the agent is told to authenticate against. For example, ```BASE_URL: https://forms.mysite.com```.
+ - **Local MCP client only**: set it to the address your client uses to reach the UAG. A private or localhost URL is fine — for example ```BASE_URL: http://localhost:3200``` or ```BASE_URL: http://formio-uag:3200``` within a Docker network.
+
+If a remote agent cannot authenticate, a mismatched ```BASE_URL``` is the most common cause: the agent reads this value from the discovery document and will follow it, so if it points somewhere the agent cannot reach, authentication fails even though the UAG itself is running correctly.
 
 #### LOGIN_FORM
-This is the publicly accessible URL to the Login form of your Project or OSS deployment. This provides the URL that is loaded when the user navigates to ```{{ BASE_URL }}/auth/authorize```.  If you navigate to this URL, and the page says that you cannot load the form, then this is because your LOGIN_FORM environment variable is not pointing to the correct form JSON endpoint of your project. 
+This is the URL to the Login form of your Project or OSS deployment. It provides the form that is loaded when a user navigates to ```{{ BASE_URL }}/auth/authorize```.  If you navigate to this URL, and the page says that you cannot load the form, then this is because your LOGIN_FORM environment variable is not pointing to the correct form JSON endpoint of your project. 
+
+This is only used by the browser-based login flow, so it needs to be reachable by the browser performing that login. A local MCP client authenticating with the `client_credentials` grant never loads this page.
 
 For example:
  - Enterprise Example: ```LOGIN_FORM: https://forms.mysite.com/myproject/user/login```
