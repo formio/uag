@@ -843,7 +843,8 @@
             ]
           },
           "validate": {
-            "required": true
+            "required": true,
+            "onlyAvailableItems": true
           },
           "description": "How did this customer hear about us? Must be one of: web, friend, other."
         },

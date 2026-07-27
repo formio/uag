@@ -33,7 +33,20 @@ the Form.io REST API.
 **Layer 2 — uag-claude integration** (`layer2.claude-integration.e2e.mjs`):
 Runs the real `integrations/claude` server against a stub UAG MCP server with
 real (cheap) Claude API calls. Covers authentication, the local MCP client
-tool loop, tool error handling, and UAG-unreachable behavior.
+tool loop, tool error handling, an unreachable UAG, an invalid Claude API
+key, and the `CLAUDE_MAX_ITERATIONS` cap (so a runaway tool loop terminates
+instead of hanging the request).
+
+**Failure paths** (`layer1.adversarial.e2e.mjs`, no Claude): every bug found
+in this library so far has been on a failure path — a rejected submission
+reported as a success, and validation messages that rendered blank once they
+finally reached the agent. This suite pins that behavior: unknown and
+untagged forms are refused, invalid emails / out-of-option select values /
+missing conditionally required fields are rejected with the field named and
+nothing written, conditionally hidden values are dropped rather than stored,
+a rejected update leaves the stored value untouched, missing submissions and
+uag misconfiguration produce explanatory errors, and malformed or forged
+bearer tokens are refused.
 
 **Layer 3 — full-stack flows** (real Claude, full stack):
 
@@ -43,6 +56,13 @@ tool loop, tool error handling, and UAG-unreachable behavior.
   the contact's details, a submit confirmation) and asserts the conversation
   produces a correct submission in Form.io — including the conditionally
   required `otherReferral` field.
+- *Conversational Forms with invalid input*
+  (`layer3.conversational-invalid.e2e.mjs`): the flow-level counterpart to the
+  failure-path suite. The scripted user supplies a malformed email and an
+  out-of-option referral source and pushes to submit; the agent must refuse,
+  and only the corrected values may reach the database. A regression that
+  hides validation messages shows up here as the agent confirming a
+  submission that does not exist.
 - *Agentic Workflows* (`layer3.agentic.e2e.mjs`): boots the full stack
   including the uag-claude integration. An application submission is created
   in Form.io, then `/agent/claude/agent_provide_data` is invoked (as a
@@ -57,8 +77,10 @@ tool loop, tool error handling, and UAG-unreachable behavior.
 The stack uses `test/e2e/module` as the UAG runtime module. Its
 `template.json` extends the `examples/local` project with:
 
-- a `referralSource` (required select) + `otherReferral` (conditionally
-  required textfield) pair on the `customer` resource, and
+- a `referralSource` select (required, and `onlyAvailableItems` so that values
+  outside its options are rejected rather than stored) paired with
+  `otherReferral` (a conditionally required textfield shown only when the
+  referral source is `other`), on the `customer` resource, and
 - an `application` form (trimmed college application) whose
   "For Office Use Only" panel carries the assessment criteria Content
   component (`uag=application`, `uagField=criteria`) and the agent-fillable

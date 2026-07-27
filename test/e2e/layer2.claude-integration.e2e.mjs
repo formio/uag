@@ -111,6 +111,69 @@ describe('Layer 2: uag-claude integration', function () {
         expect(text).to.match(/fail|error|broken|did not succeed/);
     });
 
+    it('returns a 500 when the Claude API key is invalid', async function () {
+        const badKey = spawnNode(path.join(repoRoot, 'integrations/claude/index.js'), {
+            cwd: path.join(repoRoot, 'integrations/claude'),
+            env: {
+                UAG_SERVER: stub.url,
+                ADMIN_KEY,
+                PROJECT: '',
+                PROJECT_KEY: '',
+                PORT: '3314',
+                CLAUDE_API_KEY: 'sk-ant-invalid-key-for-testing',
+                CLAUDE_MODEL: MODEL,
+                CLAUDE_MAX_TOKENS: '1024',
+            },
+        });
+        try {
+            await waitForHttp('http://127.0.0.1:3314/agent/claude', { method: 'POST' });
+            const resp = await fetch('http://127.0.0.1:3314/agent/claude', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
+                body: JSON.stringify({ command: 'Say hello.' }),
+            });
+            expect(resp.status).to.equal(500);
+            expect(await resp.json()).to.have.property('error');
+        }
+        finally {
+            await badKey.kill();
+        }
+    });
+
+    it('stops at the iteration cap instead of looping forever', async function () {
+        // With a cap of 1 the loop performs a single request, so a command that
+        // needs a tool call returns the unfinished turn rather than hanging.
+        const capped = spawnNode(path.join(repoRoot, 'integrations/claude/index.js'), {
+            cwd: path.join(repoRoot, 'integrations/claude'),
+            env: {
+                UAG_SERVER: stub.url,
+                ADMIN_KEY,
+                PROJECT: '',
+                PROJECT_KEY: '',
+                PORT: '3315',
+                CLAUDE_API_KEY: process.env.CLAUDE_API_KEY,
+                CLAUDE_MODEL: MODEL,
+                CLAUDE_MAX_TOKENS: '1024',
+                CLAUDE_MAX_ITERATIONS: '1',
+            },
+        });
+        try {
+            await waitForHttp('http://127.0.0.1:3315/agent/claude', { method: 'POST' });
+            const resp = await fetch('http://127.0.0.1:3315/agent/claude', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
+                body: JSON.stringify({ command: 'Use the echo tool to echo the word capped.' }),
+            });
+            expect(resp.status, capped.getOutput()).to.equal(200);
+            const message = await resp.json();
+            // The turn was cut off mid-loop, so it still wants to call a tool.
+            expect(message.stop_reason).to.equal('tool_use');
+        }
+        finally {
+            await capped.kill();
+        }
+    });
+
     it('returns a 500 when the UAG is unreachable', async function () {
         // A stub that is started and immediately closed leaves a known-dead URL.
         const deadStub = await startStubUag();
