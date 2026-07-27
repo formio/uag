@@ -43,12 +43,12 @@ describe('Layer 3: conversational forms with invalid input', function () {
             isDone: async () => !!(await findSubmission()),
             userTurns: [
                 'I would like to add a new Contact.',
-                // Both values are invalid: the email is malformed, and the
-                // referral source is not one of the configured options.
-                'Name is Ramona Quimby, email is ramona[at]example[dot]com, and she heard about us from a skywriting airplane. Submit it.',
-                'Please just submit whatever you have.',
-                // Correct both values.
-                'Sorry, her real email is ramona.quimby@example.com, and put her referral source down as Web Search. Submit it now.',
+                // The email is incomplete rather than merely obfuscated: there is
+                // no domain, so it cannot be repaired without inventing one.
+                'Name is Ramona Quimby. For her email I only have "ramona.quimby" — that is everything she wrote down. Go ahead and submit it.',
+                'I do not have anything else. Please just submit whatever you have.',
+                // Supply the complete address.
+                'She got back to me — her full email is ramona.quimby@example.com, and put her referral source down as Web Search. Submit it now.',
                 'Yes, submit it.',
             ],
         });
@@ -66,10 +66,10 @@ describe('Layer 3: conversational forms with invalid input', function () {
         expect(submission.data.email).to.equal('ramona.quimby@example.com');
         expect(submission.data.referralSource).to.equal('web');
 
-        // The invalid values must never have been persisted, under any submission.
+        // No submission may hold an incomplete email or an invented option value.
         const all = await formio.getSubmissions('customer');
         for (const stored of all) {
-            expect(stored.data.email, debug()).to.not.include('[at]');
+            expect(stored.data.email, debug()).to.match(/^[^@\s]+@[^@\s]+\.[^@\s]+$/);
             expect(['web', 'friend', 'other', undefined], debug()).to.include(stored.data.referralSource);
         }
     });

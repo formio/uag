@@ -40,7 +40,7 @@ const handleResponseError = (error: unknown, res: ExpressResponse): boolean => {
  */
 const connectMcpTransport = async (
     project: UAGProjectInterface,
-    res: Response,
+    res: ExpressResponse,
 ): Promise<StreamableHTTPServerTransport> => {
     const server = await project.buildMcpServer();
     const transport = new StreamableHTTPServerTransport({

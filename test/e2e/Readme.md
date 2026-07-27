@@ -37,6 +37,17 @@ tool loop, tool error handling, an unreachable UAG, an invalid Claude API
 key, and the `CLAUDE_MAX_ITERATIONS` cap (so a runaway tool loop terminates
 instead of hanging the request).
 
+**Concurrency** (`layer1.concurrency.e2e.mjs`, no Claude): the UAG previously
+shared a single `McpServer` across all requests and reconnected it to a new
+transport on every call, so a second concurrent request closed the first
+request's transport out from under it and that request hung until it timed
+out. This suite drives genuinely concurrent traffic through `/mcp` — several
+calls from one client (as an agent making parallel tool calls in a single
+turn does), several independent clients at once, and concurrent submissions —
+and asserts every request gets its own correct answer and every submission
+lands exactly once. Cross-talk is detectable because each request asks about
+a different form and every response names the form it describes.
+
 **Failure paths** (`layer1.adversarial.e2e.mjs`, no Claude): every bug found
 in this library so far has been on a failure path — a rejected submission
 reported as a success, and validation messages that rendered blank once they
