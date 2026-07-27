@@ -61,7 +61,9 @@ export async function authenticate(req, res, next) {
         auth.client_secret = process.env.PROJECT_KEY;
     }
     else if (process.env.ADMIN_KEY) {
-        auth.client_id = 'x-admin-key';
+        // OSS deployments have a fixed project name of "formio-oss", and the UAG
+        // token endpoint requires the client_id to be prefixed with the project name.
+        auth.client_id = 'formio-oss-x-admin-key';
         auth.client_secret = process.env.ADMIN_KEY;
     }
     let fetchUrl = process.env.UAG_SERVER || process.env.BASE_URL;
