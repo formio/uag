@@ -1,0 +1,16 @@
+services:
+  mongo:
+    image: mongo
+    tmpfs:
+      - /data/db
+  formio:
+    image: formio/formio
+    depends_on:
+      - mongo
+    ports:
+      - "127.0.0.1:3101:3001"
+    environment:
+      NODE_CONFIG: '{"mongo": "mongodb://mongo:27017/uag-e2e", "jwt": {"secret": "uag-e2e-secret"}, "mongoSecret": "uag-e2e-secret"}'
+      ROOT_EMAIL: admin@example.com
+      ROOT_PASSWORD: uag-e2e-password
+      ADMIN_KEY: uag-e2e-admin-key

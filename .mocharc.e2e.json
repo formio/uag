@@ -1,0 +1,6 @@
+{
+  "spec": "test/e2e/**/*.e2e.mjs",
+  "timeout": 600000,
+  "node-option": ["no-node-snapshot"],
+  "require": ["dotenv/config"]
+}
