@@ -32,7 +32,7 @@ There are three working examples in this repo, each spinning up a Form.io server
 |---------|---------|-----------|
 | **[Custom Module](examples/custom-module)** | **Conversational, existing client.** Connect Claude Desktop to your forms and talk to them: "I would like to add a new customer." Built as a custom module, so roles and permissions decide what the agent may do. | Open Source — free |
 | **[Conversation Form](examples/conversation-form)** | **Conversational, your own UI.** A chat application whose questions come entirely from a form. About 200 lines, no field names in the code — edit the form and the conversation changes. | Open Source — free |
-| **[Agentic Workflow](examples/agentic-workflow)** | **Autonomous.** A submission triggers an agent that scores it against a rubric and writes its decision back, which in turn triggers a second agent. No human, no chat window. | Enterprise — the trigger needs a Webhook action that can set headers and transform its payload |
+| **[Agentic Workflow](examples/agentic-workflow)** | **Autonomous.** A submission triggers an agent that scores it against a rubric and writes its decision back, which in turn triggers a second agent. No human, no chat window. | Enterprise |
 
 There is also a [Flow Viewer](examples/flow-viewer) — a small proxy that shows every leg of an agentic run live, which is the fastest way to see what an agent is actually doing.
 
