@@ -39,7 +39,7 @@ services:
       retries: 40
 
   formio-uag:
-    image: formio/uag:1.12.0
+    image: formio/uag:1.12.1
     container_name: uag-example-uag
     restart: always
     links:
@@ -69,7 +69,7 @@ services:
   # The MCP client. It authenticates with client_credentials, runs the tool-use
   # loop locally, and only ever makes outbound calls to the Anthropic API.
   formio-uag-claude:
-    image: formio/uag-claude:1.3.0
+    image: formio/uag-claude:1.3.1
     container_name: uag-example-claude
     restart: always
     links:
