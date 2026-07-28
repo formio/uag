@@ -36,8 +36,6 @@ There are three working examples in this repo, each spinning up a Form.io server
 
 There is also a [Flow Viewer](examples/flow-viewer) — a small proxy that shows every leg of an agentic run live, which is the fastest way to see what an agent is actually doing.
 
-**[Conversation &raquo;](examples/conversation-form)** &nbsp;|&nbsp; **[Claude Desktop &raquo;](examples/custom-module)** &nbsp;|&nbsp; **[Autonomous &raquo;](examples/agentic-workflow)**
-
 ## Documentation in this repository
 
 This file is the main reference: what the UAG is, how to configure a form for it, how to deploy it, and how to troubleshoot it. The rest of the documentation lives next to the code it describes.
