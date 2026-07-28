@@ -27,7 +27,7 @@ The UAG authenticates to the project with a project API key, and that key has to
 
 ```bash
 cp .env.example .env               # add your Anthropic API key and both licenses
-docker compose up -d mongo formio-server
+docker compose up -d mongo api-server
 ./setup.mjs                        # creates the project, writes PROJECT_KEY to .env
 docker compose up -d
 ```
@@ -36,9 +36,41 @@ docker compose up -d
 
 The forms are then reachable under `http://localhost:3000/agentic-workflow`.
 
-### First, the 10-second smoke test
+### First, the smoke test
 
-The `sum` form is deliberately trivial — two numbers in, one agent-filled answer out. Run it before anything else, because if it works then authentication, MCP transport, tool calls, and the write-back are all working. Use the `PROJECT_KEY` that `setup.mjs` wrote into `.env`:
+The `sum` form is deliberately trivial — two numbers in, one agent-filled answer out. Run it before anything else, because if it works then authentication, MCP transport, tool calls, and the write-back are all working.
+
+#### In the portal
+
+Open http://localhost:3000 and log in with `admin@example.com` / `CHANGEME`, then open the **UAG Agentic Workflow Example** project. Both tagged forms are listed:
+
+![The Forms list in the portal, showing the Sum and College Application forms](../images/portal-agentic-forms.jpg)
+
+Click **Sum Form**. The builder is worth a look before you submit anything, because the agent's entire instruction set is visible right there in the form — the **Agent instructions** block is an ordinary content component, and `Sum` is an ordinary field the agent has been given permission to write:
+
+![The Sum form open in the builder, showing the Agent instructions content component above the Sum field](../images/portal-agentic-criteria.jpg)
+
+Switch to the **Use** tab to get a live, rendered copy of the form. Enter `17` and `25`, and note that `Sum` is left empty — you are not supposed to fill it in:
+
+![The Use tab with A set to 17 and B set to 25, and the Sum field empty](../images/portal-agentic-sum-use.jpg)
+
+Press **Submit**. The portal confirms the submission and drops you on its **Data** view, where `Sum` is *still empty*:
+
+![The submission view immediately after submitting, with Sum still blank](../images/portal-agentic-sum-pending.jpg)
+
+That is the expected intermediate state, not a failure. The webhook that fires the agent is configured with `block: false`, so the submission is saved and returned immediately while the agent works in the background.
+
+Wait a few seconds and reload the page. `Sum` now reads `42`:
+
+![The same submission after reloading, with Sum populated with 42](../images/portal-agentic-sum-result.jpg)
+
+Nothing in the `sum` form computes that. An agent read the criteria out of the form, added the numbers, and wrote the field back.
+
+Because the criteria live in the form rather than in the agent, you can prove the point without touching any code: go back to **Edit**, change the instructions to say *multiply* instead of add, publish, and submit `17` and `25` again. Give it up to `PROJECT_TTL` seconds (10 in this example) for the UAG to pick up the change, and the same form returns `425`.
+
+#### Or from the command line
+
+Same test without a browser, using the `PROJECT_KEY` that `setup.mjs` wrote into `.env`:
 
 ```bash
 source .env
@@ -55,7 +87,7 @@ curl -s http://localhost:3000/agentic-workflow/sum/submission/<_id> \
   -H "x-token: $PROJECT_KEY"
 ```
 
-`data.sum` should be `42`. Nothing in the `sum` form computes that — an agent read the criteria, added the numbers, and wrote the field.
+`data.sum` should be `42`.
 
 ### Then the real workflow
 
@@ -67,7 +99,7 @@ curl -s http://localhost:3000/agentic-workflow/sum/submission/<_id> \
 
 The script submits an applicant profile and polls until the workflow settles, printing the scores, the decision, and the agents' written rationales as they appear. The `strong` profile is the interesting one: watch `status` pass through `scholarshipEvaluation` on its way to `scholarshipGranted`, because that intermediate value is what triggers the second agent.
 
-You can also browse everything in the Form.io portal at http://localhost:3000 (`admin@example.com` / `CHANGEME`), where the submission view shows the agent-filled fields.
+You can run this one from the portal too, the same way as the `sum` form above: open **College Application**, use the **Use** tab to submit an applicant, then watch the **Data** view. Reload it a few times and you will see the agent fields fill in, `status` step from `submitted` through `scholarshipEvaluation` to `scholarshipGranted`, and the rationale text appear — the whole chain, without a single curl command. The **Data** tab lists every submission if you want to compare a strong applicant against a weak one side by side.
 
 To watch each leg of a run as it happens — the token request, `tools/list`, every tool call and its arguments, the write-back — drop in the [flow viewer](../flow-viewer).
 
@@ -150,8 +182,10 @@ Start with the [Troubleshooting section](../../README.md#troubleshooting) in the
 | Symptom | Cause |
 |---|---|
 | `docker compose up` fails with `set CLAUDE_API_KEY in .env` | You have not created `.env` yet. Copy `.env.example`. |
-| `docker compose up` fails with `run ./setup.mjs first` | `PROJECT_KEY` is still empty in `.env`. Start `mongo` and `formio-server`, then run `./setup.mjs`. |
+| `docker compose up` fails with `run ./setup.mjs first` | The `PROJECT_KEY` line is missing from `.env` altogether. Copy `.env.example`, which ships it empty — Compose validates every service in the file even when you start only some of them, so the line has to be present from the first `up`. |
+| `formio-uag` logs a `401` immediately after `docker compose up -d` | `PROJECT_KEY` is still empty. Run `./setup.mjs`, then `docker compose up -d` again to recreate the container with the key. |
+| `formio-uag` restart-loops with `Endpoint http://api-server:3000/... is not allowed for this license` | A UAG license carries an allowlist of endpoints it may serve, and the `PROJECT` hostname has to be one of them. The `api-server` service is named to match what trial licenses are issued against. If yours lists something else, rename the service and update `PROJECT` in both `formio-uag` and `formio-uag-claude` to match. |
 | `setup.mjs` reports that the project already exists | Delete it in the portal, or re-run with `PROJECT_NAME=something-else` (and update `PROJECT` in `docker-compose.yml` to match). |
 | Agent fields never populate | Check `docker compose logs formio-uag-claude`. A `400` mentioning the MCP server usually means an old `uag-claude` image. |
 | Agent says the form does not exist | The `uag` tag is missing, or `PROJECT_TTL` has not elapsed. `docker compose restart formio-uag` forces re-registration. |
-| Nothing happens at all after submitting | The webhook did not fire. Check `docker compose logs formio-server` for the webhook action, and confirm the `x-token` header in the action settings matches `PROJECT_KEY`. |
+| Nothing happens at all after submitting | The webhook did not fire. Check `docker compose logs api-server` for the webhook action, and confirm the `x-token` header in the action settings matches `PROJECT_KEY`. |

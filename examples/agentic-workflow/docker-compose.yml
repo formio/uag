@@ -9,9 +9,14 @@ services:
     volumes:
       - uag-example-data:/data/db
 
-  formio-server:
+  # Named `api-server` deliberately. A UAG license carries an allowlist of
+  # endpoints it may serve, and trial licenses are issued against
+  # `api-server:3000`. Rename this service and the UAG refuses the project with
+  # "Endpoint ... is not allowed for this license". If your own UAG_LICENSE
+  # lists something else, match that instead and update PROJECT below.
+  api-server:
     image: formio/formio-enterprise:9.9.0
-    container_name: uag-example-server
+    container_name: uag-example-api-server
     restart: always
     links:
       - mongo
@@ -30,6 +35,10 @@ services:
       ADMIN_EMAIL: admin@example.com
       ADMIN_PASS: CHANGEME
       LICENSE_KEY: ${LICENSE_KEY:?set LICENSE_KEY in .env}
+      # Set LICENSE_REMOTE=true in .env when LICENSE_KEY is an offline
+      # (self-contained) license, so the server does not call out to the
+      # Form.io license server to validate it.
+      LICENSE_REMOTE: ${LICENSE_REMOTE:-}
     healthcheck:
       # The UAG exits if the server is not answering when it starts up, so hold
       # it back until this responds.
@@ -43,15 +52,15 @@ services:
     container_name: uag-example-uag
     restart: always
     links:
-      - formio-server
+      - api-server
     depends_on:
-      formio-server:
+      api-server:
         condition: service_healthy
     environment:
       PORT: 3200
       # Container-to-container address of the project, not a browser one.
-      PROJECT: http://formio-server:3000/agentic-workflow
-      PROJECT_KEY: ${PROJECT_KEY:?run ./setup.mjs first}
+      PROJECT: http://api-server:3000/agentic-workflow
+      PROJECT_KEY: ${PROJECT_KEY?run ./setup.mjs first}
       UAG_LICENSE: ${UAG_LICENSE:?set UAG_LICENSE in .env}
       JWT_SECRET: CHANGEME
       JWT_EXPIRE_TIME: 3600
@@ -81,8 +90,8 @@ services:
       UAG_SERVER: http://formio-uag:3200
       # PROJECT supplies the project name that prefixes the client_id used in
       # the client_credentials token request.
-      PROJECT: http://formio-server:3000/agentic-workflow
-      PROJECT_KEY: ${PROJECT_KEY:?run ./setup.mjs first}
+      PROJECT: http://api-server:3000/agentic-workflow
+      PROJECT_KEY: ${PROJECT_KEY?run ./setup.mjs first}
       CLAUDE_MODEL: claude-sonnet-5
       CLAUDE_MAX_TOKENS: 10000
       CLAUDE_API_KEY: ${CLAUDE_API_KEY:?set CLAUDE_API_KEY in .env}
