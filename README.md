@@ -6,24 +6,20 @@ The Universal Agent Gateway (UAG) leverages the [Model Context Protocol (MCP)](h
 
 ![Diagram showing how the UAG provides an AI Agent the ability to read and understand a Form.io Form JSON. Similar to how the JavaScript renderer provides a Human the ability to visually see a rendered form.](./examples/images/uag-agent-rendering.png)
 
-Official Documentation
---------------------------
-For the latest documentation, release information, and guides, always refer to the official Form.io Help Documentation available here:
-
-**[https://help.form.io](https://help.form.io/dev/ai/uag)**
-
 --------------------------
 There are two primary scenarios that the UAG enables:
 
  - **Unstructured 'chat' input to deterministic form submission**:  This capability uses the JSON schema of a Form.io form to produce a deterministic structured data object provided natural language conversational input. 
 
  ![Conversion of natural language to structured data using UAG.](./examples/images/uag-natural-language.png)
+ 
+For a working example of this flow, please try out the [Conversation Form Example](./examples/conversation-form).
 
  - **Agentic Form.io Workflows**: UAG provides an AI Agent the ability to take existing submission data + "context" criteria in order to prompt an AI Agent to provide its own data and analysis within a workflow scenario. The following example, which shows a college application process using a Form.io application form, shows how this primary scenario works.
 
   ![Agentic workflow automation example diagram using UAG](./examples/images/uag-agent-provide-data.png)
 
-  For more information on Agentic workflows, checkout the dedicated [Agentic Workflows](#agentic-workflows) section
+For more information on Agentic workflows, checkout the dedicated [Agentic Workflows](#agentic-workflows) section. For a working example of this flow, please try out the [Agentic Workflow Example](./examples/agentic-workflow).
 
 ---
 
@@ -36,11 +32,9 @@ There are three working examples in this repo, each spinning up a Form.io server
 |---------|---------|-----------|
 | **[Custom Module](examples/custom-module)** | **Conversational, existing client.** Connect Claude Desktop to your forms and talk to them: "I would like to add a new customer." Built as a custom module, so roles and permissions decide what the agent may do. | Open Source — free |
 | **[Conversation Form](examples/conversation-form)** | **Conversational, your own UI.** A chat application whose questions come entirely from a form. About 200 lines, no field names in the code — edit the form and the conversation changes. | Open Source — free |
-| **[Agentic Workflow](examples/agentic-workflow)** | **Autonomous.** A submission triggers an agent that scores it against a rubric and writes its decision back, which in turn triggers a second agent. No human, no chat window. | Enterprise — the trigger needs a Webhook action that can set headers and transform its payload |
+| **[Agentic Workflow](examples/agentic-workflow)** | **Autonomous.** A submission triggers an agent that scores it against a rubric and writes its decision back, which in turn triggers a second agent. No human, no chat window. | Enterprise |
 
 There is also a [Flow Viewer](examples/flow-viewer) — a small proxy that shows every leg of an agentic run live, which is the fastest way to see what an agent is actually doing.
-
-**[Conversation &raquo;](examples/conversation-form)** &nbsp;|&nbsp; **[Claude Desktop &raquo;](examples/custom-module)** &nbsp;|&nbsp; **[Autonomous &raquo;](examples/agentic-workflow)**
 
 ## Documentation in this repository
 
