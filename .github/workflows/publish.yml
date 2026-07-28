@@ -23,8 +23,13 @@ jobs:
           node-version: "lts/*"
           registry-url: "https://registry.npmjs.org"
 
+      # package.json pins "packageManager": "yarn@4", which the runner's global
+      # yarn 1.x refuses to run without Corepack enabled.
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --immutable
 
       - name: Run tests
         run: yarn test --if-present

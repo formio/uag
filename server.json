@@ -1,20 +1,21 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.form/uag",
+  "name": "io.form/formio-uag",
   "description": "The Universal Agent Gateway (UAG) enables in-process agentic automation using Form.io.",
   "repository": {
     "url": "https://github.com/formio/uag",
     "source": "github"
   },
-  "version": "1.11.1",
+  "version": "1.12.2",
+  "websiteUrl": "https://form.io",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@formio/uag",
-      "version": "1.11.1",
+      "version": "1.12.2",
       "transport": {
         "type": "streamable-http",
-        "url": "http://localhost:3200/mcp"
+        "url": "http://localhost:{PORT}/mcp"
       },
       "environmentVariables": [
         {
