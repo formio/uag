@@ -19,7 +19,7 @@ For a working example of this flow, please try out the [Conversation Form Exampl
 
   ![Agentic workflow automation example diagram using UAG](./examples/images/uag-agent-provide-data.png)
 
-For more information on Agentic workflows, checkout the dedicated [Agentic Workflows](#agentic-workflows) section. For a working example of this flow, please try out the [Agentic Workflow](./examples/agentic-workflow).
+For more information on Agentic workflows, checkout the dedicated [Agentic Workflows](#agentic-workflows) section. For a working example of this flow, please try out the [Agentic Workflow Example](./examples/agentic-workflow).
 
 ---
 
