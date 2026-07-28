@@ -1,5 +1,7 @@
 ## Form.io UAG: Claude Integration
 
+<sub>[Form.io UAG](../../README.md) &rsaquo; this page</sub>
+
 The Claude Integration for UAG provides a number of API endpoints that produce commands for the Claude API that directly use a UAG tool to perform AI Agentic automation procedures. This provides the ability to deploy the UAG along with this integration, and then trigger any tool from a Form.io Webhook. By default, this integration offers a few API commands, but this can be easily configured by overriding the "command" directory within the deployed Docker container. To get an understanding of how this process works in conjunction with the Claude API and the UAG, the following "flow" diagram helps to visualize the flow of communication between Claude, the UAG, and the Form.io Platform.
 
 ![Visualization showing how Claude integration can be used to create a single API route that is capable of agentic automation.](../../examples/images/agent-flow.png)
@@ -54,7 +56,7 @@ Once the service is running, it will mount a series of **commands** at the follo
 
 | Command | Description |
 |----------|-------------|
-| `agent_provide_data` | Use an AI Agent to analyze a submission, and based on the configured **Persona** and **Criteria**, produce its own data to suppliment the submission. |
+| `agent_provide_data` | Use an AI Agent to analyze a submission, and based on the configured **Persona** and **Criteria**, produce its own data to supplement the submission. |
 | `collect_field_data` | Provided a block of natual language text as well as a **Form Name**, this command is capable of retrieving a structured JSON submission data from that block of text. The results are returned as JSON. |
 
 ### agent_provide_data
@@ -97,7 +99,9 @@ This command instigates the Agent to use the `agent_provide_data` UAG tool in or
 ```
 
 ## Form.io Webhook Setup
-Once you have created a form that supports the `agent_provide_data` tool (see the main Readme for these instructions), you can configure a Webhook action so that this API is automatically triggered for that submission. The result of this approach, is that you can trigger an AI Agent to read a submission, analyze it according to the **Criteria** content, and then update that submission with its own provided data automatically. This would allow the creation of Agentic Workflows, where different Agents following different rules are capable of updating submissions with supplimental information, thus triggering other Webhooks if necessary. 
+Once you have created a form that supports the `agent_provide_data` tool (see the main Readme for these instructions), you can configure a Webhook action so that this API is automatically triggered for that submission. The result of this approach, is that you can trigger an AI Agent to read a submission, analyze it according to the **Criteria** content, and then update that submission with its own provided data automatically. This would allow the creation of Agentic Workflows, where different Agents following different rules are capable of updating submissions with supplemental information, thus triggering other Webhooks if necessary. 
+
+> **This requires the Form.io Enterprise Server.** The Webhook action needs to do two things here: send an API key as a request header, and transform its payload into the `{formName, submissionId, persona}` body this API expects. The Webhook action in Form.io Community Edition supports only `url`, `block`, and HTTP Basic credentials, so it cannot call this endpoint. On Community Edition, trigger the endpoint from your own code after you create the submission — the request is a single `POST`, shown above.
 
 To setup a Webhook Action to leverage this API, you first need to establish the API endpoint as follows.
 
@@ -117,18 +121,18 @@ Make sure that you provide the correct formName and "persona" that matches the `
 
 ![Image showing webhook setup for Claude Integration](../../examples/images/webhook-transform.png)
 
-Finally, you will then just remove the `Delete` method from the **Methods** since you do NOT wish to fire this webhook when a submission is deleted (since the purpose is to suppliment submission data of an existing submission).
+Finally, you will then just remove the `Delete` method from the **Methods** since you do NOT wish to fire this webhook when a submission is deleted (since the purpose is to supplement submission data of an existing submission).
 
 ![Image showing webhook setup for Claude Integration](../../examples/images/webhook-methods.png)
 
-Now, anytime your form is submission with a new submission, it will AUTOMATICALLY trigger an AI Agent to review the submission and provide its own supplimental data for the submission.
+Now, anytime a new submission is created on your form, it will AUTOMATICALLY trigger an AI Agent to review the submission and provide its own supplemental data for the submission.
 
 ## Environment Variables
 The following environment variables are used to configure the Claude Integration.
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| UAG_SERVER | The API Endpoint to the deployed UAG Server. This only needs to be reachable from this integration server (e.g. `http://localhost:3200` or a private Docker network address) — it does not need to be publicly accessible. NOTE: If you do not provide this value, and already have a BASE_URL enviornment variable set, this server will use that as the UAG_SERVER. | http://formio-uag:3200 |
+| UAG_SERVER | The API Endpoint to the deployed UAG Server. This only needs to be reachable from this integration server (e.g. `http://localhost:3200` or a private Docker network address) — it does not need to be publicly accessible. NOTE: If you do not provide this value, and already have a BASE_URL environment variable set, this server will use that as the UAG_SERVER. | http://formio-uag:3200 |
 | PROJECT_KEY | (Enterprise Only) The Project's API Key | CHANGEME |
 | ADMIN_KEY | (OSS Only) The Form.io OSS ADMIN_KEY | CHANGEME |
 | CLAUDE_MODEL | The model within Claude to use when performing the Agentic analysis | claude-opus-5 |

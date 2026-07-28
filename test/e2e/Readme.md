@@ -1,5 +1,7 @@
 # UAG End-to-End Tests
 
+<sub>[Form.io UAG](../../README.md) &rsaquo; this page</sub>
+
 Run with:
 
 ```
@@ -61,13 +63,13 @@ bearer tokens are refused.
 
 **Layer 3 — full-stack flows** (real Claude, full stack):
 
-- *Conversational Forms* (`layer3.conversational.e2e.mjs`): Claude acts as a
+- *Conversation Forms* (`layer3.conversational.e2e.mjs`): Claude acts as a
   conversational front-end for the uag-tagged `customer` resource. The test
   plays the user with scripted turns ("I would like to add a new Contact",
   the contact's details, a submit confirmation) and asserts the conversation
   produces a correct submission in Form.io — including the conditionally
   required `otherReferral` field.
-- *Conversational Forms with invalid input*
+- *Conversation Forms with invalid input*
   (`layer3.conversational-invalid.e2e.mjs`): the flow-level counterpart to the
   failure-path suite. The scripted user supplies a malformed email and an
   out-of-option referral source and pushes to submit; the agent must refuse,
@@ -86,7 +88,7 @@ bearer tokens are refused.
 ## Test project
 
 The stack uses `test/e2e/module` as the UAG runtime module. Its
-`template.json` extends the `examples/local` project with:
+`template.json` extends the `examples/custom-module` project with:
 
 - a `referralSource` select (required, and `onlyAvailableItems` so that values
   outside its options are rejected rather than stored) paired with

@@ -1,0 +1,147 @@
+{
+  "title": "UAG Conversation Form Example",
+  "version": "2.0.0",
+  "name": "uag-conversation-form",
+  "roles": {
+    "administrator": {
+      "title": "Administrator",
+      "description": "A role for Administrative Users.",
+      "admin": true,
+      "default": false
+    },
+    "authenticated": {
+      "title": "Authenticated",
+      "description": "A role for Authenticated Users.",
+      "admin": false,
+      "default": false
+    },
+    "anonymous": {
+      "title": "Anonymous",
+      "description": "A role for Anonymous Users.",
+      "admin": false,
+      "default": true
+    }
+  },
+  "resources": {},
+  "forms": {
+    "serviceRequest": {
+      "title": "Service Request",
+      "type": "form",
+      "name": "serviceRequest",
+      "path": "service-request",
+      "display": "form",
+      "tags": ["uag"],
+      "components": [
+        {
+          "label": "Full Name",
+          "key": "fullName",
+          "type": "textfield",
+          "input": true,
+          "description": "The name of the person reporting the issue.",
+          "validate": { "required": true, "minLength": 2 }
+        },
+        {
+          "label": "Email",
+          "key": "email",
+          "type": "email",
+          "input": true,
+          "description": "Where we send updates about this request.",
+          "validate": { "required": true }
+        },
+        {
+          "label": "Category",
+          "key": "category",
+          "type": "select",
+          "input": true,
+          "dataSrc": "values",
+          "description": "Which kind of problem this is.",
+          "data": {
+            "values": [
+              { "label": "Internet or Wi-Fi", "value": "internet" },
+              { "label": "Billing", "value": "billing" },
+              { "label": "Equipment or Hardware", "value": "equipment" },
+              { "label": "Installation or Move", "value": "installation" },
+              { "label": "Something Else", "value": "other" }
+            ]
+          },
+          "validate": { "required": true }
+        },
+        {
+          "label": "Urgency",
+          "key": "urgency",
+          "type": "radio",
+          "input": true,
+          "inline": true,
+          "description": "How badly this is affecting the customer right now.",
+          "values": [
+            { "label": "Low — annoying but working", "value": "low" },
+            { "label": "Medium — partly broken", "value": "medium" },
+            { "label": "High — completely down", "value": "high" }
+          ],
+          "validate": { "required": true }
+        },
+        {
+          "label": "Service Address",
+          "key": "serviceAddress",
+          "type": "textarea",
+          "input": true,
+          "rows": 2,
+          "description": "Street address where the service is installed.",
+          "validate": { "required": true }
+        },
+        {
+          "label": "Description of the Problem",
+          "key": "description",
+          "type": "textarea",
+          "input": true,
+          "rows": 4,
+          "description": "What is happening, when it started, and anything already tried.",
+          "validate": { "required": true, "minLength": 20 }
+        },
+        {
+          "label": "Best Callback Time",
+          "key": "callbackTime",
+          "type": "select",
+          "input": true,
+          "dataSrc": "values",
+          "description": "When a technician should call. Optional.",
+          "data": {
+            "values": [
+              { "label": "Morning (8am - 12pm)", "value": "morning" },
+              { "label": "Afternoon (12pm - 5pm)", "value": "afternoon" },
+              { "label": "Evening (5pm - 8pm)", "value": "evening" }
+            ]
+          }
+        },
+        {
+          "label": "Submit",
+          "key": "submit",
+          "type": "button",
+          "action": "submit",
+          "input": true,
+          "disableOnInvalid": true
+        }
+      ],
+      "access": [
+        { "type": "read_all", "roles": ["administrator", "authenticated", "anonymous"] }
+      ],
+      "submissionAccess": [
+        { "type": "create_all", "roles": ["administrator"] },
+        { "type": "read_all", "roles": ["administrator"] },
+        { "type": "update_all", "roles": ["administrator"] },
+        { "type": "delete_all", "roles": ["administrator"] }
+      ]
+    }
+  },
+  "actions": {
+    "serviceRequest:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "serviceRequest",
+      "priority": 10,
+      "method": ["create", "update"],
+      "handler": ["before"]
+    }
+  },
+  "access": []
+}

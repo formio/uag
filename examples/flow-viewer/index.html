@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>UAG Flow</title>
+<style>
+  :root {
+    --ivy: #1c5d43;
+    --ivy-dark: #14452f;
+    --bg: #f4f3ef;
+    --paper: #ffffff;
+    --ink: #22262a;
+    --muted: #6c757d;
+    --line: #e3e1da;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); }
+  header { background: var(--ivy); color: #fff; padding: 0.65rem 1rem; display: flex; align-items: center; gap: 0.75rem; }
+  header h1 { font-size: 1rem; margin: 0; font-weight: 600; }
+  header .dot { width: 9px; height: 9px; border-radius: 50%; background: #9be8c4; box-shadow: 0 0 6px #9be8c4; }
+  header .dot.dead { background: #e88; box-shadow: none; }
+  header .count { margin-left: auto; opacity: 0.8; font-size: 0.8rem; }
+  main { max-width: 1100px; margin: 1rem auto; padding: 0 1rem; }
+  .event { background: var(--paper); border: 1px solid var(--line); border-radius: 4px; margin-bottom: 4px; overflow: hidden; }
+  .row { display: grid; grid-template-columns: 5.5rem 5rem 1fr auto auto; gap: 0.75rem; padding: 0.4rem 0.75rem; cursor: pointer; align-items: baseline; }
+  .row:hover { background: #fafaf7; }
+  .time { color: var(--muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+  .kind { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.1rem 0.4rem; border-radius: 3px; text-align: center; }
+  .kind.webhook { background: #fff3cd; color: #7a5d00; }
+  .kind.mcp { background: #e2efe8; color: var(--ivy-dark); }
+  .kind.auth { background: #e7e9ec; color: #4a5560; }
+  .kind.other { background: #eee; color: var(--muted); }
+  .label { font-weight: 600; }
+  .label .summary { font-weight: 400; color: var(--muted); font-size: 0.8rem; margin-left: 0.5rem; }
+  .status { font-size: 0.75rem; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .status.ok { color: var(--ivy); }
+  .status.err { color: #b02a37; }
+  .status.pending { color: #b8860b; }
+  .sess { font-size: 0.7rem; color: var(--muted); font-family: ui-monospace, monospace; }
+  .detail { display: none; border-top: 1px dashed var(--line); background: #fbfaf7; padding: 0.6rem 0.75rem; }
+  .event.open .detail { display: block; }
+  .detail h4 { margin: 0.25rem 0; font-size: 0.72rem; text-transform: uppercase; color: var(--muted); }
+  pre { margin: 0 0 0.5rem; padding: 0.5rem; background: #ffffff; border: 1px solid var(--line); border-radius: 3px; overflow-x: auto; font-size: 0.75rem; max-height: 20rem; }
+  .chunk { padding: 0.15rem 0.75rem 0.15rem 2rem; color: var(--muted); font-size: 0.75rem; border-top: 1px dotted var(--line); }
+  .empty { text-align: center; color: var(--muted); padding: 3rem 0; }
+  @media (max-width: 700px) { .row { grid-template-columns: 4rem 1fr auto; } .sess, .kind { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <span class="dot" id="dot"></span>
+  <h1>UAG Flow</h1>
+  <span class="count" id="count">0 events</span>
+</header>
+<main>
+  <div class="empty" id="empty">Waiting for traffic — submit a form wired to an agent webhook and the run will appear here live.</div>
+  <div id="list"></div>
+</main>
+<script>
+  const list = document.getElementById('list');
+  const empty = document.getElementById('empty');
+  const count = document.getElementById('count');
+  const dot = document.getElementById('dot');
+  const byReq = new Map();
+  let total = 0;
+
+  function fmtTime(ts) {
+    return new Date(ts).toLocaleTimeString(undefined, { hour12: false });
+  }
+  function esc(s) {
+    return (s || '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  }
+  function pretty(s) {
+    try { return JSON.stringify(JSON.parse(s), null, 2); } catch { return s || ''; }
+  }
+
+  function onEvent(e) {
+    empty.style.display = 'none';
+    if (e.phase === 'request') {
+      const div = document.createElement('div');
+      div.className = 'event';
+      div.dataset.reqId = e.reqId;
+      div.innerHTML = `
+        <div class="row" onclick="this.parentElement.classList.toggle('open')">
+          <span class="time">${fmtTime(e.ts)}</span>
+          <span class="kind ${e.kind}">${e.kind}</span>
+          <span class="label">${esc(e.label)}<span class="summary">${esc(e.summary || '')}</span></span>
+          <span class="sess">${esc((e.session || '').slice(0, 8))}</span>
+          <span class="status pending">…</span>
+        </div>
+        <div class="chunks"></div>
+        <div class="detail">
+          <h4>Request</h4><pre>${esc(pretty(e.detail))}</pre>
+          <div class="resp"></div>
+        </div>`;
+      list.prepend(div);
+      byReq.set(e.reqId, div);
+      total++;
+    } else if (e.phase === 'chunk') {
+      const div = byReq.get(e.reqId);
+      if (div) {
+        const c = document.createElement('div');
+        c.className = 'chunk';
+        c.textContent = '⋯ ' + (e.summary || 'stream chunk');
+        div.querySelector('.chunks').appendChild(c);
+      }
+    } else if (e.phase === 'response') {
+      const div = byReq.get(e.reqId);
+      if (div) {
+        const st = div.querySelector('.status');
+        st.textContent = `${e.status} · ${e.ms}ms`;
+        st.className = 'status ' + (e.status < 400 ? 'ok' : 'err');
+        const lbl = div.querySelector('.label .summary');
+        if (e.summary) lbl.textContent = e.summary.slice(0, 160);
+        div.querySelector('.resp').innerHTML = `<h4>Response (${e.status}, ${e.ms}ms)</h4><pre>${esc(pretty(e.detail))}</pre>`;
+      }
+    }
+    count.textContent = total + ' events';
+  }
+
+  const es = new EventSource('/mail-flow-sse'.replace('/mail-flow-sse', location.pathname.replace(/\/$/, '') + '/events'));
+  es.onmessage = (ev) => onEvent(JSON.parse(ev.data));
+  es.onopen = () => dot.classList.remove('dead');
+  es.onerror = () => dot.classList.add('dead');
+</script>
+</body>
+</html>

@@ -1,4 +1,7 @@
 # UAG Modules
+
+<sub>[Form.io UAG](../README.md) &rsaquo; this page</sub>
+
 A module is a way to extend the functionality and provide default forms and resources to accomplish specific goals using the UAG (Universal Agent Gateway). This capability enables developers to create their own domain-specific implementations of agent behaviors through custom actions, resources, and forms that produce deterministic behaviors from Generalized pre-trained agents (ChatGPT, Claude, etc).
 
 A module can also be published via NPM or Github and used by other developers to automatically configure their own software to work with the systems covered by that module.
@@ -376,7 +379,7 @@ async executor(form, action, handler, method) {
 ```
 
 #### Configuring actions
-Once you have defined an action, the next step is to add an Action instance to a Form. If you are using the OSS server, then this can be done either by adding the action instance to the project.json of your Module. See the Local Example for an example of how to do this.
+Once you have defined an action, the next step is to add an Action instance to a Form. If you are using the OSS server, then this can be done either by adding the action instance to the project.json of your Module. See the [Custom Module Example](../examples/custom-module) for an example of how to do this.
 
 The other method is to send the following POST request to your form once the OSS server is running.
 

@@ -1,0 +1,91 @@
+# Fully autonomous agentic workflow, running entirely on a private Docker
+# network. Nothing here is publicly exposed and no tunnel is involved: the
+# Claude integration runs its own MCP client and connects *out* to the UAG.
+services:
+  mongo:
+    image: mongo:7
+    container_name: uag-example-mongo
+    restart: always
+    volumes:
+      - uag-example-data:/data/db
+
+  formio-server:
+    image: formio/formio-enterprise:9.9.0
+    container_name: uag-example-server
+    restart: always
+    links:
+      - mongo
+    depends_on:
+      - mongo
+    ports:
+      # Change the host side of this if port 3000 is already taken.
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      MONGO: mongodb://mongo:27017/formio
+      DB_SECRET: CHANGEME
+      JWT_SECRET: CHANGEME
+      PORTAL_ENABLED: 1
+      PORTAL_SECRET: CHANGEME
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASS: CHANGEME
+      LICENSE_KEY: ${LICENSE_KEY:?set LICENSE_KEY in .env}
+    healthcheck:
+      # The UAG exits if the server is not answering when it starts up, so hold
+      # it back until this responds.
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+
+  formio-uag:
+    image: formio/uag:1.12.0
+    container_name: uag-example-uag
+    restart: always
+    links:
+      - formio-server
+    depends_on:
+      formio-server:
+        condition: service_healthy
+    environment:
+      PORT: 3200
+      # Container-to-container address of the project, not a browser one.
+      PROJECT: http://formio-server:3000/agentic-workflow
+      PROJECT_KEY: ${PROJECT_KEY:?run ./setup.mjs first}
+      UAG_LICENSE: ${UAG_LICENSE:?set UAG_LICENSE in .env}
+      JWT_SECRET: CHANGEME
+      JWT_EXPIRE_TIME: 3600
+      # Re-check the project for form changes every 10s. Raise this in
+      # production; 10s keeps criteria edits quick to observe.
+      PROJECT_TTL: 10
+      # Required, even though nothing here is public. The UAG's authentication
+      # provider is only enabled when BASE_URL is set, and this is the address
+      # the Claude integration reaches it at on the Docker network.
+      BASE_URL: http://formio-uag:3200
+      # Only used by the browser login flow at BASE_URL/auth/authorize, which
+      # this example does not need. Left set so you can try that flow later.
+      LOGIN_FORM: http://localhost:3000/agentic-workflow/user/login
+
+  # The MCP client. It authenticates with client_credentials, runs the tool-use
+  # loop locally, and only ever makes outbound calls to the Anthropic API.
+  formio-uag-claude:
+    image: formio/uag-claude:1.3.0
+    container_name: uag-example-claude
+    restart: always
+    links:
+      - formio-uag
+    depends_on:
+      - formio-uag
+    environment:
+      PORT: 3300
+      UAG_SERVER: http://formio-uag:3200
+      # PROJECT supplies the project name that prefixes the client_id used in
+      # the client_credentials token request.
+      PROJECT: http://formio-server:3000/agentic-workflow
+      PROJECT_KEY: ${PROJECT_KEY:?run ./setup.mjs first}
+      CLAUDE_MODEL: claude-sonnet-5
+      CLAUDE_MAX_TOKENS: 10000
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:?set CLAUDE_API_KEY in .env}
+
+volumes:
+  uag-example-data:

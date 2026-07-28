@@ -13,10 +13,10 @@
  */
 module.exports = {
     config: {
-        template: undefined, // To provide "default" resources and forms to the project. See examples/local for an example of this.
-        loginForm: '', // To change the "/auth/authorize" page. See examples/local for an example of this.
-        responseTemplates: {}, // Override the templates defined by ResponseTemplate enum (or your own new templates) here. See examples/local for an example of this.
-        toolOverrides: {}, // Override the tool definitions defined by ToolName enum here. See examples/local for an example of this.
+        template: undefined, // To provide "default" resources and forms to the project. See examples/custom-module for an example of this.
+        loginForm: '', // To change the "/auth/authorize" page. See examples/custom-module for an example of this.
+        responseTemplates: {}, // Override the templates defined by ResponseTemplate enum (or your own new templates) here. See examples/custom-module for an example of this.
+        toolOverrides: {}, // Override the tool definitions defined by ToolName enum here. See examples/custom-module for an example of this.
         tools: [] // Add your custom tools here.  Must be in the format defined by the ToolInfo type.
     },
     actions: {} // Add your custom form actions here.

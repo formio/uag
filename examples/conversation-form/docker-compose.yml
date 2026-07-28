@@ -1,0 +1,87 @@
+# A form-driven chat application, running entirely on a private Docker network.
+#
+# The chat app runs its own MCP client and connects *out* to the UAG, so the UAG
+# is never publicly exposed and no tunnel is involved.
+#
+# Before starting, copy .env.example to .env and add your Anthropic API key.
+services:
+  mongo:
+    image: mongo:7
+    container_name: uag-chat-mongo
+    restart: always
+    volumes:
+      - uag-chat-data:/data/db
+
+  # Form.io Community Edition. No license key required.
+  formio:
+    image: formio/formio
+    container_name: uag-chat-formio
+    restart: always
+    links:
+      - mongo
+    depends_on:
+      - mongo
+    ports:
+      # The OSS container listens on 3001; published here as localhost:3000.
+      - "3000:3001"
+    environment:
+      NODE_CONFIG: '{"mongo": "mongodb://mongo:27017/formio-oss", "jwt": {"secret": "CHANGEME"}, "mongoSecret": "CHANGEME"}'
+      ROOT_EMAIL: admin@example.com
+      ROOT_PASSWORD: CHANGEME
+      ADMIN_KEY: CHANGEME
+    healthcheck:
+      # The UAG installs its template on boot and exits if the server is not
+      # answering yet, so hold it back until this responds.
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+
+  formio-uag:
+    image: formio/uag:1.12.0
+    container_name: uag-chat-uag
+    restart: always
+    links:
+      - formio
+    depends_on:
+      formio:
+        condition: service_healthy
+    volumes:
+      # Provisions the serviceRequest form from ./module/project.json.
+      #
+      # Note that the template is re-applied every time this container starts,
+      # which replaces the form documents — and deletes the submissions attached
+      # to them. Treat restarts of this service as a reset of the demo data.
+      - ./module:/app/module
+    environment:
+      PORT: 3200
+      PROJECT: http://formio:3001
+      ADMIN_KEY: CHANGEME
+      JWT_SECRET: CHANGEME
+      JWT_EXPIRE_TIME: 3600
+      # 10s so edits to the form show up in the conversation almost immediately.
+      PROJECT_TTL: 10
+      # Required, even though nothing here is public: the UAG's authentication
+      # provider — and therefore /auth/token — only exists when this is set.
+      BASE_URL: http://formio-uag:3200
+
+  chat:
+    build: ./chat
+    container_name: uag-chat-app
+    restart: always
+    links:
+      - formio-uag
+    depends_on:
+      - formio-uag
+    ports:
+      - "3400:3400"
+    environment:
+      PORT: 3400
+      UAG_SERVER: http://formio-uag:3200
+      ADMIN_KEY: CHANGEME
+      CLAUDE_MODEL: claude-sonnet-5
+      CLAUDE_MAX_TOKENS: 4096
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:?set CLAUDE_API_KEY in .env}
+
+volumes:
+  uag-chat-data:

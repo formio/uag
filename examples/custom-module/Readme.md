@@ -1,4 +1,7 @@
-## Example UAG Module
+# Example: Custom Module
+
+<sub>[Form.io UAG](../../README.md) &rsaquo; this page</sub>
+
 This demonstrates how you can create your own custom modules to produce customized agent behaviors through the introduction of new Forms, Resources, Actions, and Configurations. This particular example, provides Employee's and Customers to an AI Agent where you can both onboard new Employees, and then they in turn can onboard new Customers. The entirety of this example leverages only the Open Source elements of [Form.io](https://form.io) so no subscriptions or license keys required to run this example.
 
 ## Pre-requisites
@@ -6,9 +9,11 @@ To run this example, there are a few things that you will need to have ready to 
 
  - **Node.js**: Make sure that your machine has the latest LTS of Node.js installed. Go to https://nodejs.org/en/download to ensure that your machine has Node installed.
  - **Docker**: Go to https://www.docker.com and follow the instructions to install Docker on the machine you are running the example from.
- - **AI Agent with MCP support**:  The Form.io UAG requires that you utilize an AI Agent with Remote MCP support. We have done extensive testing using Claude (and we recomment it), but there may be other agents on the market that also provide a way to connect to custom Remote MCP endpoints. For this example, we will be leveraging **Claude Desktop** since it supports locally running MCP servers with its Free plan. To complete this example, you will need to download and install the **Claude Desktop** found @ https://claude.ai/download 
+ - **AI Agent with MCP support**:  This example is driven by a human chatting with an agent, so it needs an AI Agent that can connect to an MCP server. We have done extensive testing using Claude (and we recommend it), but there may be other agents on the market that also provide a way to connect to custom MCP endpoints. For this example, we will be leveraging **Claude Desktop** since it supports locally running MCP servers with its Free plan. To complete this example, you will need to download and install the **Claude Desktop** found @ https://claude.ai/download 
 
-If you are using an AI Agent that only supports Remote MCP, you will also need to use a tool such as (NGROK) to create a secure web-accessible tunnel to your locally running server. For this example, however we will connect Claude to our locally running server using the Claude Desktop.
+If you are using an AI Agent that only supports **Remote** MCP — one that dials into your UAG rather than running the MCP client itself — then that agent must be able to reach your UAG over the public internet, which for a local deployment means a tunnel such as NGROK. For this example, however, we will connect Claude to our locally running server using the Claude Desktop.
+
+Note that a tunnel is only needed for that remote case. If you are building automation rather than chatting — a webhook-triggered agent, or your own application calling the UAG server-side — the MCP client runs alongside the UAG and connects *out* to it, so nothing needs to be publicly reachable. See [How Agents Connect](../../README.md#how-agents-connect) for the distinction, and the [Agentic Workflow example](../agentic-workflow) for a deployment that works this way.
 
 ## Running the example
 To run the example, you will first need to change the password that is found within the docker-compose.yml file. Any text that says CHANGEME, change this to a secure password. You should also take note of the urls provided to the **BASE_URL** and the **LOGIN_FORM** environment variables. If you are publishing this via a web-accessible url, or if you are using NGROK, then you will need to make sure that these variables change to the URL that your UAG is published. For now, we will just keep the urls set to ***http://localhost:3000***.
@@ -77,7 +82,7 @@ Next, we will open up the **Claude Desktop**, where we will click on the **Devel
   <img src="../images/claude-app-config.png" alt="Claude app config" width="600">
 </div>
 
-We need to add an entry to run the "mcp-remote" proxy to call our lcoally running UAG server. We can do this by setting this file to read as follows.
+We need to add an entry to run the "mcp-remote" proxy to call our locally running UAG server. We can do this by setting this file to read as follows.
 
 ```json
 {
@@ -111,7 +116,7 @@ To engage with the UAG, simply open up a Chat window and say things such as the 
 
  - "I would like to add a new Customer"
  - "I met a customer the other day... his name is Joe Smith and he is the CFO for Acme Inc."
- - "What is the phone number of my custom whos name is Joe Smith?"
+ - "What is the phone number of my customer whose name is Joe Smith?"
  - "I ran into Joe Smith, who is already a customer. I need to add a note to call him next Tuesday".
 
 The point of this module is that you can now use natural language to engage with the deterministic models created by the Form.io forms and resources. 
@@ -130,7 +135,7 @@ From this point forward, the AI Agent will use your configured Form.io Resources
 If you have upgrade your Claude to Pro level, or have onboarded your Enterprise through the Claude Enterprise Plan, you will want to deploy the UAG to a remote server with a Public URL. Once you do this, you will connect to the UAG through the Remote MCP connectors within the Claude AI portal.  To do this, we will open up Claude, and go to the "Connectors" section in the Settings and then click "Add Custom Connector". We will then need to provide the following.
 
  - Name:  Form.io UAG
- - Remote MCP Server URL:   <Your publically hosted URL for UAG>
+ - Remote MCP Server URL:   <Your publicly hosted URL for UAG>
 
 <div align="center">
   <img src="../images/claude-ai-add-connector.png" alt="Claude UI Connectors" width="600">
