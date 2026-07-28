@@ -202,11 +202,50 @@ async function runTurn(session, userMessage) {
     }
 }
 
+/**
+ * Pulls the form list out of the markdown that `get_forms` returns.
+ *
+ * Deliberately asks the UAG rather than the Form.io server: this is the agent's
+ * own view of the project, so a form missing the `uag` tag is missing here too,
+ * which is exactly what the page is trying to show.
+ */
+function parseForms(text) {
+    const forms = [];
+    // Lines look like:  - Service Request (**serviceRequest**):
+    const pattern = /^-\s+(.+?)\s+\(\*\*(.+?)\*\*\)/gm;
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+        forms.push({ title: match[1].trim(), name: match[2].trim() });
+    }
+    return forms;
+}
+
 // -------------------------------------------------------------------- server
 
 const app = Express();
 app.use(Express.json());
 app.use(Express.static(path.join(__dirname, 'public')));
+
+/** Which forms and resources the agent can currently see. */
+app.get('/api/forms', async (req, res) => {
+    let mcp;
+    try {
+        mcp = await connectMcp();
+        const result = await mcp.callTool({ name: 'get_forms', arguments: {} });
+        const text = (result.content || [])
+            .filter((block) => block.type === 'text')
+            .map((block) => block.text)
+            .join('\n');
+        res.json({ forms: parseForms(text) });
+    }
+    catch (error) {
+        console.error('Listing forms failed:', error);
+        res.status(500).json({ error: error.message });
+    }
+    finally {
+        if (mcp) await mcp.close().catch(() => {});
+    }
+});
 
 app.post('/api/chat', async (req, res) => {
     const { sessionId, message } = req.body || {};

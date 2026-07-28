@@ -38,6 +38,10 @@ First boot takes about 30 seconds while Form.io initializes its database and the
 
 Then open **http://localhost:3400** and start typing.
 
+![The chat application, showing which forms are active in the UAG](../images/chat-active-forms.jpg)
+
+The green row under the header lists every form and resource the agent can currently see. That list is not hard-coded — the page asks the UAG through `get_forms` and refreshes every ten seconds, so it shows exactly what the agent sees. If something you just tagged does not appear there, the agent cannot see it either.
+
 A conversation looks like this:
 
 > **You:** My internet has been down since last night and I need someone to look at it.
@@ -57,24 +61,61 @@ docker compose down -v
 
 ## The experiment worth running
 
-This is the part that makes the point. Open [`module/project.json`](./module/project.json) and change the form — then reload the chat and start over.
+This is the part that makes the point, and you do it in the Form.io portal rather than in code. Open **http://localhost:3000** (`admin@example.com` / `CHANGEME`). The left column lists Resources, the right lists Forms — `Service Request` is the form this chat is driven by.
 
-Try any of these:
+![The Form.io Open Source portal, listing resources and forms](../images/portal-home.jpg)
 
-- **Add a field.** Give `serviceRequest` an `accountNumber` textfield with `"validate": {"required": true, "pattern": "^[0-9]{8}$"}` and a description explaining the format. The assistant starts asking for an account number and rejects `12345`, because `get_field_info` tells it the pattern.
-- **Change the options.** Add `"Streaming or TV"` to the `category` values. It gets offered as a choice on the next conversation.
-- **Make something optional.** Drop `"required": true` from `serviceAddress`. The assistant stops insisting on it.
-- **Rewrite a description.** The `description` text on each component is context for the agent as much as for a human, so sharpening it changes how the question gets asked.
+Nothing below requires editing a file, rebuilding an image, or restarting a container. The UAG re-reads the project every `PROJECT_TTL` seconds — 10 in this example — so a saved change reaches the conversation within about ten seconds.
 
-Then apply the change:
+### Changing an existing form
 
-```bash
-docker compose restart formio-uag
-```
+Click **Edit** next to `Service Request`. This is the form builder: the palette on the left, the form in the middle, and the form's settings across the top. Note the **Tags** box in the top right — `uag` is what makes this form visible to the agent at all.
 
-Restarting re-applies the template, and the very next message reflects the new form. (Within a running container the project cache also refreshes every `PROJECT_TTL` seconds — 10 in this example — which picks up forms edited through the portal.)
+![The Service Request form open in the builder, showing the uag tag](../images/portal-edit-form.jpg)
 
-> **Restarting `formio-uag` resets the demo data.** Re-applying the template replaces the form documents, and the submissions attached to them go with it. That is fine for a demo and worth knowing before you go looking for a submission that has vanished.
+Hover any field and click the gear icon to open its settings. The **Label** is what the customer sees; the **Description** is context the agent reads when deciding how to ask:
+
+![The component settings dialog for the Category field](../images/portal-component-display.jpg)
+
+For a choice field, the **Data** tab holds the exact values the agent is allowed to use. This is where "what may this answer be?" is actually defined:
+
+![The Data tab showing the category label and value pairs](../images/portal-component-values.jpg)
+
+Click **Add Another**, type `Streaming or TV` as the label — the value fills itself in — then **Save** the component and **Save Form** at the bottom of the builder:
+
+![A new Streaming or TV option added to the category values](../images/portal-added-option.jpg)
+
+Wait about ten seconds, start a new conversation, and say your TV service is out. The assistant now offers the new category, because `get_field_info` returned it. Nothing about the chat application changed.
+
+Other changes worth trying, all in the same place:
+
+- **Add a field.** Drag a **Text Field** into the form, label it `Account Number`, and under **Validation** set it required with the pattern `^[0-9]{8}$`. The assistant starts asking for it and rejects `12345`.
+- **Make something optional.** Open `Service Address` → **Validation** → untick **Required**. The assistant stops insisting on it.
+- **Rewrite a description.** Sharpen the wording on any field and watch how differently the question gets asked. The description is agent context as much as human help text.
+
+### Adding a new resource
+
+The agent picks up anything in the project that carries the `uag` tag, not just the form shipped with this example. To prove it, add a `Customer` resource.
+
+Click **+ New Resource**, set the **Form Title** to `Customer` — the name and path fill themselves in — and add `uag` to the **Tags** box. Then drag in the fields you want, giving each a description. Below, a `First Name` text field with the description the agent will read:
+
+![Editing a new field, showing its label, description, and live preview](../images/portal-new-field.jpg)
+
+Add `Last Name` and `Email` the same way, then click **Create Resource**. The finished definition looks like this — title, name, path, the `uag` tag, and the fields:
+
+![A new Customer resource with the uag tag and its fields](../images/portal-new-resource.jpg)
+
+> **The `uag` tag is the whole trick.** Without it the resource is invisible: the agent will insist the form does not exist, and no error appears anywhere. Watch the green row at the top of the chat — if your new resource is not listed there within ten seconds, the tag is missing.
+
+Give it ten seconds, then open the chat and say *"I'd like to add a new customer — Marcus Webb, marcus@example.com"*. The assistant discovers the resource, asks for whatever it still needs, and submits it. You never told the chat application that customers exist.
+
+The records land under the resource's **View Data** tab:
+
+![The View Data tab showing a submitted customer record](../images/portal-view-data.jpg)
+
+### If you would rather work in code
+
+[`module/project.json`](./module/project.json) is the same project as a template, applied on boot. Editing it is a reasonable way to keep changes in version control, but it is not the fast feedback loop: the template is only applied when `formio-uag` starts, so a change there needs `docker compose restart formio-uag`. Portal edits win for experimenting; the template wins for anything you want reproducible.
 
 ## How the chat server works
 
@@ -120,6 +161,7 @@ The tools it leans on, in the order a conversation tends to use them:
 - **Sessions are in memory.** Restarting the chat container forgets every conversation. Persist them somewhere real if you need continuity.
 - **The chat acts as an administrator.** It authenticates with `ADMIN_KEY`, so the agent can see and write anything in the project. That is deliberate for a single-form demo and wrong for a multi-tenant one: authenticate each *user* instead, so the UAG applies that user's roles and permissions to every tool call. [examples/custom-module](../custom-module) shows a project where role-based permissions decide what the agent may do.
 - **No spend controls.** Each turn is a full tool loop. Add per-session rate limiting before exposing anything like this publicly.
+- **Replies are rendered as markdown from the CDN.** The page loads [marked](https://marked.js.org) and [DOMPurify](https://github.com/cure53/DOMPurify) from jsDelivr with subresource-integrity hashes. `marked` does not sanitize on its own, and the text being rendered comes from a model, so every reply is passed through DOMPurify before it touches the DOM. With no network the two scripts simply do not load and replies fall back to plain text — never to unsanitized HTML. Vendor the two files into `chat/public/` if you need it to work offline.
 - **The model still writes the prose.** The form constrains *what is collected and what is valid*; it does not constrain tone. Keep the summary-and-confirm step so a human approves the data before it is written.
 - **`ADMIN_KEY`, `JWT_SECRET`, and the Mongo secrets are all `CHANGEME`.** Change them for anything beyond a local demo.
 
@@ -131,6 +173,6 @@ The tools it leans on, in the order a conversation tends to use them:
 | The assistant says it cannot find a form | The form lost its `uag` tag, or the project cache has not refreshed. `docker compose restart formio-uag`. |
 | Every turn errors with a token message | `BASE_URL` is unset on the UAG, or `ADMIN_KEY` differs between the `formio`, `formio-uag`, and `chat` services — all three must match. |
 | The chat container exits at startup | It cannot reach the UAG. Check `docker compose logs formio-uag`; on a slow first boot the UAG waits for the server healthcheck. |
-| A submission you just made has disappeared | `formio-uag` restarted and re-applied the template. See the note above. |
+| A change you saved in the portal has not taken effect | Give it `PROJECT_TTL` seconds (10 here). If it still has not, confirm you clicked **Save Form** and not just **Save** on the component. |
 
 For anything else, start with the [Troubleshooting section](../../README.md#troubleshooting) in the main Readme.

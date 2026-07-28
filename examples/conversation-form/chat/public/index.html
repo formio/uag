@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Service Request — Chat</title>
+<title>Form.io Conversation</title>
 <style>
   :root {
     --bg: #f6f7f9;
@@ -16,14 +16,30 @@
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    background: var(--bg);
+    /* Sits the card on a tinted backdrop rather than filling the viewport. */
+    background: radial-gradient(1200px 600px at 50% -10%, #eef2f8 0%, var(--bg) 60%);
     color: var(--ink);
     font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     display: flex;
     justify-content: center;
+    align-items: center;
     min-height: 100vh;
+    padding: 2rem 1rem;
   }
-  main { width: 100%; max-width: 44rem; display: flex; flex-direction: column; height: 100vh; }
+  main {
+    width: 100%;
+    max-width: 42rem;
+    /* Tall enough to feel like an app, but never taller than the window. */
+    height: min(48rem, calc(100vh - 4rem));
+    display: flex;
+    flex-direction: column;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 18px 40px rgba(16, 24, 40, 0.10), 0 2px 6px rgba(16, 24, 40, 0.06);
+    /* Keeps the header and composer clipped to the rounded corners. */
+    overflow: hidden;
+  }
   header {
     padding: 1rem 1.25rem;
     border-bottom: 1px solid var(--line);
@@ -34,7 +50,29 @@
     flex-wrap: wrap;
   }
   h1 { font-size: 1rem; margin: 0; }
-  header p { margin: 0; color: var(--muted); font-size: 0.8rem; flex: 1; }
+  header .titles { flex: 1; min-width: 16rem; }
+  header p { margin: 0.15rem 0 0; color: var(--muted); font-size: 0.8rem; }
+  #active {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 0.55rem 1.25rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+    font-size: 0.78rem;
+  }
+  .active-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.68rem; }
+  .pills { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+  .pill {
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: #e7f6ec;
+    border: 1px solid #a9d9bb;
+    color: #1c6b3c;
+  }
+  .muted { color: var(--muted); }
+  .warn { color: #8a2018; }
   button {
     font: inherit;
     font-size: 0.8rem;
@@ -46,8 +84,37 @@
     cursor: pointer;
   }
   button:hover { color: var(--ink); border-color: var(--muted); }
-  #log { flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; }
+  #log { flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; background: var(--bg); }
   .msg { max-width: 85%; padding: 0.6rem 0.85rem; border-radius: 0.9rem; white-space: pre-wrap; }
+  /* Rendered markdown supplies its own block spacing, so drop pre-wrap. */
+  .msg.md { white-space: normal; }
+  .msg.md p { margin: 0 0 0.5rem; }
+  .msg.md p:last-child { margin-bottom: 0; }
+  .msg.md h1, .msg.md h2, .msg.md h3, .msg.md h4 { font-size: 1em; font-weight: 600; margin: 0 0 0.35rem; }
+  .msg.md ul, .msg.md ol { margin: 0 0 0.5rem; padding-left: 1.25rem; }
+  .msg.md ul:last-child, .msg.md ol:last-child { margin-bottom: 0; }
+  .msg.md li { margin: 0.1rem 0; }
+  .msg.md li > ul, .msg.md li > ol { margin: 0.1rem 0 0; }
+  .msg.md pre {
+    margin: 0 0 0.5rem;
+    padding: 0.5rem 0.65rem;
+    background: #f1f3f6;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow-x: auto;
+  }
+  .msg.md pre code { background: none; border: 0; padding: 0; }
+  .msg.md a { color: var(--accent); }
+  .msg.md table { border-collapse: collapse; font-size: 0.9em; }
+  .msg.md th, .msg.md td { border: 1px solid var(--line); padding: 0.2rem 0.45rem; text-align: left; }
+  .msg.md code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85em;
+    background: #f1f3f6;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0 0.25em;
+  }
   .user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 0.25rem; }
   .bot { align-self: flex-start; background: var(--paper); border: 1px solid var(--line); border-bottom-left-radius: 0.25rem; }
   .err { align-self: stretch; background: #fdeceb; border: 1px solid #f3c2be; color: #8a2018; font-size: 0.85rem; }
@@ -69,15 +136,38 @@
   input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
   form button { border-radius: 999px; padding: 0.5rem 1.1rem; background: var(--accent); color: #fff; border-color: var(--accent); }
   form button:disabled { opacity: 0.5; cursor: default; }
+  @media (max-width: 640px) {
+    body { padding: 0; }
+    main {
+      height: 100vh;
+      max-width: none;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
+  }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"
+        integrity="sha384-H+hy9ULve6xfxRkWIh/YOtvDdpXgV2fmAGQkIDTxIgZwNoaoBal14Di2YTMR6MzR"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js"
+        integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu"
+        crossorigin="anonymous"></script>
 </head>
 <body>
 <main>
   <header>
-    <h1>Service Request</h1>
-    <p>Every question below comes from the Form.io form, not from this page.</p>
+    <div class="titles">
+      <h1>Form.io Conversation</h1>
+      <p>Every conversation is driven by the forms and resources in Form.io. Change one and the next reply reflects it — nothing here needs redeploying.</p>
+    </div>
     <button id="reset" type="button">Start over</button>
   </header>
+
+  <section id="active" aria-live="polite">
+    <span class="active-label">Active in the UAG</span>
+    <span id="active-list" class="pills"><span class="muted">checking…</span></span>
+  </section>
 
   <div id="log" aria-live="polite" aria-label="Conversation"></div>
 
@@ -95,10 +185,32 @@
   const send = document.getElementById('send');
   const sessionId = Math.random().toString(36).slice(2) + Date.now().toString(36);
 
-  function add(text, className) {
+  /**
+   * Renders a model reply as markdown.
+   *
+   * `marked` does not sanitize, and this is model output, so the result always
+   * goes through DOMPurify before it reaches the DOM. If either library failed
+   * to load — no network, blocked CDN — we fall back to plain text rather than
+   * inserting unsanitized HTML.
+   */
+  const canRenderMarkdown = () =>
+    typeof window.marked !== 'undefined' && typeof window.DOMPurify !== 'undefined';
+
+  function renderMarkdown(raw) {
+    const html = window.marked.parse(raw, { breaks: true, gfm: true });
+    return window.DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+  }
+
+  function add(text, className, markdown) {
+    const useMarkdown = markdown && canRenderMarkdown();
     const el = document.createElement('div');
-    el.className = 'msg ' + className;
-    el.textContent = text;
+    el.className = 'msg ' + className + (useMarkdown ? ' md' : '');
+    if (useMarkdown) {
+      el.innerHTML = renderMarkdown(text);
+    }
+    else {
+      el.textContent = text;
+    }
     log.appendChild(el);
     log.scrollTop = log.scrollHeight;
     return el;
@@ -130,7 +242,7 @@
         add(body.error || 'Something went wrong.', 'err');
         return;
       }
-      add(body.reply, 'bot');
+      add(body.reply, 'bot', true);
       addTools(body.toolsUsed);
     } catch (error) {
       pending.remove();
@@ -160,7 +272,44 @@
     add('Conversation reset. What do you need help with?', 'bot');
   });
 
-  add('Hi! Tell me what you need help with and I will get a service request started.', 'bot');
+  const activeList = document.getElementById('active-list');
+
+  // Reflects what the agent can see. A form only appears once it carries the
+  // `uag` tag and the UAG's project cache has picked it up, so this doubles as
+  // a check that a form you just tagged is live.
+  async function refreshActive() {
+    try {
+      const response = await fetch('/api/forms');
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || 'request failed');
+      activeList.replaceChildren();
+      if (!body.forms.length) {
+        const empty = document.createElement('span');
+        empty.className = 'muted';
+        empty.textContent = 'nothing tagged uag yet';
+        activeList.appendChild(empty);
+        return;
+      }
+      for (const form of body.forms) {
+        const pill = document.createElement('span');
+        pill.className = 'pill';
+        pill.textContent = form.title;
+        activeList.appendChild(pill);
+      }
+    } catch (error) {
+      activeList.replaceChildren();
+      const failed = document.createElement('span');
+      failed.className = 'warn';
+      failed.textContent = 'could not reach the UAG: ' + error.message;
+      activeList.appendChild(failed);
+    }
+  }
+
+  refreshActive();
+  // The UAG re-reads the project on its own TTL, so poll to pick up new forms.
+  setInterval(refreshActive, 10000);
+
+  add('Hi! Tell me what you need help with and I can get it started.', 'bot');
   input.focus();
 </script>
 </body>

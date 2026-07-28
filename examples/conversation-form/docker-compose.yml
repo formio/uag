@@ -47,11 +47,9 @@ services:
       formio:
         condition: service_healthy
     volumes:
-      # Provisions the serviceRequest form from ./module/project.json.
-      #
-      # Note that the template is re-applied every time this container starts,
-      # which replaces the form documents — and deletes the submissions attached
-      # to them. Treat restarts of this service as a reset of the demo data.
+      # Provisions the serviceRequest form from ./module/project.json on boot.
+      # Only forms the project does not already have are created, so edits made
+      # in the portal are not overwritten when this container restarts.
       - ./module:/app/module
     environment:
       PORT: 3200
