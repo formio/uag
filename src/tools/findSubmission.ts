@@ -1,6 +1,6 @@
 import { ResponseTemplate } from "../template";
 import { UAGProjectInterface } from "../UAGProjectInterface";
-import { ToolInfo, SearchQuery } from "./utils";
+import { ToolInfo, SearchQuery, escapeSearchPattern } from "./utils";
 import { isNumber, get, defaultsDeep } from "lodash";
 import { Submission } from "@formio/core";
 import { UAGFormInterface } from "../UAGFormInterface";
@@ -43,19 +43,33 @@ export const findSubmission = async (project: UAGProjectInterface): Promise<Tool
                         }, true);
                     }
                     if (criterion.operator === 'regex') {
+                        // The value is a pattern by request here, so it is passed through
+                        // unescaped. It is still compiled first: the server drops a filter
+                        // it cannot compile, which would widen the search instead of
+                        // failing it, so a bad pattern is better reported back.
+                        try {
+                            new RegExp(criterion.search_value);
+                        }
+                        catch (err) {
+                            return project.mcpResponse(ResponseTemplate.submissionSearchError, {
+                                form: form.form,
+                                searchQuery: search_query,
+                                error: `"${criterion.search_value}" is not a valid regular expression for "${criterion.data_path}". Use the "contains" operator to search for it literally.`
+                            }, true);
+                        }
                         query[`data.${criterion.data_path}__regex`] = `/${criterion.search_value}/i`;
                     }
                     else if (criterion.operator === 'equals') {
                         query[`data.${criterion.data_path}`] = criterion.search_value;
                     }
                     else if (criterion.operator === 'contains') {
-                        query[`data.${criterion.data_path}__regex`] = `/${criterion.search_value}/i`;
+                        query[`data.${criterion.data_path}__regex`] = `/${escapeSearchPattern(criterion.search_value)}/i`;
                     }
                     else if (criterion.operator === 'starts_with') {
-                        query[`data.${criterion.data_path}__regex`] = `/^${criterion.search_value}/i`;
+                        query[`data.${criterion.data_path}__regex`] = `/^${escapeSearchPattern(criterion.search_value)}/i`;
                     }
                     else if (criterion.operator === 'ends_with') {
-                        query[`data.${criterion.data_path}__regex`] = `/${criterion.search_value}$/i`;
+                        query[`data.${criterion.data_path}__regex`] = `/${escapeSearchPattern(criterion.search_value)}$/i`;
                     }
                     else if (criterion.operator === 'greater_than') {
                         query[`data.${criterion.data_path}__gt`] = criterion.search_value;

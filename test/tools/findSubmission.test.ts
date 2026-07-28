@@ -372,4 +372,95 @@ describe('findSubmission Tool', () => {
         expect(result.data.submissions[0].partialId).to.exist;
         expect(result.data.submissions[0].partialId).to.equal('1234');
     });
+
+    describe('literal search values', () => {
+        let literalTool: any;
+
+        beforeEach(async () => {
+            const literalProject = new MockProjectInterface({
+                testForm: {
+                    title: 'Test Form',
+                    name: 'testForm',
+                    tags: ['uag'],
+                    components: [
+                        { path: 'email', label: 'Email', type: 'email' },
+                        { path: 'ref', label: 'Reference', type: 'textfield' }
+                    ]
+                }
+            }, {
+                testForm: [
+                    { _id: 'aaa1111', created: '2025-01-01', modified: '2025-01-01', data: { email: 'joe.thompson@example.com', ref: 'a/b' } },
+                    { _id: 'bbb2222', created: '2025-01-02', modified: '2025-01-02', data: { email: 'joeXthompson@exampleZcom', ref: 'plain' } },
+                    { _id: 'ccc3333', created: '2025-01-03', modified: '2025-01-03', data: { email: 'someone@elsewhere.test', ref: '[bracket]' } }
+                ]
+            });
+            literalTool = await findSubmission(literalProject);
+        });
+
+        const search = (operator: string, search_value: string, data_path = 'email') => literalTool.execute(
+            { form_name: 'testForm', search_query: [{ data_path, operator, search_value }], fields_requested: [data_path] },
+            { authInfo: mockAuthInfo }
+        );
+
+        it('treats dots in a contains value as literal dots', async () => {
+            const result = await search('contains', 'joe.thompson@example.com');
+            expect(result.template).to.equal(ResponseTemplate.submissionsFound);
+            // Unescaped, every dot would be a wildcard and joeXthompson@exampleZcom
+            // would match too, which is what made a new address look like a duplicate.
+            expect(result.data.submissions.length).to.equal(1);
+            expect(result.data.submissions[0]._id).to.equal('aaa1111');
+        });
+
+        it('does not match a similar value through wildcards', async () => {
+            const result = await search('contains', 'joe.thompson@example.co');
+            expect(result.data.submissions.length).to.equal(1);
+            expect(result.data.submissions[0]._id).to.equal('aaa1111');
+        });
+
+        it('matches a value containing a forward slash', async () => {
+            const result = await search('contains', 'a/b', 'ref');
+            expect(result.template).to.equal(ResponseTemplate.submissionsFound);
+            expect(result.data.submissions.length).to.equal(1);
+            expect(result.data.submissions[0]._id).to.equal('aaa1111');
+        });
+
+        it('matches a value containing regex metacharacters', async () => {
+            const result = await search('contains', '[bracket]', 'ref');
+            expect(result.template).to.equal(ResponseTemplate.submissionsFound);
+            expect(result.data.submissions.length).to.equal(1);
+            expect(result.data.submissions[0]._id).to.equal('ccc3333');
+        });
+
+        it('does not widen the search when the value is not a valid pattern', async () => {
+            // A bare "[" cannot compile, and the server drops a filter it cannot
+            // compile, so this must not come back as every submission.
+            const result = await search('contains', '[');
+            expect(result.template).to.equal(ResponseTemplate.noSubmissionsFound);
+        });
+
+        it('anchors starts_with without treating the value as a pattern', async () => {
+            const result = await search('starts_with', 'joe.thompson');
+            expect(result.data.submissions.length).to.equal(1);
+            expect(result.data.submissions[0]._id).to.equal('aaa1111');
+        });
+
+        it('anchors ends_with without treating the value as a pattern', async () => {
+            const result = await search('ends_with', '@example.com');
+            expect(result.data.submissions.length).to.equal(1);
+            expect(result.data.submissions[0]._id).to.equal('aaa1111');
+        });
+
+        it('still treats a regex operator value as a pattern', async () => {
+            const result = await search('regex', 'joe.thompson@example.com');
+            expect(result.template).to.equal(ResponseTemplate.submissionsFound);
+            // Opting into regex keeps the wildcard behaviour, so both records match.
+            expect(result.data.submissions.length).to.equal(2);
+        });
+
+        it('reports an invalid regex instead of silently searching everything', async () => {
+            const result = await search('regex', '[');
+            expect(result.template).to.equal(ResponseTemplate.submissionSearchError);
+            expect(result.data.error).to.contain('not a valid regular expression');
+        });
+    });
 });

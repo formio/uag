@@ -1,6 +1,6 @@
 import { ResponseTemplate } from "../template";
 import { UAGProjectInterface } from "../UAGProjectInterface";
-import { ToolInfo } from "./utils";
+import { ToolInfo, escapeSearchPattern } from "./utils";
 import { UAGFormInterface } from "../UAGFormInterface";
 import { Component, SelectComponent, Evaluator } from "@formio/core";
 import { SchemaBuilder } from './SchemaBuilder';
@@ -304,7 +304,7 @@ async function fetchResourceData(
 
     // Add search filter if provided
     if (search_value && component.searchField) {
-        query[`data.${component.searchField}__regex`] = `/${search_value}/i`;
+        query[`data.${component.searchField}__regex`] = `/${escapeSearchPattern(search_value)}/i`;
     }
 
     // Add component filter if configured (interpolate the filter string)
