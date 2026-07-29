@@ -2,6 +2,13 @@
   <img src="./examples/images/logo-formio-uag.png" alt="The Form.io Universal Agent Gateway (UAG)" width="40%">
 </p>
 
+<p align="center">
+  <a href="https://www.npmjs.com/package/@formio/uag"><img src="https://img.shields.io/npm/v/%40formio%2Fuag?label=%40formio%2Fuag" alt="npm: @formio/uag"></a>
+  <a href="https://hub.docker.com/r/formio/uag"><img src="https://img.shields.io/docker/v/formio/uag?label=docker&sort=semver" alt="Docker: formio/uag"></a>
+  <a href="https://registry.modelcontextprotocol.io/v0/servers?search=io.form/formio-uag"><img src="https://img.shields.io/badge/MCP%20Registry-io.form%2Fformio--uag-blue" alt="MCP Registry: io.form/formio-uag"></a>
+  <a href="./LICENSE.txt"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+</p>
+
 The Universal Agent Gateway (UAG) leverages the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/docs/getting-started/intro) to enable in-process agentic automation using Form.io. It provides to an AI Agent the same thing that our [JavaScript Renderer](https://github.com/formio/formio.js) provides to a human; an interpretation of the Form JSON schema into an understandable format. In the case of UAG, it transforms the Form JSON model into an AI readible markdown format so that the Agent can easily understand the purpose and structure of the data that needs to be collected.
 
 ![Diagram showing how the UAG provides an AI Agent the ability to read and understand a Form.io Form JSON. Similar to how the JavaScript renderer provides a Human the ability to visually see a rendered form.](./examples/images/uag-agent-rendering.png)
