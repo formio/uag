@@ -1,8 +1,45 @@
 {
   "name": "@formio/uag-claude",
   "version": "1.3.2",
-  "main": "index.js",
+  "description": "Claude integration for the Form.io Universal Agent Gateway (UAG) — runs an MCP client that drives agentic form automation.",
+  "keywords": [
+    "formio",
+    "form.io",
+    "uag",
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "anthropic",
+    "ai-agents",
+    "forms"
+  ],
+  "homepage": "https://github.com/formio/uag/tree/main/integrations/claude#readme",
+  "bugs": {
+    "url": "https://github.com/formio/uag/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/formio/uag.git",
+    "directory": "integrations/claude"
+  },
   "license": "MIT",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "uag-claude": "index.js"
+  },
+  "files": [
+    "index.js",
+    "auth.js",
+    "commands/",
+    ".env.example"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "docker build -t formio/uag-claude --platform=linux/amd64 .",
     "start": "node --no-node-snapshot index.js"

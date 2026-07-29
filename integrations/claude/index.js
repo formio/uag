@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import 'dotenv/config';
 import Express from 'express';
 import bodyParser from 'body-parser';
