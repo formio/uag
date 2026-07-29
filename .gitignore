@@ -7,6 +7,10 @@ dist/
 .env
 .env.*
 !.env.example
-.yarn
-.yarn*
+# Ignore Yarn's local state but keep the committed config: the blanket .yarn*
+# pattern also swallowed .yarnrc.yml, which is why this repo had no linker
+# config and fell back to Plug'n'Play.
+.yarn/
+.pnp.*
+!.yarnrc.yml
 *.log

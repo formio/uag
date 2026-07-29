@@ -324,6 +324,11 @@ __metadata:
     tsx: "npm:^4.23.1"
     typescript: "npm:^7.0.2"
     zod: "npm:^4.4.3"
+  dependenciesMeta:
+    esbuild:
+      built: true
+    isolated-vm:
+      built: true
   languageName: unknown
   linkType: soft
 
