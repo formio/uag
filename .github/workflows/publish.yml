@@ -10,6 +10,9 @@ jobs:
     environment: production
     permissions:
       contents: read
+      # Required for npm Trusted Publishing (OIDC). Without it npm auth fails
+      # with a misleading 404 on PUT rather than a 401.
+      id-token: write
 
     steps:
       - name: Checkout code
@@ -28,6 +31,11 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
 
+      # Trusted Publishing needs npm >= 11.5.1; the LTS Node images still bundle
+      # npm 10.x.
+      - name: Upgrade npm for Trusted Publishing
+        run: npm install -g npm@latest
+
       - name: Install dependencies
         run: yarn install --immutable
 
@@ -37,10 +45,10 @@ jobs:
       - name: Build package
         run: yarn build --if-present
 
+      # No NODE_AUTH_TOKEN: OIDC supplies short-lived credentials, and leaving a
+      # token in the environment makes npm prefer it and skip Trusted Publishing.
       - name: Publish package to npm
         run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Docker Build
         run: |
