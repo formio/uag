@@ -20,16 +20,23 @@ jobs:
 
       ### Publish underlying npm package:
 
+      # package.json pins "packageManager": "yarn@4", and the runner's global
+      # yarn 1.x refuses to run anything without Corepack enabled. This must come
+      # BEFORE setup-node: setup-node probes `yarn cache dir` while configuring
+      # its cache, which hits the same error and fails the whole step.
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
           node-version: "lts/*"
           registry-url: "https://registry.npmjs.org"
-
-      # package.json pins "packageManager": "yarn@4", which the runner's global
-      # yarn 1.x refuses to run without Corepack enabled.
-      - name: Enable Corepack
-        run: corepack enable
+          # setup-node v5 enables package-manager caching by default, which is
+          # what runs the `yarn cache dir` probe. Corepack shims are installed
+          # against the pre-setup Node, so the probe can still fail here; the
+          # yarn install below is unaffected and fast enough without the cache.
+          package-manager-cache: false
 
       # Trusted Publishing needs npm >= 11.5.1; the LTS Node images still bundle
       # npm 10.x.
