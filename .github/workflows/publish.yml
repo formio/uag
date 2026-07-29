@@ -20,9 +20,23 @@ jobs:
 
       # Image tags are unprefixed (1.12.3), while the git tag carries a leading v,
       # so github.ref_name cannot be used directly.
+      #
+      # Versions here are bumped by hand, so tagging without editing package.json
+      # is an easy mistake — and its symptom is a late, cryptic failure: the run
+      # gets all the way to `npm publish`, which rejects it with "cannot publish
+      # over the previously published versions", and every image and registry step
+      # after it silently skips. Fail immediately and say what to do instead.
       - name: Resolve the release version
         id: version
-        run: echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          PKG_VERSION=$(jq -r .version package.json)
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag v${TAG_VERSION} does not match package.json (${PKG_VERSION}). Bump the version in package.json, commit it, then move the tag to that commit."
+            exit 1
+          fi
+          echo "version=$TAG_VERSION" >> "$GITHUB_OUTPUT"
 
       ### Publish underlying npm package:
 

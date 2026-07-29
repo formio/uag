@@ -1,6 +1,6 @@
 {
   "name": "@formio/uag",
-  "version": "1.12.3",
+  "version": "1.12.4",
   "mcpName": "io.form/formio-uag",
   "description": "The Form.io Universal Agent Gateway (UAG).",
   "main": "lib/index.js",
