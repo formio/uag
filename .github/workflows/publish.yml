@@ -73,6 +73,57 @@ jobs:
           docker push formio/uag:latest
           docker push formio/uag:${GITHUB_REF#refs/tags/v}
 
+      ### Publish the Claude integration (@formio/uag-claude + formio/uag-claude).
+      # Versioned independently of the core package on purpose: the module shares
+      # no code with UAG (it talks MCP/HTTP, imports no @formio/* package) and
+      # frequently does not change when core does — it sat at 1.2.0 from
+      # 2026-02-20 to 2026-04-17 across two core releases. Syncing the numbers
+      # would force rebuilds of an unchanged artifact and destroy the only signal
+      # the version carries. Instead every core tag checks whether the module's
+      # own version is already published and skips it when unchanged, so a
+      # release can never be silently forgotten. Compatibility between the two is
+      # documented in the README matrix, not implied by matching versions.
+      - name: Check whether the Claude integration needs publishing
+        id: claude
+        working-directory: integrations/claude
+        run: |
+          set -euo pipefail
+          VERSION=$(jq -r .version package.json)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          if npm view "@formio/uag-claude@${VERSION}" version >/dev/null 2>&1; then
+            echo "npm already has @formio/uag-claude@${VERSION} — skipping npm."
+          else
+            echo "npm=publish" >> "$GITHUB_OUTPUT"
+          fi
+
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+            "https://hub.docker.com/v2/repositories/formio/uag-claude/tags/${VERSION}")
+          if [ "$CODE" = "200" ]; then
+            echo "Docker Hub already has formio/uag-claude:${VERSION} — skipping image."
+          else
+            echo "docker=publish" >> "$GITHUB_OUTPUT"
+          fi
+
+      # First publish of a brand-new package name may not be possible over OIDC;
+      # if this fails on the very first run, publish once locally and let CI take
+      # over from then on.
+      - name: Publish Claude integration to npm
+        if: steps.claude.outputs.npm == 'publish'
+        working-directory: integrations/claude
+        run: npm publish --access public
+
+      - name: Build and push Claude integration image
+        if: steps.claude.outputs.docker == 'publish'
+        working-directory: integrations/claude
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.claude.outputs.version }}"
+          docker build -t formio/uag-claude --platform=linux/amd64 .
+          docker tag formio/uag-claude:latest "formio/uag-claude:${VERSION}"
+          docker push "formio/uag-claude:${VERSION}"
+          docker push formio/uag-claude:latest
+
       ### Publish MCP server:
       - name: Install mcp-publisher
         run: |

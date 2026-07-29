@@ -163,6 +163,26 @@ These integrations can be found within the **integrations** folder. The followin
 
 Please click on one of these integration links to read how they work.
 
+### Integration Version Compatibility
+
+Integrations are **versioned independently of the UAG**. They share no code with it — each one runs its own MCP client and talks to the UAG over MCP/HTTP — so an integration release does not imply a UAG release, and vice versa. Matching version numbers between the two would be misleading rather than helpful.
+
+Use this matrix to pick a compatible pair. Each row records the UAG range an integration version is known to work against:
+
+| Integration | Version | Compatible UAG versions | Notes |
+| ----------- | ------- | ----------------------- | ----- |
+| `@formio/uag-claude` | 1.3.x | >= 1.12.0 | Current. |
+| `@formio/uag-claude` | 1.2.x | 1.10.0 – 1.11.x | |
+
+Both artifacts are published on every release where their own version changed:
+
+- npm: [`@formio/uag`](https://www.npmjs.com/package/@formio/uag), [`@formio/uag-claude`](https://www.npmjs.com/package/@formio/uag-claude)
+- Docker Hub: [`formio/uag`](https://hub.docker.com/r/formio/uag), [`formio/uag-claude`](https://hub.docker.com/r/formio/uag-claude)
+
+**When adding a row:** bump the integration's own `package.json` version. CI publishes it to npm and Docker Hub on the next release tag, and skips it automatically when that version is already published — so a core-only release does not rebuild an unchanged integration.
+
+The `examples/` compose files reference `formio/uag` and `formio/uag-claude` without a tag, so they always pull the current release and cannot drift out of date. If you need a reproducible stack, pin both images to a compatible pair from the matrix above.
+
 ---
 
 ## Technical Overview

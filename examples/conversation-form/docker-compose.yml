@@ -38,7 +38,7 @@ services:
       retries: 40
 
   formio-uag:
-    image: formio/uag:1.12.2
+    image: formio/uag
     container_name: uag-chat-uag
     restart: always
     links:
