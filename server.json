@@ -97,8 +97,8 @@
         },
         {
           "name": "BASE_URL",
-          "description": "Public URL that the UAG is hosted on",
-          "isRequired": false,
+          "description": "The URL clients reach the UAG at. Published in the .well-known OIDC (PKCE) definitions and used for authentication callbacks, so remote agents cannot authenticate without it. Must be a public URL when remote agents connect in; a private or localhost URL is fine for a local MCP client.",
+          "isRequired": true,
           "format": "string",
           "isSecret": false
         },

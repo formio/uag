@@ -429,7 +429,7 @@ This module can be configured in many ways. One of those ways is through the use
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| PROJECT | The API Endpoint to either an Enterprise project endpoint, or the OSS server url. | http://localhost:3000 |
+| PROJECT | **Required.** The API Endpoint to either an Enterprise project endpoint, or the OSS server url. | http://localhost:3000 |
 | PROJECT_KEY | (Enterprise Only) The API Key of the project this UAG is bound to, found in **Project Settings &rarr; API Keys**. Open Source deployments use `ADMIN_KEY` instead. | CHANGEME |
 | ADMIN_KEY | (Open Source Only) Allows you to provide the ADMIN_KEY to install and connect to the OSS Server. | CHANGEME |
 | UAG_LICENSE | The license to run the UAG against a Form.io Enterprise Deployment. | |
@@ -437,7 +437,7 @@ This module can be configured in many ways. One of those ways is through the use
 | PORT | The port you wish to run the server on. | 3200 |
 | DEBUG | Variable used to perform debug logs of server activity | formio.* |
 | PORTAL_SECRET | Enterprise Only:  Allows you to connect to the UAG from the Form.io Enterprise Portal. | CHANGEME |
-| JWT_SECRET | A secret used to generate and validate JWT tokens generated through the authentication process of the UAG. This does not need to match the JWT_SECRET of the Enterprise Server that it is connected to. | CHANGEME |
+| JWT_SECRET | **Required.** A secret used to generate and validate JWT tokens generated through the authentication process of the UAG. This does not need to match the JWT_SECRET of the Enterprise Server that it is connected to. | CHANGEME |
 | JWT_EXPIRE_TIME | The expiration for the jwt secret. | 3600 |
 | MONGO | (Enterprise Only) Allows you to connect the UAG directly to a mongo database, rather than having to redirect the submissions to the Form.io Submission APIs. | |
 | MONGO_CONFIG | JSON configuration for the Node.js Mongo Driver. | |

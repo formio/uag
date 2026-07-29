@@ -16,6 +16,7 @@ Ask the user for these. Do not guess, and do not invent secret values.
 
 - **`PROJECT`** (required) — API endpoint of the Form.io Enterprise project or OSS server.
 - **`JWT_SECRET`** (required) — secret used to sign and validate the UAG's own tokens. Generate a random value if the user has no preference, and show it to them rather than hiding it.
+- **`BASE_URL`** (required) — the URL clients reach the UAG at. The server starts without it, so its absence is easy to miss, but it is published in the `.well-known` OIDC (PKCE) definitions and used for authentication callbacks — leave it unset and remote agents cannot authenticate. Must be a public URL when remote agents connect in; a private or localhost URL is fine for a local MCP client. Ask the user which applies.
 - **`PROJECT_KEY`** — project API key (Enterprise) or `ADMIN_KEY` (OSS).
 - **`ADMIN_KEY`** — server admin key, Community Edition only.
 - **`UAG_LICENSE`** — required for Enterprise deployments, not for Community Edition.
