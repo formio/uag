@@ -12,6 +12,10 @@ export class UAGServer extends Server {
     super(defaultsDeep(config || {}, {
       baseUrl: get(process.env, 'BASE_URL', '').toString(),
       license: get(process.env, 'UAG_LICENSE', '').toString(),
+      // A project that is still starting up (a Form.io server in the same compose
+      // file, for example) is retried with backoff before the load is given up on.
+      retries: parseInt(get(process.env, 'PROJECT_RETRIES', 5).toString(), 10),
+      retryDelay: parseInt(get(process.env, 'PROJECT_RETRY_DELAY', 5000).toString(), 10),
       submissionProxy: true,
       processAsClient: true,
       auth: { pkce: true }
