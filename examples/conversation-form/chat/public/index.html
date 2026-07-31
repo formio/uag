@@ -117,6 +117,25 @@
   }
   .user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 0.25rem; }
   .bot { align-self: flex-start; background: var(--paper); border: 1px solid var(--line); border-bottom-left-radius: 0.25rem; }
+  /* Waiting on the assistant: three dots bouncing in the bubble the reply will
+     occupy, so the pause reads as "thinking" rather than "nothing happened". */
+  .msg.typing { display: flex; align-items: center; gap: 0.3rem; padding: 0.75rem 0.9rem; }
+  .msg.typing span {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: var(--muted);
+    animation: typing-bounce 1.25s infinite ease-in-out;
+  }
+  .msg.typing span:nth-child(2) { animation-delay: 0.16s; }
+  .msg.typing span:nth-child(3) { animation-delay: 0.32s; }
+  @keyframes typing-bounce {
+    0%, 65%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-0.3rem); opacity: 0.95; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .msg.typing span { animation: none; opacity: 0.55; }
+  }
   .err { align-self: stretch; background: #fdeceb; border: 1px solid #f3c2be; color: #8a2018; font-size: 0.85rem; }
   .tools {
     align-self: flex-start;
@@ -216,6 +235,17 @@
     return el;
   }
 
+  function addTyping() {
+    const el = document.createElement('div');
+    el.className = 'msg bot typing';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-label', 'Assistant is typing');
+    el.innerHTML = '<span></span><span></span><span></span>';
+    log.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+    return el;
+  }
+
   function addTools(names) {
     if (!names || !names.length) return;
     const el = document.createElement('div');
@@ -228,7 +258,7 @@
   }
 
   async function turn(message) {
-    const pending = add('…', 'bot');
+    const pending = addTyping();
     send.disabled = true;
     try {
       const response = await fetch('/api/chat', {

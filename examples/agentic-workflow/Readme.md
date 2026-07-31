@@ -8,6 +8,10 @@ It is also the shortest way to see the point of the `agent_provide_data` tool: t
 
 Everything runs on a private Docker network. The UAG is never publicly exposed and there is no tunnel — the Claude integration runs its own MCP client and connects *out* to the UAG. See [How Agents Connect](../../README.md#how-agents-connect).
 
+![The College Application wizard and its agent criteria in the portal, an applicant registering and submitting, the UAG flow showing the agent write its verdict back, and the applicant's accepted decision](../images/agentic-workflow-demo.gif)
+
+The run above covers both halves of the example. First the configuration: the College Application wizard, the **Admissions Review** and **Scholarship Review** criteria the agents are given, and the webhook that hands a submission to the agent. Then the applicant: registering, verifying by email, submitting an application, the UAG flow viewer showing `tool: submission_update` writing the agent's scores back, and the decision the applicant finally sees.
+
 > Looking for the *conversation* pattern instead — a human talking to a form through an agent? See [examples/conversation-form](../conversation-form) for the Claude Desktop version.
 
 ### Enterprise Server License

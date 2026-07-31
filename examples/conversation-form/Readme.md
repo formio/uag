@@ -8,6 +8,10 @@ The chat server in this example is about 200 lines and contains no domain knowle
 
 This example runs on [Form.io Community Edition](https://github.com/formio/formio), so no license or subscription is required.
 
+![Walking the Service Request form in the portal, holding a conversation that fills it, and finding the submission that resulted](../images/conversation-form-demo.gif)
+
+The run above starts in the portal with the **Service Request** form and the option values behind its **Category** field, moves to the chat app to report a fault in plain language, and finishes back in the portal on the submission the conversation produced. The `UAG tools:` line under each reply is the agent reading and validating the form as it goes.
+
 > Want the *autonomous* pattern instead — a submission that an agent scores and decides on with no human present? See [examples/agentic-workflow](../agentic-workflow).
 >
 > Want to drive your forms from Claude Desktop rather than your own UI? See [examples/custom-module](../custom-module).
