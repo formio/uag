@@ -5,12 +5,14 @@ import { isNumber, get, defaultsDeep } from "lodash";
 import { Submission } from "@formio/core";
 import { UAGFormInterface } from "../UAGFormInterface";
 import { SchemaBuilder } from './SchemaBuilder';
+import { reads } from './annotations';
 const error = require('debug')('formio:uag:findSubmission:error');
 export const findSubmission = async (project: UAGProjectInterface): Promise<ToolInfo> => {
     return defaultsDeep(project.config?.toolOverrides?.find_submissions || {}, {
         name: 'find_submissions',
         title: 'Find submissions within a form',
         description: 'Find existing form submissions based on field values (search query). Use this to search for people, records, or data by name, email, phone, position, company, or other field values. Examples: find a contact by name, find someone who works at a company, find records with specific criteria. To retrieve the total count of records within a form, use this tool without providing a `search_query`.',
+        annotations: reads('Find submissions'),
         inputSchema: (new SchemaBuilder(project))
             .form_name()
             .search_query()

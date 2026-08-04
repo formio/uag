@@ -43,7 +43,11 @@ export class UAGProjectInterface extends ProjectInterface {
                 server.registerTool(tool.name, {
                     title: tool.title,
                     description: tool.description,
-                    inputSchema: tool.inputSchema
+                    inputSchema: tool.inputSchema,
+                    // Carries readOnly/destructive/idempotent/openWorld through to the
+                    // client. Tools from config.tools may omit them, so this stays
+                    // conditional rather than sending `annotations: undefined`.
+                    ...(tool.annotations && { annotations: tool.annotations })
                 }, tool.execute);
             }
         }

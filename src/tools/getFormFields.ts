@@ -4,12 +4,14 @@ import { ToolInfo, ParentInfo } from "./utils";
 import { UAGFormInterface } from "../UAGFormInterface";
 import { defaultsDeep, upperFirst } from "lodash";
 import { SchemaBuilder } from './SchemaBuilder';
+import { reads } from './annotations';
 const error = require('debug')('formio:uag:getFormFields:error');
 export const getFormFields = async (project: UAGProjectInterface): Promise<ToolInfo> => {
     return defaultsDeep(project.config?.toolOverrides?.get_form_fields || {}, {
         name: 'get_form_fields',
         title: 'Get Form Fields',
         description: 'Get high level overview of the fields that are present in a form, and to understand the "rules" on how the data for each field type should be collected. The purpose of this tool is to determine what fields the user is requesting (and to understand how to format that values for that data), and use that to create a list of field data_path\'s that the user is providing context for. This list can then be provided to the `get_field_info` tool to determine the specific field level information for those fields (validation, required, collection rules, etc). PREREQUISITE: You must call the `get_forms` tool first to understand what forms are available to submit and the permissions associated with those forms.',
+        annotations: reads('Get form fields'),
         inputSchema: (new SchemaBuilder(project))
             .form_name()
             .criteria()

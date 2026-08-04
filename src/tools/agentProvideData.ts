@@ -4,11 +4,13 @@ import { ToolInfo } from "./utils";
 import { UAGComponentInfo, UAGFormInterface } from "../UAGFormInterface";
 import { defaultsDeep } from "lodash";
 import { SchemaBuilder } from "./SchemaBuilder";
+import { reads } from './annotations';
 export const agentProvideData = async (project: UAGProjectInterface): Promise<ToolInfo> => {
     return defaultsDeep(project.config?.toolOverrides?.agent_provide_data || {}, {
         name: 'agent_provide_data',
         title: 'Agent Provide Data',
         description: 'Provides a mechanism for agents to process existing submission data, understand it, and then to provide additional data values provided a criteria and form context.',
+        annotations: reads('Process submission data'),
         inputSchema: (new SchemaBuilder(project))
             .form_name()
             .submission_id()

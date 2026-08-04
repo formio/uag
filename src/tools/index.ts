@@ -11,6 +11,7 @@ import { UAGProjectInterface } from "../UAGProjectInterface";
 import { agentProvideData } from "./agentProvideData";
 import { fetchExternalData } from "./fetchExternalData";
 export * from './utils';
+export * from './annotations';
 export { getForms, getFormFields, getFieldInfo, collectData, confirmSubmission, submitCompletedForm, findSubmission, submissionUpdate, fetchExternalData };
 export const getTools =  async (project: UAGProjectInterface): Promise<ToolInfo[]> => {
     return [

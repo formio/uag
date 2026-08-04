@@ -4,11 +4,13 @@ import { ToolInfo } from "./utils";
 import { UAGFormInterface } from "../UAGFormInterface";
 import { defaultsDeep } from "lodash";
 import { SchemaBuilder } from "./SchemaBuilder";
+import { reads } from './annotations';
 export const confirmSubmission = async (project: UAGProjectInterface): Promise<ToolInfo> => {
     return defaultsDeep(project.config?.toolOverrides?.confirm_form_submission || {}, {
         name: 'confirm_form_submission',
         title: 'Confirm Form Submission',
         description: 'Show a summary of the collected form data if the user wishes to see a summary of the collected data',
+        annotations: reads('Summarise before submitting'),
         inputSchema: (new SchemaBuilder(project))
             .form_name()
             .form_data().schema,

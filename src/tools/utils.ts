@@ -1,5 +1,6 @@
 import { ZodRawShape } from "zod";
 import { escapeRegExp } from "lodash";
+import { ToolAnnotations } from "./annotations";
 
 /**
  * Escape a literal value so it can be carried in a `__regex` query parameter.
@@ -28,6 +29,9 @@ export type ToolInfo = {
     title?: string;
     description?: string;
     inputSchema?: ZodRawShape | undefined;
+    // Whether calling this tool reads or writes. Not optional in practice: the
+    // annotations test fails a tool that ships without them.
+    annotations?: ToolAnnotations;
     execute?: any;
 }
 
