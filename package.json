@@ -22,6 +22,7 @@
     "build:ts": "tsc",
     "build:copy-templates": "mkdir -p lib/templates && cp src/templates/*.md lib/templates/",
     "build": "npm run clean && npm run build:ts && npm run build:copy-templates",
+    "prepublishOnly": "node scripts/check-release.mjs",
     "build:docker": "docker build -t formio/uag$(node -p \"require('./package.json').version.includes('-rc.') ? ':rc' : ''\") --platform=linux/amd64 .",
     "test": "tsc --noEmit -p tsconfig.test.json && mocha --no-node-snapshot",
     "test:e2e": "mocha --config .mocharc.e2e.json",

@@ -72,6 +72,33 @@ jobs:
       - name: Build package
         run: yarn build --if-present
 
+      # The engine packages are versioned on their own, not with the UAG: each is
+      # published when npm does not have its version yet, so a release can never
+      # silently forget one, and an unchanged package is never republished. They
+      # go first, in dependency order: the SDK, then the engines (openai before
+      # the grok and gemini engines built on it), then the engine server, and
+      # the UAG after them, because it depends on the SDK.
+      # First publish of a brand-new package name may not be possible over OIDC;
+      # if this fails on the very first run, publish once locally and let CI take
+      # over from then on.
+      # The UAG's prepublishOnly runs this too, but only after the engine
+      # packages are already out; check every package before publishing any.
+      - name: Check the release
+        run: node scripts/check-release.mjs
+
+      - name: Publish the engine packages to npm
+        run: |
+          set -euo pipefail
+          for dir in packages/engine-sdk engines/jev engines/claude engines/openai engines/grok engines/gemini packages/engine-server; do
+            NAME=$(jq -r .name "$dir/package.json")
+            VERSION=$(jq -r .version "$dir/package.json")
+            if npm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then
+              echo "npm already has ${NAME}@${VERSION} — skipping."
+            else
+              (cd "$dir" && npm publish --access public)
+            fi
+          done
+
       # No NODE_AUTH_TOKEN: OIDC supplies short-lived credentials, and leaving a
       # token in the environment makes npm prefer it and skip Trusted Publishing.
       - name: Publish package to npm
@@ -105,61 +132,35 @@ jobs:
             formio/uag:latest
             formio/uag:${{ steps.version.outputs.version }}
 
-      ### Publish the Claude integration (@formio/uag-claude + formio/uag-claude).
-      # Versioned independently of the core package on purpose: the module shares
-      # no code with UAG (it talks MCP/HTTP, imports no @formio/* package) and
-      # frequently does not change when core does — it sat at 1.2.0 from
-      # 2026-02-20 to 2026-04-17 across two core releases. Syncing the numbers
-      # would force rebuilds of an unchanged artifact and destroy the only signal
-      # the version carries. Instead every core tag checks whether the module's
-      # own version is already published and skips it when unchanged, so a
-      # release can never be silently forgotten. Compatibility between the two is
-      # documented in the README matrix, not implied by matching versions.
-      - name: Check whether the Claude integration needs publishing
-        id: claude
-        working-directory: integrations/claude
+      ### Publish the engine server image (formio/uag-engines).
+      # Versioned with its package, not the UAG: built only when Docker Hub does
+      # not have that version yet.
+      - name: Check whether the engine server image needs publishing
+        id: engine_server
         run: |
           set -euo pipefail
-          VERSION=$(jq -r .version package.json)
+          VERSION=$(jq -r .version packages/engine-server/package.json)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-          if npm view "@formio/uag-claude@${VERSION}" version >/dev/null 2>&1; then
-            echo "npm already has @formio/uag-claude@${VERSION} — skipping npm."
-          else
-            echo "npm=publish" >> "$GITHUB_OUTPUT"
-          fi
-
           CODE=$(curl -s -o /dev/null -w '%{http_code}' \
-            "https://hub.docker.com/v2/repositories/formio/uag-claude/tags/${VERSION}")
+            "https://hub.docker.com/v2/repositories/formio/uag-engines/tags/${VERSION}")
           if [ "$CODE" = "200" ]; then
-            echo "Docker Hub already has formio/uag-claude:${VERSION} — skipping image."
+            echo "Docker Hub already has formio/uag-engines:${VERSION} — skipping image."
           else
             echo "docker=publish" >> "$GITHUB_OUTPUT"
           fi
 
-      # First publish of a brand-new package name may not be possible over OIDC;
-      # if this fails on the very first run, publish once locally and let CI take
-      # over from then on.
-      - name: Publish Claude integration to npm
-        if: steps.claude.outputs.npm == 'publish'
-        working-directory: integrations/claude
-        run: npm publish --access public
-
-      # Also via buildx, for two reasons: it gains arm64 like the core image, and
-      # a plain `docker build` would no longer work here anyway — with buildx set
-      # up as the default builder the result lands in the build cache rather than
-      # the local image store, so the follow-up tag and push would not find it.
-      - name: Build and push Claude integration image
-        if: steps.claude.outputs.docker == 'publish'
+      - name: Build and push formio/uag-engines
+        if: steps.engine_server.outputs.docker == 'publish'
         uses: docker/build-push-action@v6
         with:
-          context: integrations/claude
+          context: .
+          file: packages/engine-server/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           provenance: true
           tags: |
-            formio/uag-claude:latest
-            formio/uag-claude:${{ steps.claude.outputs.version }}
+            formio/uag-engines:latest
+            formio/uag-engines:${{ steps.engine_server.outputs.version }}
 
       ### Publish MCP server:
       - name: Install mcp-publisher
