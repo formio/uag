@@ -193,10 +193,7 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
                     fieldInfo.options = [{ label: '', value: 'No options available' }];
                 }
                 else {
-                    fieldInfo.options = values.reduce((acc: { label: string; value: string }[], v: any) => {
-                        acc.push({ label: v.label, value: v.value });
-                        return acc;
-                    }, []);
+                    fieldInfo.options = values.map((v: any) => ({ label: v.label, value: v.value }));
                 }
             }
         }
@@ -219,21 +216,20 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
             label: parent.label || parent.key,
             data_path: parent_path
         };
-        if (
+        // The type comes first: the builder saves containers with `tree: true`
+        // too, and a container holds one object, not rows.
+        if (parent.type === 'form') {
+            parentInfo.isForm = true;
+        }
+        else if (parent.type === 'container') {
+            parentInfo.isContainer = true;
+        }
+        else if (
             (parent as any).tree ||
             parent.type === 'datagrid' ||
             parent.type === 'editgrid'
         ) {
             parentInfo.isTable = true;
-            return parentInfo;
-        }
-        if (parent.type === 'form') {
-            parentInfo.isForm = true;
-            return parentInfo;
-        }
-        if (parent.type === 'container') {
-            parentInfo.isContainer = true;
-            return parentInfo;
         }
         return parentInfo;
     }
@@ -271,20 +267,17 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
     }
 
     getComponentValueRule(component: Component, data_path?: string) {
-        let rule = '';
         const parent = this.getParentInfoFromComponent(component, data_path);
         if (parent?.isTable) {
-            rule += 'The value is a table of rows (array of objects), where each row is a new instance of data values for the child components. ' + this.getParentToolDescription(parent) + ' All `data_path`(s) for the components within this table should contain the current row index (e.g. `dataGrid[0].a`, `dataGrid[0].b`, `dataGrid[1].b`, etc.).';
-            return rule;
+            return 'The value is a table of rows (array of objects), where each row is a new instance of data values for the child components. ' + this.getParentToolDescription(parent) + ' All `data_path`(s) for the components within this table should contain the current row index (e.g. `dataGrid[0].a`, `dataGrid[0].b`, `dataGrid[1].b`, etc.).';
         }
         if (parent?.isForm) {
-            rule += 'The value is a nested form submission in the format `{data: {...}}` where `{...}` is the values for the child components. ' + this.getParentToolDescription(parent) + ' All `data_path`(s) for the components within this nested form should be prefixed with `data` (e.g. `nestedForm.data.exampleField`).';
-            return rule;
+            return 'The value is a nested form submission in the format `{data: {...}}` where `{...}` is the values for the child components. ' + this.getParentToolDescription(parent) + ' All `data_path`(s) for the components within this nested form should be prefixed with `data` (e.g. `nestedForm.data.exampleField`).';
         }
         if (parent?.isContainer) {
-            rule += 'The value is an object/map of nested component values in the format `{...}`. ' + this.getParentToolDescription(parent) + ' All `data_path`(s) for the components within this container should be prefixed with the container\'s `data_path` (e.g. `container.exampleField`).';
-            return rule;
+            return 'The value is an object/map of nested component values in the format `{...}`. ' + this.getParentToolDescription(parent) + ' All `data_path`(s) for the components within this container should be prefixed with the container\'s `data_path` (e.g. `container.exampleField`).';
         }
+        let rule = '';
         switch (component.type) {
             case 'tags':
                 rule += 'The value can be any alphanumeric string, containing letters, numbers, but no white space characters or symbols. Multiple tags should be comma-separated.';
@@ -352,8 +345,6 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
                     rule += `\n      - **${value.label}** (${value.value})`;
                 });
                 break;
-            default:
-                rule += '';
         }
         return rule;
     }
@@ -367,15 +358,10 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
      * @returns { boolean } - True if the component is a nested data component, false otherwise.
      */
     isNestedComponent(component: Component): boolean {
-        if (
-            (component as any).tree ||
+        return !!(component as any).tree ||
             component.type === 'datagrid' ||
             component.type === 'editgrid' ||
-            component.type === 'form'
-        ) {
-            return true;
-        }
-        return false;
+            component.type === 'form';
     }
 
     /**
@@ -504,19 +490,18 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
                             return;
                         }
                         if (typeof within === 'string') {
-                            if (path.startsWith(within) && (path !== within)) {
-                                // Make sure to set the largest index for the nested component.
-                                const indexMatch = path.match(/\[(\d+)\]/);
-                                fieldInfo.rowIndex = indexMatch?.length ? parseInt(indexMatch[indexMatch.length - 1], 10) : 0;
+                            // Only paths below `within`: "customerNotes" is not within "customer".
+                            const rest = path.slice(within.length);
+                            if (path.startsWith(within) && (rest.startsWith('.') || rest.startsWith('['))) {
+                                // The row of `within` itself, not of a table it sits in
+                                // ("outer[0].inner[3].x" is row 3 of "outer[0].inner").
+                                const indexMatch = rest.match(/^\[(\d+)\]/);
+                                fieldInfo.rowIndex = indexMatch ? parseInt(indexMatch[1], 10) : 0;
                             }
                             else {
+                                // If within is a string, then it is a single path to limit components within (non-inclusive).
                                 return;
                             }
-                        }
-
-                        // If within is a string, then it is a single path to limit components within (non-inclusive).
-                        if ((typeof within === 'string') && (!path.startsWith(within) || (path === within))) {
-                            return;
                         }
                     }
                     // If this is a component within the nested path, then skip it...
@@ -547,7 +532,13 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
 
                     // Add the component info to the appropriate list.
                     const criteria = component.validate?.required ? 'required' : 'optional';
-                    fieldInfo[criteria].rules[component.type] = this.getComponentValueRule(component, path);
+                    // Rules are listed by type, but some depend on the component (its
+                    // options source, multiple values, a survey's questions, a nested
+                    // component's path): one that differs gets an entry of its own.
+                    const rules = fieldInfo[criteria].rules;
+                    const rule = this.getComponentValueRule(component, path);
+                    const known = rules[component.type];
+                    rules[(known === undefined || known === rule) ? component.type : `${component.type} (${path})`] = rule;
                     fieldInfo[criteria].components.push(this.getComponentInfo(component, path));
                 }
             }
@@ -655,7 +646,7 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
             }
         }, false, false, undefined, undefined, undefined, (component, data) => {
             if (this.isNestedComponent(component)) {
-                prefix = prefix.slice(0, -3);
+                prefix = prefix.slice(0, -2);
             }
             if (component.key === 'uag' || withinUAG) {
                 withinUAG = false;
