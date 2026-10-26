@@ -18,7 +18,8 @@ async function refusal(project: UAGProjectInterface): Promise<{ error: string; c
     const state = await formflow(project).state();
     if (state.allowed && (state.reason === 'licensed' || state.reason === 'hosted')) return null;
     return {
-        error: 'Agentic workflows require a license (UAG_LICENSE) with the "uag" feature, or a project on Form.io\'s hosted service. ' +
+        error: 'Agentic workflows require a license (LICENSE_KEY) that includes the UAG (an online license with UAG servers, or an offline license ' +
+            'with the "uag" option), or a project on Form.io\'s hosted service. ' +
             'MCP tools and conversation forms do not need either.',
         code: 'license_required',
     };

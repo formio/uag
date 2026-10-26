@@ -13,7 +13,7 @@
  *             entry in its syntax (`jev`, `next:jev`). Default: the first in UAG_ENGINES.
  * --json      Also write the full report as JSON.
  * --project   The project URL the evaluation runs for (default: none). A real engine
- *             needs a UAG_LICENSE with the "uag" feature for this URL; the stub
+ *             needs a LICENSE_KEY that includes the UAG for this URL; the stub
  *             engines need neither.
  *
  * The engine is loaded as the UAG loads it, so the same UAG_ENGINES and
@@ -68,7 +68,7 @@ async function main() {
     }
 
     // The license the evaluation may use, read as a running UAG reads it.
-    await ProjectInterface.connect({ config: { license: String(process.env.UAG_LICENSE || '') } });
+    await ProjectInterface.connect({ config: { license: String(process.env.UAG_LICENSE || ''), licenseType: 'uagServer', licenseFeature: 'uag' } });
     // Build the form offline. Outside a running server the project would create
     // the base form class, so the UAG form interface is constructed directly.
     const project = new UAGProjectInterface(opts.project || 'http://offline.invalid');

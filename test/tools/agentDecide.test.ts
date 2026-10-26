@@ -62,7 +62,7 @@ describe('agent_decide tool', () => {
         const result = await tool.execute({ form_name: 'claim', task: 'triage', form_data: {} }, { authInfo: auth });
         expect(result.isError).to.equal(true);
         expect(result.structuredContent.code).to.equal('license_required');
-        expect(result.structuredContent.error).to.contain('"uag" feature');
+        expect(result.structuredContent.error).to.contain('includes the UAG');
         expect(result.structuredContent).to.not.have.property('questions');
     });
 });

@@ -24,8 +24,10 @@ const here = path.dirname(fileURLToPath(import.meta.url));
  *   for formio.e2e.test, so the licensed case uses it.
  *
  * The scripted e2e engines count as real engines: they are not the built-in
- * stubs. The licensed case needs E2E_UAG_LICENSE (a "uag" license for
- * formio.e2e.test) and is pending without it.
+ * stubs. The licensed cases need E2E_UAG_LICENSE (a "uag" license for
+ * formio.e2e.test) and are pending without it. They run it as UAG_LICENSE
+ * (deprecated), as LICENSE_KEY alone, and as LICENSE_KEY rescuing an unusable
+ * UAG_LICENSE.
  */
 describe('Layer 1: Agentic Formflow license', function () {
     this.timeout(300000);
@@ -55,7 +57,7 @@ describe('Layer 1: Agentic Formflow license', function () {
             env: {
                 PORT: '3210', ADMIN_KEY, JWT_SECRET, JWT_EXPIRE_TIME: '525600',
                 LOGIN_FORM: `${UAG_URL}/auth/authorize`, BASE_URL: UAG_URL, PROJECT_TTL: '0', DEBUG: '',
-                UAG_LICENSE: '',
+                UAG_LICENSE: '', LICENSE_KEY: '',
                 PROJECT: PRODUCTION,
                 ...resolveLocally,
                 ...env,
@@ -90,7 +92,7 @@ describe('Layer 1: Agentic Formflow license', function () {
     }
 
     before(async function () {
-        stack = await startStack({ uagEnv: { PROJECT: PRODUCTION, UAG_LICENSE: '', ...resolveLocally, UAG_ENGINES: 'e2e-decision,e2e-agent' } });
+        stack = await startStack({ uagEnv: { PROJECT: PRODUCTION, UAG_LICENSE: '', LICENSE_KEY: '', ...resolveLocally, UAG_ENGINES: 'e2e-decision,e2e-agent' } });
     });
 
     after(async function () {
@@ -100,7 +102,8 @@ describe('Layer 1: Agentic Formflow license', function () {
 
     describe('Open Source, real engines, production endpoint', function () {
         it('says at startup that Agentic Formflow needs the license', function () {
-            expect(output()).to.include('Open Source edition. Agentic Formflow requires a UAG_LICENSE with the "uag" feature');
+            expect(output()).to.include('Open Source edition. Agentic Formflow requires a license (LICENSE_KEY) that includes the UAG');
+            expect(output()).to.not.include('UAG_LICENSE is deprecated');
         });
 
         it('reports the edition on capabilities, with every operation unavailable', async function () {
@@ -122,7 +125,7 @@ describe('Layer 1: Agentic Formflow license', function () {
                 const resp = await api(task, { body });
                 expect(resp.status, task).to.equal(403);
                 expect(resp.body).to.include({ code: 'license_required', edition: 'open-source' });
-                expect(resp.body.error).to.include('with the "uag" feature');
+                expect(resp.body.error).to.include('that includes the UAG');
             }
             expect(await engineCalls()).to.deep.equal([]);
         });
@@ -145,7 +148,7 @@ describe('Layer 1: Agentic Formflow license', function () {
                 expect(decide.isError).to.equal(true);
                 const refusal = JSON.parse(mcpText(decide));
                 expect(refusal.code).to.equal('license_required');
-                expect(refusal.error).to.include('"uag" feature');
+                expect(refusal.error).to.include('includes the UAG');
             }
             finally {
                 await mcp.close();
@@ -188,7 +191,7 @@ describe('Layer 1: Agentic Formflow license', function () {
                     expect(forms).to.include('claim');
                     const provide = await mcp.callTool({ name: 'agent_provide', arguments: { form_name: 'claim', submission_id: '000000000000000000000000' } });
                     expect(provide.isError).to.equal(true);
-                    expect(mcpText(provide)).to.include('license_required');
+                    expect(mcpText(provide)).to.include('license_required').and.include('(LICENSE_KEY)').and.not.include('UAG_LICENSE');
                 }
                 finally {
                     await mcp.close();
@@ -203,8 +206,9 @@ describe('Layer 1: Agentic Formflow license', function () {
             await restartUag({ UAG_ENGINES: 'e2e-decision,e2e-agent', PROJECT: 'http://formio.e2e.test:3101', UAG_LICENSE: process.env.E2E_UAG_LICENSE });
         });
 
-        it('reports the Enterprise edition, licensed', async function () {
-            expect(output()).to.include('Enterprise edition. Agentic Formflow is enabled (licensed).');
+        it('reports the Enterprise edition, licensed by UAG_LICENSE, which it says is deprecated', async function () {
+            expect(output()).to.include('Enterprise edition. Agentic Formflow is enabled (licensed by UAG_LICENSE).');
+            expect(output()).to.include('UAG_LICENSE is deprecated. Put a Form.io license that includes the UAG in LICENSE_KEY instead');
             const body = await capabilities();
             expect(body.edition).to.equal('enterprise');
             expect(body.formflow).to.deep.equal({ licensed: true, allowed: true, reason: 'licensed' });
@@ -224,6 +228,39 @@ describe('Layer 1: Agentic Formflow license', function () {
             expect(status, JSON.stringify(body)).to.equal(201);
             const stored = await formio.getSubmission('claim', body._id);
             expect(stored.metadata.uag.decisions['triage.claimType']).to.include({ engine: 'e2e-decision' });
+        });
+    });
+
+    describe('licensed by LICENSE_KEY alone, real engines', function () {
+        before(async function () {
+            if (!process.env.E2E_UAG_LICENSE) this.skip();
+            await restartUag({ UAG_ENGINES: 'e2e-decision,e2e-agent', PROJECT: 'http://formio.e2e.test:3101', LICENSE_KEY: process.env.E2E_UAG_LICENSE });
+        });
+
+        it('runs on a plain Form.io license, with no UAG_LICENSE and no deprecation notice', async function () {
+            expect(output()).to.include('Enterprise edition. Agentic Formflow is enabled (licensed by LICENSE_KEY).');
+            expect(output()).to.not.include('UAG_LICENSE is deprecated');
+            expect((await capabilities()).formflow).to.deep.equal({ licensed: true, allowed: true, reason: 'licensed' });
+            await clearEngineCalls();
+            const { status, body } = await api('/agent/decide', { body: { form: 'claim', data: description } });
+            expect(status).to.equal(200);
+            expect(body.fields['triage.claimType']).to.include({ engine: 'e2e-decision', value: 'theft' });
+        });
+    });
+
+    describe('an unusable UAG_LICENSE, with LICENSE_KEY', function () {
+        before(async function () {
+            if (!process.env.E2E_UAG_LICENSE) this.skip();
+            // Shaped like an offline license, so it is verified locally (and
+            // fails) rather than sent to the license server.
+            await restartUag({ UAG_ENGINES: 'e2e-decision,e2e-agent', PROJECT: 'http://formio.e2e.test:3101', UAG_LICENSE: 'aaa.bbb.ccc', LICENSE_KEY: process.env.E2E_UAG_LICENSE });
+        });
+
+        it('is licensed by LICENSE_KEY, and still says UAG_LICENSE is deprecated', async function () {
+            expect(output()).to.include('Enterprise edition. Agentic Formflow is enabled (licensed by LICENSE_KEY).');
+            expect(output()).to.include('UAG_LICENSE is deprecated');
+            expect((await capabilities()).formflow).to.deep.equal({ licensed: true, allowed: true, reason: 'licensed' });
+            expect((await api('/agent/decide', { body: { form: 'claim', data: description } })).status).to.equal(200);
         });
     });
 

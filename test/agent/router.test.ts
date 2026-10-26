@@ -390,7 +390,7 @@ describe('Agent API license', () => {
             const res = await request(app(project)).post(path).send(body);
             expect(res.status, path).to.equal(403);
             expect(res.body).to.include({ code: 'license_required', edition: 'open-source' });
-            expect(res.body.error).to.contain('with the "uag" feature');
+            expect(res.body.error).to.contain('that includes the UAG');
             expect(res.body.requestId).to.be.a('string');
         }
         expect(called).to.equal(false);

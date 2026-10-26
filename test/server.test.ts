@@ -56,19 +56,27 @@ describe('UAGServer.extendRouter', () => {
   });
 });
 
+describe('UAGServer license', () => {
+  it('reports as a uagServer, and runs on the "uag" feature, not the appserver\'s', () => {
+    const server = new UAGServer();
+    assert.equal((server as any).config.licenseType, 'uagServer');
+    assert.equal((server as any).config.licenseFeature, 'uag');
+  });
+});
+
 describe('assertSingleCore', () => {
   const core = { Formflow: {}, ProjectInterface: class {} };
 
-  it('accepts one copy of core at 2.20.0 or later', () => {
-    assertSingleCore(core, core, '2.20.0');
+  it('accepts one copy of core at 2.22.0 or later', () => {
+    assertSingleCore(core, core, '2.22.0');
     assertSingleCore(core, core, '3.0.0');
   });
 
   it('refuses an older core, naming the version', () => {
-    assert.throws(() => assertSingleCore(core, core, '2.19.0'), /2\.20\.0 or later; 2\.19\.0 is installed/);
+    assert.throws(() => assertSingleCore(core, core, '2.21.0'), /2\.22\.0 or later; 2\.21\.0 is installed/);
   });
 
   it('refuses a second copy of core under @formio/appserver', () => {
-    assert.throws(() => assertSingleCore(core, { ProjectInterface: class {} }, '2.20.0'), /Two copies of @formio\/appserver-core/);
+    assert.throws(() => assertSingleCore(core, { ProjectInterface: class {} }, '2.22.0'), /Two copies of @formio\/appserver-core/);
   });
 });
