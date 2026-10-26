@@ -1,0 +1,20 @@
+{
+  "name": "@formio/uag-renderer",
+  "version": "0.1.0",
+  "description": "Agent Input for Form.io forms and wizards: fills fields from the UAG Agent API as the user types, without overwriting what the user entered.",
+  "license": "MIT",
+  "main": "index.js",
+  "browser": "index.js",
+  "files": [
+    "index.js",
+    "uag-renderer.css"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/formio/uag.git",
+    "directory": "renderer"
+  },
+  "peerDependencies": {
+    "@formio/js": ">=5"
+  }
+}
