@@ -87,8 +87,12 @@ module.exports = {
         auth: null, // Authentication configuration defined by AuthConfig
         license: '', // Enterprise License
         cors: null, // CORS configurations defined by CorsOptions
+        engines: undefined, // Agent API engine names to enable. Overrides UAG_ENGINES.
+        routing: {}, // Agent API engine preferences and timeouts, defined by UAGRoutingConfig
+        agentApi: {}, // Agent API thresholds, timeouts, run tools and rate limits, defined by UAGAgentApiConfig
     },
-    actions: {} // Add your custom form actions here.
+    actions: {}, // Add your custom form actions here.
+    engines: [] // Agent API engine plugins this module contributes.
 };
 ```
 
@@ -96,6 +100,8 @@ Each of the following can be provided through a Module.
 
 ### **templates**: Custom Templates / Override Existing Templates
 You can provide your own Form.io Project templates to serve as the default Forms, Resources, Actions, and Roles that you need to achieve the goals of your specific module. The Project Template can be retrieved either through the "/export" endpoint from OSS, or though the **Export Template** feature within your Project Staging settings of an Enterprise Server deployment.
+
+The project, not the module, is the source of truth: the template only provides what the module needs the project to have. At startup, the forms, resources and actions the project does not have yet are installed, matched by key, including new actions on forms the project already has. Nothing the project already has is changed, so a changed form or action in the template is not applied. Apply such changes in the portal, through a stage deployment, or by posting the template to the project's `/import` endpoint with an admin or project key, which updates existing forms in place (keeping their submissions) and replaces their actions. `TEMPLATE_SYNC` sets when the template is installed: `boot` (the default) at startup, `refresh` also on every `PROJECT_TTL` refresh, or `off` never. Because `boot` runs at every startup, a form or action from the template that was deleted from the project is installed again on the next restart; use `off` when the project's forms are managed through stage deployments.
 
 ### **tools**: Custom Tools / Override Existing Tools
 With this configuration, you can introduce new MCP tools to the UAG to further enhance the interfaces between Form.io and the AI Agents. This is extremely powerful since you could concieve of new tools that combine both the power of Form.io along with any other custom tool or external service you wish to combine with the Form.io tool intefaces.
@@ -172,6 +178,9 @@ The following example will override the "description" of the get_forms tool.
   }
 }
 ```
+
+### **engines**: Agent API engines
+A module can contribute engines for the [Agent API](../README.md#agent-api) through the top-level `engines` array. The official engine packages are modules of this kind, so `server.use(JevEngine({ apiKey }))` is the same as using a module whose `engines` holds the Jev engine plugin. Which engines are enabled is decided at startup: `config.engines` if it is set, otherwise `UAG_ENGINES`; when both are unset, every engine a module contributed is enabled (the built-in `remote` and stub engines must always be named). The `config.routing` and `config.agentApi` settings are described in [src/config.ts](../src/config.ts).
 
 ### **actions**: Custom Actions
 Of of the more powerful features of Modules is the ability to develop custom actions that should be included along with your Forms and Resources. Actions can the thought of a Configurable Middleware that can be attached and independently configured for any Form and Resource within the Form.io platform. The can be used to achieve custom integrations, workflows, behaviors and responses of the UAG.  
@@ -287,7 +296,9 @@ export const ExampleAction = {
          */
         return async (req, res, next) => {
             // The action is executed here as Express.js middleware.
-            console.log(req.body);  // The submission data if the handler is "before"
+            // The submission about to be saved if the handler is "before". Change req.submission
+            // to change what is saved; changes made only to req.body are not saved.
+            console.log(req.submission);
             console.log(res.resource); // The "response" data if the handler is "after";
             next(); // Call next to continue processing.
         }
@@ -331,6 +342,8 @@ async settingsForm(form) {
 
 The **executor** is a **pre-load function** that returns a **run-time middleware function**.  This would allow you to pre-load any necessary elements that need to occur as the server is "booting" up so that it does not consume time during the runtime function operation. Anything that is within the **runtime middleware function** which is shows as ```(req, res, next) => {}``` is executed during runtime. Because of this, you should not do anything that is processor intensive within this part of the function. 
 
+In a **before** handler, the submission about to be saved is `req.submission`. Make your changes there: the save persists `req.submission`, so a change made only to `req.body` is lost.
+
 The Executor function is shown as follows.
 
 ```js
@@ -366,8 +379,9 @@ async executor(form, action, handler, method) {
     return async (req, res, next) => {
         // The action is executed here as Express.js middleware.
 
-        // The submission data if the handler is "before"
-        console.log(req.body);
+        // The submission about to be saved if the handler is "before". Change req.submission
+        // to change what is saved; changes made only to req.body are not saved.
+        console.log(req.submission);
 
         // The "response" data if the handler is "after";
         console.log(res.resource);
@@ -378,15 +392,18 @@ async executor(form, action, handler, method) {
 }
 ```
 
+#### Built-in actions
+The UAG adds one action of its own, **`agentDecide`** (Agent Decide). Added to a form with handler `before` and methods `create`/`update`, it re-decides a persona's decision fields on the server before the submission is saved; its one setting, `persona`, defaults to the form's first persona. It runs only for submissions saved through the UAG. See the README's [Agent API](../README.md#agent-api) section.
+
 #### Configuring actions
-Once you have defined an action, the next step is to add an Action instance to a Form. If you are using the OSS server, then this can be done either by adding the action instance to the project.json of your Module. See the [Custom Module Example](../examples/custom-module) for an example of how to do this.
+Once you have defined an action, the next step is to add an Action instance to a Form. If you are using the OSS server, then this can be done either by adding the action instance to the project.json of your Module. See the [Custom Module Example](../demo/samples/custom-module) for an example of how to do this.
 
 The other method is to send the following POST request to your form once the OSS server is running.
 
 ```
 POST: /form/{{ FORM_ID }}/action
 HEADERS:
-  {"x-admin-key": "{{ ADMIN_KEY }}}"
+  {"x-admin-key": "{{ ADMIN_KEY }}"
 BODY:
   {
     "data": {

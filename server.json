@@ -6,13 +6,13 @@
     "url": "https://github.com/formio/uag",
     "source": "github"
   },
-  "version": "1.13.2",
+  "version": "1.14.0",
   "websiteUrl": "https://form.io",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@formio/uag",
-      "version": "1.13.2",
+      "version": "1.14.0",
       "transport": {
         "type": "streamable-http",
         "url": "http://localhost:{PORT}/mcp"
@@ -40,8 +40,15 @@
           "isSecret": true
         },
         {
+          "name": "LICENSE_KEY",
+          "description": "Form.io license for a self-hosted Enterprise deployment; when it includes the UAG it also enables the Agent API. Not required for Community Edition, or for a project on Form.io's hosted service (https://*.form.io).",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
+        },
+        {
           "name": "UAG_LICENSE",
-          "description": "License for Enterprise deployment. Not required for Community Edition. ",
+          "description": "Deprecated: use LICENSE_KEY. Still read until UAG 3.0.",
           "isRequired": false,
           "format": "string",
           "isSecret": true
@@ -63,6 +70,13 @@
         {
           "name": "PROJECT_TTL",
           "description": "Project cache refresh interval in seconds (default: 900)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "TEMPLATE_SYNC",
+          "description": "When a module's template is installed into the project: boot, refresh or off (default: boot)",
           "isRequired": false,
           "format": "string",
           "isSecret": false

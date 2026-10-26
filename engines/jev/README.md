@@ -11,7 +11,7 @@ UAG_ENGINES=jev
 TYPESAFE_API_KEY=...
 ```
 
-Decisions are Agentic Formflow, so the UAG also needs a `UAG_LICENSE` with the `uag` feature (see [License](../../README.md#license)).
+Decisions are Agentic Formflow, so the UAG also needs a `LICENSE_KEY` that includes the UAG (see [License](../../README.md#license)).
 
 ## Settings
 

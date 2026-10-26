@@ -12,7 +12,7 @@ XAI_API_KEY=...
 XAI_MODEL=<a Grok model ID>
 ```
 
-Its tasks are Agentic Formflow, so the UAG also needs a `UAG_LICENSE` with the `uag` feature (see [License](../../README.md#license)).
+Its tasks are Agentic Formflow, so the UAG also needs a `LICENSE_KEY` that includes the UAG (see [License](../../README.md#license)).
 
 ## Settings
 
