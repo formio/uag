@@ -9,7 +9,6 @@ describe('UAGProjectInterface', () => {
         // Create a mock project instance
         project = Object.create(UAGProjectInterface.prototype);
         project.forms = {};
-        project.formNames = [];
         project.user = null;
         project.mcpServer = {
             registerTool: () => { }
@@ -256,6 +255,8 @@ describe('UAGProjectInterface', () => {
 
             expect(headers).to.have.property('WWW-Authenticate');
             expect(headers['WWW-Authenticate']).to.include('Bearer');
+            // The UAG's own realm; uag-engines is the engine server.
+            expect(headers['WWW-Authenticate']).to.include('realm="uag-server"');
         });
     });
 });

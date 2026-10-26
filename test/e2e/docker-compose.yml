@@ -1,12 +1,18 @@
 services:
   mongo:
-    image: mongo
+    # Pinned: mongo:8 refuses to start on Linux kernels 6.19 and newer
+    # (SERVER-121912), which current Docker Desktop releases run.
+    image: mongo:7
     tmpfs:
       - /data/db
   formio:
     image: formio/formio
     depends_on:
       - mongo
+    # Lets webhook actions reach the test process (the agentic workflow suite's
+    # relay); Docker Desktop has the name already, Linux needs the mapping.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "127.0.0.1:3101:3001"
     environment:

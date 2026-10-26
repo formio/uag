@@ -8,11 +8,12 @@ import { findSubmission } from "./findSubmission";
 import { submissionUpdate } from "./submissionUpdate";
 import { ToolInfo } from "./utils";
 import { UAGProjectInterface } from "../UAGProjectInterface";
-import { agentProvideData } from "./agentProvideData";
+import { agentProvide, agentProvideData } from "./agentProvide";
+import { agentDecide } from "./agentDecide";
 import { fetchExternalData } from "./fetchExternalData";
 export * from './utils';
 export * from './annotations';
-export { getForms, getFormFields, getFieldInfo, collectData, confirmSubmission, submitCompletedForm, findSubmission, submissionUpdate, fetchExternalData };
+export { getForms, getFormFields, getFieldInfo, collectData, confirmSubmission, submitCompletedForm, findSubmission, submissionUpdate, fetchExternalData, agentProvide, agentProvideData, agentDecide };
 export const getTools =  async (project: UAGProjectInterface): Promise<ToolInfo[]> => {
     return [
         await getForms(project),
@@ -23,6 +24,9 @@ export const getTools =  async (project: UAGProjectInterface): Promise<ToolInfo[
         await submitCompletedForm(project),
         await findSubmission(project),
         await submissionUpdate(project),
+        await agentProvide(project),
+        await agentDecide(project),
+        // Deprecated: the earlier name of agent_provide.
         await agentProvideData(project),
         await fetchExternalData(project)
     ];

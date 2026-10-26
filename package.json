@@ -1,6 +1,6 @@
 {
   "name": "@formio/uag",
-  "version": "1.13.2",
+  "version": "1.14.0",
   "mcpName": "io.form/formio-uag",
   "description": "The Form.io Universal Agent Gateway (UAG).",
   "main": "lib/index.js",
@@ -9,7 +9,12 @@
     "node": ">=22.0.0"
   },
   "files": [
-    "lib"
+    "lib",
+    "bin"
+  ],
+  "workspaces": [
+    "engines/*",
+    "packages/*"
   ],
   "scripts": {
     "clean": "rm -rf lib",
@@ -30,8 +35,10 @@
   "author": "Form.io Developers",
   "license": "MIT",
   "dependencies": {
-    "@formio/appserver": "^2.14.1",
+    "@formio/appserver": "^2.20.0",
+    "@formio/appserver-core": "^2.20.1",
     "@formio/core": "2.8.0",
+    "@formio/uag-sdk": "^2.0.0",
     "@modelcontextprotocol/sdk": "1.30.0",
     "cors": "^2.8.6",
     "debug": "^4.4.3",
@@ -78,5 +85,9 @@
     "isolated-vm": {
       "built": true
     }
+  },
+  "bin": {
+    "uag": "bin/uag.js",
+    "uag-eval": "bin/uag-eval.js"
   }
 }

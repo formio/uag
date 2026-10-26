@@ -1,6 +1,7 @@
 import { Router, type Response as ExpressResponse } from 'express';
 import { UAGProjectInterface } from './UAGProjectInterface';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import type { ScopedTokenClaims } from './formflow';
 
 // Helper function to create JSON RPC error responses
 const createJsonRpcErrorResponse = (code: number, message: string) => {
@@ -41,8 +42,9 @@ const handleResponseError = (error: unknown, res: ExpressResponse): boolean => {
 const connectMcpTransport = async (
     project: UAGProjectInterface,
     res: ExpressResponse,
+    scope?: ScopedTokenClaims,
 ): Promise<StreamableHTTPServerTransport> => {
-    const server = await project.buildMcpServer();
+    const server = await project.buildMcpServer(scope);
     const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,  // Use "undefined" to trigger stateless mode.
     });
@@ -60,7 +62,7 @@ export function UAGRouter(project: UAGProjectInterface): Router {
     // Handles the MCP post requests.
     router.post('/', async (req, res) => {
         try {
-            const transport = await connectMcpTransport(project, res);
+            const transport = await connectMcpTransport(project, res, (req as any).uagScope);
             await transport.handleRequest(req as any, res as any, req.body);
         } catch (error) {
             handleResponseError(error, res);
@@ -70,7 +72,7 @@ export function UAGRouter(project: UAGProjectInterface): Router {
     // Handles the MCP get requests (for health checks, etc).
     router.get('/', async (req, res) => {
         try {
-            const transport = await connectMcpTransport(project, res);
+            const transport = await connectMcpTransport(project, res, (req as any).uagScope);
             await transport.handleRequest(req as any, res as any);
         } catch (err) {
             handleResponseError(err, res);

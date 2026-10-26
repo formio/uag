@@ -183,11 +183,20 @@ export class SchemaBuilder {
     }
 
     /**
-     * The agent persona "type" to use when processing the existing submission data. The persona provides context to the agent on how to interpret and understand the data within the form submission. If not provided, the default persona defined within the form's UAG settings will be used.
-     * @returns 
+     * The task to work on: the name of a task the form defines (the value of its
+     * components' `uag` property).
+     */
+    task() {
+        this.schema.task = z.string().optional().describe('The name of a task defined on the form: the value of its components\' `uag` property, such as "triage". Not a description of the work. If not provided, the form\'s first task is used.');
+        return this;
+    }
+
+    /**
+     * The legacy name for `task`. Kept in the schema so clients that still send
+     * it are not silently given the default task.
      */
     persona() {
-        this.schema.persona = z.string().optional().describe('The agent persona "type" to use when processing the existing submission data. The persona provides context to the agent on how to interpret and understand the data within the form submission. If not provided, the default persona defined within the form\'s UAG settings will be used.');
+        this.schema.persona = z.string().optional().describe('Deprecated: the former name for `task`. Send `task` instead.');
         return this;
     }
 

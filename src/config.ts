@@ -1,4 +1,6 @@
 import { ServerConfig } from '@formio/appserver';
+import type { FormflowAgentApiConfig, FormflowRateLimit, FormflowRoutingConfig } from './formflow';
+import type { EngineInstanceSpec, EngineTypeDefinition } from '@formio/uag-sdk';
 import { ToolInfo } from './tools/utils';
 export type UAGForm = {
   name: string;
@@ -45,14 +47,42 @@ export type UAGToolOverride = {
   submit_completed_form?: ToolInfo;
   submission_update?: ToolInfo;
   find_submissions?: ToolInfo;
+  agent_provide?: ToolInfo;
+  /** @deprecated The earlier name of `agent_provide`; also applied to it when `agent_provide` is not set. */
   agent_provide_data?: ToolInfo;
+  agent_decide?: ToolInfo;
   fetch_external_data?: ToolInfo;
 };
+
+/**
+ * One engine instance: `"<type>"` or `"<name>:<type>"`, or `{ name, type, options }`, where the
+ * type is a type name, a package name, or an engine type definition.
+ */
+export type UAGEngineEntry = string | EngineInstanceSpec;
+
+/** Engine preference lists for each kind of work. See FormflowRoutingConfig. */
+export type UAGRoutingConfig = FormflowRoutingConfig;
+
+/** A request allowance. See FormflowRateLimit. */
+export type UAGRateLimit = FormflowRateLimit;
+
+/** Agent API defaults: thresholds, timeouts, tools and rate limits. See FormflowAgentApiConfig. */
+export type UAGAgentApiConfig = FormflowAgentApiConfig;
 
 export interface UAGConfig extends ServerConfig {
   baseUrl?: string;
   loginForm?: string;
   responseTemplates?: UAGTemplateConfig,
   toolOverrides?: UAGToolOverride,
-  tools?: ToolInfo[]
+  tools?: ToolInfo[],
+  /**
+   * The engine instances to enable, as in `UAG_ENGINES` (`"jev"`, `"fast:claude"`) or as
+   * `{ name, type, options }`. When unset, `UAG_ENGINES` is used; when neither names any, no
+   * engine is enabled.
+   */
+  engines?: UAGEngineEntry[],
+  /** Engine types this application provides, by type name, resolved before built-in types and packages. */
+  engineTypes?: Record<string, EngineTypeDefinition>,
+  routing?: UAGRoutingConfig,
+  agentApi?: UAGAgentApiConfig
 }

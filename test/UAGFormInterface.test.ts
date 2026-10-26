@@ -226,6 +226,21 @@ describe('UAGFormInterface', () => {
             expect(info.options?.[0]).to.deep.equal({ label: 'Red', value: 'red' });
         });
 
+        it('returns options for a radio component, which its rule refers to', () => {
+            const component = {
+                type: 'radio',
+                key: 'urgency',
+                label: 'Urgency',
+                values: [
+                    { label: 'Low', value: 'low' },
+                    { label: 'High', value: 'high' }
+                ]
+            } as any;
+            const info = uagForm.getComponentInfo(component, 'urgency');
+            expect(info.options).to.deep.equal([{ label: 'Low', value: 'low' }, { label: 'High', value: 'high' }]);
+            expect(uagForm.getComponentValueRule(component)).to.include('"**Options**" section');
+        });
+
         it('handles select with URL data source', () => {
             const component = {
                 type: 'select',

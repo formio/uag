@@ -1,4 +1,5 @@
 import { AppServerForm, AuthRequest, FormInterface, InterpolatedError } from "@formio/appserver";
+import type { FormflowForm, FormflowTask } from "./formflow";
 import {
     Component,
     TextFieldComponent,
@@ -65,14 +66,39 @@ export type FormFieldInfo = {
 }
 
 export type UAGFields = {
-    persona: string;
+    task: string;
     criteria: string;
     components: Record<string, UAGComponentInfo>;
+    /** Data paths of the components flagged `uagField: "input"`: the source text for extraction and decisions. */
+    inputs?: string[];
+    /** Task-level settings, read from the custom properties of the task's criteria component (e.g. `uagEngine`, `uagTools`). */
+    settings?: Record<string, string>;
 }
 
-export class UAGFormInterface extends FormInterface {
-    public uag: UAGForm | null = null;
-    public uagFields: Record<string, UAGFields> = {};
+export class UAGFormInterface extends FormInterface implements FormflowForm {
+    // Declared rather than initialized: FormInterface's constructor calls setForm(), which sets
+    // these, and an initializer would run after it and reset them.
+    declare public uag: UAGForm | null;
+    declare public uagFields: Record<string, UAGFields>;
+
+    /**
+     * Sets the form, deriving its UAG registration and agent fields from it. The form is set again
+     * whenever it loads, and whenever a TTL refresh or a deploy brings a new version, so both are
+     * rebuilt from the form each time rather than added to what an earlier version left.
+     */
+    setForm(form: AppServerForm): AppServerForm {
+        this.uagFields = {};
+        const result = super.setForm(form);
+        const machineName = result.machineName;
+        this.uag = result.tags?.includes('uag') ? {
+            machineName,
+            name: result.name || result.path || machineName,
+            title: result.title || result.name || machineName,
+            description: result.properties?.description || `A form to submit new ${result.title} records.`
+        } : null;
+        return result;
+    }
+
     setComponent(
         form: AppServerForm,
         component: Component,
@@ -82,18 +108,28 @@ export class UAGFormInterface extends FormInterface {
         paths: ComponentPaths | undefined
     ): void {
         if (form.tags?.includes('uag') && component.properties?.uag) {
-            const persona = component.properties?.uag;
+            const task = component.properties?.uag;
             if (!this.uagFields) {
                 this.uagFields = {};
             }
-            let uagFields: any = this.uagFields[persona];
+            let uagFields: any = this.uagFields[task];
             if (!uagFields) {
-                uagFields = { components: {} };
+                uagFields = { task, components: {} };
             }
             if (component.properties?.uagField) {
                 const property = component.properties?.uagField;
-                if ((component as ContentComponent)?.html) {
+                if (property === 'input') {
+                    // An input can be a single field or a nested component; for a
+                    // nested one, every child value under this path is input.
+                    const inputPath = paths?.dataPath || component.key;
+                    uagFields.inputs = [...(uagFields.inputs || []), inputPath];
+                }
+                else if ((component as ContentComponent)?.html) {
                     uagFields[property] = this.htmlToMarkdown((component as ContentComponent).html);
+                }
+                if (property === 'criteria') {
+                    const { uag, uagField, ...settings } = component.properties || {};
+                    uagFields.settings = { ...(uagFields.settings || {}), ...settings };
                 }
             }
             else {
@@ -111,7 +147,7 @@ export class UAGFormInterface extends FormInterface {
                     uagFields.components[compInfo.path] = compInfo;
                 }
             }
-            this.uagFields[persona] = uagFields;
+            this.uagFields[task] = uagFields;
         }
         return super.setComponent(form, component, path, components, parent, paths);
     }
@@ -143,7 +179,8 @@ export class UAGFormInterface extends FormInterface {
         if (component.placeholder) {
             fieldInfo.prompt = component.placeholder;
         }
-        if (component.type === 'select' || component.type === 'selectboxes') {
+        // A radio's options are what its rule tells the agent to choose from.
+        if (component.type === 'select' || component.type === 'selectboxes' || component.type === 'radio') {
             if ((component as SelectComponent).dataSrc === 'url') {
                 fieldInfo.options = [{ label: '** USE fetch_external_data TOOL **', value: `Call the \`fetch_external_data\` tool with \`field_path\`="${path}" to retrieve available options from the external URL.` }];
             } else if ((component as SelectComponent).dataSrc === 'resource') {
@@ -634,6 +671,21 @@ export class UAGFormInterface extends FormInterface {
             created: submission.created,
             modified: submission.modified
         };
+    }
+
+    /** The form's name in Agentic Formflow responses and messages. */
+    get formflowName(): string {
+        return this.uag?.name || this.form?.name || '';
+    }
+
+    /** The form's tasks, for Agentic Formflow. */
+    formflowTasks(): Record<string, FormflowTask> {
+        return this.uagFields || {};
+    }
+
+    /** The submission's values in form order with their labels, for Agentic Formflow. */
+    formflowLabeledData(data: DataObject = {}): { path: string; label: string }[] {
+        return this.formatData(data).map(({ path, label }) => ({ path, label }));
     }
 
     htmlToMarkdown(html: string): string {

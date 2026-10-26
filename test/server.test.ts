@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { UAGServer } from '../src/index';
+import { assertSingleCore, UAGServer } from '../src/index';
 
 describe('UAGServer.router', () => {
   // Running the image with no PROJECT — or with an unreachable one — used to
@@ -29,5 +29,46 @@ describe('UAGServer.router', () => {
       /PROJECT/,
       'should name the environment variable that needs to be set'
     );
+  });
+});
+
+describe('UAGServer.extendRouter', () => {
+  it('mounts the Agent API ahead of the project routes', async () => {
+    const express = require('express');
+    const request = require('supertest');
+    const server = new UAGServer();
+    const projectRoutes = express.Router();
+    // Stands in for the project routes and the admin passthrough to Form.io.
+    projectRoutes.use((req: any, res: any) => res.status(400).send('Invalid alias'));
+    const project: any = {
+      config: {},
+      agentRouter: () => express.Router().get('/agent/capabilities', (req: any, res: any) => res.json({ ok: true })),
+      uagRouter: () => express.Router()
+    };
+    (server as any).initializing = Promise.resolve();
+    (server as any).projectRouter = { router: async () => projectRoutes, projects: { only: project } };
+    const app = express();
+    app.use(await server.router());
+    const res = await request(app).get('/agent/capabilities').set('x-admin-key', 'anything');
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body, { ok: true });
+    assert.include(String(res.headers['access-control-expose-headers'] || ''), 'X-Request-Id');
+  });
+});
+
+describe('assertSingleCore', () => {
+  const core = { Formflow: {}, ProjectInterface: class {} };
+
+  it('accepts one copy of core at 2.20.0 or later', () => {
+    assertSingleCore(core, core, '2.20.0');
+    assertSingleCore(core, core, '3.0.0');
+  });
+
+  it('refuses an older core, naming the version', () => {
+    assert.throws(() => assertSingleCore(core, core, '2.19.0'), /2\.20\.0 or later; 2\.19\.0 is installed/);
+  });
+
+  it('refuses a second copy of core under @formio/appserver', () => {
+    assert.throws(() => assertSingleCore(core, { ProjectInterface: class {} }, '2.20.0'), /Two copies of @formio\/appserver-core/);
   });
 });
