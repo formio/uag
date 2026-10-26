@@ -46,25 +46,23 @@ export class UAGProjectInterface extends ProjectInterface implements FormflowHos
             tools = toolsForScope(tools, scope).filter((tool) => tool.annotations?.readOnlyHint === true);
         }
 
-        // Iterate and register all the tools.
+        // Register all the tools (allTools() keeps only the named ones).
         for (const tool of tools) {
-            if (tool?.name) {
-                server.registerTool(tool.name, {
-                    title: tool.title,
-                    description: tool.description,
-                    inputSchema: tool.inputSchema,
-                    // Carries readOnly/destructive/idempotent/openWorld through to the
-                    // client. Tools from config.tools may omit them, so this stays
-                    // conditional rather than sending `annotations: undefined`.
-                    ...(tool.annotations && { annotations: tool.annotations })
-                }, tool.execute);
-            }
+            server.registerTool(tool.name!, {
+                title: tool.title,
+                description: tool.description,
+                inputSchema: tool.inputSchema,
+                // Carries readOnly/destructive/idempotent/openWorld through to the
+                // client. Tools from config.tools may omit them, so this stays
+                // conditional rather than sending `annotations: undefined`.
+                ...(tool.annotations && { annotations: tool.annotations })
+            }, tool.execute);
         }
 
         // A scoped token that allows no tools must still answer tools/list, with
         // an empty list: clients list tools first,
         // and a server with nothing registered would not offer tools at all.
-        if (!tools.some((tool) => tool?.name)) {
+        if (!tools.length) {
             server.server.registerCapabilities({ tools: {} });
             server.server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: [] }));
             server.server.setRequestHandler(CallToolRequestSchema, async (request) => ({
@@ -153,7 +151,7 @@ export class UAGProjectInterface extends ProjectInterface implements FormflowHos
             if (!pkce) {
                 throw new Error('No PKCE provider configured');
             }
-            const auth = await pkce?.authorize(authorization);
+            const auth = await pkce.authorize(authorization);
             if (!auth || !auth.user) {
                 throw new Error('Unauthorized');
             }

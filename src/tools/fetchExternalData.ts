@@ -144,19 +144,10 @@ export const fetchExternalData = async (project: UAGProjectInterface): Promise<T
                 }
 
                 const selectComponent = component as SelectComponent;
-                const dataSrc = selectComponent.dataSrc;
-                if (dataSrc !== 'url' && dataSrc !== 'resource') {
-                    return project.mcpResponse(ResponseTemplate.fetchExternalDataError, {
-                        dataPath: data_path,
-                        error: `Component at "${data_path}" has dataSrc "${dataSrc}". Only "url" and "resource" are supported by this tool.`
-                    }, true);
-                }
-                let items: any[] = [];
-                if (dataSrc === 'url') {
-                    items = await fetchUrlData(selectComponent, search_value, extra.authInfo, evalContext);
-                } else if (dataSrc === 'resource') {
-                    items = await fetchResourceData(selectComponent, search_value, extra.authInfo, project, evalContext);
-                }
+                // isExternalSelect() has checked that dataSrc is "url" or "resource".
+                const items = selectComponent.dataSrc === 'url'
+                    ? await fetchUrlData(selectComponent, search_value, extra.authInfo, evalContext)
+                    : await fetchResourceData(selectComponent, search_value, extra.authInfo, project, evalContext);
                 const options = items.map(item => ({
                     label: extractLabel(item, selectComponent, evalContext),
                     value: extractValue(item, selectComponent)
