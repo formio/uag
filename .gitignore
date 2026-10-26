@@ -14,3 +14,6 @@ dist/
 .pnp.*
 !.yarnrc.yml
 *.log
+
+# OpenSpec artifacts live in @formio/appserver-core, never here.
+openspec/
