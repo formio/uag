@@ -1,0 +1,98 @@
+    <section class="example-hero">
+      <div class="container">
+        <p class="eyebrow"><a href="/examples">Examples</a>&nbsp;/&nbsp;Conversation Forms</p>
+        <h1>Talk to a form.</h1>
+        <p class="lede">Describe a problem the way you would to a person. The agent works out which form applies, asks only for what is missing, maps your words onto the form's own options, and submits data the form has validated.</p>
+        <div class="meta"><span class="tag tag-green">Open Source compatible</span><span class="tag">MCP</span><span class="tag">Claude</span><span class="tag tag-blue">No field names in code</span></div>
+      </div>
+    </section>
+{{{licenseNotice}}}
+
+    <section class="section-tight" style="padding-top:8px">
+      <div class="container">
+        <ol class="how">
+          <li><strong>Discover</strong>The agent calls <code>get_forms</code> and picks the form that matches what you want.</li>
+          <li><strong>Learn the rules</strong><code>get_form_fields</code> and <code>get_field_info</code> return each field, its validation and its allowed values.</li>
+          <li><strong>Collect</strong><code>collect_field_data</code> records answers as you give them, several from one sentence, and refuses invalid ones.</li>
+          <li><strong>Confirm and submit</strong>A summary for you to approve, then <code>submit_completed_form</code> creates the real submission.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section-tight" style="padding-top:8px">
+      <div class="container">
+        <p class="notice" data-demo-notice hidden></p>
+        <div class="demo-layout">
+          <div class="browser">
+            <div class="browser-bar">
+              <div class="browser-dots"><span></span><span></span><span></span></div>
+              <div class="browser-url">support.example.com · Service request chat</div>
+              <a href="/apps/conversation/" target="_blank" rel="noopener">Open full screen ↗</a>
+            </div>
+            <div class="demo-gate" data-demo-gate hidden>
+              <div><h3>Start the live demo</h3><p>This demo calls a real model. Please confirm you are human first.</p><div data-turnstile></div></div>
+            </div>
+            <iframe title="Conversation form demo" data-demo-frame data-src="/apps/conversation/" hidden></iframe>
+          </div>
+          <div data-flow data-scopes="chat,serviceRequest" data-intro="Each chat turn is one run: Claude's calls to the UAG's MCP tools, in order, with what they returned." data-empty="Nothing yet. Send a message and each tool call the agent makes will appear here."></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">What to notice</p>
+          <h2>The form is the script.</h2>
+        </div>
+        <div class="notes">
+          <div class="card"><h3>One sentence, several fields</h3><p>"I'm Marcus Webb, marcus@example.com, and it's completely down" fills the name, the email and the urgency, mapped to the form's <code>high</code> option rather than stored as prose.</p></div>
+          <div class="card"><h3>Validation the agent cannot skip</h3><p>Give an invalid email and the UAG rejects it with the form's own message. The agent has to ask again; nothing invalid is ever saved.</p></div>
+          <div class="card"><h3>Edit the form, not the code</h3><p>Add an option or a required field in the form builder and the conversation changes within seconds. The chat code never names a field.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tint">
+      <div class="container split">
+        <div>
+          <p class="eyebrow">Build it yourself</p>
+          <h2>A prompt that describes a process, not a form.</h2>
+          <p>The whole application is a tool loop: send the conversation to the model, run the tools it calls against the UAG, repeat until it answers. The prompt says which tools to use in what order. Everything about service requests comes from the form.</p>
+          <ul class="checks">
+            <li>The MCP client runs on your server and connects <strong>out</strong> to the UAG. No public endpoint.</li>
+            <li>Authenticate each user instead of a service key, and the UAG applies <strong>their</strong> permissions to every tool call.</li>
+            <li>Works on Form.io Community Edition. No license needed.</li>
+          </ul>
+          <p style="margin-top:24px"><a class="link-arrow" href="/developers/mcp-tools">MCP tools reference</a> &nbsp; <a class="link-arrow" href="{{links.github}}/blob/main/demo/server/conversation.mjs" target="_blank" rel="noopener">This demo's source</a></p>
+        </div>
+        <div class="code"><div class="code-bar"><span>js</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-js">// The model calls the UAG's tools; the UAG reads the form.
+const { tools } = await mcp.listTools();
+messages.push({ role: 'user', content: userMessage });
+
+while (true) {
+  const response = await anthropic.messages.create({
+    model, system: SYSTEM_PROMPT, messages,
+    tools: tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.inputSchema })),
+  });
+  messages.push({ role: 'assistant', content: response.content });
+  if (response.stop_reason !== 'tool_use') return response;
+
+  const results = [];
+  for (const call of response.content.filter((b) => b.type === 'tool_use')) {
+    const result = await mcp.callTool({ name: call.name, arguments: call.input });
+    results.push({ type: 'tool_result', tool_use_id: call.id, content: result.content, is_error: result.isError });
+  }
+  messages.push({ role: 'user', content: results });
+}</code></pre></div>
+      </div>
+    </section>
+
+    <section class="section-green">
+      <div class="container cta-band">
+        <div><h2>Next: hand the whole review to an agent.</h2><p>No chat window, no human: a submission that triggers two chained agents.</p></div>
+        <div class="hero-actions"><a class="btn btn-light" href="/examples/workflow">Agentic Workflow <span class="arrow"></span></a></div>
+      </div>
+    </section>
+    <script src="/js/flow-panel.js"></script>
+    <script src="/js/demo.js"></script>

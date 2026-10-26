@@ -14,7 +14,8 @@
   ],
   "workspaces": [
     "engines/*",
-    "packages/*"
+    "packages/*",
+    "demo"
   ],
   "scripts": {
     "clean": "rm -rf lib",
@@ -25,8 +26,10 @@
     "test": "tsc --noEmit -p tsconfig.test.json && mocha --no-node-snapshot",
     "test:e2e": "mocha --config .mocharc.e2e.json",
     "dev": "tsx --no-node-snapshot index.js",
-    "start": "node --no-node-snapshot index.js",
-    "claude": "node --no-node-snapshot ./integrations/claude/index.js"
+    "demo:dev": "node --no-node-snapshot demo/scripts/dev.mjs",
+    "demo:local": "node --no-node-snapshot demo/scripts/local.mjs",
+    "demo:start": "node demo/server/index.mjs",
+    "start": "node --no-node-snapshot index.js"
   },
   "repository": {
     "type": "git",
@@ -72,6 +75,7 @@
     "@types/supertest": "^7.2.1",
     "chai": "^6.2.2",
     "mocha": "^11.8.0",
+    "playwright": "1.64.0",
     "supertest": "^7.2.2",
     "terser": "^5.49.1",
     "tsx": "^4.23.5",

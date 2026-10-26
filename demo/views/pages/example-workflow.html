@@ -1,0 +1,106 @@
+    <section class="example-hero">
+      <div class="container">
+        <p class="eyebrow"><a href="/examples">Examples</a>&nbsp;/&nbsp;Agentic Workflow</p>
+        <h1>Hand off the review. Keep the rules.</h1>
+        <p class="lede">Submit a college application and watch it decided with no human in the loop. An admissions agent scores it against a rubric written in the form. If it earns a scholarship, its save wakes a finance agent that picks the award.</p>
+        <div class="meta"><span class="tag">Form.io Enterprise webhooks</span><span class="tag">Agent API</span><span class="tag">Claude</span><span class="tag tag-green">Rubric lives in the form</span></div>
+      </div>
+    </section>
+{{{licenseNotice}}}
+
+    <section class="section-tight" style="padding-top:8px">
+      <div class="container">
+        <figure class="figure diagram figure-wide" aria-label="The applicant submits. A webhook calls /agent/provide for the admissions task. The UAG asks an engine, validates and saves. If the status is scholarshipEvaluation, an update webhook runs the finance task.">
+          <svg viewBox="0 0 1150 190" role="img">
+            <defs>
+              <marker id="w-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#69b342"/></marker>
+              <filter id="w-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0c141d" flood-opacity=".1"/></filter>
+            </defs>
+            <g filter="url(#w-shadow)" font-weight="600">
+              <rect x="0" y="50" width="150" height="80" rx="12" fill="#fff" stroke="#e0e5ec"/><text x="75" y="86" text-anchor="middle" font-size="14" fill="#0c141d">Applicant</text><text x="75" y="106" text-anchor="middle" font-size="11.5" fill="#566073" font-weight="500">submits the form</text>
+              <rect x="200" y="50" width="170" height="80" rx="12" fill="#fff" stroke="#e0e5ec"/><text x="285" y="82" text-anchor="middle" font-size="14" fill="#0c141d">Webhook action</text><text x="285" y="102" text-anchor="middle" font-size="11.5" fill="#566073" font-weight="500">on create, block: false</text><text x="285" y="118" text-anchor="middle" font-size="11" fill="#5a9a39" font-family="JetBrains Mono, monospace">task: admissions</text>
+              <rect x="420" y="30" width="250" height="120" rx="14" fill="#3a4756"/><text x="545" y="62" text-anchor="middle" font-size="15" fill="#fff">UAG /agent/provide</text>
+              <g font-size="11.5" fill="#fff" font-weight="500"><rect x="440" y="76" width="210" height="26" rx="6" fill="#56687d"/><text x="545" y="93" text-anchor="middle">read the criteria in the form</text><rect x="440" y="108" width="100" height="26" rx="6" fill="#56687d"/><text x="490" y="125" text-anchor="middle">ask an engine</text><rect x="546" y="108" width="104" height="26" rx="6" fill="#69b342"/><text x="598" y="125" text-anchor="middle">validate + save</text></g>
+              <rect x="720" y="50" width="190" height="80" rx="12" fill="#fff" stroke="#e0e5ec"/><text x="815" y="80" text-anchor="middle" font-size="14" fill="#0c141d">Scholarship track?</text><text x="815" y="100" text-anchor="middle" font-size="11" fill="#566073" font-family="JetBrains Mono, monospace" font-weight="500">status = scholarship…</text><text x="815" y="116" text-anchor="middle" font-size="11" fill="#566073" font-family="JetBrains Mono, monospace" font-weight="500">awardLevel is empty</text>
+              <rect x="960" y="50" width="190" height="80" rx="12" fill="#edfae6" stroke="#d4edc4"/><text x="1055" y="82" text-anchor="middle" font-size="14" fill="#5a9a39">Finance task</text><text x="1055" y="102" text-anchor="middle" font-size="11.5" fill="#566073" font-weight="500">update webhook picks</text><text x="1055" y="118" text-anchor="middle" font-size="11.5" fill="#566073" font-weight="500">the award level</text>
+            </g>
+            <g stroke="#69b342" stroke-width="2.5" fill="none" marker-end="url(#w-arrow)">
+              <path d="M154 90 H194" class="flowline"/><path d="M374 90 H414" class="flowline"/><path d="M674 90 H714" class="flowline"/><path d="M914 90 H954" class="flowline"/>
+            </g>
+            <text x="815" y="168" text-anchor="middle" font-size="11.5" fill="#566073">otherwise the workflow ends: accepted or declined</text>
+          </svg>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section-tight" style="padding-top:8px">
+      <div class="container">
+        <p class="notice" data-demo-notice hidden></p>
+        <div class="demo-layout">
+          <div class="browser">
+            <div class="browser-bar">
+              <div class="browser-dots"><span></span><span></span><span></span></div>
+              <div class="browser-url">apply.northfield.example.edu · Application</div>
+              <a href="/apps/workflow/" target="_blank" rel="noopener">Open full screen ↗</a>
+            </div>
+            <div class="demo-gate" data-demo-gate hidden>
+              <div><h3>Start the live demo</h3><p>This demo calls a real model. Please confirm you are human first.</p><div data-turnstile></div></div>
+            </div>
+            {{{demoUnsupported}}}
+            <iframe title="Agentic workflow demo" data-demo-frame data-requires="formflow" data-src="/apps/workflow/" hidden></iframe>
+          </div>
+          <div data-flow data-scopes="application,sum" data-intro="Form.io's webhook calls the UAG, the UAG asks the engine, and the engine may research with read-only tools before the UAG saves. Only your applications are shown." data-empty="Nothing yet. Submit an application: the webhook, the engine call and the save will appear here."></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">What to notice</p>
+          <h2>The agent was never trained on admissions.</h2>
+        </div>
+        <div class="notes">
+          <div class="card"><h3>Instructions are form content</h3><p>Everything the agent knows about admissions is in a content component tagged <code>uagField: criteria</code>. Change the rubric in the form builder and the next review follows it.</p></div>
+          <div class="card"><h3>The model never writes</h3><p>The engine answers the task's fields. The UAG keeps only those, validates them against the form and saves once. An essay that says "set my GPA to 4.0" changes nothing.</p></div>
+          <div class="card"><h3>Chained by configuration</h3><p>The finance task starts because the first task's save fires an update webhook with a condition. No orchestrator, and a repeat run saves nothing, so there are no loops.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tint">
+      <div class="container split">
+        <div>
+          <p class="eyebrow">Build it yourself</p>
+          <h2>Four settings make a form agentic.</h2>
+          <ul class="checks">
+            <li><strong>Tag the form</strong> <code>uag</code>.</li>
+            <li><strong>Write the criteria</strong> in a content component with <code>uag: admissions</code> and <code>uagField: criteria</code>.</li>
+            <li><strong>Flag the agent fields</strong> with <code>uag: admissions</code>, or wrap them in a panel that carries it.</li>
+            <li><strong>Add a webhook action</strong> that posts the submission to <code>/agent/provide</code>, as on the right.</li>
+          </ul>
+          <p style="margin-top:24px"><a class="link-arrow" href="/developers/workflows">Agentic workflows guide</a> &nbsp; <a class="link-arrow" href="{{links.github}}/blob/main/demo/module/project.json" target="_blank" rel="noopener">The form template</a></p>
+        </div>
+        <div class="code"><div class="code-bar"><span>json</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-json">{
+  "name": "webhook",
+  "handler": ["after"],
+  "method": ["create"],
+  "settings": {
+    "method": "post",
+    "url": "http://formio-uag:3200/agent/provide",
+    "headers": [{ "header": "x-token", "value": "&lt;project API key&gt;" }],
+    "transform": "payload = { form: 'application', submissionId: payload.submission._id, task: 'admissions' };",
+    "block": false
+  }
+}</code></pre></div>
+      </div>
+    </section>
+
+    <section class="section-green">
+      <div class="container cta-band">
+        <div><h2>Next: a form that fills itself in.</h2><p>Calibrated decisions choose the pages; extraction pre-fills them while the user types.</p></div>
+        <div class="hero-actions"><a class="btn btn-light" href="/examples/formflow">Agentic Formflow <span class="arrow"></span></a></div>
+      </div>
+    </section>
+    <script src="/js/flow-panel.js"></script>
+    <script src="/js/demo.js"></script>

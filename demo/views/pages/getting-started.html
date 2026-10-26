@@ -1,0 +1,253 @@
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Getting Started</p>
+        <h1>Run the UAG in your own environment.</h1>
+        <p class="lede">The UAG is one container that sits beside Form.io. Start against a free project on Form.io's hosted platform, or self-host everything on your own infrastructure, from a laptop to an air-gapped data center.</p>
+      </div>
+    </section>
+
+    <section class="section-tight">
+      <div class="container">
+        <div class="grid grid-3">
+          <div class="card card-green">
+            <span class="num">FASTEST</span>
+            <h3>Hosted project + your UAG</h3>
+            <p>Create a free project on portal.form.io and run the UAG yourself against it. No license needed.</p>
+          </div>
+          <div class="card">
+            <span class="num">FREE, FULLY SELF-HOSTED</span>
+            <h3>Open Source stack</h3>
+            <p>Form.io Community Edition, MongoDB and the UAG in one Docker Compose file, on your own machine or network.</p>
+          </div>
+          <div class="card card-dark">
+            <span class="num">PRODUCTION</span>
+            <h3>Enterprise, self-hosted</h3>
+            <p>Form.io Enterprise and the UAG inside your security boundary, with RBAC, revisions, stage deployments and support.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:24px">
+      <div class="container">
+        <div class="tabs">
+          <div class="tab-list" role="tablist" aria-label="Ways to run the UAG">
+            <button role="tab" id="tab-saas" aria-controls="panel-saas" aria-selected="true">1 · Hosted project</button>
+            <button role="tab" id="tab-oss" aria-controls="panel-oss" aria-selected="false" tabindex="-1">2 · Open Source, self-hosted</button>
+            <button role="tab" id="tab-ent" aria-controls="panel-ent" aria-selected="false" tabindex="-1">3 · Enterprise, self-hosted</button>
+          </div>
+
+          <div class="tab-panel" role="tabpanel" id="panel-saas" aria-labelledby="tab-saas">
+            <div class="steps">
+              <div class="step"><div>
+                <h3>Create a free project</h3>
+                <p>Sign up at <a href="{{links.portal}}" rel="noopener" target="_blank">portal.form.io</a> and create a project. Its API endpoint looks like <code>https://yourproject.form.io</code>.</p>
+              </div></div>
+              <div class="step"><div>
+                <h3>Make a form visible to agents</h3>
+                <p>Build or open a form, and add the tag <code>uag</code> under <strong>Settings → Tags</strong>. Only tagged forms are offered to agents; everything else stays invisible to them.</p>
+              </div></div>
+              <div class="step"><div>
+                <h3>Create a project API key</h3>
+                <p>In <strong>Project Settings → API Keys</strong>, add a key for the UAG. It stays on your server and is never given to a model.</p>
+              </div></div>
+              <div class="step"><div>
+                <h3>Run the UAG next to your applications</h3>
+                <p>A UAG serving a hosted Form.io project needs no license. Add <code>UAG_ENGINES</code> and a model key to use the Agent API.</p>
+                <div class="code"><div class="code-bar"><span>bash</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-bash">docker run -d --name formio-uag -p 3200:3200 \
+  -e PROJECT=https://yourproject.form.io \
+  -e PROJECT_KEY=your-project-api-key \
+  -e JWT_SECRET=$(openssl rand -hex 32) \
+  -e BASE_URL=http://localhost:3200 \
+  -e LOGIN_FORM=https://yourproject.form.io/user/login \
+  -e UAG_ENGINES=claude \
+  -e CLAUDE_API_KEY=your-anthropic-key \
+  formio/uag</code></pre></div>
+              </div></div>
+              <div class="step"><div>
+                <h3>Connect an agent</h3>
+                <p>Point any MCP client at <code>http://localhost:3200/mcp</code>, or call the Agent API from your own code. <a href="#connect">See the options below.</a></p>
+              </div></div>
+            </div>
+          </div>
+
+          <div class="tab-panel" role="tabpanel" id="panel-oss" aria-labelledby="tab-oss" hidden>
+            <div class="steps">
+              <div class="step"><div>
+                <h3>Save this as <code>docker-compose.yml</code></h3>
+                <p>Form.io Community Edition, MongoDB and the UAG. Change every <code>CHANGEME</code> before you use it for anything real.</p>
+                <div class="code"><div class="code-bar"><span>yaml</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-yaml">services:
+  mongo:
+    image: mongo:7
+    restart: always
+    volumes:
+      - mongo-data:/data/db
+
+  formio:
+    image: formio/formio
+    restart: always
+    depends_on: [mongo]
+    ports:
+      - "3000:3001"
+    environment:
+      NODE_CONFIG: '{"mongo": "mongodb://mongo:27017/formio", "jwt": {"secret": "CHANGEME"}, "mongoSecret": "CHANGEME"}'
+      ROOT_EMAIL: admin@example.com
+      ROOT_PASSWORD: CHANGEME
+      ADMIN_KEY: CHANGEME
+
+  formio-uag:
+    image: formio/uag
+    restart: always
+    depends_on: [formio]
+    ports:
+      - "3200:3200"
+    environment:
+      PROJECT: http://formio:3001
+      ADMIN_KEY: CHANGEME
+      JWT_SECRET: CHANGEME
+      BASE_URL: http://localhost:3200
+      LOGIN_FORM: http://localhost:3000/user/login
+
+volumes:
+  mongo-data:</code></pre></div>
+              </div></div>
+              <div class="step"><div>
+                <h3>Start it</h3>
+                <div class="code"><div class="code-bar"><span>bash</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-bash">docker compose up -d
+open http://localhost:3000     # the Form.io portal: admin@example.com / CHANGEME</code></pre></div>
+              </div></div>
+              <div class="step"><div>
+                <h3>Tag a form and connect</h3>
+                <p>Create a form in the portal, tag it <code>uag</code>, and connect an agent to <code>http://localhost:3200/mcp</code>. Everything stays on your machine. Conversation forms run here with no license. The Agent API, workflows and Agentic Formflow need a <code>LICENSE_KEY</code> that includes the UAG, or a project on Form.io's hosted service (tab 1).</p>
+              </div></div>
+            </div>
+          </div>
+
+          <div class="tab-panel" role="tabpanel" id="panel-ent" aria-labelledby="tab-ent" hidden>
+            <div class="steps">
+              <div class="step"><div>
+                <h3>Get a license</h3>
+                <p>A self-hosted UAG serving a Form.io Enterprise project needs a Form.io license that includes the UAG, in <code>LICENSE_KEY</code>: an online license with UAG servers, or an offline license with the <code>uag</code> option. It is the only license the UAG needs, and covers the Agent API and its engines. <a href="/contact">Ask us for a trial.</a></p>
+              </div></div>
+              <div class="step"><div>
+                <h3>Point the UAG at your project</h3>
+                <div class="code"><div class="code-bar"><span>yaml</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-yaml">  formio-uag:
+    image: formio/uag
+    restart: always
+    environment:
+      # A container-to-container address: the UAG never needs a public one.
+      PROJECT: http://formio-enterprise:3000/yourproject
+      PROJECT_KEY: ${PROJECT_KEY}
+      LICENSE_KEY: ${LICENSE_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      BASE_URL: https://uag.example.com
+      LOGIN_FORM: https://forms.example.com/yourproject/user/login
+      UAG_ENGINES: jev,claude
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY}</code></pre></div>
+              </div></div>
+              <div class="step"><div>
+                <h3>Keep model keys out of the gateway (optional)</h3>
+                <p>Run the engines on <code>formio/uag-engines</code>, or use a local model through Ollama or vLLM so no data leaves your network. <a href="/developers/engines">Engine setups</a>.</p>
+              </div></div>
+              <div class="step"><div>
+                <h3>Harden it</h3>
+                <p>Raise <code>PROJECT_TTL</code>, set real secrets, scope roles and permissions, and decide whether remote agents may connect in. <a href="/developers/deployment">Deployment guide</a> · <a href="/developers/security">Security model</a>.</p>
+              </div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tint" id="agent-ready">
+      <div class="container">
+        <div class="section-head center">
+          <p class="eyebrow">Make a form agent-ready</p>
+          <h2>Four settings in the form builder.</h2>
+          <p>No code. The same form keeps working for people, and gains a section an agent can fill in.</p>
+        </div>
+        <ol class="how">
+          <li><strong>Tag it <code>uag</code></strong>The UAG registers only tagged forms, so you decide exactly what agents can see.</li>
+          <li><strong>Write the criteria</strong>A content component with <code>uag=&lt;task&gt;</code> and <code>uagField=criteria</code>: plain-language instructions, like onboarding a new employee.</li>
+          <li><strong>Flag the agent fields</strong>Give each field the agent fills the same <code>uag</code> property, or wrap them in a panel that carries it.</li>
+          <li><strong>Trigger it</strong>From a chat over MCP, the renderer plugin as users type, or a webhook to <code>/agent/provide</code> on submit.</li>
+        </ol>
+        <div class="grid grid-2" style="margin-top:32px">
+          <figure class="figure frame"><img src="/images/criteria-properties.png" alt="The criteria content component's custom properties: uag set to the task name and uagField set to criteria." loading="lazy"></figure>
+          <figure class="figure frame"><img src="/images/agent-field-property.png" alt="An agent field's custom property uag, set to the task name." loading="lazy"></figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="connect">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">Connect an agent</p>
+          <h2>Three ways in, one set of rules.</h2>
+          <p>Whichever way an agent arrives, it authenticates, is held to the caller's permissions, and writes only validated data.</p>
+        </div>
+        <div class="tabs">
+          <div class="tab-list" role="tablist" aria-label="Ways to connect">
+            <button role="tab" id="tab-claude" aria-controls="panel-claude" aria-selected="true">Claude Desktop</button>
+            <button role="tab" id="tab-mcp" aria-controls="panel-mcp" aria-selected="false" tabindex="-1">Your own MCP client</button>
+            <button role="tab" id="tab-api" aria-controls="panel-api" aria-selected="false" tabindex="-1">Agent API</button>
+          </div>
+          <div class="tab-panel" role="tabpanel" id="panel-claude" aria-labelledby="tab-claude">
+            <p>Add the UAG to <code>claude_desktop_config.json</code>. The first connection opens your Form.io login, and Claude then acts with that user's roles.</p>
+            <div class="code"><div class="code-bar"><span>json</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-json">{
+  "mcpServers": {
+    "formio-uag": {
+      "command": "npx",
+      "args": ["mcp-remote", "http://localhost:3200/mcp"]
+    }
+  }
+}</code></pre></div>
+            <p>Then ask: <em>"I would like to add a new customer."</em> <a href="/developers/connect-claude">Full guide, including claude.ai connectors</a>.</p>
+          </div>
+          <div class="tab-panel" role="tabpanel" id="panel-mcp" aria-labelledby="tab-mcp" hidden>
+            <p>Server-side clients exchange the project key for a token, then connect over streamable HTTP. Nothing dials back in, so the UAG can stay private.</p>
+            <div class="code"><div class="code-bar"><span>js</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-js">import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+
+const { access_token } = await (await fetch('http://localhost:3200/auth/token', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    grant_type: 'client_credentials',
+    client_id: 'yourproject-x-token',   // formio-oss-x-admin-key on Open Source
+    client_secret: process.env.PROJECT_KEY,
+  }),
+})).json();
+
+const mcp = new Client({ name: 'my-app', version: '1.0.0' });
+await mcp.connect(new StreamableHTTPClientTransport(new URL('http://localhost:3200/mcp'), {
+  requestInit: { headers: { Authorization: `Bearer ${access_token}` } },
+}));
+console.log((await mcp.listTools()).tools.map((tool) => tool.name));</code></pre></div>
+            <p><a href="/developers/mcp-tools">Every MCP tool, with its arguments</a>.</p>
+          </div>
+          <div class="tab-panel" role="tabpanel" id="panel-api" aria-labelledby="tab-api" hidden>
+            <p>Fill a task's fields from free text. Decisions come from a decision engine, open values from an agent engine, and nothing is saved until you say so.</p>
+            <div class="code"><div class="code-bar"><span>bash</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-bash">curl -X POST http://localhost:3200/agent/extract \
+  -H 'Content-Type: application/json' \
+  -H "x-token: $PROJECT_KEY" \
+  -d '{"form": "claim", "task": "triage", "text": "Someone rear-ended me on Main St this morning. My neck hurts."}'</code></pre></div>
+            <p><a href="/developers/agent-api">Agent API reference</a> · <a href="/examples/formflow">See it in a live wizard</a>.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-green">
+      <div class="container cta-band">
+        <div>
+          <h2>Planning a production rollout?</h2>
+          <p>Get a UAG license, architecture guidance and enterprise support for self-hosted deployments.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-light" href="/contact">Talk to Sales <span class="arrow"></span></a>
+          <a class="btn btn-outline-light" href="/developers/quickstart">Developer quickstart</a>
+        </div>
+      </div>
+    </section>

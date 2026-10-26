@@ -1,0 +1,32 @@
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/js@{{formioJsVersion}}/dist/formio.form.min.css">
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Contact Us</p>
+        <h1>Let's talk about agents in your environment.</h1>
+        <p class="lede">Licensing for self-hosted deployments, architecture reviews, a trial for your team, or a question about this demo. We respond within one business day.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container contact-grid">
+        <div>
+          <h2 style="font-size:1.6rem">What we can help with</h2>
+          <div class="contact-points">
+            <div class="contact-point"><div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#lock"/></svg></div><div><h4>UAG licenses and trials</h4><p>Self-hosted Enterprise deployments, Agentic Formflow and engine options.</p></div></div>
+            <div class="contact-point"><div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#server"/></svg></div><div><h4>Architecture and security reviews</h4><p>Running agents inside your boundary: air-gapped, FIPS, local models, RBAC.</p></div></div>
+            <div class="contact-point"><div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#workflow"/></svg></div><div><h4>Your use case</h4><p>Intake, claims, case management, approvals: we'll map it onto forms, tasks and engines.</p></div></div>
+            <div class="contact-point"><div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#calendar"/></svg></div><div><h4>Prefer a call?</h4><p><a href="{{links.schedule}}" target="_blank" rel="noopener">Schedule a meeting</a> with our team.</p></div></div>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div id="contact-form"><p class="form-loading">Loading the form…</p></div>
+          <div class="contact-done" data-contact-done hidden>
+            <div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#check"/></svg></div>
+            <h3>Thanks, we have your message.</h3>
+            <p>Someone from our team will reach out within one business day.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <script src="https://cdn.jsdelivr.net/npm/@formio/js@{{formioJsVersion}}/dist/formio.form.min.js"></script>
+    <script src="/js/contact.js" data-form="{{links.contactForm}}"></script>

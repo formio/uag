@@ -1,0 +1,2320 @@
+{
+  "title": "UAG Demo",
+  "version": "2.0.0",
+  "name": "demo",
+  "roles": {
+    "administrator": {
+      "title": "Administrator",
+      "description": "A role for Administrative Users.",
+      "admin": true,
+      "default": false
+    },
+    "authenticated": {
+      "title": "Authenticated",
+      "description": "A role for Authenticated Users.",
+      "admin": false,
+      "default": false
+    },
+    "anonymous": {
+      "title": "Anonymous",
+      "description": "A role for Anonymous Users.",
+      "admin": false,
+      "default": true
+    }
+  },
+  "resources": {},
+  "forms": {
+    "serviceRequest": {
+      "title": "Service Request",
+      "type": "form",
+      "name": "serviceRequest",
+      "path": "service-request",
+      "display": "form",
+      "tags": [
+        "uag"
+      ],
+      "components": [
+        {
+          "label": "Full Name",
+          "key": "fullName",
+          "type": "textfield",
+          "input": true,
+          "description": "The name of the person reporting the issue.",
+          "validate": {
+            "required": true,
+            "minLength": 2
+          }
+        },
+        {
+          "label": "Email",
+          "key": "email",
+          "type": "email",
+          "input": true,
+          "description": "Where we send updates about this request.",
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "label": "Category",
+          "key": "category",
+          "type": "select",
+          "input": true,
+          "dataSrc": "values",
+          "description": "Which kind of problem this is.",
+          "data": {
+            "values": [
+              {
+                "label": "Internet or Wi-Fi",
+                "value": "internet"
+              },
+              {
+                "label": "Billing",
+                "value": "billing"
+              },
+              {
+                "label": "Equipment or Hardware",
+                "value": "equipment"
+              },
+              {
+                "label": "Installation or Move",
+                "value": "installation"
+              },
+              {
+                "label": "Something Else",
+                "value": "other"
+              }
+            ]
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "label": "Urgency",
+          "key": "urgency",
+          "type": "radio",
+          "input": true,
+          "inline": true,
+          "description": "How badly this is affecting the customer right now.",
+          "values": [
+            {
+              "label": "Low \u2014 annoying but working",
+              "value": "low"
+            },
+            {
+              "label": "Medium \u2014 partly broken",
+              "value": "medium"
+            },
+            {
+              "label": "High \u2014 completely down",
+              "value": "high"
+            }
+          ],
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "label": "Service Address",
+          "key": "serviceAddress",
+          "type": "textarea",
+          "input": true,
+          "rows": 2,
+          "description": "Street address where the service is installed.",
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "label": "Description of the Problem",
+          "key": "description",
+          "type": "textarea",
+          "input": true,
+          "rows": 4,
+          "description": "What is happening, when it started, and anything already tried.",
+          "validate": {
+            "required": true,
+            "minLength": 20
+          }
+        },
+        {
+          "label": "Best Callback Time",
+          "key": "callbackTime",
+          "type": "select",
+          "input": true,
+          "dataSrc": "values",
+          "description": "When a technician should call. Optional.",
+          "data": {
+            "values": [
+              {
+                "label": "Morning (8am - 12pm)",
+                "value": "morning"
+              },
+              {
+                "label": "Afternoon (12pm - 5pm)",
+                "value": "afternoon"
+              },
+              {
+                "label": "Evening (5pm - 8pm)",
+                "value": "evening"
+              }
+            ]
+          }
+        },
+        {
+          "label": "Submit",
+          "key": "submit",
+          "type": "button",
+          "action": "submit",
+          "input": true,
+          "disableOnInvalid": true
+        }
+      ],
+      "access": [
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous"
+          ]
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "administrator"
+          ]
+        }
+      ]
+    },
+    "application": {
+      "title": "College Application",
+      "type": "form",
+      "name": "application",
+      "path": "application",
+      "display": "wizard",
+      "tags": [
+        "uag"
+      ],
+      "settings": {},
+      "components": [
+        {
+          "type": "panel",
+          "key": "personalInformation",
+          "title": "Personal Information",
+          "input": false,
+          "tableView": false,
+          "components": [
+            {
+              "type": "textfield",
+              "key": "firstName",
+              "label": "First Name",
+              "validate": {
+                "required": true
+              },
+              "input": true,
+              "tableView": true
+            },
+            {
+              "type": "textfield",
+              "key": "lastName",
+              "label": "Last Name",
+              "validate": {
+                "required": true
+              },
+              "input": true,
+              "tableView": true
+            },
+            {
+              "type": "email",
+              "key": "email",
+              "label": "Contact Email",
+              "placeholder": "Enter your email address",
+              "validate": {
+                "required": true
+              },
+              "input": true,
+              "tableView": true
+            },
+            {
+              "type": "datetime",
+              "key": "dateOfBirth",
+              "label": "Date of Birth",
+              "format": "yyyy-MM-dd",
+              "enableTime": false,
+              "validate": {
+                "required": true
+              },
+              "input": true,
+              "tableView": true,
+              "widget": {
+                "type": "calendar",
+                "displayInTimezone": "viewer",
+                "locale": "en",
+                "useLocaleSettings": false,
+                "allowInput": true,
+                "mode": "single",
+                "enableTime": false,
+                "noCalendar": false,
+                "format": "yyyy-MM-dd",
+                "hourIncrement": 1,
+                "minuteIncrement": 1,
+                "time_24hr": false,
+                "minDate": null,
+                "maxDate": null
+              }
+            },
+            {
+              "type": "phoneNumber",
+              "key": "phone",
+              "label": "Phone Number",
+              "input": true,
+              "tableView": true
+            },
+            {
+              "type": "textarea",
+              "key": "address",
+              "label": "Home Address",
+              "autoExpand": false,
+              "input": true,
+              "tableView": false
+            }
+          ],
+          "label": "Panel"
+        },
+        {
+          "type": "panel",
+          "key": "academics",
+          "title": "Academics",
+          "input": false,
+          "tableView": false,
+          "components": [
+            {
+              "type": "textfield",
+              "key": "highSchool",
+              "label": "High School",
+              "validate": {
+                "required": true
+              },
+              "input": true,
+              "tableView": true
+            },
+            {
+              "type": "number",
+              "key": "gpa",
+              "label": "GPA",
+              "validate": {
+                "required": true,
+                "min": 0,
+                "max": 5
+              },
+              "input": true,
+              "tableView": true
+            },
+            {
+              "type": "select",
+              "key": "testType",
+              "label": "Standardized Test",
+              "data": {
+                "values": [
+                  {
+                    "label": "SAT",
+                    "value": "sat"
+                  },
+                  {
+                    "label": "ACT",
+                    "value": "act"
+                  },
+                  {
+                    "label": "None",
+                    "value": "none"
+                  }
+                ]
+              },
+              "defaultValue": "none",
+              "input": true,
+              "tableView": true
+            },
+            {
+              "type": "number",
+              "key": "testScore",
+              "label": "Test Score",
+              "input": true,
+              "tableView": true
+            }
+          ],
+          "label": "Panel"
+        },
+        {
+          "type": "panel",
+          "key": "activitiesEssays",
+          "title": "Activities & Essays",
+          "input": false,
+          "tableView": false,
+          "components": [
+            {
+              "type": "textarea",
+              "key": "extracurriculars",
+              "label": "Extracurricular Activities & Impact",
+              "autoExpand": false,
+              "input": true,
+              "tableView": false
+            },
+            {
+              "type": "textarea",
+              "key": "leadership",
+              "label": "Leadership & Initiative",
+              "autoExpand": false,
+              "input": true,
+              "tableView": false
+            },
+            {
+              "type": "textarea",
+              "key": "service",
+              "label": "Service Orientation",
+              "autoExpand": false,
+              "input": true,
+              "tableView": false
+            },
+            {
+              "type": "textarea",
+              "key": "essay",
+              "label": "Application Essay",
+              "autoExpand": false,
+              "validate": {
+                "required": true
+              },
+              "input": true,
+              "tableView": false
+            }
+          ],
+          "label": "Panel"
+        },
+        {
+          "type": "panel",
+          "key": "workflow",
+          "title": "Workflow Status",
+          "input": false,
+          "tableView": false,
+          "components": [
+            {
+              "type": "select",
+              "key": "status",
+              "label": "Status",
+              "data": {
+                "values": [
+                  {
+                    "label": "Submitted",
+                    "value": "submitted"
+                  },
+                  {
+                    "label": "Declined",
+                    "value": "declined"
+                  },
+                  {
+                    "label": "Accepted",
+                    "value": "accepted"
+                  },
+                  {
+                    "label": "Scholarship Evaluation",
+                    "value": "scholarshipEvaluation"
+                  }
+                ]
+              },
+              "defaultValue": "submitted",
+              "input": true,
+              "tableView": true,
+              "properties": {
+                "uag": "admissions",
+                "uagAgentDecides": "true"
+              }
+            },
+            {
+              "type": "select",
+              "key": "decision",
+              "label": "Decision",
+              "data": {
+                "values": [
+                  {
+                    "label": "Declined",
+                    "value": "declined"
+                  },
+                  {
+                    "label": "Accepted",
+                    "value": "accepted"
+                  },
+                  {
+                    "label": "Accepted with Scholarship",
+                    "value": "acceptedWithScholarship"
+                  }
+                ]
+              },
+              "input": true,
+              "tableView": true,
+              "properties": {
+                "uag": "admissions",
+                "uagAgentDecides": "true"
+              }
+            },
+            {
+              "type": "select",
+              "key": "awardLevel",
+              "label": "Scholarship Award",
+              "data": {
+                "values": [
+                  {
+                    "label": "Full Ride",
+                    "value": "fullRide"
+                  },
+                  {
+                    "label": "Paid Room & Board + 25% Discount",
+                    "value": "roomBoard25"
+                  },
+                  {
+                    "label": "Supplemental Scholarship (25% Discount)",
+                    "value": "supplemental25"
+                  },
+                  {
+                    "label": "$1000 Reward",
+                    "value": "reward1000"
+                  }
+                ]
+              },
+              "input": true,
+              "tableView": true,
+              "properties": {
+                "uag": "finance",
+                "uagAgentDecides": "true"
+              }
+            }
+          ],
+          "label": "Workflow Status"
+        },
+        {
+          "type": "panel",
+          "key": "agentAdmissionsReview",
+          "title": "Admissions Review (Agent)",
+          "input": false,
+          "tableView": false,
+          "properties": {
+            "uag": "admissions"
+          },
+          "components": [
+            {
+              "html": "<h4>Admissions Assessment Criteria (Agent)</h4>\n<p>You are an admissions reviewer for the college. Analyze this application submission &mdash; academics (high school, GPA, standardized testing), extracurricular activities, leadership, service, and the application essay &mdash; and score the applicant.</p>\n<p>Score each of the six criteria from 1 (poor) to 10 (exceptional):</p>\n<ul>\n<li><code>academicsScore</code> &mdash; GPA and academic rigor. 4.0 GPA = 9-10, 3.5-3.9 = 7-8, below 3.0 = 4 or less.</li>\n<li><code>testingScore</code> &mdash; SAT 1500+/ACT 33+ = 9-10, SAT 1300-1499/ACT 28-32 = 7-8, SAT below 1100/ACT below 22 = 4 or less. If <code>testType</code> is \"none\", set this to 5.</li>\n<li><code>extracurricularScore</code> &mdash; depth and impact of activities.</li>\n<li><code>leadershipScore</code> &mdash; initiative, founding or leading things.</li>\n<li><code>serviceScore</code> &mdash; consistency and sincerity of community service.</li>\n<li><code>essaysScore</code> &mdash; specificity, self-awareness, and quality of writing.</li>\n</ul>\n<p>Compute the average of the six scores, rounded to one decimal, into <code>overallScore</code>.</p>\n<p>Round that average to the nearest whole number and set <code>decision</code> and <code>status</code> together:</p>\n<ul>\n<li>5 and below &rarr; <code>decision</code> \"declined\", <code>status</code> \"declined\"</li>\n<li>6 to 8 &rarr; <code>decision</code> \"accepted\", <code>status</code> \"accepted\"</li>\n<li>9 to 10 &rarr; <code>decision</code> \"acceptedWithScholarship\", <code>status</code> \"scholarshipEvaluation\"</li>\n</ul>\n<p>Write a 2-4 sentence justification of your scoring and decision into <code>agentRationale</code>. Do not modify any field the applicant filled out.</p>",
+              "label": "Admissions Criteria",
+              "refreshOnChange": false,
+              "key": "admissionsCriteria",
+              "properties": {
+                "uag": "admissions",
+                "uagField": "criteria",
+                "uagEngine": "agent"
+              },
+              "type": "content",
+              "input": false,
+              "tableView": false
+            },
+            {
+              "type": "number",
+              "key": "academicsScore",
+              "label": "Academics (1-10)",
+              "validate": {
+                "min": 1,
+                "max": 10
+              },
+              "input": true,
+              "tableView": true
+            },
+            {
+              "type": "number",
+              "key": "testingScore",
+              "label": "Testing (1-10)",
+              "validate": {
+                "min": 1,
+                "max": 10
+              },
+              "input": true,
+              "tableView": true
+            },
+            {
+              "type": "number",
+              "key": "extracurricularScore",
+              "label": "Extracurricular & Impact (1-10)",
+              "validate": {
+                "min": 1,
+                "max": 10
+              },
+              "input": true,
+              "tableView": true
+            },
+            {
+              "type": "number",
+              "key": "leadershipScore",
+              "label": "Leadership & Initiative (1-10)",
+              "validate": {
+                "min": 1,
+                "max": 10
+              },
+              "input": true,
+              "tableView": true
+            },
+            {
+              "type": "number",
+              "key": "serviceScore",
+              "label": "Service Orientation (1-10)",
+              "validate": {
+                "min": 1,
+                "max": 10
+              },
+              "input": true,
+              "tableView": true
+            },
+            {
+              "type": "number",
+              "key": "essaysScore",
+              "label": "Essays (1-10)",
+              "validate": {
+                "min": 1,
+                "max": 10
+              },
+              "input": true,
+              "tableView": true
+            },
+            {
+              "type": "number",
+              "key": "overallScore",
+              "label": "Overall Score",
+              "input": true,
+              "tableView": true
+            },
+            {
+              "type": "textarea",
+              "key": "agentRationale",
+              "label": "Assessment Rationale",
+              "autoExpand": false,
+              "input": true,
+              "tableView": false
+            }
+          ],
+          "label": "Panel"
+        },
+        {
+          "type": "panel",
+          "key": "agentScholarshipReview",
+          "title": "Scholarship Review (Agent)",
+          "input": false,
+          "tableView": false,
+          "properties": {
+            "uag": "finance"
+          },
+          "components": [
+            {
+              "type": "content",
+              "key": "financeCriteria",
+              "label": "Scholarship Criteria",
+              "input": false,
+              "tableView": false,
+              "html": "<h4>Scholarship Award Criteria (Agent)</h4>\n<p>You are the scholarship (finance) administrator. You only evaluate applicants whose <code>decision</code> is \"acceptedWithScholarship\". Review the application together with the admissions scores and rationale, then select the award.</p>\n<p>Set <code>awardLevel</code>:</p>\n<ul>\n<li>\"fullRide\" &mdash; exceptional applicant: <code>overallScore</code> 9.7 or higher, or an extraordinary singular achievement.</li>\n<li>\"roomBoard25\" &mdash; great applicant: <code>overallScore</code> 9.4 to 9.6.</li>\n<li>\"supplemental25\" &mdash; good applicant: <code>overallScore</code> 9.0 to 9.3.</li>\n<li>\"reward1000\" &mdash; average scholarship-track applicant: below 9.0.</li>\n</ul>\n<p>Write a 1-3 sentence justification into <code>financeRationale</code>. Do not modify the admissions scores.</p>",
+              "properties": {
+                "uag": "finance",
+                "uagField": "criteria",
+                "uagEngine": "agent"
+              }
+            },
+            {
+              "type": "textarea",
+              "key": "financeRationale",
+              "label": "Award Rationale",
+              "autoExpand": false,
+              "input": true,
+              "tableView": false
+            }
+          ],
+          "label": "Panel"
+        }
+      ],
+      "access": [
+        {
+          "type": "create_own",
+          "roles": []
+        },
+        {
+          "type": "create_all",
+          "roles": []
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "anonymous",
+            "authenticated"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": []
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": []
+        },
+        {
+          "type": "team_read",
+          "roles": []
+        },
+        {
+          "type": "team_write",
+          "roles": []
+        },
+        {
+          "type": "team_admin",
+          "roles": []
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": [
+            "authenticated"
+          ]
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": [
+            "authenticated"
+          ]
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": [
+            "authenticated"
+          ]
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "team_read",
+          "roles": []
+        },
+        {
+          "type": "team_write",
+          "roles": []
+        },
+        {
+          "type": "team_admin",
+          "roles": []
+        }
+      ],
+      "submissionRevisions": "",
+      "revisions": "",
+      "esign": {},
+      "pdfComponents": []
+    },
+    "sum": {
+      "title": "Sum",
+      "type": "form",
+      "name": "sum",
+      "path": "sum",
+      "display": "form",
+      "tags": [
+        "uag"
+      ],
+      "components": [
+        {
+          "type": "number",
+          "key": "a",
+          "label": "A",
+          "input": true,
+          "validate": {
+            "required": true
+          },
+          "tableView": true
+        },
+        {
+          "type": "number",
+          "key": "b",
+          "label": "B",
+          "input": true,
+          "validate": {
+            "required": true
+          },
+          "tableView": true
+        },
+        {
+          "type": "content",
+          "key": "criteria",
+          "label": "Criteria",
+          "input": false,
+          "html": "<p><strong>Agent instructions:</strong> This form has two numeric inputs: <code>a</code> and <code>b</code>. Compute the numeric total of <code>a</code> plus <code>b</code> and place that value in the <code>sum</code> field. Set <code>sum</code> to exactly the numeric sum \u2014 no rounding, no formatting, no text. Do not modify <code>a</code> or <code>b</code>.</p>",
+          "properties": {
+            "uag": "agent",
+            "uagField": "criteria"
+          }
+        },
+        {
+          "type": "number",
+          "key": "sum",
+          "label": "Sum",
+          "input": true,
+          "disabled": true,
+          "tableView": true,
+          "properties": {
+            "uag": "agent"
+          }
+        },
+        {
+          "type": "button",
+          "key": "submit",
+          "label": "Submit",
+          "action": "submit",
+          "input": true,
+          "theme": "primary"
+        }
+      ],
+      "access": [
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous"
+          ]
+        }
+      ],
+      "submissionAccess": [],
+      "submissionRevisions": "",
+      "revisions": "original",
+      "esign": {},
+      "pdfComponents": []
+    },
+    "claim": {
+      "title": "First Notice of Loss",
+      "type": "form",
+      "name": "claim",
+      "path": "claim",
+      "display": "wizard",
+      "tags": [
+        "uag"
+      ],
+      "settings": {},
+      "access": [
+        {
+          "type": "create_own",
+          "roles": []
+        },
+        {
+          "type": "create_all",
+          "roles": []
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": []
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": []
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": []
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "anonymous",
+            "administrator"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "administrator"
+          ]
+        }
+      ],
+      "properties": {
+        "description": "Report a new insurance claim."
+      },
+      "components": [
+        {
+          "type": "panel",
+          "key": "intake",
+          "title": "What happened",
+          "input": false,
+          "breadcrumbClickable": true,
+          "components": [
+            {
+              "type": "radio",
+              "key": "reporterRole",
+              "label": "Who is reporting this claim?",
+              "input": true,
+              "values": [
+                {
+                  "label": "I'm the policyholder",
+                  "value": "policyholder"
+                },
+                {
+                  "label": "I'm reporting for the policyholder",
+                  "value": "onBehalf"
+                },
+                {
+                  "label": "I'm their insurance agent",
+                  "value": "agent"
+                }
+              ],
+              "inline": false,
+              "defaultValue": "policyholder"
+            },
+            {
+              "type": "textfield",
+              "key": "reporterName",
+              "label": "Your name",
+              "input": true,
+              "validate": {
+                "required": true
+              },
+              "conditional": {
+                "show": true,
+                "conjunction": "any",
+                "conditions": [
+                  {
+                    "component": "reporterRole",
+                    "operator": "isEqual",
+                    "value": "onBehalf"
+                  },
+                  {
+                    "component": "reporterRole",
+                    "operator": "isEqual",
+                    "value": "agent"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "textfield",
+              "key": "policyNumber",
+              "label": "Policy number",
+              "input": true,
+              "validate": {
+                "required": true
+              },
+              "description": "It's on your insurance card and your declarations page."
+            },
+            {
+              "type": "textarea",
+              "key": "lossDescription",
+              "label": "Tell us what happened",
+              "input": true,
+              "validate": {
+                "required": true
+              },
+              "rows": 6,
+              "description": "Describe it in your own words: what happened, when and where, who was involved, and whether anyone was hurt.",
+              "properties": {
+                "uag": "triage",
+                "uagField": "input"
+              }
+            }
+          ]
+        },
+        {
+          "type": "panel",
+          "key": "confirm",
+          "title": "Check our understanding",
+          "input": false,
+          "breadcrumbClickable": true,
+          "components": [
+            {
+              "type": "content",
+              "key": "confirmNote",
+              "input": false,
+              "html": "<p>Your description could fit more than one kind of claim. Choose the closest match so we send it to the right team.</p>"
+            },
+            {
+              "type": "container",
+              "key": "triage",
+              "label": "Triage",
+              "input": true,
+              "hideLabel": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "clearOnHide": false,
+              "components": [
+                {
+                  "type": "content",
+                  "key": "triageCriteria",
+                  "input": false,
+                  "html": "<p>Classify a first notice of loss for an auto or home policy from the policyholder's description, and answer the questions on the pages it shows.</p><ul><li><strong>Claim type</strong>: collision means a vehicle struck or was struck by another vehicle, a person or an object; glass only means only windshield or window glass was damaged; theft means property or a vehicle was stolen or broken into; property damage means a home or its contents were damaged without a vehicle collision.</li><li><strong>A vehicle was involved</strong>: an insured car, truck or motorcycle was damaged, stolen or broken into.</li><li><strong>Someone was injured</strong>: anyone, including the policyholder, passengers, pedestrians or the other party, was hurt or sought treatment.</li><li><strong>Another party was involved</strong>: another driver, vehicle owner or person shares responsibility. A thief is not another party.</li><li><strong>Fraud signals present</strong>: inconsistent times or places, pressure to settle quickly or in cash, a very recently started policy, or details that contradict each other.</li><li><strong>Who was driving</strong>: parked means nobody was in the vehicle.</li><li><strong>Damaged areas</strong> and <strong>can the vehicle be driven</strong>: answer only from what the description says.</li></ul>",
+                  "hidden": true,
+                  "clearOnHide": false,
+                  "properties": {
+                    "uag": "triage",
+                    "uagField": "criteria",
+                    "uagContext": "policyNumber"
+                  }
+                },
+                {
+                  "type": "radio",
+                  "key": "claimType",
+                  "label": "Claim type",
+                  "input": true,
+                  "validate": {
+                    "required": true
+                  },
+                  "properties": {
+                    "uagThreshold": "0.6",
+                    "uagConfidenceField": "triage.claimTypeConfidence"
+                  },
+                  "values": [
+                    {
+                      "label": "Auto: collision",
+                      "value": "autoCollision"
+                    },
+                    {
+                      "label": "Auto: glass only",
+                      "value": "autoGlass"
+                    },
+                    {
+                      "label": "Theft",
+                      "value": "theft"
+                    },
+                    {
+                      "label": "Property damage",
+                      "value": "propertyDamage"
+                    }
+                  ],
+                  "inline": false,
+                  "clearOnHide": false
+                },
+                {
+                  "type": "checkbox",
+                  "key": "vehicleInvolved",
+                  "label": "A vehicle was involved",
+                  "input": true,
+                  "clearOnHide": false
+                },
+                {
+                  "type": "checkbox",
+                  "key": "injuryInvolved",
+                  "label": "Someone was injured",
+                  "input": true,
+                  "clearOnHide": false
+                },
+                {
+                  "type": "checkbox",
+                  "key": "thirdPartyInvolved",
+                  "label": "Another party was involved",
+                  "input": true,
+                  "clearOnHide": false
+                },
+                {
+                  "type": "checkbox",
+                  "key": "fraudSignals",
+                  "label": "Fraud signals present",
+                  "input": true,
+                  "properties": {
+                    "uagAuthoritative": "true",
+                    "uagUncertainBand": "0.1-0.5"
+                  },
+                  "hidden": true,
+                  "clearOnHide": false
+                },
+                {
+                  "type": "hidden",
+                  "key": "claimTypeConfidence",
+                  "input": true,
+                  "clearOnHide": false
+                }
+              ]
+            }
+          ],
+          "clearOnHide": false,
+          "conditional": {
+            "show": true,
+            "conjunction": "any",
+            "conditions": [
+              {
+                "component": "triage.claimType",
+                "operator": "isEmpty"
+              },
+              {
+                "component": "triage.claimTypeConfidence",
+                "operator": "lessThan",
+                "value": 0.6
+              }
+            ]
+          }
+        },
+        {
+          "type": "panel",
+          "key": "loss",
+          "title": "When and where",
+          "input": false,
+          "breadcrumbClickable": true,
+          "components": [
+            {
+              "type": "columns",
+              "key": "lossWhen",
+              "input": false,
+              "columns": [
+                {
+                  "width": 6,
+                  "size": "md",
+                  "components": [
+                    {
+                      "type": "datetime",
+                      "key": "lossDate",
+                      "label": "Date of loss",
+                      "input": true,
+                      "validate": {
+                        "required": true
+                      },
+                      "properties": {
+                        "uag": "triage"
+                      },
+                      "enableTime": false,
+                      "format": "yyyy-MM-dd",
+                      "datePicker": {
+                        "disableFuture": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "width": 6,
+                  "size": "md",
+                  "components": [
+                    {
+                      "type": "time",
+                      "key": "lossTime",
+                      "label": "About what time?",
+                      "input": true,
+                      "properties": {
+                        "uag": "triage"
+                      },
+                      "dataFormat": "HH:mm",
+                      "inputType": "time",
+                      "description": "Leave blank if you are not sure."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "textfield",
+              "key": "lossLocation",
+              "label": "Where did it happen?",
+              "input": true,
+              "validate": {
+                "required": true
+              },
+              "properties": {
+                "uag": "triage"
+              },
+              "description": "Street address, intersection or nearest landmark, with the city."
+            },
+            {
+              "type": "select",
+              "key": "lossLocationType",
+              "label": "What kind of place is it?",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "dataSrc": "values",
+              "data": {
+                "values": [
+                  {
+                    "label": "Street or highway",
+                    "value": "road"
+                  },
+                  {
+                    "label": "Parking lot or garage",
+                    "value": "parkingLot"
+                  },
+                  {
+                    "label": "Home or driveway",
+                    "value": "home"
+                  },
+                  {
+                    "label": "Business",
+                    "value": "business"
+                  },
+                  {
+                    "label": "Somewhere else",
+                    "value": "other"
+                  }
+                ]
+              },
+              "widget": "choicesjs"
+            },
+            {
+              "type": "textarea",
+              "key": "witnesses",
+              "label": "Witnesses",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "rows": 2,
+              "description": "Names and phone numbers of anyone who saw it happen, if you have them."
+            }
+          ]
+        },
+        {
+          "type": "panel",
+          "key": "vehicle",
+          "title": "Your vehicle",
+          "input": false,
+          "breadcrumbClickable": true,
+          "components": [
+            {
+              "type": "textfield",
+              "key": "vehicle",
+              "label": "Year, make and model",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              }
+            },
+            {
+              "type": "columns",
+              "key": "vehicleIds",
+              "input": false,
+              "columns": [
+                {
+                  "width": 6,
+                  "size": "md",
+                  "components": [
+                    {
+                      "type": "textfield",
+                      "key": "vehiclePlate",
+                      "label": "License plate",
+                      "input": true,
+                      "properties": {
+                        "uag": "triage"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "width": 6,
+                  "size": "md",
+                  "components": [
+                    {
+                      "type": "textfield",
+                      "key": "vehicleVin",
+                      "label": "VIN",
+                      "input": true,
+                      "description": "Optional. 17 characters, on the driver-side dashboard or your insurance card.",
+                      "validate": {
+                        "pattern": "^$|^[A-HJ-NPR-Z0-9]{17}$",
+                        "customMessage": "A VIN is 17 letters and numbers, without I, O or Q."
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "radio",
+              "key": "driver",
+              "label": "Who was driving?",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "values": [
+                {
+                  "label": "I was",
+                  "value": "policyholder"
+                },
+                {
+                  "label": "Someone else",
+                  "value": "someoneElse"
+                },
+                {
+                  "label": "Nobody, it was parked",
+                  "value": "parked"
+                }
+              ],
+              "inline": false
+            },
+            {
+              "type": "textfield",
+              "key": "driverName",
+              "label": "Driver's name",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "conditional": {
+                "show": true,
+                "conjunction": "all",
+                "conditions": [
+                  {
+                    "component": "driver",
+                    "operator": "isEqual",
+                    "value": "someoneElse"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "selectboxes",
+              "key": "damageAreas",
+              "label": "Where is it damaged?",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "inline": false,
+              "values": [
+                {
+                  "label": "Front",
+                  "value": "front"
+                },
+                {
+                  "label": "Rear",
+                  "value": "rear"
+                },
+                {
+                  "label": "Driver side",
+                  "value": "driverSide"
+                },
+                {
+                  "label": "Passenger side",
+                  "value": "passengerSide"
+                },
+                {
+                  "label": "Roof",
+                  "value": "roof"
+                },
+                {
+                  "label": "Windshield or windows",
+                  "value": "glass"
+                },
+                {
+                  "label": "Interior",
+                  "value": "interior"
+                },
+                {
+                  "label": "Underneath",
+                  "value": "underneath"
+                }
+              ]
+            },
+            {
+              "type": "textarea",
+              "key": "vehicleDamage",
+              "label": "Describe the damage",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "rows": 3
+            },
+            {
+              "type": "radio",
+              "key": "drivable",
+              "label": "Can the vehicle be driven?",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "values": [
+                {
+                  "label": "Yes",
+                  "value": "yes"
+                },
+                {
+                  "label": "No",
+                  "value": "no"
+                },
+                {
+                  "label": "Not sure",
+                  "value": "unsure"
+                }
+              ],
+              "inline": true
+            },
+            {
+              "type": "textfield",
+              "key": "vehicleLocation",
+              "label": "Where is the vehicle now?",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "description": "So an appraiser can inspect it. For example, your home address or a body shop."
+            },
+            {
+              "type": "radio",
+              "key": "rentalNeeded",
+              "label": "Do you need a rental car while it is repaired?",
+              "input": true,
+              "values": [
+                {
+                  "label": "Yes",
+                  "value": "yes"
+                },
+                {
+                  "label": "No",
+                  "value": "no"
+                }
+              ],
+              "inline": true,
+              "description": "Covered when your policy includes rental reimbursement."
+            }
+          ],
+          "clearOnHide": false,
+          "conditional": {
+            "show": true,
+            "conjunction": "any",
+            "conditions": [
+              {
+                "component": "triage.claimType",
+                "operator": "isEqual",
+                "value": "autoCollision"
+              },
+              {
+                "component": "triage.claimType",
+                "operator": "isEqual",
+                "value": "autoGlass"
+              },
+              {
+                "component": "triage.vehicleInvolved",
+                "operator": "isEqual",
+                "value": true
+              }
+            ]
+          }
+        },
+        {
+          "type": "panel",
+          "key": "home",
+          "title": "Your home",
+          "input": false,
+          "breadcrumbClickable": true,
+          "components": [
+            {
+              "type": "select",
+              "key": "propertyCause",
+              "label": "What caused the damage?",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "dataSrc": "values",
+              "data": {
+                "values": [
+                  {
+                    "label": "Water from a pipe, leak or appliance",
+                    "value": "water"
+                  },
+                  {
+                    "label": "Fire or smoke",
+                    "value": "fire"
+                  },
+                  {
+                    "label": "Wind or hail",
+                    "value": "wind"
+                  },
+                  {
+                    "label": "A falling tree or object",
+                    "value": "fallingObject"
+                  },
+                  {
+                    "label": "Vandalism",
+                    "value": "vandalism"
+                  },
+                  {
+                    "label": "Something else",
+                    "value": "other"
+                  }
+                ]
+              },
+              "widget": "choicesjs"
+            },
+            {
+              "type": "textarea",
+              "key": "damagedAreas",
+              "label": "Which rooms or parts of the home are damaged?",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "rows": 3
+            },
+            {
+              "type": "radio",
+              "key": "damageStopped",
+              "label": "Have you stopped further damage?",
+              "input": true,
+              "values": [
+                {
+                  "label": "Yes",
+                  "value": "yes"
+                },
+                {
+                  "label": "Not yet",
+                  "value": "no"
+                },
+                {
+                  "label": "Not needed",
+                  "value": "notNeeded"
+                }
+              ],
+              "inline": true,
+              "description": "For example, shutting off the water or covering a broken window. Keep receipts: reasonable steps to prevent more damage are usually covered."
+            },
+            {
+              "type": "radio",
+              "key": "homeLivable",
+              "label": "Can you stay in your home?",
+              "input": true,
+              "values": [
+                {
+                  "label": "Yes",
+                  "value": "yes"
+                },
+                {
+                  "label": "No",
+                  "value": "no"
+                }
+              ],
+              "inline": true,
+              "description": "If not, your policy may cover a hotel or rental while repairs are made."
+            }
+          ],
+          "clearOnHide": false,
+          "conditional": {
+            "show": true,
+            "conjunction": "all",
+            "conditions": [
+              {
+                "component": "triage.claimType",
+                "operator": "isEqual",
+                "value": "propertyDamage"
+              }
+            ]
+          }
+        },
+        {
+          "type": "panel",
+          "key": "theft",
+          "title": "What was stolen",
+          "input": false,
+          "breadcrumbClickable": true,
+          "components": [
+            {
+              "type": "textarea",
+              "key": "stolenItems",
+              "label": "What was taken?",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "rows": 3,
+              "description": "List each item, or the vehicle. Include brands, models and serial numbers if you know them."
+            },
+            {
+              "type": "currency",
+              "key": "stolenValue",
+              "label": "Estimated total value",
+              "input": true,
+              "currency": "USD",
+              "mask": false,
+              "delimiter": true
+            },
+            {
+              "type": "radio",
+              "key": "forcedEntry",
+              "label": "Were there signs of forced entry?",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "values": [
+                {
+                  "label": "Yes",
+                  "value": "yes"
+                },
+                {
+                  "label": "No",
+                  "value": "no"
+                },
+                {
+                  "label": "Not sure",
+                  "value": "unsure"
+                }
+              ],
+              "inline": true
+            },
+            {
+              "type": "radio",
+              "key": "keysAccountedFor",
+              "label": "Do you have all the keys?",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "values": [
+                {
+                  "label": "Yes",
+                  "value": "yes"
+                },
+                {
+                  "label": "No",
+                  "value": "no"
+                }
+              ],
+              "inline": true,
+              "conditional": {
+                "show": true,
+                "conjunction": "all",
+                "conditions": [
+                  {
+                    "component": "triage.vehicleInvolved",
+                    "operator": "isEqual",
+                    "value": true
+                  }
+                ]
+              }
+            }
+          ],
+          "clearOnHide": false,
+          "conditional": {
+            "show": true,
+            "conjunction": "all",
+            "conditions": [
+              {
+                "component": "triage.claimType",
+                "operator": "isEqual",
+                "value": "theft"
+              }
+            ]
+          }
+        },
+        {
+          "type": "panel",
+          "key": "injury",
+          "title": "Injuries",
+          "input": false,
+          "breadcrumbClickable": true,
+          "components": [
+            {
+              "type": "content",
+              "key": "injuryNote",
+              "input": false,
+              "html": "<p>If anyone needs urgent care, call 911 first. You can finish this report afterwards.</p>",
+              "customClass": "claim-callout"
+            },
+            {
+              "type": "textfield",
+              "key": "injuredName",
+              "label": "Who was hurt?",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              }
+            },
+            {
+              "type": "select",
+              "key": "injuredRole",
+              "label": "How were they involved?",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "dataSrc": "values",
+              "data": {
+                "values": [
+                  {
+                    "label": "Me",
+                    "value": "policyholder"
+                  },
+                  {
+                    "label": "A passenger in my vehicle",
+                    "value": "passenger"
+                  },
+                  {
+                    "label": "The other driver or their passenger",
+                    "value": "otherDriver"
+                  },
+                  {
+                    "label": "A pedestrian or cyclist",
+                    "value": "pedestrian"
+                  },
+                  {
+                    "label": "Someone else",
+                    "value": "other"
+                  }
+                ]
+              },
+              "widget": "choicesjs"
+            },
+            {
+              "type": "textarea",
+              "key": "injuryDescription",
+              "label": "What are their injuries?",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "rows": 2
+            },
+            {
+              "type": "textarea",
+              "key": "treatment",
+              "label": "What treatment have they had?",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "rows": 2,
+              "description": "For example, seen at urgent care, taken to hospital by ambulance, or none yet."
+            }
+          ],
+          "clearOnHide": false,
+          "conditional": {
+            "show": true,
+            "conjunction": "all",
+            "conditions": [
+              {
+                "component": "triage.injuryInvolved",
+                "operator": "isEqual",
+                "value": true
+              }
+            ]
+          }
+        },
+        {
+          "type": "panel",
+          "key": "thirdParty",
+          "title": "Other people involved",
+          "input": false,
+          "breadcrumbClickable": true,
+          "components": [
+            {
+              "type": "columns",
+              "key": "otherPartyIds",
+              "input": false,
+              "columns": [
+                {
+                  "width": 6,
+                  "size": "md",
+                  "components": [
+                    {
+                      "type": "textfield",
+                      "key": "otherPartyName",
+                      "label": "Other party's name",
+                      "input": true,
+                      "properties": {
+                        "uag": "triage"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "width": 6,
+                  "size": "md",
+                  "components": [
+                    {
+                      "type": "phoneNumber",
+                      "key": "otherPartyPhone",
+                      "label": "Their phone number",
+                      "input": true,
+                      "inputMask": "(999) 999-9999"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "columns",
+              "key": "otherPartyInsurance",
+              "input": false,
+              "columns": [
+                {
+                  "width": 6,
+                  "size": "md",
+                  "components": [
+                    {
+                      "type": "textfield",
+                      "key": "otherPartyInsurer",
+                      "label": "Their insurer",
+                      "input": true,
+                      "properties": {
+                        "uag": "triage"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "width": 6,
+                  "size": "md",
+                  "components": [
+                    {
+                      "type": "textfield",
+                      "key": "otherPartyPolicyNumber",
+                      "label": "Their policy number",
+                      "input": true
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "textfield",
+              "key": "otherPartyVehicle",
+              "label": "Their vehicle",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              },
+              "description": "Year, make, model and license plate, if a vehicle was involved."
+            }
+          ],
+          "clearOnHide": false,
+          "conditional": {
+            "show": true,
+            "conjunction": "all",
+            "conditions": [
+              {
+                "component": "triage.thirdPartyInvolved",
+                "operator": "isEqual",
+                "value": true
+              }
+            ]
+          }
+        },
+        {
+          "type": "panel",
+          "key": "police",
+          "title": "Police report",
+          "input": false,
+          "breadcrumbClickable": true,
+          "components": [
+            {
+              "type": "content",
+              "key": "policeNote",
+              "input": false,
+              "html": "<p>Theft and injury claims need a police report. If you have not filed one yet, call the local police non-emergency line and come back with the report number.</p>"
+            },
+            {
+              "type": "textfield",
+              "key": "policeDepartment",
+              "label": "Police department",
+              "input": true,
+              "properties": {
+                "uag": "triage"
+              }
+            },
+            {
+              "type": "textfield",
+              "key": "policeReportNumber",
+              "label": "Police report number",
+              "input": true,
+              "validate": {
+                "required": true
+              },
+              "properties": {
+                "uag": "triage"
+              }
+            }
+          ],
+          "clearOnHide": false,
+          "conditional": {
+            "show": true,
+            "conjunction": "any",
+            "conditions": [
+              {
+                "component": "triage.claimType",
+                "operator": "isEqual",
+                "value": "theft"
+              },
+              {
+                "component": "triage.injuryInvolved",
+                "operator": "isEqual",
+                "value": true
+              }
+            ]
+          }
+        },
+        {
+          "type": "panel",
+          "key": "photos",
+          "title": "Photos",
+          "input": false,
+          "breadcrumbClickable": true,
+          "components": [
+            {
+              "type": "content",
+              "key": "photosNote",
+              "input": false,
+              "html": "<p>Photos of the damage help an adjuster settle your claim sooner. Add what you have now; you can send more later.</p>"
+            },
+            {
+              "type": "file",
+              "key": "damagePhotos",
+              "label": "Photos of the damage",
+              "input": true,
+              "storage": "base64",
+              "image": true,
+              "multiple": true,
+              "filePattern": "image/*,.pdf",
+              "fileMaxSize": "5MB",
+              "webcam": false
+            }
+          ]
+        },
+        {
+          "type": "panel",
+          "key": "contact",
+          "title": "How we'll reach you",
+          "input": false,
+          "breadcrumbClickable": true,
+          "components": [
+            {
+              "type": "textfield",
+              "key": "contactName",
+              "label": "Full name",
+              "input": true,
+              "validate": {
+                "required": true
+              },
+              "autocomplete": "name"
+            },
+            {
+              "type": "columns",
+              "key": "contactWays",
+              "input": false,
+              "columns": [
+                {
+                  "width": 6,
+                  "size": "md",
+                  "components": [
+                    {
+                      "type": "phoneNumber",
+                      "key": "contactPhone",
+                      "label": "Phone",
+                      "input": true,
+                      "validate": {
+                        "required": true
+                      },
+                      "inputMask": "(999) 999-9999",
+                      "autocomplete": "tel"
+                    }
+                  ]
+                },
+                {
+                  "width": 6,
+                  "size": "md",
+                  "components": [
+                    {
+                      "type": "email",
+                      "key": "contactEmail",
+                      "label": "Email",
+                      "input": true,
+                      "autocomplete": "email"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "radio",
+              "key": "preferredContact",
+              "label": "How should your adjuster contact you?",
+              "input": true,
+              "values": [
+                {
+                  "label": "Phone call",
+                  "value": "phone"
+                },
+                {
+                  "label": "Text message",
+                  "value": "text"
+                },
+                {
+                  "label": "Email",
+                  "value": "email"
+                }
+              ],
+              "inline": true,
+              "defaultValue": "phone"
+            },
+            {
+              "type": "select",
+              "key": "bestTime",
+              "label": "Best time to reach you",
+              "input": true,
+              "dataSrc": "values",
+              "data": {
+                "values": [
+                  {
+                    "label": "Any time",
+                    "value": "any"
+                  },
+                  {
+                    "label": "Mornings",
+                    "value": "morning"
+                  },
+                  {
+                    "label": "Afternoons",
+                    "value": "afternoon"
+                  },
+                  {
+                    "label": "Evenings",
+                    "value": "evening"
+                  }
+                ]
+              },
+              "widget": "choicesjs",
+              "defaultValue": "any"
+            }
+          ]
+        },
+        {
+          "type": "panel",
+          "key": "review",
+          "title": "Review and submit",
+          "input": false,
+          "breadcrumbClickable": true,
+          "components": [
+            {
+              "type": "content",
+              "key": "reviewSummary",
+              "input": false,
+              "html": "<div class=\"claim-summary\" data-claim-summary></div>"
+            },
+            {
+              "type": "content",
+              "key": "fraudWarning",
+              "input": false,
+              "html": "<p>Any person who knowingly files a claim containing false or misleading information, or who conceals information to deceive an insurer, may be committing insurance fraud, a crime that can lead to fines and imprisonment.</p>",
+              "customClass": "claim-fine-print"
+            },
+            {
+              "type": "checkbox",
+              "key": "attestation",
+              "label": "The information in this claim is true and complete to the best of my knowledge.",
+              "input": true,
+              "validate": {
+                "required": true
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "actions": {
+    "serviceRequest:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "serviceRequest",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    },
+    "application:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "application",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    },
+    "application:webhook": {
+      "title": "Agent: Admissions Evaluation (Webhook)",
+      "name": "webhook",
+      "form": "application",
+      "priority": 0,
+      "method": [
+        "create"
+      ],
+      "handler": [
+        "after"
+      ],
+      "settings": {
+        "method": "post",
+        "url": "REPLACE_WITH_UAG_URL/agent/provide",
+        "block": false,
+        "headers": [
+          {
+            "header": "x-token",
+            "value": "REPLACE_WITH_PROJECT_KEY"
+          }
+        ],
+        "transform": "payload = {form: 'application', submissionId: payload.submission._id, task: 'admissions'};"
+      }
+    },
+    "application:webhookFinance": {
+      "title": "Agent: Scholarship Evaluation (Webhook)",
+      "name": "webhook",
+      "form": "application",
+      "priority": 0,
+      "method": [
+        "update"
+      ],
+      "handler": [
+        "after"
+      ],
+      "settings": {
+        "method": "post",
+        "url": "REPLACE_WITH_UAG_URL/agent/provide",
+        "block": false,
+        "headers": [
+          {
+            "header": "x-token",
+            "value": "REPLACE_WITH_PROJECT_KEY"
+          }
+        ],
+        "transform": "payload = {form: 'application', submissionId: payload.submission._id, task: 'finance'};"
+      },
+      "condition": {
+        "conjunction": "all",
+        "conditions": [
+          {
+            "component": "status",
+            "operator": "isEqual",
+            "value": "scholarshipEvaluation"
+          },
+          {
+            "component": "awardLevel",
+            "operator": "isEmpty"
+          }
+        ],
+        "custom": ""
+      }
+    },
+    "sum:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "sum",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    },
+    "sum:webhook": {
+      "title": "Agent (Webhook)",
+      "name": "webhook",
+      "form": "sum",
+      "priority": 0,
+      "method": [
+        "create"
+      ],
+      "handler": [
+        "after"
+      ],
+      "settings": {
+        "method": "post",
+        "url": "REPLACE_WITH_UAG_URL/agent/provide",
+        "block": false,
+        "headers": [
+          {
+            "header": "x-token",
+            "value": "REPLACE_WITH_PROJECT_KEY"
+          }
+        ],
+        "transform": "payload = {form: 'sum', submissionId: payload.submission._id, task: 'agent'};"
+      }
+    },
+    "claim:agentDecide": {
+      "title": "Agent Decide",
+      "name": "agentDecide",
+      "form": "claim",
+      "priority": 20,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ],
+      "settings": {
+        "task": "triage"
+      }
+    },
+    "claim:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "claim",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    }
+  },
+  "access": [
+    {
+      "type": "create_own",
+      "roles": []
+    },
+    {
+      "type": "create_all",
+      "roles": [
+        "administrator"
+      ]
+    },
+    {
+      "type": "read_own",
+      "roles": []
+    },
+    {
+      "type": "read_all",
+      "roles": [
+        "administrator",
+        "authenticated",
+        "anonymous"
+      ]
+    },
+    {
+      "type": "update_own",
+      "roles": []
+    },
+    {
+      "type": "update_all",
+      "roles": [
+        "administrator"
+      ]
+    },
+    {
+      "type": "delete_own",
+      "roles": []
+    },
+    {
+      "type": "delete_all",
+      "roles": [
+        "administrator"
+      ]
+    }
+  ]
+}

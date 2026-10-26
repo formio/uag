@@ -1,0 +1,22 @@
+{
+  "name": "@formio/uag-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The Form.io UAG marketing and demo site: the product pages, the three live examples, the flow viewer and the developer documentation.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "start": "node server/index.mjs",
+    "flow": "node flow/proxy.mjs",
+    "setup": "node server/setup.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "express": "^5.2.1",
+    "marked": "18.1.0"
+  }
+}

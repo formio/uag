@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{page.fullTitle}}</title>
+  <meta name="description" content="{{page.description}}">
+  <link rel="canonical" href="{{page.canonical}}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Form.io Universal Agent Gateway">
+  <meta property="og:title" content="{{page.fullTitle}}">
+  <meta property="og:description" content="{{page.description}}">
+  <meta property="og:url" content="{{page.canonical}}">
+  <meta property="og:image" content="{{site.url}}/images/og-uag.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" href="/images/brand/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body class="{{page.bodyClass}}">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="/" aria-label="Form.io Universal Agent Gateway, home">
+        <img src="/images/brand/logo-formio-horizontal-lightbg.svg" alt="Form.io" width="110" height="30">
+        <span class="brand-product">Universal Agent Gateway</span>
+      </a>
+      <nav class="nav" aria-label="Main">
+        <a href="/" {{{nav.product}}}>Product</a>
+        <a href="/getting-started" {{{nav.start}}}>Getting Started</a>
+        <a href="/examples" {{{nav.examples}}}>Examples</a>
+        <a href="/developers" {{{nav.developers}}}>Developers</a>
+        <a href="/faq" {{{nav.faq}}}>FAQ</a>
+        <a href="/contact" {{{nav.contact}}}>Contact Us</a>
+      </nav>
+      <div class="header-actions">
+        <a class="btn btn-outline btn-small" href="{{links.github}}" rel="noopener" target="_blank">GitHub</a>
+        <a class="btn btn-primary btn-small" href="/contact">Talk to Sales</a>
+      </div>
+      <button class="menu-toggle" type="button" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+
+  <main id="main">
+{{{content}}}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <img src="/images/brand/logo-formio-horizontal-darkbg.svg" alt="Form.io" width="110" height="30">
+          <p>The Universal Agent Gateway gives AI agents governed access to your forms, data and workflows, inside your own security boundary.</p>
+        </div>
+        <div>
+          <h4>Product</h4>
+          <ul>
+            <li><a href="/">Overview</a></li>
+            <li><a href="/getting-started">Getting Started</a></li>
+            <li><a href="/examples">Examples</a></li>
+            <li><a href="/faq">FAQ</a></li>
+            <li><a href="/contact">Contact Sales</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Developers</h4>
+          <ul>
+            <li><a href="/developers">How the UAG works</a></li>
+            <li><a href="/developers/agent-api">Agent API</a></li>
+            <li><a href="/developers/mcp-tools">MCP tools</a></li>
+            <li><a href="/developers/engine-sdk">Engine SDK</a></li>
+            <li><a href="{{links.github}}" rel="noopener" target="_blank">GitHub</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Form.io</h4>
+          <ul>
+            <li><a href="{{links.formio}}" rel="noopener" target="_blank">form.io</a></li>
+            <li><a href="{{links.formio}}/ai" rel="noopener" target="_blank">Form.io and AI</a></li>
+            <li><a href="{{links.portal}}" rel="noopener" target="_blank">Hosted portal</a></li>
+            <li><a href="https://help.form.io" rel="noopener" target="_blank">Platform documentation</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© {{site.year}} Form.io LLC. All rights reserved. The UAG is open source under the MIT license.</span>
+        <span><a href="{{links.formio}}/privacy-policy" rel="noopener" target="_blank">Privacy Policy</a> · <a href="{{links.formio}}/terms-of-use" rel="noopener" target="_blank">Terms of Use</a></span>
+      </div>
+    </div>
+  </footer>
+  <script src="/js/site.js" defer></script>
+</body>
+</html>

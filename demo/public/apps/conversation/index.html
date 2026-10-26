@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Service request chat | UAG demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="chat.css">
+<script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"
+        integrity="sha384-H+hy9ULve6xfxRkWIh/YOtvDdpXgV2fmAGQkIDTxIgZwNoaoBal14Di2YTMR6MzR"
+        crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js"
+        integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu"
+        crossorigin="anonymous" defer></script>
+<script src="chat.js" defer></script>
+</head>
+<body>
+<main>
+  <header>
+    <div class="brand">
+      <span class="logo" aria-hidden="true">◎</span>
+      <div>
+        <h1>Brightline Support</h1>
+        <p>Report an outage or request service. A fictional company, for this demo.</p>
+      </div>
+    </div>
+    <button id="reset" type="button">Start over</button>
+  </header>
+
+  <section id="active" aria-live="polite">
+    <span class="active-label">Forms the agent can see</span>
+    <span id="active-list" class="pills"><span class="muted">checking…</span></span>
+  </section>
+
+  <div id="log" aria-live="polite" aria-label="Conversation">
+    <div class="msg bot">Hi! I can open a service request for you. What's going on?</div>
+    <div class="suggestions" id="suggestions">
+      <button type="button">My internet has been down since last night</button>
+      <button type="button">I'd like to schedule a router replacement</button>
+      <button type="button">My bill looks wrong this month</button>
+    </div>
+  </div>
+
+  <form id="composer">
+    <label for="input" class="sr-only">Message</label>
+    <input id="input" autocomplete="off" maxlength="2000" placeholder="Describe what you need…" required>
+    <button id="send" type="submit">Send</button>
+  </form>
+</main>
+</body>
+</html>

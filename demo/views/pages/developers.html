@@ -1,0 +1,21 @@
+    <section class="docs-hero">
+      <div class="container">
+        <p class="eyebrow">Developers</p>
+        <h1>Build on the Universal Agent Gateway</h1>
+        <p>How the UAG works, its interfaces, and the SDK to extend it: MCP tools, the Agent API, engines, modules and the renderer plugin.</p>
+      </div>
+    </section>
+    <div class="container docs">
+      <nav class="docs-nav" aria-label="Developer documentation">{{{docsNav}}}</nav>
+      <article class="prose">
+        <h1>{{doc.title}}</h1>
+        <p class="doc-lede">{{doc.description}}</p>
+        {{{doc.html}}}
+        <nav class="pager" aria-label="More pages">{{{pager}}}</nav>
+      </article>
+      <aside class="docs-toc">
+        <h4>On this page</h4>
+        <ul>{{{toc}}}</ul>
+        <a class="edit" href="{{source}}" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      </aside>
+    </div>

@@ -1,0 +1,91 @@
+    <section class="example-hero">
+      <div class="container">
+        <p class="eyebrow"><a href="/examples">Examples</a>&nbsp;/&nbsp;Agentic Formflow</p>
+        <h1>A form that fills itself in. And knows when it shouldn't.</h1>
+        <p class="lede">Report an insurance claim by describing what happened. A decision engine sorts the claim in a fraction of a second and the wizard adds only the steps that apply. An agent engine fills in dates, places and names for you to check. Nothing you type is ever overwritten.</p>
+        <div class="meta"><span class="tag">Agent API</span><span class="tag">Renderer plugin</span><span class="tag tag-blue">JEV decisions</span><span class="tag">Claude extraction</span><span class="tag tag-green">Re-decided on the server</span></div>
+      </div>
+    </section>
+{{{licenseNotice}}}
+
+    <section class="section-tight" style="padding-top:8px">
+      <div class="container">
+        <ol class="how">
+          <li><strong>You describe it</strong>"Someone rear-ended me on Main Street this morning and my neck hurts."</li>
+          <li><strong>Decisions, fast</strong>Claim type, injury, other party: calibrated answers that ordinary Form.io conditionals turn into steps.</li>
+          <li><strong>Suggestions, marked</strong>Date, place, vehicle and names are filled in as suggestions. Unsure answers stay open for you.</li>
+          <li><strong>Checked on save</strong>The UAG decides triage again on the server, so a value changed in the browser can't reroute the claim.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section-tight" style="padding-top:8px">
+      <div class="container">
+        <p class="notice" data-demo-notice hidden></p>
+        <div class="demo-layout">
+          <div class="browser">
+            <div class="browser-bar">
+              <div class="browser-dots"><span></span><span></span><span></span></div>
+              <div class="browser-url">claims.lanternmutual.example · Report a claim</div>
+              <a href="/apps/formflow/" target="_blank" rel="noopener">Open full screen ↗</a>
+            </div>
+            <div class="demo-gate" data-demo-gate hidden>
+              <div><h3>Start the live demo</h3><p>This demo calls real models. Please confirm you are human first.</p><div data-turnstile></div></div>
+            </div>
+            {{{demoUnsupported}}}
+            <iframe title="Agentic Formflow demo" data-demo-frame data-requires="formflow" data-src="/apps/formflow/" hidden></iframe>
+          </div>
+          <div data-flow data-scopes="claim" data-intro="One /agent/extract per read of your description: the decision engine answers first, the agent engine follows, both through the UAG." data-empty="Nothing yet. Pick an example under the description and press Continue."></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">What to notice</p>
+          <h2>Speed where it is safe. People where it is not.</h2>
+        </div>
+        <div class="notes">
+          <div class="card"><h3>Pages chosen by triage</h3><p>Steps appear in the rail as your description is read, each saying why. They are ordinary Form.io conditionals on the fields the decision engine answered.</p></div>
+          <div class="card"><h3>Confidence, not just answers</h3><p>When triage is unsure of the claim type, a "Check our understanding" step appears. Weak fraud signals are flagged for a person, never cleared by the browser.</p></div>
+          <div class="card"><h3>Your input wins</h3><p>Change a suggested value, then edit the description: the plugin reads it again and refills only what you have not touched.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tint">
+      <div class="container split">
+        <div>
+          <p class="eyebrow">Build it yourself</p>
+          <h2>One call to attach.</h2>
+          <p>The renderer plugin connects any formio.js form or wizard to <code>/agent/extract</code>. It streams decisions as they arrive, waits briefly on <strong>Next</strong> so conditional pages are in place, and asks once more for the pages triage added.</p>
+          <ul class="checks">
+            <li>Give it the signed-in user's own UAG token, so extraction runs with <strong>their</strong> permissions.</li>
+            <li>Mark fields with <code>uag: triage</code>; tune with <code>uagThreshold</code> and <code>uagUncertainBand</code>.</li>
+            <li>Measure thresholds on your own data with <code>uag-eval</code> before you rely on them.</li>
+          </ul>
+          <p style="margin-top:24px"><a class="link-arrow" href="/developers/renderer">Renderer plugin</a> &nbsp; <a class="link-arrow" href="/developers/agent-api">Agent API</a></p>
+        </div>
+        <div class="code"><div class="code-bar"><span>js</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-js">const form = await Formio.createForm(element, claimForm);
+
+UAGAgent.attach(form, {
+  baseUrl: 'https://uag.example.com',
+  formName: 'claim',
+  task: 'triage',
+  trigger: 'next',                 // read the description on Continue
+  getToken: () => session.uagToken, // the user's own token
+  onStart: () => showReading(true),
+  onDone: (summary) => showReading(false),
+});</code></pre></div>
+      </div>
+    </section>
+
+    <section class="section-green">
+      <div class="container cta-band">
+        <div><h2>Build your own on the same interfaces.</h2><p>MCP tools, the Agent API, engines and modules, all documented.</p></div>
+        <div class="hero-actions"><a class="btn btn-light" href="/developers">Developer docs <span class="arrow"></span></a><a class="btn btn-outline-light" href="/contact">Talk to Sales</a></div>
+      </div>
+    </section>
+    <script src="/js/flow-panel.js"></script>
+    <script src="/js/demo.js"></script>
