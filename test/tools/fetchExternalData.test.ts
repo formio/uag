@@ -274,6 +274,34 @@ describe('fetchExternalData Tool', () => {
         expect(result.data.error).to.include('does not load external data');
     });
 
+    it('fetches the options of a radio that loads them from a URL, as its field info says to', async () => {
+        const radioProject = new MockProjectInterface({
+            radioForm: {
+                title: 'Radio Form',
+                name: 'radioForm',
+                tags: ['uag'],
+                components: [{
+                    type: 'radio', key: 'plan', label: 'Plan', input: true,
+                    dataSrc: 'url', data: { url: 'https://api.example.com/plans' },
+                    valueProperty: 'id', template: '<span>{{ item.name }}</span>'
+                }]
+            }
+        });
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = (async () => ({ ok: true, json: async () => [{ id: 'basic', name: 'Basic' }] })) as any;
+        try {
+            const result = await (await fetchExternalData(radioProject)).execute!(
+                { form_name: 'radioForm', data_path: 'plan' },
+                { authInfo: mockAuthInfo }
+            );
+            expect(result.template).to.equal(ResponseTemplate.fetchExternalData);
+            expect(result.data.options).to.deep.equal([{ label: 'Basic', value: 'basic' }]);
+        }
+        finally {
+            globalThis.fetch = originalFetch;
+        }
+    });
+
     it('works without form_data when no interpolation tokens exist', async () => {
         // Should still work when form_data is not provided
         const result = await tool.execute(

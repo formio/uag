@@ -44,9 +44,10 @@ function extractValue(item: any, component: SelectComponent): any {
 
 /**
  * Check if a component is a select-type component with external data (url or resource).
+ * A radio can load its options from a URL too.
  */
 function isExternalSelect(component: Component): boolean {
-    if (component.type !== 'select' && component.type !== 'selectboxes') return false;
+    if (component.type !== 'select' && component.type !== 'selectboxes' && component.type !== 'radio') return false;
     const dataSrc = (component as SelectComponent).dataSrc;
     return dataSrc === 'url' || dataSrc === 'resource';
 }
@@ -139,12 +140,12 @@ export const fetchExternalData = async (project: UAGProjectInterface): Promise<T
                 if (!isExternalSelect(component)) {
                     return project.mcpResponse(ResponseTemplate.fetchExternalDataError, {
                         dataPath: data_path,
-                        error: `Component at "${data_path}" is of type "${component.type}" and does not load external data. This tool only supports select/selectboxes components with dataSrc "url" or "resource", and datasource components.`
+                        error: `Component at "${data_path}" is of type "${component.type}" and does not load external data. This tool only supports select, selectboxes and radio components with dataSrc "url" or "resource", and datasource components.`
                     }, true);
                 }
 
-                const selectComponent = component as SelectComponent;
                 // isExternalSelect() has checked that dataSrc is "url" or "resource".
+                const selectComponent = component as SelectComponent;
                 const items = selectComponent.dataSrc === 'url'
                     ? await fetchUrlData(selectComponent, search_value, extra.authInfo, evalContext)
                     : await fetchResourceData(selectComponent, search_value, extra.authInfo, project, evalContext);
