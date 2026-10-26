@@ -1,0 +1,30 @@
+{
+  "name": "@formio/uag-gemini",
+  "version": "2.0.0",
+  "description": "Gemini engine for the Form.io Universal Agent Gateway (UAG): Google's Gemini models, for structured extraction with research over read-only tools.",
+  "license": "MIT",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "mocha"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/formio/uag.git",
+    "directory": "engines/gemini"
+  },
+  "dependencies": {
+    "@formio/uag-openai": "^2.1.0",
+    "@formio/uag-sdk": "^2.0.0"
+  },
+  "devDependencies": {
+    "chai": "^6.2.2",
+    "mocha": "^11.8.0"
+  }
+}

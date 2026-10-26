@@ -1,0 +1,37 @@
+{
+  "name": "@formio/uag-openai",
+  "version": "2.1.0",
+  "description": "OpenAI engine for the Form.io Universal Agent Gateway (UAG): structured extraction, with research over read-only tools, on OpenAI or any server with its chat completions API (Ollama, vLLM, LM Studio, OpenRouter); and decisions with probabilities on OpenAI's Decisions API.",
+  "license": "MIT",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./compatible": "./compatible.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "compatible.js",
+    "decisions.js",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "mocha"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/formio/uag.git",
+    "directory": "engines/openai"
+  },
+  "dependencies": {
+    "@formio/uag-sdk": "^2.0.0",
+    "openai": "7.32.0"
+  },
+  "devDependencies": {
+    "chai": "^6.2.2",
+    "mocha": "^11.8.0"
+  }
+}

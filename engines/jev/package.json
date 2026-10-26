@@ -1,0 +1,30 @@
+{
+  "name": "@formio/uag-jev",
+  "version": "2.0.0",
+  "description": "TypeSafe Jev decision engine for the Form.io Universal Agent Gateway (UAG): fast, confidence-scored Choice, Score and yes/no decisions for the Agent API.",
+  "license": "MIT",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "mocha"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/formio/uag.git",
+    "directory": "engines/jev"
+  },
+  "dependencies": {
+    "@formio/uag-sdk": "^2.0.0",
+    "@typesafe-ai/sdk": "0.7.0"
+  },
+  "devDependencies": {
+    "chai": "^6.2.2",
+    "mocha": "^11.8.0"
+  }
+}
