@@ -1,0 +1,19 @@
+# Build context for packages/engine-server/Dockerfile (the repository root).
+# Keep secrets, local installs and everything the image does not use out of it.
+**
+!package.json
+!yarn.lock
+!.yarnrc.yml
+!packages/engine-sdk/**
+!packages/engine-server/**
+!engines/jev/**
+!engines/claude/**
+!engines/openai/**
+!engines/grok/**
+!engines/gemini/**
+!engines/mai/package.json
+!demo/package.json
+**/node_modules
+**/test
+**/.env
+**/.env.*
