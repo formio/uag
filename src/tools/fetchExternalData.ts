@@ -78,7 +78,7 @@ function interpolateHeaders(
 }
 
 export const fetchExternalData = async (project: UAGProjectInterface): Promise<ToolInfo> => {
-    return defaultsDeep(project.config?.toolOverrides?.fetch_external_data || {}, {
+    return defaultsDeep({}, project.config?.toolOverrides?.fetch_external_data, {
         name: 'fetch_external_data',
         title: 'Fetch External Data',
         description: 'Fetch external data for a component that loads data from an external URL, a Form.io Resource, or a DataSource. Use this tool when `get_form_fields` indicates that a field requires calling `fetch_external_data` to retrieve its data. For select components, this returns the available options. For datasource components, this returns the fetched data. You can optionally provide a `search_value` to filter results server-side. If the component\'s URL or headers contain interpolation tokens (e.g. `{{ data.someField }}`), you MUST provide `form_data` with the current collected data so the tokens can be resolved.',

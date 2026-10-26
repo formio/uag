@@ -224,6 +224,20 @@ describe('agent_provide tool', () => {
         expect(alias.name).to.equal('custom_agent_data');
     });
 
+    it('builds the same tools on every request from an override for its earlier name', async () => {
+        const toolOverrides: any = { agent_provide_data: { description: 'Custom agent data tool' } };
+        const project = new MockProjectInterface({ testForm: { title: 'Test Form', name: 'testForm', tags: ['uag'], components: [] } });
+        Object.defineProperty(project, 'config', { get: () => ({ toolOverrides }) });
+        // Built in getTools() order, once per request: the deprecated tool must not
+        // write its title and execute into the shared override for the next request.
+        for (let request = 0; request < 2; request++) {
+            const provide = await agentProvide(project);
+            await agentProvideData(project);
+            expect(provide.title, `request ${request + 1}`).to.equal('Agent Provide');
+        }
+        expect(toolOverrides.agent_provide_data).to.deep.equal({ description: 'Custom agent data tool' });
+    });
+
     describe('agent_provide_data, its deprecated name', () => {
         const realWarn = console.warn;
         afterEach(() => { console.warn = realWarn; });

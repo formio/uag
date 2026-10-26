@@ -14,7 +14,7 @@ import { reads } from './annotations';
  * them. No model is called here.
  */
 export const agentDecide = async (project: UAGProjectInterface): Promise<ToolInfo> => {
-    return defaultsDeep(project.config?.toolOverrides?.agent_decide || {}, {
+    return defaultsDeep({}, project.config?.toolOverrides?.agent_decide, {
         name: 'agent_decide',
         title: 'Agent Decide',
         description: 'Return the decision questions for a task\'s closed-set fields (radio, select, checkbox, select boxes, survey and small resource selects) as structured JSON: the state to decide on, every question, and how each answer maps back to a field value. Answer the questions with a decision model, then write the values with `submission_update`. Provide either `submission_id` or `form_data`.',

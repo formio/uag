@@ -35,7 +35,9 @@ export const agentProvide = async (project: UAGProjectInterface): Promise<ToolIn
     // which belongs to the deprecated tool and would clash with it.
     const overrides = project.config?.toolOverrides;
     const own = overrides?.agent_provide || (overrides?.agent_provide_data ? omit(overrides.agent_provide_data, 'name') : {});
-    return defaultsDeep(own, provideTool(project, 'agent_provide'));
+    // Merged into a new object: the overrides are shared config, and the tools are
+    // built again for every request.
+    return defaultsDeep({}, own, provideTool(project, 'agent_provide'));
 };
 
 /**
@@ -45,7 +47,7 @@ export const agentProvide = async (project: UAGProjectInterface): Promise<ToolIn
 export const agentProvideData = async (project: UAGProjectInterface): Promise<ToolInfo> => {
     const tool = provideTool(project, 'agent_provide_data');
     const execute = tool.execute;
-    return defaultsDeep(project.config?.toolOverrides?.agent_provide_data || {}, {
+    return defaultsDeep({}, project.config?.toolOverrides?.agent_provide_data, {
         ...tool,
         title: 'Agent Provide Data (deprecated)',
         description: `Deprecated: use \`agent_provide\`, which takes the same arguments. ${DESCRIPTION}`,

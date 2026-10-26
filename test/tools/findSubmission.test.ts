@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { findSubmission } from '../../src/tools/findSubmission';
 import { ResponseTemplate } from '../../src/template';
-import { MockProjectInterface } from './mock';
+import { MockProjectInterface, MockFormInterface } from './mock';
 
 describe('findSubmission Tool', () => {
     let mockProject: any;
@@ -315,6 +315,15 @@ describe('findSubmission Tool', () => {
             { authInfo: mockAuthInfo }
         );
         expect(result.template).to.equal(ResponseTemplate.submissionPartialIdNotFound);
+    });
+
+    it('offers forms added after an earlier request when the tool is overridden', async () => {
+        mockProject.mockConfig = { toolOverrides: { find_submissions: { description: 'Custom find' } } };
+        await findSubmission(mockProject);
+        mockProject.forms.laterForm = new MockFormInterface(mockProject, { title: 'Later Form', name: 'laterForm', tags: ['uag'], components: [] }, []);
+        const rebuilt = await findSubmission(mockProject);
+        expect(rebuilt.description).to.equal('Custom find');
+        expect((rebuilt.inputSchema as any).form_name.safeParse('laterForm').success).to.equal(true);
     });
 
     it('returns submissionPartialIdAmbiguous for ambiguous partial ID', async () => {
