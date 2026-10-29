@@ -1,0 +1,43 @@
+{
+  "name": "@formio/uag-grok",
+  "version": "2.0.0",
+  "description": "Grok engine for the Form.io Universal Agent Gateway (UAG): xAI's models, for structured extraction with research over read-only tools.",
+  "keywords": [
+    "formio",
+    "uag",
+    "universal-agent-gateway",
+    "ai",
+    "agents",
+    "engine",
+    "grok",
+    "xai"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "mocha"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/formio/uag.git",
+    "directory": "engines/grok"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@formio/uag-openai": "^2.0.0",
+    "@formio/uag-sdk": "^2.0.0"
+  },
+  "devDependencies": {
+    "chai": "^6.3.0",
+    "mocha": "^12.0.3"
+  }
+}
