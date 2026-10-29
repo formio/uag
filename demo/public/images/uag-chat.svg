@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" role="img" aria-labelledby="t d">
+  <title id="t">The chat widget and the UAG</title>
+  <desc id="d">Your page renders a form as a chat with Formio.createChat from @formio/uag-js, with a formio.js form behind it. Each message is posted, with the conversation and the form's data and the user's Form.io token, to the form's {form}/agent/chat on the UAG, which stores nothing. The UAG reads the form's collectable fields and rules, asks an agent engine through the ordinary extract contract for the values and the next message, and checks every value with the form's own validation. It answers with the reply, the accepted values (patch), what is still needed and whether the form is complete; the widget writes the values into the form. When the person confirms the summary, the form posts {form}/submission to the UAG, which runs the form's Run task actions and saves it in Form.io. Chat is part of conversation forms: it needs an agent engine and no license.</desc>
+  <defs>
+    <style>
+      text { font-family: Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; fill: #0c141d; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .h { font-size: 16px; font-weight: 700; fill: #ffffff; }
+      .sub { font-size: 12.5px; fill: #c9d2dc; }
+      .st { font-size: 13px; font-weight: 600; fill: #0c141d; }
+      .s { font-size: 12px; fill: #566073; }
+      .code { font-size: 11.5px; fill: #3f7a22; font-weight: 600; }
+      .lbl { font-size: 11px; font-weight: 600; fill: #3f7a22; }
+      .n { font-size: 11px; font-weight: 700; fill: #ffffff; }
+      .bubble { font-size: 11.5px; }
+      .card { fill: #ffffff; stroke: #d7dde5; stroke-width: 1.2; }
+      .flow { stroke: #69b342; stroke-width: 2.2; fill: none; }
+      .back { stroke: #3a4756; stroke-width: 1.8; fill: none; stroke-dasharray: 5 4; }
+    </style>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#69b342"/></marker>
+    <marker id="b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3a4756"/></marker>
+  </defs>
+  <rect x="1" y="1" width="998" height="558" rx="18" fill="#ffffff" stroke="#e0e5ec"/>
+
+  <!-- Column 1: your page -->
+  <g transform="translate(20 20)">
+    <rect width="300" height="66" rx="12" fill="#3a4756"/>
+    <text x="16" y="28" class="h">Your page</text>
+    <text x="16" y="50" class="sub">@formio/uag-js, with formio.js</text>
+
+    <rect y="82" width="300" height="46" rx="10" class="card"/>
+    <text x="14" y="110" class="mono code">Formio.createChat(el, formUrl)</text>
+
+    <!-- The chat -->
+    <rect y="144" width="300" height="182" rx="10" fill="#f4f5f7" stroke="#d7dde5" stroke-width="1.2"/>
+    <rect x="12" y="158" width="206" height="30" rx="12" fill="#ffffff" stroke="#e0e5ec"/>
+    <text x="24" y="177" class="bubble">What's the account number?</text>
+    <rect x="150" y="198" width="138" height="30" rx="12" fill="#3a4756"/>
+    <text x="164" y="217" class="bubble" style="fill:#ffffff">It's 12345678</text>
+    <rect x="12" y="238" width="276" height="44" rx="10" fill="#ffffff" stroke="#69b342"/>
+    <text x="24" y="256" class="st">Please check your answers</text>
+    <rect x="24" y="263" width="58" height="13" rx="6" fill="#69b342"/>
+    <text x="53" y="273" text-anchor="middle" class="n" style="font-size:9px">Submit</text>
+    <rect x="12" y="292" width="276" height="24" rx="12" fill="#ffffff" stroke="#e0e5ec"/>
+    <text x="24" y="308" class="s">Type your message…</text>
+
+    <!-- The form behind it -->
+    <rect y="344" width="300" height="102" rx="10" class="card"/>
+    <text x="14" y="368" class="st">The form behind the chat</text>
+    <text x="14" y="390" class="s">Values written with setValue: the form's</text>
+    <text x="14" y="406" class="s">conditionals and validation run as people talk.</text>
+    <text x="14" y="428" class="s">Review form opens it; edits are never overwritten.</text>
+  </g>
+
+  <!-- Column 2: the UAG -->
+  <g transform="translate(372 20)">
+    <rect width="300" height="66" rx="12" fill="#69b342"/>
+    <text x="16" y="28" class="h">UAG</text>
+    <text x="16" y="50" class="sub" style="fill:#edfae6">Stateless: each turn stands alone</text>
+
+    <rect y="82" width="300" height="62" rx="10" class="card"/>
+    <circle cx="22" cy="104" r="10" fill="#69b342"/><text x="22" y="108" text-anchor="middle" class="n">1</text>
+    <text x="42" y="108" class="mono code">POST {form}/agent/chat</text>
+    <text x="42" y="130" class="s">messages + data, the user's Form.io token</text>
+    <path d="M150 146 V158" class="flow" marker-end="url(#a)"/>
+
+    <rect y="162" width="300" height="62" rx="10" class="card"/>
+    <circle cx="22" cy="184" r="10" fill="#69b342"/><text x="22" y="188" text-anchor="middle" class="n">2</text>
+    <text x="42" y="188" class="st">Reads the form</text>
+    <text x="42" y="210" class="s">fields a person may enter, rules, options</text>
+    <path d="M150 226 V238" class="flow" marker-end="url(#a)"/>
+
+    <rect y="242" width="300" height="62" rx="10" class="card"/>
+    <circle cx="22" cy="264" r="10" fill="#69b342"/><text x="22" y="268" text-anchor="middle" class="n">3</text>
+    <text x="42" y="268" class="st">Checks every value</text>
+    <text x="42" y="290" class="s">the form's own validation; refusals put back</text>
+
+    <rect y="344" width="300" height="102" rx="10" class="card"/>
+    <circle cx="22" cy="366" r="10" fill="#3a4756"/><text x="22" y="370" text-anchor="middle" class="n">4</text>
+    <text x="42" y="370" class="st">On confirm, the form submits</text>
+    <text x="42" y="392" class="mono code">POST {form}/submission</text>
+    <text x="42" y="414" class="s">the form's Run task actions run,</text>
+    <text x="42" y="430" class="s">as for any submission</text>
+  </g>
+
+  <!-- Column 3: engine and Form.io -->
+  <g transform="translate(724 20)">
+    <rect width="256" height="66" rx="12" fill="#3a4756"/>
+    <text x="16" y="28" class="h">Agent engine</text>
+    <text x="16" y="50" class="sub">claude, openai, gemini, grok, yours</text>
+
+    <rect y="162" width="256" height="142" rx="10" class="card"/>
+    <text x="14" y="186" class="st">The extract contract</text>
+    <text x="14" y="208" class="s">The collectable fields, plus</text>
+    <text x="14" y="226" class="mono code">-reply · -confirmed</text>
+    <text x="14" y="252" class="s">In-process engines with toolUse may</text>
+    <text x="14" y="270" class="s">first call the read-only</text>
+    <text x="14" y="288" class="mono code">check_values</text>
+
+    <rect y="344" width="256" height="102" rx="10" fill="#3a4756"/>
+    <text x="16" y="372" class="h">Form.io</text>
+    <text x="16" y="396" class="sub">Saves the submission, with the</text>
+    <text x="16" y="414" class="sub">user's permissions and the</text>
+    <text x="16" y="432" class="sub">form's own actions</text>
+  </g>
+
+  <!-- A turn: page to UAG -->
+  <path d="M320 124 H368" class="flow" marker-end="url(#a)"/>
+  <text x="344" y="116" text-anchor="middle" class="lbl">turn</text>
+  <!-- UAG to engine and back -->
+  <path d="M672 202 H720" class="flow" marker-end="url(#a)"/>
+  <path d="M724 262 H676" class="back" marker-end="url(#b)"/>
+  <text x="698" y="194" text-anchor="middle" class="lbl">ask</text>
+  <text x="698" y="280" text-anchor="middle" class="s" style="font-size:10.5px">values</text>
+  <!-- Reply back to the page -->
+  <path d="M372 284 C356 284 356 236 340 236 H324" class="back" marker-end="url(#b)"/>
+  <text x="346" y="326" text-anchor="middle" class="s" style="font-size:10.5px">reply,</text>
+  <text x="346" y="340" text-anchor="middle" class="s" style="font-size:10.5px">patch</text>
+  <!-- Submission -->
+  <path d="M320 410 H368" class="flow" marker-end="url(#a)"/>
+  <path d="M672 410 H720" class="flow" marker-end="url(#a)"/>
+
+  <!-- Reply legend -->
+  <g transform="translate(20 476)">
+    <rect width="960" height="64" rx="12" fill="#edfae6" stroke="#c9e8b4"/>
+    <text x="18" y="27" class="st">Each answer:</text>
+    <text x="112" y="27" class="mono code">reply · patch · fields · remaining · complete · confirmed · engine</text>
+    <text x="18" y="49" class="s">Conversation forms: one agent engine, no license, nothing stored. The model never saves: the person confirms, and the form submits itself.</text>
+  </g>
+</svg>
