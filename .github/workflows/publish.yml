@@ -101,7 +101,9 @@ jobs:
       # The UAG's prepublishOnly runs this too, but only after the engine
       # packages are already out; check every package before publishing any.
       - name: Check the release
-        run: node scripts/check-release.mjs
+        # Before publishing: the packages @formio/uag depends on are published in the
+        # next step, and its prepublishOnly checks they are on npm before it goes out.
+        run: node scripts/check-release.mjs --before-publish
 
       - name: Publish the engine packages to npm
         run: |

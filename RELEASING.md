@@ -4,26 +4,17 @@ Every package in this repository is released together, at one version: `@formio/
 
 ## Steps
 
-1. Set the version everywhere, and update the lockfile:
+1. Put the release's notes at the top of `CHANGELOG.md`, under `## Unreleased` (or the current prerelease's heading, such as `## 2.0.0-rc.1`, while a version is in release candidates).
+2. On the branch to release from, with no uncommitted changes:
 
    ```bash
-   yarn release:version 2.0.0-rc.2
-   yarn install
+   yarn release 2.0.0-rc.2           # prepare, commit and tag; prints the push command
+   yarn release 2.0.0-rc.2 --push    # and push the branch and the tag, which starts CI
    ```
 
-2. Rename `CHANGELOG.md`'s newest heading to the version (`## 2.0.0-rc.2`).
-3. Build and check:
+   It sets the version on every package (`yarn release:version`), names the changelog's newest entry for it, updates the lockfile, builds, runs the tests (`--skip-tests` skips them) and the release check, commits `Update versions.` and tags `v2.0.0-rc.2`. It refuses uncommitted changes, a tag that already exists, and a changelog whose newest entry is a released version (its notes are never renamed: add the new ones under `## Unreleased`). If a step fails, nothing is committed, and `git checkout -- .` undoes the version changes.
 
-   ```bash
-   yarn build && yarn test && node scripts/check-release.mjs
-   ```
-
-   The check refuses a package out of step with the root version, a dependency range that does not accept it, a stale `lib/`, and a version the changelog does not describe. Run before a release's packages are on npm, it also says the engine SDK is not published yet; CI publishes it before the UAG.
-4. Commit (`Update versions.`), tag and push:
-
-   ```bash
-   git tag v2.0.0-rc.2 && git push origin HEAD v2.0.0-rc.2
-   ```
+The release check refuses a package out of step with the root version, a dependency range that does not accept it, a stale `lib/`, and a version the changelog does not describe. CI runs it with `--before-publish`, which skips only its check that the engine SDK is on npm: CI publishes the SDK next, and `@formio/uag`'s `prepublishOnly` runs the full check before it goes out.
 
 ## What the workflow publishes
 

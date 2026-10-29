@@ -26,6 +26,7 @@
     "build:docker": "docker build -t formio/uag$(node -p \"require('./package.json').version.includes('-rc.') ? ':rc' : ''\") --platform=linux/amd64 .",
     "test": "tsc --noEmit -p tsconfig.test.json && mocha --no-node-snapshot",
     "test:e2e": "mocha --config .mocharc.e2e.json",
+    "release": "node scripts/release.mjs",
     "release:version": "node scripts/set-version.mjs",
     "dev": "tsx --no-node-snapshot index.js",
     "demo:dev": "node --no-node-snapshot demo/scripts/dev.mjs",

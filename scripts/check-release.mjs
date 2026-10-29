@@ -16,7 +16,9 @@
  * - every dependency on a package in this repository accepts its version here;
  * - @formio/uag's version is the one CHANGELOG.md's newest entry describes;
  * - the packages of this repository that @formio/uag depends on are published
- *   at a version its range accepts (publish them first);
+ *   at a version its range accepts (publish them first). --before-publish skips
+ *   this one: CI checks every package before publishing any, then publishes
+ *   them in order, and @formio/uag's prepublishOnly runs the full check;
  * - lib/ is built from the current src/ (run `yarn build`).
  *
  * UAG_RELEASE_ROOT checks another checkout (for the tests).
@@ -125,7 +127,8 @@ catch {
 }
 
 // The packages of this repository @formio/uag depends on must be on npm first.
-for (const [name, spec] of Object.entries(uag.dependencies || {})) {
+const beforePublish = process.argv.includes('--before-publish');
+for (const [name, spec] of Object.entries(beforePublish ? {} : uag.dependencies || {})) {
     if (!versions.has(name)) continue;
     let found;
     try {

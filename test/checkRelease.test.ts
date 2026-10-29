@@ -115,6 +115,48 @@ describe('The release check', function () {
         expect(spawnSync(process.execPath, [path.resolve(__dirname, '../scripts/set-version.mjs'), 'next'], { env: { ...process.env, UAG_RELEASE_ROOT: dir } }).status).to.equal(1);
     });
 
+    it('skips only the npm check before publishing, which CI does before it publishes the packages', () => {
+        const result = check({ NPM_404: '1' });
+        expect(result.status).to.equal(1);
+        const before = spawnSync(process.execPath, [path.resolve(__dirname, '../scripts/check-release.mjs'), '--before-publish'], {
+            encoding: 'utf8',
+            env: { ...process.env, UAG_RELEASE_ROOT: dir, PATH: `${path.join(dir, 'bin')}${path.delimiter}${process.env.PATH}`, NPM_404: '1' }
+        });
+        expect(before.status, `${before.stdout}${before.stderr}`).to.equal(0);
+        // Everything else is still checked.
+        write('packages/engine-sdk/package.json', JSON.stringify({ name: '@formio/uag-sdk', version: '2.0.1', license: 'MIT' }));
+        const outOfStep = spawnSync(process.execPath, [path.resolve(__dirname, '../scripts/check-release.mjs'), '--before-publish'], {
+            encoding: 'utf8', env: { ...process.env, UAG_RELEASE_ROOT: dir, NPM_404: '1' }
+        });
+        expect(outOfStep.status).to.equal(1);
+    });
+
+    describe('the changelog entry for a release', () => {
+        const rename = (text: string, version: string) => {
+            const code = `import { changelogFor } from ${JSON.stringify(path.resolve(__dirname, '../scripts/changelog.mjs'))};
+                try { process.stdout.write(JSON.stringify({ text: changelogFor(${JSON.stringify(text)}, ${JSON.stringify(version)}) })); }
+                catch (err) { process.stdout.write(JSON.stringify({ error: err.message })); }`;
+            return JSON.parse(spawnSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8' }).stdout);
+        };
+        const LOG = '# Changelog\n\n## 2.0.0-rc.1\n\n- Proxy mode.\n\n## 1.14.0\n\n- Older.\n';
+
+        it('moves an earlier prerelease of the same version to the new one', () => {
+            expect(rename(LOG, '2.0.0-rc.2').text).to.equal(LOG.replace('## 2.0.0-rc.1', '## 2.0.0-rc.2'));
+            expect(rename(LOG, '2.0.0').text).to.equal(LOG.replace('## 2.0.0-rc.1', '## 2.0.0'));
+        });
+
+        it('names an Unreleased entry, and leaves one already named for the version', () => {
+            expect(rename('## Unreleased\n\n- Next.\n\n## 2.0.0\n', '2.0.1').text).to.equal('## 2.0.1\n\n- Next.\n\n## 2.0.0\n');
+            expect(rename(LOG, '2.0.0-rc.1').text).to.equal(LOG);
+        });
+
+        it('never renames a released version\'s notes', () => {
+            expect(rename('## 2.0.0\n\n- Released.\n', '2.0.1').error).to.contain('newest entry is 2.0.0. Add the notes for 2.0.1 under "## Unreleased" first.');
+            expect(rename(LOG, '2.1.0').error).to.contain('newest entry is 2.0.0-rc.1');
+            expect(rename('# Changelog\n', '2.0.0').error).to.contain('no "## " entry');
+        });
+    });
+
     it('refuses lib/ built before a change to src/, or missing a file', () => {
         write('src/index.ts', 'export const changed = true;\n', new Date(Date.now() + 60000));
         let result = check();
