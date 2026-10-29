@@ -1,0 +1,423 @@
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <h1 class="hero-title"><span>Your agents</span> <span>follow <span class="accent">your rules</span></span> <span>within <span class="accent">your environment</span>.</span></h1>
+          <p class="lede">Form.io's <strong>Universal Agent Gateway</strong> (UAG) sits between AI agents and your Form.io project. Agents read your forms to learn what to collect and how to behave. Every value they send back is checked against the form's own validation and saved according to the user's permissions, all within your <strong>own environment.</strong></p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="/examples"><svg aria-hidden="true"><use href="/images/icons.svg#play"/></svg>See it live</a>
+            <a class="btn btn-outline" href="/getting-started">Run it yourself <span class="arrow"></span></a>
+          </div>
+          <div class="install-card">
+            <p>Or install the Form.io <strong><a href="https://github.com/formio/ai" target="_blank">Agentic Coding Plugin</a></strong> and have your coding agent make your forms agent-ready.</p>
+            <div class="install">
+              <code>npx skills add formio/ai</code>
+              <button type="button" class="copy" data-copy>Copy</button>
+            </div>
+            <a class="install-card-link" href="#agentic-coding">How it works <span class="arrow"></span></a>
+          </div>
+          <div class="chips" aria-label="Highlights">
+            <span class="chip">Self-hosted</span>
+            <span class="chip">MCP native</span>
+            <span class="chip">Any model</span>
+            <span class="chip">Open source, MIT</span>
+          </div>
+        </div>
+        <figure class="figure diagram" aria-label="AI agents connect to the UAG, which authenticates, reads form rules, validates and writes once to Form.io inside your security boundary.">
+          <svg viewBox="0 0 600 470" role="img">
+            <defs>
+              <filter id="h-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="9" flood-color="#0c141d" flood-opacity=".12"/></filter>
+              <linearGradient id="h-hub" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a5b6e"/><stop offset="1" stop-color="#2a333e"/></linearGradient>
+            </defs>
+            <rect x="178" y="14" width="418" height="446" rx="20" fill="#f6fbf2" stroke="#69b342" stroke-width="1.5" stroke-dasharray="7 6"/>
+            <text x="200" y="42" fill="#5a9a39" font-size="11" font-weight="700" letter-spacing="1.6">YOUR SECURITY BOUNDARY</text>
+
+            <g fill="none" stroke="#c5ccd5" stroke-width="2">
+              <path id="h-a1" d="M144 98 C 180 98, 180 236, 214 236"/>
+              <path id="h-a2" d="M144 188 C 178 188, 182 236, 214 236"/>
+              <path id="h-a3" d="M144 278 C 178 278, 182 236, 214 236"/>
+              <path id="h-a4" d="M144 368 C 180 368, 180 236, 214 236"/>
+              <path id="h-b1" d="M366 236 C 392 236, 390 124, 420 124" stroke="#69b342"/>
+              <path id="h-b2" d="M366 236 C 392 236, 392 236, 420 236" stroke="#69b342"/>
+              <path id="h-b3" d="M366 236 C 392 236, 390 318, 420 318" stroke="#69b342"/>
+              <path id="h-b4" d="M366 236 C 392 236, 390 400, 420 400" stroke="#69b342"/>
+            </g>
+
+            <g font-size="14" font-weight="600" fill="#0c141d">
+              <g><rect x="4" y="70" width="140" height="56" rx="12" fill="#fff" stroke="#e0e5ec"/><circle cx="32" cy="98" r="13" fill="#d97757"/><text x="32" y="103" text-anchor="middle" fill="#fff" font-size="13">C</text><text x="54" y="103">Claude</text></g>
+              <g><rect x="4" y="160" width="140" height="56" rx="12" fill="#fff" stroke="#e0e5ec"/><circle cx="32" cy="188" r="13" fill="#10a37f"/><text x="32" y="193" text-anchor="middle" fill="#fff" font-size="13">O</text><text x="54" y="193">OpenAI</text></g>
+              <g><rect x="4" y="250" width="140" height="56" rx="12" fill="#fff" stroke="#e0e5ec"/><circle cx="32" cy="278" r="13" fill="#4285f4"/><text x="32" y="283" text-anchor="middle" fill="#fff" font-size="13">G</text><text x="54" y="283">Gemini</text></g>
+              <g><rect x="4" y="340" width="140" height="56" rx="12" fill="#fff" stroke="#e0e5ec"/><circle cx="32" cy="368" r="13" fill="#3a4756"/><text x="32" y="373" text-anchor="middle" fill="#fff" font-size="12">AI</text><text x="54" y="373">Your agent</text></g>
+            </g>
+            <text x="74" y="430" text-anchor="middle" fill="#566073" font-size="12" font-weight="600">Any agent or model</text>
+
+            <g filter="url(#h-shadow)">
+              <rect x="214" y="70" width="152" height="336" rx="18" fill="url(#h-hub)"/>
+              <g transform="translate(226 86)" color="#78cd4b"><svg width="26" height="26"><use href="/images/icons.svg#shield"/></svg></g>
+              <text x="258" y="106" fill="#fff" font-size="21" font-weight="800" letter-spacing="-.5">UAG</text>
+              <text x="228" y="132" fill="#b9c2ce" font-size="10.5" font-weight="500">Universal Agent Gateway</text>
+              <g font-size="12.5" font-weight="600" fill="#fff">
+                <rect x="228" y="152" width="124" height="36" rx="8" fill="#56687d"/><text x="244" y="175">① Authenticate</text>
+                <rect x="228" y="196" width="124" height="36" rx="8" fill="#56687d"/><text x="244" y="219">② Read the form</text>
+                <rect x="228" y="240" width="124" height="36" rx="8" fill="#56687d"/><text x="244" y="263">③ Validate</text>
+                <rect x="228" y="284" width="124" height="36" rx="8" fill="#56687d"/><text x="244" y="307">④ Write once</text>
+                <rect x="228" y="328" width="124" height="36" rx="8" fill="#69b342"/><text x="244" y="351">⑤ Audit</text>
+              </g>
+              <text x="290" y="390" text-anchor="middle" fill="#b9c2ce" font-size="10.5">MCP · Agent API</text>
+            </g>
+
+            <g filter="url(#h-shadow)" font-size="12.5" font-weight="600" fill="#0c141d">
+              <g>
+                <rect x="420" y="70" width="160" height="108" rx="12" fill="#fff" stroke="#e0e5ec"/>
+                <image href="/images/brand/icon-formio-lightbg.svg" x="434" y="82" width="18" height="18"/>
+                <text x="458" y="96">Forms &amp; rules</text>
+                <rect x="434" y="110" width="132" height="12" rx="3" fill="#eeeff0"/>
+                <rect x="434" y="128" width="132" height="12" rx="3" fill="#eeeff0"/>
+                <rect x="434" y="146" width="80" height="12" rx="3" fill="#d4edc4"/>
+                <rect x="520" y="146" width="46" height="18" rx="4" fill="#69b342"/>
+              </g>
+              <g>
+                <rect x="420" y="204" width="160" height="64" rx="12" fill="#fff" stroke="#e0e5ec"/>
+                <ellipse cx="444" cy="224" rx="12" ry="5" fill="#d4edc4" stroke="#69b342"/><path d="M432 224v20c0 3 5 5 12 5s12-2 12-5v-20" fill="#edfae6" stroke="#69b342"/>
+                <text x="466" y="232">Submissions</text><text x="466" y="250" fill="#566073" font-weight="500" font-size="11">validated data</text>
+              </g>
+              <g>
+                <rect x="420" y="290" width="160" height="56" rx="12" fill="#fff" stroke="#e0e5ec"/>
+                <g transform="translate(432 306)" color="#0079c0"><svg width="22" height="22"><use href="/images/icons.svg#workflow"/></svg></g>
+                <text x="462" y="323">Workflows</text>
+              </g>
+              <g>
+                <rect x="420" y="370" width="160" height="60" rx="12" fill="#fff" stroke="#e0e5ec"/>
+                <text x="434" y="392">Your systems</text>
+                <g font-size="10" font-weight="600" fill="#3a4756">
+                  <rect x="434" y="402" width="36" height="18" rx="9" fill="#eeeff0"/><text x="452" y="415" text-anchor="middle">ERP</text>
+                  <rect x="476" y="402" width="36" height="18" rx="9" fill="#eeeff0"/><text x="494" y="415" text-anchor="middle">CRM</text>
+                  <rect x="518" y="402" width="48" height="18" rx="9" fill="#eeeff0"/><text x="542" y="415" text-anchor="middle">Legacy</text>
+                </g>
+              </g>
+            </g>
+
+            <g fill="#69b342">
+              <circle r="4.5"><animateMotion dur="2.8s" repeatCount="indefinite"><mpath href="#h-a1"/></animateMotion></circle>
+              <circle r="4.5"><animateMotion dur="2.8s" begin="-.7s" repeatCount="indefinite"><mpath href="#h-a2"/></animateMotion></circle>
+              <circle r="4.5"><animateMotion dur="2.8s" begin="-1.4s" repeatCount="indefinite"><mpath href="#h-a3"/></animateMotion></circle>
+              <circle r="4.5"><animateMotion dur="2.8s" begin="-2.1s" repeatCount="indefinite"><mpath href="#h-a4"/></animateMotion></circle>
+              <circle r="4.5" fill="#0079c0"><animateMotion dur="2.2s" begin="-.4s" repeatCount="indefinite"><mpath href="#h-b1"/></animateMotion></circle>
+              <circle r="4.5" fill="#0079c0"><animateMotion dur="2.2s" begin="-1s" repeatCount="indefinite"><mpath href="#h-b2"/></animateMotion></circle>
+              <circle r="4.5" fill="#0079c0"><animateMotion dur="2.2s" begin="-1.6s" repeatCount="indefinite"><mpath href="#h-b3"/></animateMotion></circle>
+              <circle r="4.5" fill="#0079c0"><animateMotion dur="2.2s" begin="-2s" repeatCount="indefinite"><mpath href="#h-b4"/></animateMotion></circle>
+            </g>
+          </svg>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container split">
+        <div>
+          <h2>One form for people and agents.</h2>
+          <p class="lede">Form.io's renderer turns form JSON into an interface for people. The UAG turns the same JSON into context for agents: the fields, the rules, the allowed values and the instructions.</p>
+          <ul class="checks">
+            <li>Change a field or an instruction in the form builder, and agents pick it up on the UAG's next refresh.</li>
+            <li>People and agents are checked by the same validation rules.</li>
+            <li>Agents automatically find the forms you tag, so you write no per-form agent code.</li>
+          </ul>
+        </div>
+        <figure class="figure diagram figure-wide figure-narrow" aria-label="One form JSON feeds the Form.io renderer for people and the UAG for agents.">
+          <svg viewBox="0 0 620 420" role="img">
+            <defs>
+              <marker id="r-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#69b342"/></marker>
+              <filter id="r-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="9" flood-color="#0c141d" flood-opacity=".12"/></filter>
+            </defs>
+            <g filter="url(#r-shadow)">
+              <rect x="10" y="100" width="180" height="200" rx="14" fill="#2a333e"/>
+              <text font-family="JetBrains Mono, monospace" font-size="11" fill="#c4ccd6">
+                <tspan x="26" y="128">{</tspan>
+                <tspan x="34" y="146" fill="#7cc4f8">"key"<tspan fill="#c4ccd6">: </tspan><tspan fill="#b5e08f">"urgency"</tspan>,</tspan>
+                <tspan x="34" y="164" fill="#7cc4f8">"type"<tspan fill="#c4ccd6">: </tspan><tspan fill="#b5e08f">"radio"</tspan>,</tspan>
+                <tspan x="34" y="182" fill="#7cc4f8">"validate"<tspan fill="#c4ccd6">: {</tspan></tspan>
+                <tspan x="44" y="200" fill="#7cc4f8">"required"<tspan fill="#c4ccd6">: </tspan><tspan fill="#f5b971">true</tspan></tspan>
+                <tspan x="34" y="218">},</tspan>
+                <tspan x="34" y="236" fill="#7cc4f8">"values"<tspan fill="#c4ccd6">: [</tspan></tspan>
+                <tspan x="44" y="254" fill="#b5e08f">"low", "high"</tspan>
+                <tspan x="34" y="272">]</tspan>
+                <tspan x="26" y="290">}</tspan>
+              </text>
+            </g>
+            <text x="100" y="330" text-anchor="middle" font-size="13" font-weight="700" fill="#0c141d">Form JSON</text>
+            <text x="100" y="348" text-anchor="middle" font-size="11.5" fill="#566073">one source of truth</text>
+
+            <path d="M196 170 C 229 170, 229 92, 262 92 H282" fill="none" stroke="#69b342" stroke-width="2.5" marker-end="url(#r-arrow)"/>
+            <path d="M196 230 C 229 230, 229 306, 262 306 H282" fill="none" stroke="#69b342" stroke-width="2.5" marker-end="url(#r-arrow)"/>
+
+            <g filter="url(#r-shadow)">
+              <rect x="290" y="56" width="110" height="72" rx="12" fill="#fff" stroke="#e0e5ec"/>
+              <g transform="translate(330 66)" color="#69b342"><svg width="30" height="30"><use href="/images/icons.svg#code"/></svg></g>
+              <text x="345" y="114" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0c141d">Renderer</text>
+              <rect x="290" y="270" width="110" height="72" rx="12" fill="#3a4756"/>
+              <g transform="translate(330 280)" color="#78cd4b"><svg width="30" height="30"><use href="/images/icons.svg#brain"/></svg></g>
+              <text x="345" y="328" text-anchor="middle" font-size="12.5" font-weight="700" fill="#fff">UAG</text>
+            </g>
+            <path d="M404 92 L 440 92" stroke="#69b342" stroke-width="2.5" marker-end="url(#r-arrow)"/>
+            <path d="M404 306 L 440 306" stroke="#69b342" stroke-width="2.5" marker-end="url(#r-arrow)"/>
+
+            <g filter="url(#r-shadow)">
+              <rect x="448" y="20" width="166" height="150" rx="12" fill="#fff" stroke="#e0e5ec"/>
+              <text x="462" y="44" font-size="11" font-weight="700" fill="#0c141d">Urgency *</text>
+              <circle cx="469" cy="62" r="6" fill="#fff" stroke="#a7a7b8"/><text x="482" y="66" font-size="11" fill="#3a4756">Low</text>
+              <circle cx="469" cy="82" r="6" fill="#fff" stroke="#69b342"/><circle cx="469" cy="82" r="3" fill="#69b342"/><text x="482" y="86" font-size="11" fill="#3a4756">High</text>
+              <rect x="462" y="100" width="138" height="22" rx="4" fill="#f4f5f7" stroke="#e0e5ec"/>
+              <rect x="462" y="134" width="60" height="22" rx="4" fill="#69b342"/><text x="492" y="149" text-anchor="middle" font-size="10.5" font-weight="700" fill="#fff">Submit</text>
+              <text x="531" y="192" text-anchor="middle" font-size="12" font-weight="700" fill="#0c141d">For people</text>
+
+              <rect x="448" y="232" width="166" height="150" rx="12" fill="#212932"/>
+              <text font-family="JetBrains Mono, monospace" font-size="10" fill="#c4ccd6">
+                <tspan x="460" y="254" fill="#78cd4b">## urgency</tspan>
+                <tspan x="460" y="272">- type: choice</tspan>
+                <tspan x="460" y="288">- required: yes</tspan>
+                <tspan x="460" y="304">- allowed:</tspan>
+                <tspan x="470" y="320" fill="#b5e08f">"low" | "high"</tspan>
+                <tspan x="460" y="338">- ask: "How urgent</tspan>
+                <tspan x="470" y="354">is the issue?"</tspan>
+              </text>
+              <text x="531" y="400" text-anchor="middle" font-size="12" font-weight="700" fill="#0c141d">For agents</text>
+            </g>
+          </svg>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section section-tint">
+      <div class="container">
+        <div class="section-head center">
+          <h2>Try it yourself!</h2>
+        </div>
+        <div class="grid grid-3">
+          <a class="card card-link" href="/examples/conversation">
+            <div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#chat"/></svg></div>
+            <span class="num">01 · CONVERSATION FORMS</span>
+            <h3>Talk to a form</h3>
+            <p>A customer describes a problem in plain language. The agent asks only what the form needs and submits validated data.</p>
+            <p class="link-arrow">Try it</p>
+          </a>
+          <a class="card card-link" href="/examples/workflow">
+            <div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#workflow"/></svg></div>
+            <span class="num">02 · AGENTIC WORKFLOW</span>
+            <h3>Hand off the review</h3>
+            <p>An agent reviews each submission against criteria you define in the form and records its findings. When needed, it hands off to a second agent.</p>
+            <p class="link-arrow">Try it</p>
+          </a>
+          <a class="card card-link" href="/examples/formflow">
+            <div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#wizard"/></svg></div>
+            <span class="num">03 · AGENTIC FORMFLOW</span>
+            <h3>Forms that fill themselves</h3>
+            <p>The user describes what happened. A decision engine picks the wizard pages that apply, and extraction prefills them for the user to check.</p>
+            <p class="link-arrow">Try it</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-dark">
+      <div class="container">
+        <div class="section-head">
+          <h2>Agents inherit <span class="accent">your users' permissions</span>.</h2>
+          <p>A prompt can't enforce permissions, so the UAG does. Every agent request goes through the same authentication, permissions and validation as a person using your application.</p>
+        </div>
+        <figure class="figure diagram figure-wide" style="margin-bottom:56px" aria-label="An agent request passes through authentication, role-based permissions, form validation and a single validated write, and is recorded with provenance.">
+          <svg viewBox="0 0 1150 170" role="img">
+            <defs><marker id="g-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#78cd4b"/></marker></defs>
+            <g font-weight="600">
+              <rect x="0" y="40" width="160" height="90" rx="14" fill="#2a333e" stroke="#4a5b6e"/>
+              <text x="80" y="80" text-anchor="middle" fill="#fff" font-size="15">Agent request</text>
+              <text x="80" y="102" text-anchor="middle" fill="#8d99a8" font-size="12" font-weight="500">tool call or API</text>
+              <g fill="#fff" font-size="14">
+                <rect x="210" y="30" width="190" height="110" rx="14" fill="#4a5b6e"/><text x="305" y="74" text-anchor="middle">Authenticate</text><text x="305" y="96" text-anchor="middle" fill="#b9c2ce" font-size="12" font-weight="500">OAuth PKCE, your SSO</text><text x="305" y="114" text-anchor="middle" fill="#b9c2ce" font-size="12" font-weight="500">or a scoped token</text>
+                <rect x="440" y="30" width="190" height="110" rx="14" fill="#4a5b6e"/><text x="535" y="74" text-anchor="middle">Authorize</text><text x="535" y="96" text-anchor="middle" fill="#b9c2ce" font-size="12" font-weight="500">the caller's own roles</text><text x="535" y="114" text-anchor="middle" fill="#b9c2ce" font-size="12" font-weight="500">and permissions</text>
+                <rect x="670" y="30" width="190" height="110" rx="14" fill="#4a5b6e"/><text x="765" y="74" text-anchor="middle">Validate</text><text x="765" y="96" text-anchor="middle" fill="#b9c2ce" font-size="12" font-weight="500">types, options, rules,</text><text x="765" y="114" text-anchor="middle" fill="#b9c2ce" font-size="12" font-weight="500">conditionals</text>
+                <rect x="900" y="30" width="250" height="110" rx="14" fill="#69b342"/><text x="1025" y="74" text-anchor="middle">Write once &amp; record</text><text x="1025" y="96" text-anchor="middle" fill="#edfae6" font-size="12" font-weight="500">the UAG saves, never the model,</text><text x="1025" y="114" text-anchor="middle" fill="#edfae6" font-size="12" font-weight="500">with engine, model and confidence</text>
+              </g>
+            </g>
+            <g stroke="#78cd4b" stroke-width="2.5" fill="none" marker-end="url(#g-arrow)">
+              <path d="M164 85 H 204" class="flowline"/><path d="M404 85 H 434" class="flowline"/><path d="M634 85 H 664" class="flowline"/><path d="M864 85 H 894" class="flowline"/>
+            </g>
+          </svg>
+        </figure>
+        <div class="grid grid-3">
+          <div class="card"><div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#lock"/></svg></div><h3>No model holds a write tool</h3><p>Engines return answers, and the UAG validates each value and writes it once, itself. Text in a submission can't get a model to change your records.</p></div>
+          <div class="card"><div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#shield"/></svg></div><h3>Your RBAC, unchanged</h3><p>Agents authenticate through your existing Form.io login, SAML or OIDC, and act with exactly the permissions of the person or service they represent.</p></div>
+          <div class="card"><div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#audit"/></svg></div><h3>A record of every decision</h3><p>Each decision records its engine, model, confidence and source. With Form.io Enterprise, submission revisions show who changed what, human or agent.</p></div>
+          <div class="card"><div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#gauge"/></svg></div><h3>Confidence thresholds</h3><p>Decision engines answer closed questions with a confidence score. Below the threshold you set, the field is left for a person to answer.</p></div>
+          <div class="card"><div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#check"/></svg></div><h3>Re-decided on the server</h3><p>Values decided in a browser can be tampered with. An "Agent: Run task" action before the save decides again on the server, and fields marked authoritative take only its answer.</p></div>
+          <div class="card"><div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#refresh"/></svg></div><h3>Change it without a deploy</h3><p>Rewrite the instructions in the form builder and agents follow them from the UAG's next project refresh, with no restart. To undo a change, restore an earlier form revision.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container split split-reverse">
+        <div>
+          <h2>Your data stays with you.</h2>
+          <p class="lede">Run the UAG next to Form.io in your own cloud, data center or air-gapped environment. It needs no public endpoint, and with a local model no data leaves your network.</p>
+          <ul class="checks">
+            <li><strong>One container</strong> on Docker or Kubernetes, beside your Form.io deployment.</li>
+            <li><strong>Private by default:</strong> your applications connect out to the UAG; no public endpoint, no tunnel.</li>
+            <li><strong>Local models</strong> through Ollama or vLLM, or engines isolated on their own server so model keys stay out of the gateway.</li>
+            <li><strong>Enterprise ready:</strong> RBAC, FIPS-compliant deployments, form and submission revisions, stage deployments.</li>
+            <li><strong>Open source</strong> under the MIT license, so you can read the code that handles your data.</li>
+          </ul>
+          <p style="margin-top:28px"><a class="link-arrow" href="/getting-started">Deploy it in your environment</a></p>
+        </div>
+        <figure class="figure diagram figure-wide figure-narrow" aria-label="Inside your network: your applications, Form.io, the UAG and its engines. Only model calls leave, and with local models nothing does.">
+          <svg viewBox="0 0 560 430" role="img">
+            <defs>
+              <filter id="s-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0c141d" flood-opacity=".12"/></filter>
+              <marker id="s-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#566073"/></marker>
+            </defs>
+            <rect x="8" y="8" width="410" height="414" rx="20" fill="#f6fbf2" stroke="#69b342" stroke-width="1.5" stroke-dasharray="7 6"/>
+            <text x="30" y="38" fill="#5a9a39" font-size="11" font-weight="700" letter-spacing="1.6">YOUR NETWORK</text>
+            <g filter="url(#s-shadow)" font-size="13" font-weight="700" fill="#0c141d">
+              <rect x="30" y="60" width="170" height="70" rx="12" fill="#fff" stroke="#e0e5ec"/><text x="50" y="92">Your applications</text><text x="50" y="112" font-size="11" font-weight="500" fill="#566073">portals, chat, services</text>
+              <rect x="226" y="60" width="170" height="70" rx="12" fill="#fff" stroke="#e0e5ec"/><image href="/images/brand/icon-formio-lightbg.svg" x="244" y="78" width="18" height="18"/><text x="268" y="92">Form.io</text><text x="246" y="112" font-size="11" font-weight="500" fill="#566073">forms, data, actions</text>
+              <rect x="30" y="180" width="366" height="88" rx="14" fill="#3a4756"/>
+              <g transform="translate(50 204)" color="#78cd4b"><svg width="36" height="36"><use href="/images/icons.svg#shield"/></svg></g>
+              <text x="98" y="218" fill="#fff" font-size="17">Universal Agent Gateway</text><text x="98" y="240" fill="#b9c2ce" font-size="11.5" font-weight="500">MCP · Agent API · validation · audit</text>
+              <rect x="30" y="318" width="170" height="80" rx="12" fill="#fff" stroke="#e0e5ec"/><text x="50" y="350">Engine server</text><text x="50" y="370" font-size="11" font-weight="500" fill="#566073">model keys stay here</text>
+              <rect x="226" y="318" width="170" height="80" rx="12" fill="#fff" stroke="#e0e5ec"/><text x="246" y="350">Local model</text><text x="246" y="370" font-size="11" font-weight="500" fill="#566073">Ollama, vLLM: no egress</text>
+            </g>
+            <g stroke="#566073" stroke-width="2" fill="none" marker-end="url(#s-arrow)">
+              <path d="M115 134 V 174"/><path d="M311 176 V 136"/><path d="M115 272 V 312"/><path d="M311 272 V 312"/>
+            </g>
+            <path d="M400 224 C 440 224, 466 234, 487 209 L496 198" stroke="#a7a7b8" stroke-width="2" fill="none" stroke-dasharray="5 5" marker-end="url(#s-arrow)"/>
+            <g filter="url(#s-shadow)">
+              <rect x="440" y="130" width="112" height="62" rx="12" fill="#fff" stroke="#e0e5ec"/>
+              <text x="496" y="158" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0c141d">Model APIs</text>
+              <text x="496" y="176" text-anchor="middle" font-size="10.5" fill="#566073">optional, outbound</text>
+            </g>
+            <text x="496" y="116" text-anchor="middle" font-size="10.5" fill="#566073">no inbound access</text>
+          </svg>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section section-tint">
+      <div class="container">
+        <div class="section-head center">
+          <h2>The right engine for every field.</h2>
+          <p>Closed choices go to a decision engine that reports its confidence. Open values go to an agent engine such as Claude. Changing models is a configuration change.</p>
+        </div>
+        <figure class="figure diagram figure-wide" aria-label="Closed-set fields go to calibrated decision engines; open values go to agent engines. Both answer the UAG, which validates and saves.">
+          <svg viewBox="0 0 1100 300" role="img">
+            <defs>
+              <filter id="e-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0c141d" flood-opacity=".1"/></filter>
+              <marker id="e-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#69b342"/></marker>
+            </defs>
+            <g filter="url(#e-shadow)">
+              <rect x="0" y="30" width="250" height="240" rx="16" fill="#fff" stroke="#e0e5ec"/>
+              <text x="24" y="64" font-size="13" font-weight="700" fill="#0c141d">A task's fields</text>
+              <g font-size="12" font-weight="600">
+                <rect x="24" y="82" width="202" height="30" rx="7" fill="#e6f3fb"/><text x="38" y="102" fill="#0079c0">Claim type · radio</text>
+                <rect x="24" y="120" width="202" height="30" rx="7" fill="#e6f3fb"/><text x="38" y="140" fill="#0079c0">Injury? · yes / no</text>
+                <rect x="24" y="158" width="202" height="30" rx="7" fill="#edfae6"/><text x="38" y="178" fill="#5a9a39">Date of loss · date</text>
+                <rect x="24" y="196" width="202" height="30" rx="7" fill="#edfae6"/><text x="38" y="216" fill="#5a9a39">Summary · free text</text>
+              </g>
+              <text x="24" y="252" font-size="11" fill="#566073">tagged in the form builder</text>
+            </g>
+            <g stroke="#69b342" stroke-width="2.5" fill="none" marker-end="url(#e-arrow)">
+              <path d="M256 115 C 318 115, 318 88, 380 88 H400"/>
+              <path d="M256 195 C 318 195, 318 212, 380 212 H400"/>
+              <path d="M710 88 C 768 88, 768 150, 826 150 H846"/>
+              <path d="M710 212 C 768 212, 768 150, 826 150 H846"/>
+            </g>
+            <g filter="url(#e-shadow)">
+              <rect x="406" y="30" width="300" height="116" rx="16" fill="#3a4756"/>
+              <text x="430" y="62" font-size="14" font-weight="700" fill="#fff">Decision engines</text>
+              <text x="430" y="82" font-size="11.5" fill="#b9c2ce">closed sets · calibrated confidence · fast</text>
+              <g font-size="11.5" font-weight="600" fill="#fff"><rect x="430" y="98" width="70" height="28" rx="14" fill="#56687d"/><text x="465" y="116" text-anchor="middle">JEV</text><rect x="508" y="98" width="170" height="28" rx="14" fill="#56687d"/><text x="593" y="116" text-anchor="middle">OpenAI Decisions</text></g>
+              <rect x="406" y="160" width="300" height="116" rx="16" fill="#3a4756"/>
+              <text x="430" y="192" font-size="14" font-weight="700" fill="#fff">Agent engines</text>
+              <text x="430" y="212" font-size="11.5" fill="#b9c2ce">open values · read-only research tools</text>
+              <g font-size="11" font-weight="600" fill="#fff">
+                <rect x="430" y="228" width="58" height="28" rx="14" fill="#56687d"/><text x="459" y="246" text-anchor="middle">Claude</text>
+                <rect x="494" y="228" width="58" height="28" rx="14" fill="#56687d"/><text x="523" y="246" text-anchor="middle">OpenAI</text>
+                <rect x="558" y="228" width="58" height="28" rx="14" fill="#56687d"/><text x="587" y="246" text-anchor="middle">Gemini</text>
+                <rect x="622" y="228" width="62" height="28" rx="14" fill="#56687d"/><text x="653" y="246" text-anchor="middle">Ollama</text>
+              </g>
+              <rect x="852" y="96" width="248" height="108" rx="16" fill="#69b342"/>
+              <text x="976" y="134" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">UAG validates &amp; saves</text>
+              <text x="976" y="156" text-anchor="middle" font-size="11.5" fill="#edfae6">confident · uncertain · suggested</text>
+              <text x="976" y="176" text-anchor="middle" font-size="11.5" fill="#edfae6">people confirm the rest</text>
+            </g>
+          </svg>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head center">
+          <h2>With and without the UAG.</h2>
+        </div>
+        <div class="compare">
+          <div class="compare-col">
+            <h4>Agents wired straight to your data</h4>
+            <ul>
+              <li>Business rules live in prompts and drift between agents</li>
+              <li>Models hold write access to your systems</li>
+              <li>Every new form means new agent code</li>
+              <li>No record of which model decided what</li>
+              <li>Data leaves your security boundary</li>
+            </ul>
+          </div>
+          <div class="compare-col good">
+            <h4>Agents through the UAG</h4>
+            <ul>
+              <li>One JSON schema governs people and agents alike</li>
+              <li>The UAG validates and writes; models only answer</li>
+              <li>New forms are discovered, not coded</li>
+              <li>Provenance on every decision and value</li>
+              <li>Self-hosted, with local models when you need them</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-ink" id="agentic-coding">
+      <div class="container split">
+        <div>
+          <h2>Let your coding agent build it.</h2>
+          <p>The Form.io Agentic Coding Plugin gives Claude Code, Cursor, Codex and other coding agents that read skills the Form.io skill library, including the <code>formio-uag</code> skill. Describe what the agent should do, and your coding agent tags and writes your forms for agents, designs their tasks, deploys the UAG and its engines, and wires your application to it.</p>
+          <ul class="checks">
+            <li>Each example page links the prompt that builds that demo in your own project.</li>
+            <li>The plugin writes forms through the Form.io MCP server and shows you each change before it saves.</li>
+            <li>Settings that open a form to anonymous users or spend model credits are listed separately for you to confirm.</li>
+          </ul>
+          <div class="hero-actions" style="margin-top:28px">
+            <a class="btn btn-primary" href="{{links.plugin}}" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="/images/icons.svg#github"/></svg>Get the plugin</a>
+            <a class="btn btn-outline-light" href="/developers/agentic-coding">Plugin guide</a>
+          </div>
+        </div>
+        <div>
+          <div class="code"><div class="code-bar"><span>bash</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-bash"># In your application's folder
+npx skills add formio/ai
+
+# Or, in Claude Code, the plugin with the Form.io MCP server
+/plugin marketplace add https://github.com/formio/ai.git
+/plugin install formio-ai@formio</code></pre></div>
+          <div class="code code-prose"><div class="code-bar"><span>Then ask your coding agent</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code>Put a chat on our public support page where customers describe their problem to an AI agent. The agent then interviews the user for the necessary information and submits our "serviceRequest" form for them.</code></pre></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-green">
+      <div class="container cta-band">
+        <div>
+          <h2>Take it to production.</h2>
+          <p>Form.io has run enterprise data collection for more than a decade. We can help with licensing, architecture and support.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-light" href="/contact">Talk to Sales <span class="arrow"></span></a>
+          <a class="btn btn-outline-light" href="#agentic-coding">Install the plugin</a>
+        </div>
+      </div>
+    </section>

@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 450" role="img" aria-labelledby="t d">
+  <title id="t">The demo site's Compose stack</title>
+  <desc id="d">A visitor reaches your load balancer over HTTPS, which sends plain HTTP to the site, the only published service. On the stack's private network, the site calls the UAG through the flow proxy it runs inside it, for the Agent API (the chat's turns and the claim's extraction) and the saves of the chat's requests, the workflow's applications and the claims, and shows each visitor their own calls in the flow viewer. The UAG runs the JEV and Claude engines inside it and calls the JEV and Claude APIs; the site calls no model itself. The UAG reads the demo's project on Form.io's hosted service, https://uag.form.io, and forwards every save to it; the site reads forms and applications from it directly with the project key. Nothing calls back into the stack.</desc>
+  <defs>
+    <style>
+      text { font-family: Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; fill: #0c141d; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .h { font-size: 14px; font-weight: 700; }
+      .s { font-size: 11.5px; fill: #566073; }
+      .lab { font-size: 11px; font-weight: 700; letter-spacing: .08em; fill: #8d99a8; }
+      .e { font-size: 11px; fill: #3f7a22; font-weight: 600; }
+      .g { font-size: 11px; fill: #566073; }
+      .w { fill: #fff; }
+      .wm { fill: #c9d2dc; }
+      .card { fill: #fff; stroke: #d7dde5; stroke-width: 1.2; }
+      .chip { fill: #f1f4f7; stroke: #d7dde5; stroke-width: 1; }
+      .chip-dark { fill: #4a5b6e; }
+      .flow { stroke: #69b342; stroke-width: 2.2; fill: none; }
+    </style>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#69b342"/></marker>
+  </defs>
+  <rect x="1" y="1" width="998" height="448" rx="18" fill="#fff" stroke="#e0e5ec"/>
+
+  <!-- Outside -->
+  <rect x="20" y="146" width="96" height="58" rx="10" class="card"/>
+  <text x="68" y="172" text-anchor="middle" class="h">Visitor</text>
+  <text x="68" y="190" text-anchor="middle" class="s">a browser</text>
+  <path d="M118 175 H148" class="flow" marker-end="url(#a)"/>
+  <text x="133" y="166" text-anchor="middle" class="e">HTTPS</text>
+
+  <rect x="152" y="138" width="112" height="74" rx="10" class="card"/>
+  <text x="208" y="164" text-anchor="middle" class="h">Load balancer</text>
+  <text x="208" y="182" text-anchor="middle" class="s">yours, routes every</text>
+  <text x="208" y="197" text-anchor="middle" class="s">path to the site</text>
+  <path d="M266 175 H318" class="flow" marker-end="url(#a)"/>
+  <text x="296" y="166" text-anchor="end" class="e">HTTP</text>
+
+  <!-- Private network -->
+  <rect x="300" y="24" width="540" height="290" rx="14" fill="#f8fafb" stroke="#3a4756" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <text x="318" y="46" class="lab">COMPOSE STACK · PRIVATE NETWORK</text>
+
+  <rect x="322" y="96" width="180" height="150" rx="10" fill="#3a4756"/>
+  <text x="412" y="122" text-anchor="middle" class="h w">site</text>
+  <text x="412" y="142" text-anchor="middle" class="s wm">pages, docs, the</text>
+  <text x="412" y="157" text-anchor="middle" class="s wm">demos' back ends</text>
+  <rect x="340" y="174" width="144" height="54" rx="8" class="chip-dark"/>
+  <text x="412" y="196" text-anchor="middle" class="s w" style="font-weight:600">flow proxy</text>
+  <text x="412" y="213" text-anchor="middle" class="s wm" style="font-size:10.5px">logs each call it makes</text>
+  <text x="412" y="268" text-anchor="middle" class="g">the only published</text>
+  <text x="412" y="282" text-anchor="middle" class="g">service (DEMO_PORT)</text>
+
+  <rect x="600" y="96" width="210" height="150" rx="10" class="card"/>
+  <text x="705" y="122" text-anchor="middle" class="h">formio-uag</text>
+  <text x="705" y="142" text-anchor="middle" class="s">the UAG, built from</text>
+  <text x="705" y="157" text-anchor="middle" class="s">this repository</text>
+  <rect x="618" y="174" width="82" height="54" rx="8" class="chip"/>
+  <text x="659" y="196" text-anchor="middle" class="s" style="font-weight:600;fill:#0c141d">JEV</text>
+  <text x="659" y="213" text-anchor="middle" class="s" style="font-size:10.5px">engine</text>
+  <rect x="710" y="174" width="82" height="54" rx="8" class="chip"/>
+  <text x="751" y="196" text-anchor="middle" class="s" style="font-weight:600;fill:#0c141d">Claude</text>
+  <text x="751" y="213" text-anchor="middle" class="s" style="font-size:10.5px">engine</text>
+
+  <!-- site -> UAG -->
+  <path d="M504 170 H596" class="flow" marker-end="url(#a)"/>
+  <text x="550" y="146" text-anchor="middle" class="e">saves,</text>
+  <text x="550" y="160" text-anchor="middle" class="e mono" style="font-size:10px">…/agent/*</text>
+
+  <!-- Models -->
+  <rect x="870" y="134" width="110" height="82" rx="10" class="card"/>
+  <text x="925" y="160" text-anchor="middle" class="h">Model APIs</text>
+  <text x="925" y="179" text-anchor="middle" class="s">TypeSafe JEV,</text>
+  <text x="925" y="194" text-anchor="middle" class="s">Anthropic Claude</text>
+  <path d="M812 175 H866" class="flow" marker-end="url(#a)"/>
+
+  <!-- Hosted project -->
+  <rect x="560" y="370" width="420" height="62" rx="10" class="card"/>
+  <text x="580" y="396" class="h">uag.form.io</text>
+  <text x="580" y="416" class="s">The demo's project on Form.io's hosted service.</text>
+  <path d="M705 248 V366" class="flow" marker-end="url(#a)"/>
+  <text x="716" y="340" class="e">reads the project,</text>
+  <text x="716" y="354" class="e">forwards every save</text>
+  <path d="M412 290 V401 H556" class="flow" marker-end="url(#a)"/>
+  <text x="400" y="372" text-anchor="end" class="e">reads forms and applications</text>
+  <text x="400" y="386" text-anchor="end" class="e">directly, with the project key</text>
+</svg>

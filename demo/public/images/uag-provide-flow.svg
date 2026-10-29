@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 640" role="img" aria-labelledby="t d">
+  <title id="t">Agent: Run task, after the save</title>
+  <desc id="d">Four lanes: the applicant's app, the UAG, the engines and the Form.io project. The app, whose project URL is the UAG, submits the form with the user's token. The UAG checks the token with Form.io and removes the fields the task owns from what the client sent, then forwards the create to Form.io, which saves the submission, runs its own actions and answers. The UAG answers the applicant with Form.io's response at once. In the background, the form's Agent: Run task action, set to run after the save, starts the task: the UAG loads the stored submission from Form.io and asks the engines at the same time; if a person saves meanwhile, the run starts again once on the new version. JEV decides the closed-set fields with a calibrated confidence, and Claude writes the empty value fields as suggestions, optionally researching with the task's read-only tools as the user who submitted. The UAG validates the answers and saves only what changed, as an update through the UAG, so the form's update actions run and one of them may start the next task; Form.io saves the update and runs its own actions.</desc>
+  <defs>
+    <style>
+      text { font-family: Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; fill: #0c141d; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .hd { font-size: 14px; font-weight: 700; }
+      .hs { font-size: 11px; fill: #566073; }
+      .t { font-size: 12.5px; font-weight: 600; }
+      .s { font-size: 11.5px; fill: #566073; }
+      .code { font-size: 11px; fill: #3f7a22; font-weight: 600; }
+      .n { font-size: 10.5px; font-weight: 700; fill: #fff; }
+      .g { font-size: 11px; fill: #566073; }
+      .box { fill: #fff; stroke: #d7dde5; stroke-width: 1.2; }
+      .uag { fill: #fff; stroke: #69b342; stroke-width: 1.5; }
+      .flow { stroke: #69b342; stroke-width: 2; fill: none; }
+      .back { stroke: #8d99a8; stroke-width: 1.8; fill: none; stroke-dasharray: 5 4; }
+    </style>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#69b342"/></marker>
+    <marker id="b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8d99a8"/></marker>
+  </defs>
+  <rect x="1" y="1" width="1098" height="638" rx="18" fill="#fff" stroke="#e0e5ec"/>
+
+  <!-- Lanes -->
+  <rect x="20" y="20" width="250" height="580" rx="10" fill="#f5f7fa"/>
+  <rect x="290" y="20" width="270" height="580" rx="10" fill="#edfae6"/>
+  <rect x="580" y="20" width="250" height="580" rx="10" fill="#eef6fb"/>
+  <rect x="850" y="20" width="230" height="580" rx="10" fill="#f5f7fa"/>
+  <text x="36" y="46" class="hd">Applicant's app</text>
+  <text x="36" y="63" class="hs">its project URL is the UAG</text>
+  <text x="306" y="46" class="hd">UAG</text>
+  <text x="306" y="63" class="hs">the form's Agent: Run task action</text>
+  <text x="596" y="46" class="hd">Engines</text>
+  <text x="596" y="63" class="hs">in the UAG, or on an engine server</text>
+  <text x="866" y="46" class="hd">Form.io project</text>
+  <text x="866" y="63" class="hs">stores the submission</text>
+
+  <!-- 1. The submission -->
+  <rect x="36" y="84" width="218" height="58" rx="9" class="box"/>
+  <text x="48" y="104" class="mono code">POST /:form/submission</text>
+  <text x="48" y="121" class="s">{ data }, with the user's token</text>
+  <text x="48" y="135" class="s">(<tspan class="mono">x-jwt-token</tspan>)</text>
+  <path d="M254 112 H302" class="flow" marker-end="url(#a)"/>
+  <rect x="306" y="84" width="238" height="58" rx="9" class="uag"/>
+  <circle cx="322" cy="101" r="9" fill="#69b342"/><text x="322" y="105" text-anchor="middle" class="n">1</text>
+  <text x="338" y="105" class="t">Check the user and the data</text>
+  <text x="338" y="122" class="s">token checked with Form.io; fields</text>
+  <text x="338" y="136" class="s">the task owns are removed</text>
+
+  <!-- 2. Forward -->
+  <rect x="306" y="154" width="238" height="44" rx="9" class="uag"/>
+  <circle cx="322" cy="176" r="9" fill="#69b342"/><text x="322" y="180" text-anchor="middle" class="n">2</text>
+  <text x="338" y="180" class="t">Forward the create</text>
+  <path d="M544 172 H862" class="flow" marker-end="url(#a)"/>
+  <rect x="866" y="150" width="198" height="56" rx="9" class="box"/>
+  <text x="878" y="170" class="mono code">POST …/submission</text>
+  <text x="878" y="187" class="s">saves it, runs its own actions</text>
+  <text x="878" y="200" class="s">and answers</text>
+
+  <!-- 3. Answer the applicant -->
+  <path d="M960 206 V236 H548" class="back" marker-end="url(#b)"/>
+  <text x="700" y="230" text-anchor="middle" class="g">the saved submission</text>
+  <rect x="306" y="214" width="238" height="44" rx="9" class="uag"/>
+  <circle cx="322" cy="236" r="9" fill="#69b342"/><text x="322" y="240" text-anchor="middle" class="n">3</text>
+  <text x="338" y="240" class="t">Answer the applicant</text>
+  <path d="M306 236 H258" class="flow" marker-end="url(#a)"/>
+  <rect x="36" y="214" width="218" height="44" rx="9" class="box"/>
+  <text x="48" y="232" class="mono code">201 { _id, data, … }</text>
+  <text x="48" y="249" class="s">Form.io's response, at once</text>
+
+  <!-- 4. Start the run -->
+  <rect x="306" y="270" width="238" height="44" rx="9" class="uag"/>
+  <circle cx="322" cy="292" r="9" fill="#69b342"/><text x="322" y="296" text-anchor="middle" class="n">4</text>
+  <text x="338" y="288" class="t">Start the task</text>
+  <text x="338" y="305" class="s">after the save, in the background</text>
+
+  <!-- 5. Load -->
+  <rect x="306" y="326" width="238" height="44" rx="9" class="uag"/>
+  <circle cx="322" cy="348" r="9" fill="#69b342"/><text x="322" y="352" text-anchor="middle" class="n">5</text>
+  <text x="338" y="352" class="t">Load the stored submission</text>
+  <path d="M544 348 H862" class="flow" marker-end="url(#a)"/>
+  <rect x="866" y="326" width="198" height="44" rx="9" class="box"/>
+  <text x="878" y="352" class="mono code">GET …/submission/:id</text>
+
+  <!-- 6. Engines -->
+  <rect x="306" y="382" width="238" height="118" rx="9" class="uag"/>
+  <circle cx="322" cy="400" r="9" fill="#69b342"/><text x="322" y="404" text-anchor="middle" class="n">6</text>
+  <text x="338" y="404" class="t">Ask the engines, at once</text>
+  <text x="338" y="423" class="s">Engines see the criteria, the input,</text>
+  <text x="338" y="438" class="s">uagContext and today's date, and</text>
+  <text x="338" y="453" class="s">only the fields they answer.</text>
+  <text x="338" y="476" class="s">If a person saves meanwhile, the run</text>
+  <text x="338" y="491" class="s">starts again once on the new version.</text>
+  <path d="M544 404 H592" class="flow" marker-end="url(#a)"/>
+  <path d="M592 422 H548" class="back" marker-end="url(#b)"/>
+  <rect x="596" y="382" width="218" height="54" rx="9" class="box"/>
+  <text x="608" y="401" class="t">JEV decides</text>
+  <text x="608" y="417" class="s">an option for each closed-set</text>
+  <text x="608" y="431" class="s">field, with a calibrated confidence</text>
+  <path d="M544 462 H592" class="flow" marker-end="url(#a)"/>
+  <path d="M592 480 H548" class="back" marker-end="url(#b)"/>
+  <rect x="596" y="444" width="218" height="54" rx="9" class="box"/>
+  <text x="608" y="463" class="t">Claude writes</text>
+  <text x="608" y="479" class="s">each empty value field,</text>
+  <text x="608" y="493" class="s">marked suggested</text>
+  <text x="596" y="512" class="g">It may first research with the task's</text>
+  <text x="596" y="526" class="g">read-only tools, as the user who submitted.</text>
+
+  <!-- 7. Save -->
+  <rect x="306" y="512" width="238" height="74" rx="9" class="uag"/>
+  <circle cx="322" cy="530" r="9" fill="#69b342"/><text x="322" y="534" text-anchor="middle" class="n">7</text>
+  <text x="338" y="534" class="t">Validate, save what changed</text>
+  <text x="338" y="552" class="s">as an update through the UAG, so</text>
+  <text x="338" y="566" class="s">the form's update actions run: one</text>
+  <text x="338" y="580" class="s">may start the next task</text>
+  <path d="M544 549 H862" class="flow" marker-end="url(#a)"/>
+  <rect x="866" y="512" width="198" height="74" rx="9" class="box"/>
+  <text x="878" y="533" class="mono code">PUT …/submission/:id</text>
+  <text x="878" y="551" class="s">saves the update and runs</text>
+  <text x="878" y="565" class="s">its own actions</text>
+
+  <text x="550" y="625" text-anchor="middle" class="s" style="font-weight:600;fill:#2a333e">Engines only answer: none is given a write tool. The UAG saves, and only what changed.</text>
+</svg>

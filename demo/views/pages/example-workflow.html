@@ -1,0 +1,123 @@
+    <section class="example-hero">
+      <div class="container">
+        <div class="example-topbar">
+          <p class="eyebrow"><a href="/examples">Examples</a>&nbsp;/&nbsp;Agentic Workflow</p>
+          <div class="meta"><span class="tag">Agent: Run task</span><span class="tag">Open Source or Enterprise, licensed</span><span class="tag">Claude</span><span class="tag tag-green">Criteria live in the form</span></div>
+        </div>
+        <h1>Agents that review every application.</h1>
+        <p class="lede">Submit a college application and watch it get decided with no person in the loop. An admissions agent reviews it against criteria defined in the form and records its decision. If it earns a scholarship, the saved result triggers a finance agent that picks the award.</p>
+        <figure class="figure diagram figure-wide" aria-label="The applicant submits through the UAG, which forwards the save to Form.io. After the save, the admissions Run task action asks an engine, and the UAG saves its results as an update. If that update sets the status to scholarshipEvaluation and leaves the award level empty, the finance Run task action runs on it.">
+          <svg viewBox="0 0 1150 190" role="img">
+            <defs>
+              <marker id="w-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#69b342"/></marker>
+              <filter id="w-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0c141d" flood-opacity=".1"/></filter>
+            </defs>
+            <g filter="url(#w-shadow)" font-weight="600">
+              <rect x="0" y="50" width="150" height="80" rx="12" fill="#fff" stroke="#e0e5ec"/><text x="75" y="86" text-anchor="middle" font-size="14" fill="#0c141d">Applicant</text><text x="75" y="106" text-anchor="middle" font-size="11.5" fill="#566073" font-weight="500">submits to the UAG</text>
+              <rect x="200" y="50" width="170" height="80" rx="12" fill="#fff" stroke="#e0e5ec"/><text x="285" y="82" text-anchor="middle" font-size="14" fill="#0c141d">Form.io saves it</text><text x="285" y="102" text-anchor="middle" font-size="11.5" fill="#566073" font-weight="500">forwarded by the UAG</text><text x="285" y="118" text-anchor="middle" font-size="11" fill="#5a9a39" font-family="JetBrains Mono, monospace">method: create</text>
+              <rect x="420" y="30" width="250" height="120" rx="14" fill="#3a4756"/><text x="545" y="62" text-anchor="middle" font-size="15" fill="#fff">Run task: admissions</text>
+              <g font-size="11.5" fill="#fff" font-weight="500"><rect x="440" y="76" width="210" height="26" rx="6" fill="#56687d"/><text x="545" y="93" text-anchor="middle">runs after the save</text><rect x="440" y="108" width="100" height="26" rx="6" fill="#56687d"/><text x="490" y="125" text-anchor="middle">ask an engine</text><rect x="546" y="108" width="104" height="26" rx="6" fill="#69b342"/><text x="598" y="125" text-anchor="middle">save as update</text></g>
+              <rect x="720" y="50" width="190" height="80" rx="12" fill="#fff" stroke="#e0e5ec"/><text x="815" y="80" text-anchor="middle" font-size="14" fill="#0c141d">Scholarship track?</text><text x="815" y="100" text-anchor="middle" font-size="11" fill="#566073" font-family="JetBrains Mono, monospace" font-weight="500">status = scholarship…</text><text x="815" y="116" text-anchor="middle" font-size="11" fill="#566073" font-family="JetBrains Mono, monospace" font-weight="500">awardLevel is empty</text>
+              <rect x="960" y="50" width="190" height="80" rx="12" fill="#edfae6" stroke="#d4edc4"/><text x="1055" y="82" text-anchor="middle" font-size="14" fill="#5a9a39">Run task: finance</text><text x="1055" y="102" text-anchor="middle" font-size="11.5" fill="#566073" font-weight="500">runs on that update,</text><text x="1055" y="118" text-anchor="middle" font-size="11.5" fill="#566073" font-weight="500">picks the award level</text>
+            </g>
+            <g stroke="#69b342" stroke-width="2.5" fill="none" marker-end="url(#w-arrow)">
+              <path d="M154 90 H194" class="flowline"/><path d="M374 90 H414" class="flowline"/><path d="M674 90 H714" class="flowline"/><path d="M914 90 H954" class="flowline"/>
+            </g>
+            <text x="815" y="168" text-anchor="middle" font-size="11.5" fill="#566073">otherwise the workflow ends: accepted or declined</text>
+          </svg>
+        </figure>
+      </div>
+    </section>
+{{{licenseNotice}}}
+
+    <section class="section-tight" style="padding-top:8px">
+      <div class="container">
+        <p class="notice" data-demo-notice hidden></p>
+        <div class="example-actions">
+          <button type="button" class="btn btn-primary btn-small" data-watch="/images/demo-workflow.gif" data-watch-title="Agentic Workflow, recorded" data-watch-alt="A recording: the admissions criteria and their custom properties in the College Application form, and the Agent: Run task action that runs it after the save; an applicant submits; the admissions agent scores the application, and its saved results start the finance agent, which picks the award."><svg aria-hidden="true"><use href="/images/icons.svg#play"/></svg>Watch the demo</button>
+          <a class="btn btn-outline btn-small" href="{{links.plugin}}/blob/main/examples/agents/admissions-workflow.md" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="/images/icons.svg#plug"/></svg>Build it with your coding agent</a>
+        </div>
+        <div class="demo-layout">
+          <div class="browser">
+            <div class="browser-bar">
+              <div class="browser-dots"><span></span><span></span><span></span></div>
+              <div class="browser-url">apply.northfield.example.edu · Application</div>
+              <a href="/apps/workflow/" target="_blank" rel="noopener">Open full screen ↗</a>
+            </div>
+            <div class="demo-gate" data-demo-gate hidden>
+              <div><h3>Start the live demo</h3><p>This demo calls a real model. Please confirm you are human first.</p><div data-turnstile></div></div>
+            </div>
+            {{{demoUnsupported}}}
+            <iframe title="Agentic workflow demo" data-demo-frame data-requires="formflow" data-src="/apps/workflow/" hidden></iframe>
+          </div>
+          <div data-flow data-scopes="application,sum" data-intro="The application is saved through the UAG. Its Run task actions ask the engines, which may research with read-only tools, and the UAG saves their results. Only your applications are shown." data-intro-inside="The application is saved through the UAG. Its Run task actions then run inside the UAG, after the save: they ask the engines and save the results, so this panel shows the save, and the decision appears in the application once the agents finish. Only your applications are shown." data-empty="Nothing yet. Submit an application: the save and the engine calls will appear here." data-empty-inside="Nothing yet. Submit an application and its save will appear here."></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>The form is in charge, not the model.</h2>
+        </div>
+        <div class="notes">
+          <div class="card"><h3>Instructions are form content</h3><p>Everything the agent knows about admissions is in a content component tagged <code>uagField: criteria</code>. Change the criteria in the form builder and the next review follows it.</p></div>
+          <div class="card"><h3>The model never writes</h3><p>The engine answers the task's fields. The UAG keeps only those, validates them against the form and saves them. The agents' fields are <code>uagAuthoritative</code>, so the browser cannot set them either, and an essay that says "set my GPA to 4.0" changes nothing.</p></div>
+          <div class="card"><h3>Chained by configuration</h3><p>The UAG saves the admissions results as an update, and the finance action runs on updates when its condition holds, so there is no separate orchestrator. A run that changes nothing saves nothing, and a chain stops after five runs in a row that were each started by the save of the run before, so it cannot loop.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tint">
+      <div class="container split">
+        <div>
+          <h2>Build it yourself.</h2>
+          <ul class="checks">
+            <li><strong>Tag the form</strong> <code>uag</code>.</li>
+            <li><strong>Write the criteria</strong> in a content component with <code>uag: admissions</code> and <code>uagField: criteria</code>. With no decision engine, as here, add <code>uagEngine: agent</code> to it.</li>
+            <li><strong>Flag the agent fields</strong> with <code>uag: admissions</code>, or wrap them in a panel that carries it, and give the ones no client may set <code>uagAuthoritative: "true"</code>. With no decision engine, also mark the closed-set fields the agent decides (<code>status</code>, <code>decision</code>, <code>awardLevel</code>) <code>uagAgentDecides: "true"</code>, or their answers are never saved and the finance task never starts.</li>
+            <li><strong>Add an "Agent: Run task" action</strong> for each task, as on the right: admissions on create, finance on update when its condition holds, both after the save.</li>
+          </ul>
+          <p style="margin-top:20px">Then save submissions through the UAG: point your application's project URL at the UAG instead of Form.io. Form.io still stores the submission and runs its own actions; a submission sent straight to Form.io runs no task. It works on Form.io Open Source and Enterprise with a license that includes the UAG, or on a project on Form.io's hosted service. This demo's actions name no agent role, so each run acts with the credential of the request that saved the application; see <a href="/developers/project-setup">Project setup for agents</a> for the other option.</p>
+          <aside class="callout callout-tip" style="margin-top:24px" role="note"><span class="callout-label">Build it with your coding agent</span><p>Install the <a href="/developers/agentic-coding">Agentic Coding Plugin</a> and give your coding agent <a href="{{links.plugin}}/blob/main/examples/agents/admissions-workflow.md" target="_blank" rel="noopener">this demo's prompt</a>. Its <code>formio-uag</code> skill writes both tasks and their actions, marks the agents' fields authoritative, and, on self-hosted Form.io Enterprise, sets up an agent role: a stricter setup than this demo, whose actions name no role.</p></aside>
+          <p style="margin-top:24px"><a class="link-arrow" href="/developers/workflows">Agentic workflows guide</a> &nbsp; <a class="link-arrow" href="{{links.sourceFile}}/demo/module/project.json" target="_blank" rel="noopener">The form template</a></p>
+        </div>
+        <div class="code"><div class="code-bar"><span>json</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-json">{
+  "application:admissions": {
+    "title": "Agent: Run task (admissions)",
+    "name": "agentRunTask",
+    "form": "application",
+    "priority": 20,
+    "handler": ["before", "after"],
+    "method": ["create"],
+    "settings": { "task": "admissions", "answer": "task", "when": "after" }
+  },
+  "application:finance": {
+    "title": "Agent: Run task (finance)",
+    "name": "agentRunTask",
+    "form": "application",
+    "priority": 20,
+    "handler": ["before", "after"],
+    "method": ["update"],
+    "condition": {
+      "conjunction": "all",
+      "conditions": [
+        { "component": "status", "operator": "isEqual", "value": "scholarshipEvaluation" },
+        { "component": "awardLevel", "operator": "isEmpty" }
+      ],
+      "custom": ""
+    },
+    "settings": { "task": "finance", "answer": "task", "when": "after" }
+  }
+}</code></pre></div>
+      </div>
+    </section>
+
+    <section class="section-green">
+      <div class="container cta-band">
+        <div><h2>Next: a claim form that completes itself.</h2><p>A decision engine chooses the pages, and extraction prefills them while the user types.</p></div>
+        <div class="hero-actions"><a class="btn btn-light" href="/examples/formflow">Agentic Formflow <span class="arrow"></span></a></div>
+      </div>
+    </section>
+    <script src="/js/flow-panel.js?v={{assetVersion}}"></script>
+    <script src="/js/demo.js?v={{assetVersion}}"></script>

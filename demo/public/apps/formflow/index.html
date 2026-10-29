@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Report a claim | Lantern Mutual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.css">
+  <link rel="stylesheet" href="/renderer/uag-js.css">
+  <link rel="stylesheet" href="claim.css">
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="lantern" viewBox="0 0 32 32">
+      <path d="M12 4.5a4 4 0 0 1 8 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <rect x="9" y="7" width="14" height="3" rx="1.5" fill="currentColor"/>
+      <path d="M10 10h12l-1.2 15H11.2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M16 13.5c2 2.2 2.6 4 2.6 5.4a2.6 2.6 0 0 1-5.2 0c0-1.4.6-3.2 2.6-5.4z" fill="#f2a93b"/>
+      <rect x="9" y="25" width="14" height="3" rx="1.5" fill="currentColor"/>
+    </symbol>
+  </svg>
+
+  <header class="topbar">
+    <div class="topbar-row">
+      <a class="brand" href="./">
+        <svg width="26" height="26"><use href="#lantern"/></svg>
+        <span class="brand-name">Lantern Mutual</span>
+      </a>
+      <button type="button" class="topbar-steps" aria-controls="rail" aria-expanded="false">Step 1 of 5</button>
+    </div>
+    <div class="progress" aria-hidden="true"><span style="width: 20%"></span></div>
+  </header>
+
+  <div class="shell">
+    <aside class="rail" id="rail" aria-label="Your claim">
+      <button type="button" class="rail-close">Close</button>
+      <a class="brand" href="./">
+        <svg width="32" height="32"><use href="#lantern"/></svg>
+        <span class="brand-name">Lantern Mutual<small>Claims</small></span>
+      </a>
+
+      <div class="claim-meta">
+        <h2>Report a claim</h2>
+        <p data-claim-policy>Not submitted yet</p>
+      </div>
+
+      <nav aria-label="Claim steps">
+        <ol class="steps" data-steps></ol>
+        <p class="steps-hint" data-steps-hint>More steps appear once we read your description.</p>
+      </nav>
+
+      <section class="activity" aria-labelledby="activity-title">
+        <h2 id="activity-title">Reading your claim</h2>
+        <p class="activity-empty" data-activity-empty>When you continue, we read your description, skip the questions that don't apply, and fill in what we can for you to check.</p>
+        <ol data-activity aria-live="polite"></ol>
+      </section>
+
+      <div class="help">
+        <strong>Need help?</strong>
+        Call <a href="tel:+18005550199">1-800-555-0199</a>, any time.
+        <p class="demo-note">Lantern Mutual is a fictional insurer. This demo runs on Form.io and the Universal Agent Gateway.</p>
+      </div>
+    </aside>
+
+    <main class="canvas">
+      <div class="page" data-intake>
+        <p class="page-count" data-page-count>Step 1 of 5</p>
+        <h1 class="page-title" tabindex="-1" data-page-title>What happened</h1>
+        <p class="page-lede" data-page-lede></p>
+        <div class="emergency" data-emergency>
+          <span><strong>Is anyone hurt or in danger?</strong> Call 911 first. You can report the claim afterwards.</span>
+        </div>
+        <div class="form-card">
+          <div id="claim"></div>
+          <div class="submit-error" role="alert" data-submit-error hidden></div>
+        </div>
+      </div>
+
+      <div class="page confirmation" data-confirmation hidden>
+        <p class="page-count">Claim submitted</p>
+        <h1 class="page-title" tabindex="-1" data-confirmation-title>We have your claim</h1>
+        <p class="page-lede" data-confirmation-lede></p>
+        <div class="claim-number">
+          <span>Your claim number</span>
+          <strong data-claim-number></strong>
+        </div>
+        <ol class="next-steps" data-next-steps></ol>
+        <div class="confirmation-actions">
+          <button type="button" class="button" data-print>Print this page</button>
+          <a class="button button-primary" href="./">Report another claim</a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="ticker" data-ticker role="status" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.js"></script>
+  <script src="/renderer/index.js"></script>
+  <script src="claim.js"></script>
+  <script src="/js/requires-formflow.js"></script>
+</body>
+</html>

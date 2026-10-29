@@ -1,0 +1,34 @@
+/* The page around the chat. The chat itself is styled by @formio/uag-js's uag-js.css, themed here with its --uag-chat-* properties. */
+:root { --bg: #f4f5f7; --paper: #fff; --line: #e0e5ec; --ink: #0c141d; --muted: #566073; --accent: #3a4756; --green: #69b342; --green-dark: #3f7a22; --green-tint: #edfae6; }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 Inter, system-ui, sans-serif; }
+main { height: 100%; display: flex; flex-direction: column; background: var(--paper); }
+header { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.logo { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--accent); color: #fff; font-size: 20px; }
+h1 { font-size: 15px; margin: 0; }
+header p { margin: 1px 0 0; color: var(--muted); font-size: 12.5px; }
+
+.chat-host {
+  flex: 1;
+  min-height: 0;
+  --uag-chat-font: Inter, system-ui, sans-serif;
+  --uag-chat-bg: var(--bg);
+  --uag-chat-border: var(--line);
+  --uag-chat-muted: var(--muted);
+  --uag-chat-accent: var(--green);
+  --uag-chat-user-bg: var(--accent);
+  --uag-chat-height: 100%;
+  --uag-chat-radius: 16px;
+}
+/* Full bleed inside the page: the page draws the frame. */
+.chat-host .uag-chat { border: 0; border-radius: 0; }
+.chat-host .uag-chat__message { border-radius: var(--uag-chat-radius); }
+.chat-host .uag-chat__message code { font: 12.5px 'JetBrains Mono', monospace; background: #f1f3f6; border-radius: 3px; padding: 0 3px; }
+
+.receipt { border-top: 1px solid #c9e8b4; background: var(--green-tint); padding: 12px 18px; font-size: 13.5px; max-height: 40%; overflow-y: auto; }
+.receipt strong { display: block; color: var(--green-dark); margin-bottom: 6px; }
+.receipt dl { display: grid; grid-template-columns: max-content 1fr; gap: 3px 14px; margin: 0; }
+.receipt dt { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.receipt dd { margin: 0; word-break: break-word; }

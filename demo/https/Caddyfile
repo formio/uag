@@ -1,0 +1,10 @@
+# The local HTTPS load balancer (docker-compose.https.yml): TLS for DEMO_DOMAIN
+# with Caddy's own certificate authority, every path to the site, server-sent
+# events streamed unbuffered. For a machine of your own or an internal network;
+# trust the authority's root once (see README.md, "Run it over HTTPS locally").
+{$DEMO_DOMAIN} {
+	tls internal
+	reverse_proxy site:8080 {
+		flush_interval -1
+	}
+}
