@@ -1,0 +1,23 @@
+# Only what the Dockerfile copies is needed; keep secrets and local builds out of
+# the build context, which a remote builder receives in full.
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.claude
+.yarn
+openspec
+node_modules
+**/node_modules
+lib
+coverage
+test
+# Workspace tests and the engine server's own build files.
+engines/*/test
+packages/*/test
+packages/engine-server/Dockerfile*
+# Not released (MAI is in preview): only its manifest, which the lockfile lists.
+engines/mai/*
+!engines/mai/package.json
