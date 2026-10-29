@@ -51,6 +51,34 @@ The images build from this repository (`docker compose build`). To deploy releas
 
 `PROJECT_KEY` is an API key of `https://uag.form.io`, made in the project's settings (API Keys). To run the stack on another hosted project, set `FORMIO_PROJECT_URL` and its key; the project's name is read from its subdomain (`FORMIO_PROJECT_NAME` overrides it).
 
+## Run it over HTTPS locally
+
+To try a deployment on your own machine as it will run behind a load balancer, at its own name over HTTPS, add `docker-compose.https.yml`. It puts [Caddy](https://caddyserver.com) in front of the site with a certificate authority of its own (`https/Caddyfile`), which streams the live demos' events unbuffered and sets `X-Forwarded-For`, as your load balancer should.
+
+1. In `.env`, set the name and use both files, so plain `docker compose` picks them up:
+
+   ```bash
+   DEMO_DOMAIN=ai.formio.local
+   COMPOSE_FILE=docker-compose.yml:docker-compose.https.yml
+   ```
+
+   Leave `DEMO_PUBLIC_URL` unset: the site is served at `https://<DEMO_DOMAIN>`.
+2. Point the name at your machine (both lines: a `.local` name otherwise waits on an IPv6 lookup first on macOS):
+
+   ```bash
+   printf '127.0.0.1 ai.formio.local\n::1 ai.formio.local\n' | sudo tee -a /etc/hosts
+   ```
+
+3. Start it, then trust Caddy's root certificate once (it is kept in the `caddy-data` volume):
+
+   ```bash
+   docker compose up -d
+   docker compose cp https:/data/caddy/pki/authorities/local/root.crt ./caddy-root.crt
+   sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain caddy-root.crt   # macOS
+   ```
+
+Then open `https://ai.formio.local`. `docker compose pull && docker compose up -d` moves it to the images `.env` names; `docker compose down` stops it (`-v` also removes the certificate authority, which must then be trusted again).
+
 ## Changing the domain
 
 The domain is one setting. Set `DEMO_DOMAIN` in `.env` to the new name (and `DEMO_PUBLIC_URL` only if it is not `https://<DEMO_DOMAIN>`), restart the site, and move the load balancer. Canonical links, social cards and cookies follow it. Nothing inside the stack names the public domain: every service reaches the others by their Compose names.

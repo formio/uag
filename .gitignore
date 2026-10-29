@@ -20,3 +20,6 @@ openspec/
 
 # Python bytecode (demo/recordings helpers)
 __pycache__/
+
+# The local HTTPS load balancer's root certificate (demo/README.md)
+demo/caddy-root.crt
