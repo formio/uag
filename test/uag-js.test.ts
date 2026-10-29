@@ -524,7 +524,7 @@ describe('@formio/uag-js registration', () => {
         it('registers a fetch plugin and displays that attach Agent Input', async () => {
             const mod = UAG('https://uag.test')(fakeFormio());
             expect(mod.fetch.uag).to.have.property('preRequest');
-            expect(Object.keys(mod.displays)).to.have.members(['webform', 'wizard']);
+            expect(Object.keys(mod.displays)).to.have.members(['webform', 'wizard', 'chat']);
             const form = new mod.displays.webform(claim, ['description']);
             expect(await form.attach()).to.equal('attached');
             expect(form.uagAgent).to.have.property('extract');
@@ -566,12 +566,133 @@ describe('@formio/uag-js registration', () => {
 
         it('attaches nothing with agentInput: false, and still routes submissions', () => {
             const mod = UAG('https://uag.test', { agentInput: false })(fakeFormio());
-            expect(mod).to.not.have.property('displays');
+            // Only the chat display: the form and wizard displays stay formio.js's own.
+            expect(Object.keys(mod.displays)).to.deep.equal(['chat']);
             expect(mod.fetch.uag).to.have.property('preRequest');
         });
 
         it('requires the UAG\'s URL', () => {
             expect(() => UAG('')).to.throw(/UAG's URL/);
         });
+    });
+});
+
+describe('Agent Input review of uncertain values', () => {
+    const uncertain = {
+        kind: 'decision',
+        patch: { 'triage.claimType': 'theft' },
+        fields: { 'triage.claimType': { path: 'triage.claimType', status: 'uncertain', alternatives: [{ label: 'Auto glass', value: 'autoGlass', confidence: 0.4 }] } }
+    };
+
+    /** A DOM node with just what the annotations use. */
+    const node = (): any => {
+        const children: any[] = [];
+        const listeners: Record<string, Function[]> = {};
+        return {
+            children,
+            focused: false,
+            appendChild(child: any) { children.push(child); child.parentNode = this; },
+            removeChild(child: any) { children.splice(children.indexOf(child), 1); },
+            contains: (child: any) => children.includes(child),
+            addEventListener(name: string, fn: Function) { (listeners[name] ||= []).push(fn); },
+            fire(name: string) { (listeners[name] || []).forEach((fn) => fn()); },
+            focus() { this.focused = true; }
+        };
+    };
+
+    async function reviewing(options: Record<string, any> = {}) {
+        const form: any = fakeForm({ description: 'x' });
+        const field = form.getComponent('triage.claimType');
+        field.element = node();
+        field.component.label = 'Kind of claim';
+        const agent = attach(form, { uagUrl: 'https://uag.test', trigger: 'button', fetch: fakeFetch(sse([['result', uncertain]])), requireReview: true, ...options });
+        await agent.extract().done;
+        const note = field.element.children[0];
+        const label = note.children.find((child: any) => child.className === 'uag-review');
+        return { form, agent, field, note, box: label.children[0] };
+    }
+
+    function beforeNext(form: any) {
+        return new Promise<any>((resolve) => form.options.hooks.beforeNext.call(form, {}, {}, (err: any) => resolve(err)));
+    }
+
+    function beforeSubmit(form: any, submission: any = { data: {} }) {
+        return new Promise<any[]>((resolve) => form.options.hooks.beforeSubmit.call(form, submission, (err: any, data: any) => resolve([err, data])));
+    }
+
+    beforeEach(() => { (global as any).document = { createElement: node }; });
+    afterEach(() => { delete (global as any).document; });
+
+    it('installs no hooks unless asked', async () => {
+        const form: any = fakeForm({ description: 'x' });
+        attach(form, { uagUrl: 'https://uag.test', trigger: 'button' });
+        expect(form.options.hooks).to.equal(undefined);
+    });
+
+    it('stops Next and Submit while an uncertain value is unchecked, marking its note and focusing its checkbox', async () => {
+        const { form, note, box } = await reviewing();
+        expect(note.className).to.equal('uag-chip uag-uncertain');
+        const err = await beforeNext(form);
+        expect(err).to.deep.equal([{ level: 'error', message: 'Kind of claim: tick "Yes, this looks right", or change the answer.' }]);
+        expect(note.className).to.equal('uag-chip uag-uncertain uag-review-needed');
+        expect(note.children[0].textContent).to.equal('Please check this before you continue. ');
+        expect(box.focused).to.equal(true);
+        const [submitErr] = await beforeSubmit(form);
+        expect(submitErr).to.have.length(1);
+    });
+
+    it('moves on once the value is ticked as right, turning the note green and clearing the error', async () => {
+        const { form, note, box } = await reviewing();
+        await beforeNext(form);
+        box.checked = true;
+        box.fire('change');
+        expect(note.className).to.equal('uag-chip uag-uncertain uag-reviewed');
+        expect(note.children[0].textContent).to.equal('Thanks for checking. ');
+        expect(await beforeNext(form)).to.equal(undefined);
+        const submission = { data: { a: 1 } };
+        expect(await beforeSubmit(form, submission)).to.deep.equal([null, submission]);
+        box.checked = false;
+        box.fire('change');
+        expect(note.className).to.equal('uag-chip uag-uncertain');
+        expect(await beforeNext(form)).to.have.length(1);
+    });
+
+    it('moves on once the user changes the value, or picks an alternative', async () => {
+        const typed = await reviewing();
+        typed.form.userTypes('triage.claimType', 'autoCollision');
+        expect(typed.note.className).to.equal('uag-chip uag-uncertain uag-reviewed');
+        expect(await beforeNext(typed.form)).to.equal(undefined);
+
+        const picked = await reviewing();
+        picked.note.children.find((child: any) => child.className === 'uag-alternative').fire('click');
+        expect(picked.form.values['triage.claimType']).to.equal('autoGlass');
+        expect(await beforeNext(picked.form)).to.equal(undefined);
+    });
+
+    it('checks only the current page on Next, skips hidden fields, and shows the first unchecked page on Submit', async () => {
+        const { form, field } = await reviewing();
+        const pages = [{ id: 'p0' }, { id: 'p1' }];
+        form.pages = pages;
+        form.page = 0;
+        field.parent = pages[1];
+        expect(await beforeNext(form)).to.equal(undefined);
+        form.setPage = async (page: number) => { form.page = page; };
+        const [err] = await beforeSubmit(form);
+        expect(form.page).to.equal(1);
+        expect(err).to.have.length(1);
+        field.visible = false;
+        expect((await beforeSubmit(form))[0]).to.equal(null);
+    });
+
+    it('runs before the Next trigger, so nothing is extracted until the page is checked, and detaching restores the hooks', async () => {
+        const shared = {};
+        const form: any = fakeForm({ description: 'x' });
+        form.options = { hooks: shared };
+        const fetch = fakeFetch(sse([['done', {}]]));
+        const agent = attach(form, { uagUrl: 'https://uag.test', trigger: 'next', fetch, requireReview: true });
+        expect(await beforeNext(form)).to.equal(undefined);
+        expect(fetch.calls).to.have.length(1);
+        agent.detach();
+        expect(form.options.hooks).to.equal(shared);
     });
 });

@@ -7,6 +7,8 @@ import { AgentRouter, FormAgentRouter, agentCredentials } from '../../src/agent/
 import { auth as fullAuth, claimForm, makeProject, requireTestLicense } from './fixtures';
 import { UAGProjectInterface } from '../../src/UAGProjectInterface';
 import { loadUAGEngines } from '../../src/agent/engines';
+// The engine reports its package's version, which moves with every release.
+const jevVersion: string = require('../../engines/jev/package.json').version;
 
 // Each test starts a fresh server on an ephemeral port. With Node's default
 // keep-alive agent, a pooled socket to an earlier server on a reused port can
@@ -282,7 +284,7 @@ describe('Agent API', () => {
             project.engines = await loadUAGEngines({ engines: ['next:jev', 'triage:stub-decision'] }, { TYPESAFE_API_KEY: 'ts-secret-key' });
             const res = await request(app(project)).get('/agent/capabilities');
             expect(res.body.engines).to.deep.equal([
-                { name: 'next', kind: 'decision', model: 'jev-1.13.0', type: 'jev', package: '@formio/uag-jev', version: '2.0.0' },
+                { name: 'next', kind: 'decision', model: 'jev-1.13.0', type: 'jev', package: '@formio/uag-jev', version: jevVersion },
                 { name: 'triage', kind: 'decision', model: 'stub-decision-1', type: 'stub-decision' },
             ]);
             expect(JSON.stringify(res.body)).to.not.include('ts-secret-key');
@@ -295,7 +297,9 @@ describe('Agent API', () => {
             expect(res.body.engines).to.deep.equal([{ name: 'jev', kind: 'decision', model: 'stub-decision-1' }]);
             expect(res.body.operations.decide).to.deep.equal({ available: true, engines: ['jev'] });
             expect(res.body.operations.generate.available).to.equal(false);
-            expect(Object.keys(res.body.operations)).to.have.members(['extract', 'decide', 'generate']);
+            expect(Object.keys(res.body.operations)).to.have.members(['extract', 'decide', 'generate', 'chat']);
+            // Chat needs an agent engine; a decision engine alone cannot serve it.
+            expect(res.body.operations.chat).to.deep.equal({ available: false, engines: [] });
             expect(res.body).to.not.have.property('tasks');
             expect(res.body.edition).to.equal('open-source');
             // Only the stub engines, unlicensed: a local project earns no allowance of its own.
