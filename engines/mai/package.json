@@ -1,6 +1,6 @@
 {
   "name": "@formio/uag-mai",
-  "version": "2.0.0-rc.2",
+  "version": "2.0.0-rc.3",
   "private": true,
   "description": "MAI engine for the Form.io Universal Agent Gateway (UAG): Microsoft's MAI models on Microsoft Foundry, for structured extraction with research over read-only tools.",
   "license": "MIT",
@@ -21,8 +21,8 @@
     "directory": "engines/mai"
   },
   "dependencies": {
-    "@formio/uag-openai": "^2.0.0-rc.2",
-    "@formio/uag-sdk": "^2.0.0-rc.2"
+    "@formio/uag-openai": "^2.0.0-rc.3",
+    "@formio/uag-sdk": "^2.0.0-rc.3"
   },
   "devDependencies": {
     "chai": "^6.3.0",
