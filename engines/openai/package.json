@@ -1,6 +1,6 @@
 {
   "name": "@formio/uag-openai",
-  "version": "2.0.0-rc.1",
+  "version": "2.0.0-rc.2",
   "description": "OpenAI engine for the Form.io Universal Agent Gateway (UAG): structured extraction, with research over read-only tools, on OpenAI or any server with its chat completions API (Ollama, vLLM, LM Studio, OpenRouter); and decisions with probabilities on OpenAI's Decisions API.",
   "keywords": [
     "formio",
@@ -42,7 +42,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@formio/uag-sdk": "^2.0.0-rc.1",
+    "@formio/uag-sdk": "^2.0.0-rc.2",
     "openai": "7.43.0"
   },
   "devDependencies": {

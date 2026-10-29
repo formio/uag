@@ -1,6 +1,6 @@
 {
   "name": "@formio/uag-js",
-  "version": "2.0.0-rc.1",
+  "version": "2.0.0-rc.2",
   "description": "The Form.io UAG for formio.js applications: register it once, and forms tagged \"uag\" save through the UAG and get Agent Input, without overwriting what the user entered.",
   "keywords": [
     "formio",

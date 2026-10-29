@@ -1,6 +1,6 @@
 {
   "name": "@formio/uag-gemini",
-  "version": "2.0.0-rc.1",
+  "version": "2.0.0-rc.2",
   "description": "Gemini engine for the Form.io Universal Agent Gateway (UAG): Google's Gemini models, for structured extraction with research over read-only tools.",
   "keywords": [
     "formio",
@@ -33,8 +33,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@formio/uag-openai": "^2.0.0-rc.1",
-    "@formio/uag-sdk": "^2.0.0-rc.1"
+    "@formio/uag-openai": "^2.0.0-rc.2",
+    "@formio/uag-sdk": "^2.0.0-rc.2"
   },
   "devDependencies": {
     "chai": "^6.3.0",
