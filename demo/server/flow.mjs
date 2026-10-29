@@ -16,8 +16,9 @@ const MAX_BYTES_PER_SESSION = 1024 * 1024;
 const MAX_DETAIL = 4096;
 
 export class FlowHub {
-    constructor({ url, key, streamsPerNetwork = 10 }, sessions, fetch = globalThis.fetch) {
+    constructor({ url, key, engines = 'remote', streamsPerNetwork = 10 }, sessions, fetch = globalThis.fetch) {
         this.url = url;
+        this.engines = engines;
         this.streamsPerNetwork = streamsPerNetwork;
         // Open streams, by client network.
         this.streams = new Map();
@@ -126,7 +127,7 @@ export class FlowHub {
                 // Ask proxies in front of the site not to buffer the stream.
                 'X-Accel-Buffering': 'no',
             });
-            res.write(`event: hello\ndata: ${JSON.stringify({ enabled: this.enabled, connected: this.connected })}\n\n`);
+            res.write(`event: hello\ndata: ${JSON.stringify({ enabled: this.enabled, connected: this.connected, engines: this.engines })}\n\n`);
             for (const event of req.session.flow.events) res.write(`data: ${JSON.stringify(event)}\n\n`);
             const clients = req.session.flow.clients;
             // A visitor with many tabs open gets a stream per tab, up to a few.

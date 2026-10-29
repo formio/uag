@@ -9,7 +9,7 @@ import { FlowHub } from '../server/flow.mjs';
 import { tokensOf } from '../server/conversation.mjs';
 import { render } from '../server/pages.mjs';
 import http from 'node:http';
-import { createServer as createFlowProxy, describeRequest } from '../flow/proxy.mjs';
+import { createServer as createFlowProxy, describeRequest, describeResponse } from '../flow/proxy.mjs';
 
 const config = (env = {}) => readConfig({ ADMIN_KEY: 'key', DEMO_SECRET: 'secret', ...env });
 
@@ -30,6 +30,14 @@ describe('Demo site', function () {
             expect(enterprise.uag.projectPath).to.equal('/demo');
             expect(config().formio.keyHeader).to.deep.equal({ 'x-admin-key': 'key' });
             expect(config().uag.projectPath).to.equal('');
+        });
+
+        it('knows where the engines run: inside the UAG with the site\'s own flow proxy, unless told', function () {
+            expect(config().flow.engines).to.equal('remote');
+            expect(config({ FLOW_UAG_URL: 'http://formio-uag:3200' }).flow.engines).to.equal('inside');
+            expect(config({ FLOW_ENGINES: 'inside' }).flow.engines).to.equal('inside');
+            expect(config({ FLOW_UAG_URL: 'http://formio-uag:3200', FLOW_ENGINES: 'remote' }).flow.engines).to.equal('remote');
+            expect(config({ FLOW_ENGINES: 'nonsense' }).flow.engines).to.equal('remote');
         });
 
         it('refuses to start in production without a cookie secret', function () {
@@ -298,6 +306,16 @@ describe('Demo site', function () {
                 .to.include({ kind: 'agent', operation: 'provide', form: 'application', task: 'admissions', submissionId: 'abc' });
             expect(describeRequest('/agent/provide', JSON.stringify({ formName: 'application', persona: 'finance', submissionId: 'abc' })))
                 .to.include({ form: 'application', task: 'finance' });
+        });
+
+        it('says which engines answered an Agent API stream, and how fast', function () {
+            const stream = [
+                'event: result\ndata: {"kind":"decision","engine":"jev","latencyMs":277,"fields":{}}',
+                'event: result\ndata: {"kind":"value","engine":"claude","latencyMs":1661,"fields":{}}',
+                'event: done\ndata: {"tasks":["triage"],"data":{}}',
+            ].join('\n\n');
+            expect(describeResponse(stream, 'text/event-stream')).to.equal('jev answered in 277 ms · claude answered in 1661 ms');
+            expect(describeResponse('event: done\ndata: {"tasks":[]}', 'text/event-stream')).to.equal('1 event');
         });
 
         it('marks token exchanges for redaction', function () {

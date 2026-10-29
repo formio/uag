@@ -117,6 +117,10 @@ export function readConfig(env = process.env) {
             // The UAG, when the site runs the flow proxy in front of it itself (one container
             // instead of uag-flow). The engines then run inside the UAG, so no engine server is shown.
             uagUrl: (env.FLOW_UAG_URL || '').replace(/\/+$/, ''),
+            // Where the engines run, which decides what the flow viewer can show: `remote`, on an
+            // engine server behind the flow proxy, so each engine call is seen; or `inside` the UAG,
+            // where its calls to them never cross the network. Inside by default with FLOW_UAG_URL.
+            engines: env.FLOW_ENGINES === 'inside' || env.FLOW_ENGINES === 'remote' ? env.FLOW_ENGINES : (env.FLOW_UAG_URL ? 'inside' : 'remote'),
         },
         chat: {
             // The form the conversation demo embeds as a chat, with @formio/uag-js.

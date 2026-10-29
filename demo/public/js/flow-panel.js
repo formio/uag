@@ -4,6 +4,10 @@
 // Each run is one X-Request-Id shared by all its legs: the call into the UAG,
 // what the UAG asked each engine, the engine's research calls back into /mcp,
 // and the save. Request and response events of one leg share a reqId.
+//
+// When the engines run inside the UAG (the stream's hello says `engines: "inside"`),
+// the UAG's calls to them never cross the network, so they have no legs: the map
+// says where they run, and lights them when an Agent API call that used them ends.
 (function () {
   var HIDDEN = /^(notification|notifications\/.*|stream|ping)$/;
   var NODES = {
@@ -51,8 +55,10 @@
     return ['http', 'other'];
   }
 
-  function edgesFor(event, run) {
+  function edgesFor(event, run, inside) {
     if (event.kind === 'engine') return ['uag-engines', 'engines-models'];
+    // Every Agent API operation asks an engine; inside the UAG, its answer is the only sign of it.
+    if (inside && event.kind === 'agent' && event.phase === 'response' && event.status < 400) return ['app-uag', 'uag-engines', 'engines-models'];
     if (event.kind === 'mcp') return run.engine ? ['engines-uag'] : ['app-uag'];
     if (event.kind === 'agent') return ['app-uag'];
     if (/\/submission/.test(event.path || '')) return ['app-uag', 'uag-formio'];
@@ -97,7 +103,8 @@
     h3.appendChild(live);
     h3.appendChild(document.createTextNode(options.title || 'Behind the scenes'));
     head.appendChild(h3);
-    head.appendChild(el('p', '', options.intro || 'Every call your demo makes, as it happens: into the UAG, out to the engines, and back. Only your own runs are shown.'));
+    var intro = el('p', '', options.intro || 'Every call your demo makes, as it happens: into the UAG, out to the engines, and back. Only your own runs are shown.');
+    head.appendChild(intro);
     var map = el('div', 'flow-map');
     map.innerHTML = mapSvg();
     var list = el('div', 'flow-list');
@@ -118,9 +125,21 @@
     var legs = {};
     var total = 0;
     var activeTimers = {};
+    var inside = false;
+
+    /** The engines run inside the UAG: say so on the map and in the intro. */
+    function enginesInside() {
+      inside = true;
+      root.classList.add('flow-engines-inside');
+      var sub = map.querySelector('[data-node="engines"] .sub');
+      if (sub) sub.textContent = 'in the UAG';
+      var research = map.querySelector('[data-edge="engines-uag"]');
+      if (research) research.remove();
+      if (options.introInside) intro.textContent = options.introInside;
+    }
 
     function activate(event, run) {
-      var edges = edgesFor(event, run);
+      var edges = edgesFor(event, run, inside);
       nodesForEdges(edges).concat(edges.map(function (e) { return 'edge:' + e; })).forEach(function (key) {
         var target = key.indexOf('edge:') === 0
           ? map.querySelector('[data-edge="' + key.slice(5) + '"]')
@@ -215,6 +234,7 @@
       source.addEventListener('hello', function (message) {
         var hello = JSON.parse(message.data);
         live.classList.toggle('on', !!hello.enabled);
+        if (hello.engines === 'inside' && !inside) enginesInside();
         if (!hello.enabled) empty.textContent = 'The flow viewer is not connected on this deployment.';
       });
       source.onmessage = function (message) {

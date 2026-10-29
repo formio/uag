@@ -102,6 +102,16 @@ describe('Demo site app', function () {
                 expect(capabilities, 'the site asked the UAG through the proxy').to.exist;
                 expect(capabilities.headers['x-request-id']).to.be.a('string');
                 expect((await fetch(`${config.flow.url}/flow/events`)).status).to.equal(401);
+                // The viewer is told the engines run inside the UAG, where it cannot see their calls.
+                const status = await fetch(`${web.url}/api/status`);
+                const cookie = (status.headers.get('set-cookie') || '').split(';')[0];
+                const stream = await fetch(`${web.url}/api/flow/stream`, { headers: { cookie } });
+                const reader = stream.body.getReader();
+                let text = '';
+                while (!text.includes('\n\n')) text += new TextDecoder().decode((await reader.read()).value);
+                await reader.cancel();
+                const hello = JSON.parse(/^event: hello\ndata: (.*)$/m.exec(text)[1]);
+                expect(hello).to.include({ enabled: true, engines: 'inside' });
             }
             finally {
                 app.locals.close();

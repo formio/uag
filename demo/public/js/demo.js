@@ -38,6 +38,7 @@
     flowMounted = true;
     window.UAGFlow.mount(flow, {
       intro: flow.getAttribute('data-intro') || undefined,
+      introInside: flow.getAttribute('data-intro-inside') || undefined,
       empty: flow.getAttribute('data-empty') || undefined,
       scopes: (flow.getAttribute('data-scopes') || '').split(',').filter(Boolean),
     });

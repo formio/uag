@@ -131,11 +131,20 @@ export function describeRequest(url, body) {
     return { kind: 'other', label: pathname.slice(0, 80), summary: '' };
 }
 
+/** Which engine answered and how fast: one `result` event of an Agent API stream. */
+function answered(json) {
+    return json && typeof json.engine === 'string' && typeof json.latencyMs === 'number'
+        ? `${json.engine} answered in ${json.latencyMs} ms` : '';
+}
+
 /** A short summary of a finished response. */
 export function describeResponse(body, contentType) {
     if (!body) return '';
     if (String(contentType || '').includes('text/event-stream')) {
         const frames = body.split(/\n\n/).map(frameData).filter(Boolean);
+        // An Agent API stream: each engine's result, then done.
+        const engines = frames.map((frame) => answered(tryJson(frame))).filter(Boolean);
+        if (engines.length) return engines.join(' · ');
         const last = tryJson(frames[frames.length - 1] || '');
         if (last?.result?.content) {
             return last.result.content.map((block) => block.text || '').join(' ').replace(/\s+/g, ' ').slice(0, 300);
@@ -247,8 +256,8 @@ function proxy(req, res, { uag, engines }) {
                     const json = tryJson(data);
                     emit({
                         ...leg, phase: 'chunk', event: eventName,
-                        summary: eventName === 'result' && json?.engines
-                            ? json.engines.map((engine) => `${engine.engine} answered in ${engine.latencyMs ?? '?'} ms`).join(' · ')
+                        summary: eventName === 'result' && answered(json)
+                            ? answered(json)
                             : json?.method ? `↦ ${json.method}` : eventName || '',
                         detail: redact ? '' : truncate(data),
                     });

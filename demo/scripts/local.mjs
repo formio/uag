@@ -161,6 +161,8 @@ run('site', path.join(demo, 'server/index.mjs'), {
     UAG_URL: flowUrl,
     FLOW_URL: flowUrl,
     FLOW_KEY: flowKey,
+    // The engines run in the UAG unless UAG_ENGINES names remote ones, so the viewer says so.
+    FLOW_ENGINES: /:remote\b/.test(env.UAG_ENGINES || '') ? 'remote' : 'inside',
     NODE_ENV: '',
 });
 await waitFor(async () => (await fetch(`http://localhost:${ports.site}/health`, { signal: AbortSignal.timeout(5000) })).ok, 'The site');
