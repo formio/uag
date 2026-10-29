@@ -76,7 +76,23 @@ export interface UAGAnonymousConfig {
   totalRateLimit?: number;
 }
 
-export type UAGAgentApiConfig = FormflowAgentApiConfig & { anonymous?: UAGAnonymousConfig };
+/** A form's chat (`{form}/agent/chat`): its engines and the bounds of a turn. */
+export interface UAGChatConfig {
+  /** Engine names, or `agent` for every agent engine, in the order to try them. Default: `['agent']`. */
+  engines?: string[];
+  /** Milliseconds to wait for one engine before trying the next. Default: the engine's routing timeout. */
+  timeout?: number;
+  /** Rounds of `check_values` calls an engine may make before it answers. Default: 3. */
+  maxIterations?: number;
+  /** The most messages a turn may carry. Default: 40. */
+  maxMessages?: number;
+  /** The most characters in one message. Default: 2000. */
+  maxMessageLength?: number;
+  /** The most characters of conversation sent to the engine; older messages are left out. Default: 24000. */
+  maxTranscriptChars?: number;
+}
+
+export type UAGAgentApiConfig = FormflowAgentApiConfig & { anonymous?: UAGAnonymousConfig; chat?: UAGChatConfig };
 
 /**
  * Express's `trust proxy` from TRUST_PROXY: `true` or `false`, a number of

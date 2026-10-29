@@ -117,7 +117,7 @@ describe('Agent operations on the form\'s routes', function () {
 
     it('answers 404 for an administrator\'s operation on no form, passing nothing to Form.io', async () => {
         formio.requests = [];
-        for (const path of ['/agent/decide', '/nope/agent/decide', '/nope/Agent/Decide', '/NOPE/AGENT/EXTRACT', '/form/0000000000000000000000ff/agent/extract', '/form/0000000000000000000000ff/Agent/extract']) {
+        for (const path of ['/agent/decide', '/nope/agent/decide', '/nope/Agent/Decide', '/NOPE/AGENT/EXTRACT', '/form/0000000000000000000000ff/agent/extract', '/form/0000000000000000000000ff/Agent/extract', '/nope/agent/chat']) {
             const res = await request().post(path).set('x-admin-key', 'admin-key').send({ form: 'application', ...body });
             expect(res.status, path).to.equal(404);
         }

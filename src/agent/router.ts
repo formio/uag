@@ -7,6 +7,8 @@ import { bearerOf, formflow, FormflowError, FormflowService, callerIdentity, isS
 import type { UAGProjectInterface } from "../UAGProjectInterface";
 import { withRequestId } from "./requestId";
 import { anonymousGate } from "./anonymous";
+import { chatEngines, chatTurn } from "./chat";
+import type { UAGFormInterface } from "../UAGFormInterface";
 const debug = require('debug')('formio:uag:agent');
 
 /**
@@ -151,7 +153,11 @@ export function AgentRouter(project: UAGProjectInterface, authenticate: RequestH
     const router = Router();
     const { json, requestId, handle } = agentEndpoints(project);
     router.get('/agent/capabilities', authenticate, json, requestId, handle('capabilities', async (req, res, service) => {
-        res.json({ requestId: req.requestId, ...await service.capabilities() });
+        const capabilities = await service.capabilities();
+        // Chat is part of conversation forms: it needs an agent engine, never a license.
+        const engines = chatEngines(project).map((engine) => engine.name);
+        capabilities.operations.chat = { available: engines.length > 0, engines };
+        res.json({ requestId: req.requestId, ...capabilities });
     }));
     return router;
 }
@@ -164,7 +170,7 @@ export function AgentRouter(project: UAGProjectInterface, authenticate: RequestH
  */
 export function agentNotFound(project: UAGProjectInterface): RequestHandler {
     // Express matches routes ignoring case, so this does too.
-    const operation = /^(.*)\/agent\/(extract|decide|generate)\/?$/i;
+    const operation = /^(.*)\/agent\/(extract|decide|generate|chat)\/?$/i;
     return async (req: Request, res: Response, next: NextFunction) => {
         const match = req.method === 'POST' ? operation.exec(req.path) : null;
         if (!match) return next();
@@ -233,7 +239,7 @@ export function agentCredentials(project: UAGProjectInterface): RequestHandler {
 }
 
 /**
- * A form's agent operations, `POST /agent/extract|decide|generate`, mounted on
+ * A form's agent operations, `POST /agent/extract|decide|generate|chat`, mounted on
  * the form's own routes (see UAGFormInterface.router), so `req.form` is the
  * form of the URL.
  */
@@ -259,6 +265,19 @@ export function FormAgentRouter(project: UAGProjectInterface, credentials: Reque
     route('generate', 'generate', async (req, res, service) => {
         const { data, overwrite } = req.body || {};
         res.json(await service.generate({ form: formOf(req), task: taskOf(req), data, overwrite }, contextOf(req)));
+    });
+
+    // A turn of the form's chat. Not Agentic Formflow: no license check, as for the MCP tools.
+    route('chat', 'chat', async (req, res, service) => {
+        const form = await project.formflowForm(formOf(req)) as UAGFormInterface | null;
+        if (!form) {
+            throw new FormflowError(404, `The form "${formOf(req)}" does not exist or is not tagged "uag".`);
+        }
+        if (String(form.form?.properties?.uagChat) === 'false') {
+            throw new FormflowError(403, `Chat is turned off for the form "${form.formflowName}".`);
+        }
+        service.requireAccess(req.auth, form, ['create']);
+        res.json(await chatTurn(project, form, req.body, { auth: req.auth as any, requestId: req.requestId }));
     });
 
     return router;

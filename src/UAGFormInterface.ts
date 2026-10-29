@@ -68,6 +68,28 @@ export type FormFieldInfo = {
     };
 }
 
+/** A field a chat may collect, with its current value. */
+export type ChatField = UAGComponentInfo & {
+    required: boolean;
+    empty: boolean;
+    value: any;
+};
+
+/** A component a chat cannot collect yet. */
+export type ChatUnsupportedField = { path: string; label: string; required: boolean; empty: boolean };
+
+export type ChatFields = {
+    fields: ChatField[];
+    unsupported: ChatUnsupportedField[];
+    errors: FormFieldError[];
+};
+
+/** Component types a chat cannot collect yet: tables, nested forms, uploads, drawings and the like. */
+const CHAT_UNSUPPORTED = new Set([
+    'datagrid', 'editgrid', 'datatable', 'dynamicWizard', 'tagpad', 'form', 'datamap', 'address',
+    'file', 'signature', 'sketchpad', 'datasource', 'password', 'captcha'
+]);
+
 export type UAGFields = {
     task: string;
     criteria: string;
@@ -86,7 +108,7 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
 
     /**
      * The form's routes, with its agent operations (`agent/extract`, `agent/decide`,
-     * `agent/generate`) beside its submissions: the project's authentication has
+     * `agent/generate`, `agent/chat`) beside its submissions: the project's authentication has
      * already run, and the form is the one of the URL.
      */
     async router(): Promise<Router> {
@@ -562,6 +584,79 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
             fieldInfo.errors = this.convertToFormFieldErrors(interpolateErrors(context.scope.errors));
         }
         return fieldInfo;
+    }
+
+    /** Whether the chat cannot collect this component yet, so the person finishes it in the form. */
+    isChatUnsupported(component: Component): boolean {
+        if (CHAT_UNSUPPORTED.has(component.type)) return true;
+        const dataSrc = (component as SelectComponent).dataSrc;
+        if (component.type === 'select' && (dataSrc === 'url' || dataSrc === 'resource')) return true;
+        if ((component as any).tree && component.type !== 'container') return true;
+        return ['nestedArray', 'nestedDataArray', 'dataObject', 'map'].includes(Utils.getModelType(component));
+    }
+
+    /** Data paths of the fields a task fills: its decision and value fields, not its inputs. */
+    taskOwnedPaths(): Set<string> {
+        const owned = new Set<string>();
+        for (const task of Object.values(this.uagFields || {})) {
+            Object.keys(task.components || {}).forEach((path) => owned.add(path));
+        }
+        return owned;
+    }
+
+    /**
+     * The fields a chat may collect on this data: visible input fields that a
+     * person may enter, filled or not, with the rules the MCP tools give
+     * agents. Fields a task fills (and `uagAuthoritative` ones), hidden,
+     * disabled and calculated fields are left out; components the chat
+     * cannot collect yet are listed in `unsupported`, and their children are
+     * not visited.
+     */
+    async chatFields(submission: Submission, authInfo: AuthRequest): Promise<ChatFields> {
+        const result: ChatFields = { fields: [], unsupported: [], errors: [] };
+        const owned = this.taskOwnedPaths();
+        const skipped: string[] = [];
+        const within = (path: string, parent: string) => path.startsWith(`${parent}.`) || path.startsWith(`${parent}[`);
+        const context = await this.process(submission, authInfo, null, null, [
+            {
+                name: 'chatFields',
+                shouldProcess: () => true,
+                process: async (context: any) => {
+                    const { component, path } = context;
+                    if (this.isChatUnsupported(component) && !skipped.some((parent) => within(path, parent))) {
+                        skipped.push(path);
+                    }
+                },
+                postProcess: async (context: any) => {
+                    const { component, path, value } = context;
+                    if (skipped.some((parent) => within(path, parent))) return;
+                    if (skipped[skipped.length - 1] === path) skipped.pop();
+                    if (!this.inputComponent(component) || component.type === 'container') return;
+                    // A field inside a hidden panel or container is only marked `intentionallyHidden`.
+                    if (component.scope?.conditionallyHidden || component.scope?.intentionallyHidden || component.hidden || component.type === 'hidden') return;
+                    const required = !!component.validate?.required;
+                    const empty = !componentHasValue(component, value);
+                    if (this.isChatUnsupported(component)) {
+                        result.unsupported.push({ path, label: component.label || component.key || path, required, empty });
+                        return;
+                    }
+                    if (component.disabled || component.persistent === false || (component.persistent as any) === 'client-only') return;
+                    if (component.calculateValue && !component.allowCalculateOverride) return;
+                    if (owned.has(path) || component.properties?.uagAuthoritative === 'true') return;
+                    result.fields.push({
+                        ...this.getComponentInfo(component, path),
+                        rule: this.getComponentValueRule(component, path),
+                        required,
+                        empty,
+                        value
+                    });
+                }
+            }
+        ]);
+        if (context.scope?.errors?.length) {
+            result.errors = this.convertToFormFieldErrors(interpolateErrors(context.scope.errors));
+        }
+        return result;
     }
 
     /**
