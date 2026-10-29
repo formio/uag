@@ -118,6 +118,23 @@ jobs:
             fi
           done
 
+      # npm takes a few minutes to show a new version, and @formio/uag's prepublishOnly
+      # refuses to publish until the engine SDK it depends on is there. Wait for every
+      # package this release published, so the UAG's check never races them.
+      - name: Wait for the packages to appear on npm
+        run: |
+          set -euo pipefail
+          for dir in packages/engine-sdk engines/jev engines/claude engines/openai engines/grok engines/gemini packages/engine-server packages/uag-js; do
+            NAME=$(jq -r .name "$dir/package.json")
+            VERSION=$(jq -r .version "$dir/package.json")
+            for attempt in $(seq 1 60); do
+              if npm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then continue 2; fi
+              sleep 10
+            done
+            echo "::error::${NAME}@${VERSION} did not appear on npm within 10 minutes."
+            exit 1
+          done
+
       # No NODE_AUTH_TOKEN: OIDC supplies short-lived credentials, and leaving a
       # token in the environment makes npm prefer it and skip Trusted Publishing.
       - name: Publish package to npm
