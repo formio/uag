@@ -1,0 +1,17 @@
+# OpenAI's Decisions API deciding the closed-set fields, with Claude writing the
+# open values. Layer it on any Compose file whose UAG service is `formio-uag`, such as
+# ../custom-module:
+#
+#   docker compose -f docker-compose.yml -f ../engines/openai-decisions.yml up -d
+#
+# Set OPENAI_API_KEY in .env. Decision fields go to `decide` first, a decision
+# engine; Claude answers them only if it fails.
+services:
+  formio-uag:
+    environment:
+      UAG_ENGINES: decide:openai,claude
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:?set CLAUDE_API_KEY in .env}
+      LICENSE_KEY: ${LICENSE_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?set OPENAI_API_KEY in .env}
+      UAG_ENGINE_DECIDE_KIND: decision
+      UAG_ENGINE_DECIDE_MODEL: gpt-6-luna

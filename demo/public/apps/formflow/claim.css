@@ -1,0 +1,578 @@
+/*
+ * Lantern Mutual claim intake. Amber is reserved for what the agent did:
+ * values it filled, fields it is filling, and its activity in the rail.
+ */
+:root {
+  --night: #17213b;
+  --night-raised: #22305a;
+  --night-line: #33416b;
+  --night-text: #c9d1e6;
+  --ink: #1a2236;
+  --muted: #5d6781;
+  --mist: #eef1f5;
+  --paper: #ffffff;
+  --line: #d6dce6;
+  --line-strong: #b9c2d2;
+  --lantern: #f2a93b;
+  --lantern-deep: #9a5f06;
+  --lantern-soft: #fdf1dc;
+  --spruce: #2e7d5b;
+  --spruce-soft: #e3f2ea;
+  --rose: #c2415b;
+  --rose-soft: #fbe9ed;
+  --focus: #3d5bd9;
+  --radius: 8px;
+  --rail-width: 300px;
+  font-size: 16px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--mist);
+  color: var(--ink);
+  font-family: 'Schibsted Grotesk', system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- Shell ---------- */
+
+.shell { display: grid; grid-template-columns: var(--rail-width) minmax(0, 1fr); min-height: 100vh; }
+
+.rail {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 28px 24px 24px;
+  background: var(--night);
+  color: var(--night-text);
+  overflow-y: auto;
+}
+
+.brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
+.brand svg { flex: none; }
+.brand-name { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; }
+.brand-name small { display: block; font-size: 0.8125rem; font-weight: 400; color: var(--night-text); letter-spacing: 0; }
+
+.claim-meta h2 { margin: 0; color: #fff; font-size: 1rem; font-weight: 600; }
+.claim-meta p { margin: 2px 0 0; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+
+/* Steps */
+
+.steps { list-style: none; margin: 0; padding: 0; position: relative; }
+.steps::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: var(--night-line);
+}
+
+.step { position: relative; padding: 0 0 18px 34px; }
+.step:last-child { padding-bottom: 0; }
+
+.step-dot {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--night-line);
+  background: var(--night);
+  display: grid;
+  place-items: center;
+}
+
+.step-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  font-weight: 500;
+  cursor: default;
+}
+.step.is-reachable .step-button { cursor: pointer; }
+.step.is-reachable .step-button:hover .step-title { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+
+.step-reason { display: block; margin-top: 2px; font-size: 0.8125rem; color: var(--lantern); }
+
+.step.is-done .step-dot { border-color: var(--spruce); background: var(--spruce); }
+.step.is-done .step-dot::after {
+  content: '';
+  width: 8px;
+  height: 5px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: translateY(-1px) rotate(-45deg);
+}
+
+.step.is-current .step-title { color: #fff; font-weight: 700; }
+.step.is-current .step-dot { border-color: #fff; }
+.step.is-current .step-dot::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+
+/* A step that triage just added glows once, like a lantern being lit. */
+.step.is-new { animation: step-arrive 900ms ease-out both; }
+.step.is-new .step-dot { animation: dot-glow 1600ms ease-out 1; }
+@keyframes step-arrive {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes dot-glow {
+  0% { box-shadow: 0 0 0 0 rgba(242, 169, 59, 0.75); border-color: var(--lantern); }
+  100% { box-shadow: 0 0 0 12px rgba(242, 169, 59, 0); }
+}
+
+.steps-hint { margin: 14px 0 0 34px; font-size: 0.8125rem; color: var(--night-text); opacity: 0.8; }
+
+/* Agent activity */
+
+.activity { margin-top: auto; border-top: 1px solid var(--night-line); padding-top: 18px; }
+.activity h2 { margin: 0 0 10px; font-size: 0.875rem; font-weight: 600; color: #fff; }
+.activity-empty { margin: 0; font-size: 0.8125rem; }
+.activity ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.activity li { display: grid; grid-template-columns: 16px 1fr auto; gap: 8px; align-items: start; font-size: 0.8125rem; line-height: 1.35; }
+.activity time { font-family: inherit; color: var(--night-text); opacity: 0.75; font-variant-numeric: tabular-nums; }
+.activity-icon { width: 14px; height: 14px; margin-top: 2px; border-radius: 50%; }
+.is-running .activity-icon { border: 2px solid rgba(242, 169, 59, 0.3); border-top-color: var(--lantern); animation: spin 800ms linear infinite; }
+.is-running .activity-text { color: #fff; }
+.is-ok .activity-icon { background: var(--spruce); }
+.is-warn .activity-icon { background: var(--lantern); }
+.is-error .activity-icon { background: var(--rose); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.help { font-size: 0.8125rem; }
+.help strong { display: block; color: #fff; font-weight: 600; }
+.help a { color: #fff; }
+.demo-note { margin: 10px 0 0; font-size: 0.75rem; opacity: 0.7; }
+
+/* Mobile bar (shown instead of the rail on small screens) */
+.topbar { display: none; }
+
+/* ---------- Canvas ---------- */
+
+.canvas { padding: 56px 48px 96px; }
+.page { max-width: 640px; }
+
+.page-count { margin: 0 0 6px; color: var(--muted); font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
+.page-title {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+.page-title:focus { outline: none; }
+.page-lede { margin: 12px 0 0; max-width: 34em; font-size: 1.0625rem; color: var(--muted); }
+
+.emergency {
+  display: flex;
+  gap: 12px;
+  margin: 28px 0 0;
+  padding: 14px 16px;
+  border-left: 4px solid var(--rose);
+  background: var(--paper);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.9375rem;
+}
+.emergency strong { font-weight: 700; }
+
+.form-card {
+  margin-top: 32px;
+  padding: 32px;
+  background: var(--paper);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+
+/* ---------- Form.io overrides ---------- */
+
+#claim { font-family: inherit; }
+#claim nav[aria-label="Wizard navigation"],
+#claim .wizard-page > .card-header,
+#claim .card-header { display: none; }
+#claim .card, #claim .card-body { border: 0; padding: 0; background: none; }
+#claim .formio-component { margin-bottom: 24px; }
+#claim .formio-component-content { margin-bottom: 20px; }
+#claim .formio-component-content p { margin: 0; }
+
+#claim label.col-form-label,
+#claim .form-check-label.field-required,
+#claim legend.col-form-label,
+#claim .formio-component > label {
+  margin-bottom: 6px;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+#claim .field-required::after { color: var(--rose); }
+
+#claim .form-text { margin-top: 6px; font-size: 0.875rem; color: var(--muted); }
+
+#claim .form-control,
+#claim .choices__inner {
+  min-height: 48px;
+  padding: 11px 14px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius);
+  background-color: var(--paper);
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--ink);
+  box-shadow: none;
+  transition: border-color 120ms, background-color 300ms;
+}
+#claim textarea.form-control { line-height: 1.5; }
+#claim .form-control:focus,
+#claim .choices.is-focused .choices__inner { border-color: var(--focus); box-shadow: 0 0 0 3px rgba(61, 91, 217, 0.18); }
+#claim .choices__list--dropdown .choices__item { font-size: 1rem; }
+#claim .input-group-text { border: 1.5px solid var(--line-strong); background: var(--mist); }
+
+/* Radios and select boxes as full-width choices; the whole row is clickable. */
+#claim .form-radio { display: grid; gap: 8px; }
+#claim .form-radio .form-check,
+#claim .form-radio .form-check-inline {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+#claim .form-radio .form-check-label { flex: 1; padding: 0; font-weight: 500; cursor: pointer; }
+#claim .form-radio .form-check-label::after { content: ''; position: absolute; inset: 0; }
+#claim .form-radio .form-check:has(input:checked),
+#claim .form-radio .form-check-inline:has(input:checked) { border-color: var(--night); background: #f3f5fa; }
+#claim .form-radio .form-check:has(input:focus-visible),
+#claim .form-radio .form-check-inline:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+#claim .form-check-input { margin: 0; width: 18px; height: 18px; flex: none; float: none; }
+#claim .form-check-input:checked { background-color: var(--night); border-color: var(--night); }
+#claim .form-radio:has(.form-check-inline) { display: flex; flex-wrap: wrap; gap: 8px; }
+#claim .form-radio .form-check-inline { margin: 0; min-width: 120px; }
+#claim .formio-component-selectboxes .form-radio { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+
+/* Single checkboxes as full-width rows too. */
+#claim .formio-component-checkbox .form-check {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+#claim .formio-component-checkbox .form-check-label { flex: 1; padding: 0; font-weight: 500; cursor: pointer; }
+#claim .formio-component-checkbox .form-check-label::after { content: ''; position: absolute; inset: 0; }
+#claim .formio-component-checkbox .form-check:has(input:checked) { border-color: var(--night); background: #f3f5fa; }
+#claim .formio-component-checkbox .form-check:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+#claim .formio-component-checkbox { margin-bottom: 8px; }
+#claim .formio-component-attestation { margin-top: 8px; }
+#claim .formio-component-attestation .form-check { padding: 16px; }
+#claim .formio-component-attestation .form-check-label { font-weight: 600; }
+
+#claim .claim-callout p { padding: 12px 14px; border-left: 4px solid var(--rose); background: var(--rose-soft); border-radius: 0 var(--radius) var(--radius) 0; }
+#claim .claim-fine-print p { font-size: 0.875rem; color: var(--muted); }
+
+/* Validation */
+#claim .formio-error-wrapper, #claim .has-error { padding: 0; background: none; border: 0; }
+#claim .formio-error-wrapper .form-control,
+#claim .is-invalid { border-color: var(--rose) !important; }
+#claim .formio-errors .error, #claim .invalid-feedback { color: var(--rose); font-size: 0.875rem; font-weight: 500; }
+#claim .alert { border-radius: var(--radius); }
+
+/* File upload */
+#claim .fileSelector { border: 1.5px dashed var(--line-strong); border-radius: var(--radius); padding: 28px; background: var(--mist); color: var(--muted); }
+#claim .fileSelector a { color: var(--night); font-weight: 600; }
+
+/* Wizard buttons */
+#claim .formio-wizard-nav-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+  margin: 36px 0 0;
+  padding: 24px 0 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+#claim .formio-wizard-nav-container li { margin: 0; }
+#claim .formio-wizard-nav-container .btn {
+  min-height: 48px;
+  padding: 0 24px;
+  border-radius: var(--radius);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+#claim .btn-wizard-nav-next,
+#claim .btn-wizard-nav-submit { background: var(--night); border: 0; color: #fff; }
+#claim .btn-wizard-nav-next:hover,
+#claim .btn-wizard-nav-submit:hover { background: var(--night-raised); }
+#claim .btn-wizard-nav-next:disabled { opacity: 1; background: var(--night-raised); }
+#claim .btn-wizard-nav-previous { background: none; border: 1.5px solid var(--line-strong); color: var(--ink); }
+#claim .btn-wizard-nav-previous:hover { background: var(--mist); }
+#claim .btn-wizard-nav-cancel { display: none; }
+
+/* ---------- What the agent did ---------- */
+
+/* A value the agent filled: the field holds lantern light until the user changes it. */
+#claim .is-agent-filled .form-control,
+#claim .is-agent-filled .choices__inner,
+#claim .is-agent-filled .form-check:has(input:checked),
+#claim .is-agent-filled.formio-component-checkbox .form-check,
+#claim .is-agent-filled .form-check-inline:has(input:checked) {
+  border-color: var(--lantern);
+  background-color: var(--lantern-soft);
+}
+
+.uag-chip {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+.uag-chip::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; align-self: center; }
+.uag-confident { background: var(--spruce-soft); color: var(--spruce); }
+.uag-suggested { background: var(--lantern-soft); color: var(--lantern-deep); }
+.uag-uncertain { display: flex; flex-wrap: wrap; align-items: center; border-radius: var(--radius); padding: 10px 12px; background: var(--rose-soft); color: var(--rose); }
+.uag-alternative {
+  border: 1.5px solid currentColor;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--rose);
+  padding: 2px 10px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+/* "Yes, this looks right": the claimant has to check an uncertain value before moving on. */
+.uag-review { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 0 auto; font-weight: 600; cursor: pointer; }
+.uag-review input { width: 18px; height: 18px; margin: 0; accent-color: var(--spruce); cursor: pointer; }
+.uag-uncertain.uag-review-needed { box-shadow: 0 0 0 2px var(--rose); }
+.uag-uncertain.uag-reviewed { background: var(--spruce-soft); color: var(--spruce); }
+.uag-reviewed .uag-alternative { color: var(--spruce); }
+.uag-error { margin-top: 8px; padding: 10px 12px; border-radius: var(--radius); background: var(--rose-soft); color: var(--rose); font-size: 0.875rem; }
+
+/* A field the agent is still filling */
+#claim .is-filling .form-control,
+#claim .is-filling .choices__inner,
+#claim .is-filling .form-radio .form-check,
+#claim .is-filling .form-radio .form-check-inline {
+  border-color: rgba(242, 169, 59, 0.6);
+  background-image: linear-gradient(100deg, transparent 20%, rgba(242, 169, 59, 0.16) 50%, transparent 80%);
+  background-size: 220% 100%;
+  animation: filling 1.4s linear infinite;
+}
+#claim .is-filling::after {
+  content: 'Filling in from your description…';
+  display: block;
+  margin-top: 6px;
+  font-size: 0.8125rem;
+  color: var(--lantern-deep);
+}
+@keyframes filling { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+
+/* Examples under the description */
+.examples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: -10px 0 24px; font-size: 0.875rem; color: var(--muted); }
+.examples button {
+  border: 1.5px solid var(--line-strong);
+  background: var(--paper);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font: inherit;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+}
+.examples button:hover { border-color: var(--night); }
+
+/* ---------- Review ---------- */
+
+.claim-summary { display: grid; gap: 24px; margin-bottom: 8px; }
+.summary-section { border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; }
+.summary-section header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+.summary-section h3 { margin: 0; font-size: 1.0625rem; font-weight: 700; }
+.summary-edit { border: 0; background: none; padding: 0; color: var(--focus); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.summary-section dl { display: grid; grid-template-columns: minmax(140px, 40%) 1fr; gap: 8px 16px; margin: 0; font-size: 0.9375rem; }
+.summary-section dt { color: var(--muted); }
+.summary-section dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.summary-section dd.from-description::after {
+  content: 'from your description';
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--lantern-soft);
+  color: var(--lantern-deep);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+/* ---------- Confirmation ---------- */
+
+.confirmation[hidden] { display: none; }
+.claim-number {
+  margin: 28px 0 0;
+  padding: 24px 28px;
+  border-radius: 12px;
+  background: var(--night);
+  color: #fff;
+}
+.claim-number span { display: block; color: var(--night-text); font-size: 0.9375rem; }
+.claim-number strong { display: block; margin-top: 4px; font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+.next-steps { margin: 36px 0 0; padding: 0; list-style: none; counter-reset: next; display: grid; gap: 20px; }
+.next-steps li { counter-increment: next; display: grid; grid-template-columns: 36px 1fr; gap: 14px; }
+.next-steps li::before {
+  content: counter(next);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--paper);
+  border: 1.5px solid var(--line-strong);
+  font-weight: 700;
+}
+.next-steps h3 { margin: 4px 0 2px; font-size: 1.0625rem; }
+.next-steps p { margin: 0; color: var(--muted); }
+.confirmation-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 36px; }
+.button {
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--line-strong);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.button-primary { background: var(--night); border-color: var(--night); color: #fff; }
+
+.submit-error { margin-top: 20px; padding: 14px 16px; border-radius: var(--radius); background: var(--rose-soft); color: var(--rose); font-weight: 500; }
+.submit-error[hidden] { display: none; }
+
+/* ---------- Small screens ---------- */
+
+@media (max-width: 960px) {
+  .shell { display: block; }
+  .rail { display: none; }
+  .rail.is-open {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    height: auto;
+  }
+  /* More specific than the base .rail-close rule below, which hides it. */
+  .rail.is-open .rail-close { display: inline-flex; }
+
+  .topbar {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--night);
+    color: var(--night-text);
+    padding: 12px 16px 0;
+  }
+  .topbar-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .topbar .brand-name { font-size: 1rem; }
+  .topbar-steps {
+    border: 1.5px solid var(--night-line);
+    border-radius: 999px;
+    background: none;
+    color: #fff;
+    padding: 6px 12px;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .progress { height: 3px; margin: 12px -16px 0; background: var(--night-line); }
+  .progress span { display: block; height: 100%; background: var(--lantern); transition: width 300ms; }
+
+  .canvas { padding: 28px 16px 120px; }
+  .form-card { padding: 20px 16px; margin-top: 24px; }
+  .summary-section dl { grid-template-columns: 1fr; gap: 2px; }
+  .summary-section dd { margin-bottom: 8px; }
+
+  /* The agent's latest activity rides along the bottom while it works. */
+  .ticker {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: 25;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--night);
+    color: #fff;
+    font-size: 0.875rem;
+    box-shadow: 0 8px 24px rgba(23, 33, 59, 0.3);
+  }
+  .ticker[hidden] { display: none; }
+}
+
+@media (min-width: 961px) {
+  .ticker, .rail-close { display: none !important; }
+}
+
+.rail-close {
+  display: none;
+  align-self: flex-end;
+  border: 1.5px solid var(--night-line);
+  border-radius: 999px;
+  background: none;
+  color: #fff;
+  padding: 6px 14px;
+  font: inherit;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+}
+
+@media print {
+  .rail, .topbar, .ticker, .confirmation-actions { display: none !important; }
+  .shell { display: block; }
+  body { background: #fff; }
+}

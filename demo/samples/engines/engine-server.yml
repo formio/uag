@@ -1,0 +1,35 @@
+# Run Claude in its own container, so its API key and its traffic stay out of
+# the UAG. Layer it on any Compose file whose UAG service is `formio-uag`, such as
+# ../custom-module:
+#
+#   docker compose -f docker-compose.yml -f ../engines/engine-server.yml up -d
+#
+# Set ENGINE_SERVER_KEY in .env: a random secret of at least 32 characters,
+# shared by the UAG and the engine server (openssl rand -hex 32).
+services:
+  uag-engines:
+    image: formio/uag-engines:2
+    restart: always
+    environment:
+      UAG_ENGINES: claude
+      CLAUDE_MODEL: claude-sonnet-5-5
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:?set CLAUDE_API_KEY in .env}
+      UAG_ENGINE_SERVER_KEY: ${ENGINE_SERVER_KEY:?set ENGINE_SERVER_KEY in .env (32+ characters)}
+      # Where research calls the UAG's /mcp, with a scoped token for the task's
+      # read-only tools. Taken from here only, never from a request.
+      UAG_SERVER: http://formio-uag:3200
+    # No published port: only the UAG, on this private network, reaches it.
+
+  formio-uag:
+    # Real engines need a LICENSE_KEY that includes the UAG, or a hosted project.
+    depends_on:
+      uag-engines:
+        condition: service_healthy
+    environment:
+      LICENSE_KEY: ${LICENSE_KEY:-}
+      # `claude` is now the engine of that name on the engine server.
+      UAG_ENGINES: claude:remote
+      UAG_ENGINE_CLAUDE_URL: http://uag-engines:3300
+      UAG_ENGINE_CLAUDE_KEY: ${ENGINE_SERVER_KEY}
+      # The UAG no longer needs the Claude key.
+      CLAUDE_API_KEY: ""

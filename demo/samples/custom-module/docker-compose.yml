@@ -1,0 +1,69 @@
+version: "3.8"
+services:
+  nginx:
+    image: nginx
+    restart: always
+    links:
+      - formio
+      - formio-uag
+    depends_on:
+      - formio-uag
+    volumes:
+      - "./conf.d:/etc/nginx/conf.d"
+    ports:
+      - "3000:3000"
+  mongo:
+    image: mongo:7
+    restart: always
+    # Development host names (*.local), so the UAG may use its database here without
+    # a license: the project and the database are both on development hosts.
+    networks:
+      default:
+        aliases: [mongo.local]
+    volumes:
+      - uag-data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME
+      - MONGO_INITDB_ROOT_PASSWORD
+  formio:
+    image: formio/formio
+    restart: always
+    networks:
+      default:
+        aliases: [formio.local]
+    links:
+      - mongo
+    depends_on:
+      - mongo
+    environment:
+      DEBUG: formio.*
+      NODE_CONFIG: '{"mongo": "mongodb://mongo:27017/formio-oss", "jwt": {"secret": "CHANGEME"}, "mongoSecret": "CHANGEME"}'
+      ROOT_EMAIL: admin@example.com
+      ROOT_PASSWORD: CHANGEME
+      ADMIN_KEY: CHANGEME
+  formio-uag:
+    image: formio/uag
+    restart: always
+    links:
+      - formio
+    depends_on:
+      - formio
+    volumes:
+      - ./module:/app/module
+    environment:
+      PORT: 3200
+      DEBUG: formio.*
+      PROJECT: http://formio.local:3001
+      ADMIN_KEY: CHANGEME
+      JWT_SECRET: CHANGEME
+      JWT_EXPIRE_TIME: 525600
+      LOGIN_FORM: http://localhost:3000/employee/login
+      PROJECT_TTL: 10
+      # Sign-in for MCP clients (mcp-remote, Claude connectors), with its codes in the UAG's database.
+      MCP_OAUTH: "true"
+      MONGO: mongodb://mongo.local:27017
+      UAG_DATABASE: uag
+      # Behind nginx: the OAuth documents name the address clients use (http://localhost:3000).
+      TRUST_PROXY: 1
+volumes:
+  uag-data:

@@ -1,0 +1,86 @@
+# Holds the demo's project on a self-hosted Form.io Enterprise server, in this
+# stack, instead of on Form.io's hosted service. Add it to docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.enterprise.yml up -d --build
+#
+#   api-server  Form.io Enterprise, holding the `demo` project. Private.
+#   mongo       its database, on a network only Form.io reaches.
+#   setup       a one-shot job that creates the project from module/project.json
+#               (or imports it again into one that exists) and installs PROJECT_KEY.
+#
+# Form.io and the UAG both read
+# LICENSE_KEY: a self-hosted project is not covered by the hosted service, so for
+# the UAG the license must include the UAG (or add a UAG_LICENSE that does).
+services:
+  mongo:
+    image: mongo:7
+    restart: always
+    volumes:
+      - mongo-data:/data/db
+    # Only Form.io reaches the database.
+    networks: [db]
+
+  # Named `api-server` to match the endpoint UAG licenses are issued against;
+  # if your license lists another, rename this service and the URLs below.
+  api-server:
+    image: ${FORMIO_IMAGE:-formio/formio-enterprise:9.9.0}
+    platform: linux/amd64
+    restart: always
+    depends_on: [mongo]
+    networks: [default, db]
+    environment:
+      PORT: 3000
+      MONGO: mongodb://mongo:27017/formio
+      DB_SECRET: ${DB_SECRET:?set DB_SECRET in .env}
+      JWT_SECRET: ${FORMIO_JWT_SECRET:?set FORMIO_JWT_SECRET in .env}
+      PORTAL_ENABLED: ${PORTAL_ENABLED:-0}
+      PORTAL_SECRET: ${PORTAL_SECRET:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASS: ${ADMIN_PASS:?set ADMIN_PASS in .env}
+      LICENSE_KEY: ${LICENSE_KEY:?set LICENSE_KEY in .env}
+      LICENSE_REMOTE: ${LICENSE_REMOTE:-}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+
+  setup:
+    build: { context: .., dockerfile: demo/Dockerfile }
+    image: ${DEMO_IMAGE:-formio/uag-demo:latest}
+    command: ["node", "server/setup.mjs"]
+    restart: "no"
+    depends_on:
+      api-server: { condition: service_healthy }
+    environment:
+      DEMO_TEMPLATE_SYNC: ${DEMO_TEMPLATE_SYNC:-import}
+      FORMIO_SERVER: http://api-server:3000
+      FORMIO_PROJECT_URL: http://api-server:3000/demo
+      FORMIO_PROJECT_NAME: demo
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASS: ${ADMIN_PASS}
+      PROJECT_KEY: ${PROJECT_KEY:?set PROJECT_KEY in .env (at least 24 random characters)}
+
+  formio-uag:
+    depends_on:
+      setup: { condition: service_completed_successfully }
+    environment:
+      PROJECT: http://api-server:3000/demo
+      # Form.io's license, which must include the UAG.
+      LICENSE_KEY: ${LICENSE_KEY}
+      # Deprecated. Only when LICENSE_KEY does not include the UAG.
+      UAG_LICENSE: ${UAG_LICENSE:-}
+
+  site:
+    depends_on:
+      setup: { condition: service_completed_successfully }
+    environment:
+      FORMIO_PROJECT_URL: http://api-server:3000/demo
+      FORMIO_PROJECT_NAME: demo
+
+volumes:
+  mongo-data:
+
+networks:
+  db:
+    internal: true

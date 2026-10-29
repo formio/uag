@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 760" role="img" aria-labelledby="t d">
+  <title id="t">UAG architecture</title>
+  <desc id="d">Three kinds of caller reach the UAG: people through an MCP client call /mcp, applications and the @formio/uag-js module for formio.js call the stateless Agent API under each form's URL, {form}/agent/extract, decide and generate, and a chat embedded in a page calls {form}/agent/chat, and applications and portals that use the UAG as their project URL submit forms and sign in through it. Inside the UAG every call is authenticated with a Form.io identity: a Form.io user token, checked with Form.io and forwarded unchanged, OAuth sign-in for remote MCP clients, or client_credentials and API keys for servers. Calls are served by the MCP tools, the Agent API or the submission pipeline, which validates with the form, runs the UAG's own action, Agent: Run task, and forwards every save to Form.io. Below the UAG are the Form.io project, which stores every submission and runs its own actions; the UAG's optional database, set with MONGO, which holds run records, remote MCP sign-in codes and the license grace period, never submissions; and the engines, which only answer. Agents write only through the UAG.</desc>
+  <defs>
+    <style>
+      text { font-family: Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; fill: #0c141d; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .h { font-size: 15px; font-weight: 700; }
+      .h2 { font-size: 13.5px; font-weight: 700; }
+      .s { font-size: 12.5px; fill: #566073; }
+      .xs { font-size: 11.5px; fill: #566073; }
+      .lab { font-size: 11px; font-weight: 700; letter-spacing: .08em; fill: #8d99a8; }
+      .ep { font-size: 12px; fill: #3f7a22; font-weight: 600; }
+      .tool { font-size: 11.5px; fill: #2a333e; }
+      .grp { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; fill: #69b342; }
+      .w { fill: #ffffff; }
+      .wm { fill: #c9d2dc; }
+      .card { fill: #ffffff; stroke: #d7dde5; stroke-width: 1.2; }
+      .soft { fill: #f5f7fa; stroke: #e0e5ec; }
+      .tint { fill: #edfae6; stroke: #c9e8b4; }
+      .flow { stroke: #69b342; stroke-width: 2.2; fill: none; }
+      .back { stroke: #8d99a8; stroke-width: 2; fill: none; stroke-dasharray: 5 4; }
+    </style>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#69b342"/></marker>
+    <marker id="b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8d99a8"/></marker>
+  </defs>
+
+  <rect x="1" y="1" width="998" height="758" rx="18" fill="#ffffff" stroke="#e0e5ec"/>
+
+  <!-- Callers -->
+  <text x="24" y="34" class="lab">WHO CALLS IT</text>
+  <rect x="20" y="46" width="300" height="96" rx="12" class="card"/>
+  <text x="36" y="72" class="h">People, through an MCP client</text>
+  <text x="36" y="93" class="s">Claude, ChatGPT or your own chat app.</text>
+  <text x="36" y="110" class="s">The client's model does the reasoning.</text>
+  <text x="36" y="131" class="mono ep">/mcp</text>
+
+  <rect x="350" y="46" width="300" height="96" rx="12" class="card"/>
+  <text x="366" y="72" class="h">Applications, for answers</text>
+  <text x="366" y="93" class="s">Your backend, or @formio/uag-js filling</text>
+  <text x="366" y="110" class="s">a form, or chatting with a person.</text>
+  <text x="366" y="131" class="mono ep" style="font-size:10px">{form}/agent/{extract,decide,generate,chat}</text>
+
+  <rect x="680" y="46" width="300" height="96" rx="12" class="card"/>
+  <text x="696" y="72" class="h">Applications and portals</text>
+  <text x="696" y="93" class="s">The UAG is their project URL: forms</text>
+  <text x="696" y="110" class="s">submit and users sign in through it.</text>
+  <text x="696" y="131" class="mono ep">/:form/submission · login</text>
+
+  <path d="M170 142 V178" class="flow" marker-end="url(#a)"/>
+  <path d="M500 142 V178" class="flow" marker-end="url(#a)"/>
+  <path d="M830 142 V178" class="flow" marker-end="url(#a)"/>
+
+  <!-- UAG -->
+  <rect x="20" y="182" width="960" height="388" rx="14" fill="#fbfcfd" stroke="#3a4756" stroke-width="1.6"/>
+  <path d="M20 196 a14 14 0 0 1 14 -14 H966 a14 14 0 0 1 14 14 V224 H20 Z" fill="#3a4756"/>
+  <text x="38" y="209" class="h w">Form.io UAG</text>
+  <text x="962" y="209" text-anchor="end" class="xs wm">formio/uag image · @formio/uag package</text>
+
+  <rect x="36" y="238" width="928" height="46" rx="9" class="soft"/>
+  <text x="52" y="258" class="h2">Authentication</text>
+  <text x="168" y="258" class="s">Form.io user tokens · OAuth 2.0 + PKCE for remote MCP clients · client_credentials or API keys</text>
+  <text x="52" y="275" class="xs">A user's token is checked with Form.io and forwarded unchanged, so their roles apply. client_credentials and API keys act as administrator.</text>
+
+  <!-- MCP tools -->
+  <rect x="36" y="296" width="448" height="160" rx="10" class="card"/>
+  <text x="52" y="320" class="h2">MCP tools</text>
+  <text x="468" y="320" text-anchor="end" class="xs">each one marked read or write</text>
+  <text x="52" y="346" class="grp">DISCOVER</text>
+  <text x="52" y="363" class="mono tool">get_forms</text>
+  <text x="52" y="379" class="mono tool">get_form_fields</text>
+  <text x="52" y="395" class="mono tool">get_field_info</text>
+  <text x="262" y="346" class="grp">COLLECT AND SUBMIT</text>
+  <text x="262" y="363" class="mono tool">collect_field_data</text>
+  <text x="262" y="379" class="mono tool">confirm_form_submission</text>
+  <text x="262" y="395" class="mono tool">submit_completed_form</text>
+  <text x="52" y="419" class="grp">RECORDS</text>
+  <text x="52" y="436" class="mono tool">find_submissions · submission_update</text>
+  <text x="52" y="450" class="mono tool">fetch_external_data</text>
+  <text x="352" y="419" class="grp">TASKS</text>
+  <text x="352" y="436" class="mono tool">agent_decide</text>
+  <text x="352" y="450" class="mono tool">agent_provide</text>
+
+  <!-- Agent API -->
+  <rect x="516" y="296" width="448" height="160" rx="10" class="card"/>
+  <text x="532" y="320" class="h2">Agent API</text>
+  <text x="948" y="320" text-anchor="end" class="xs">runs a form's tasks with engines</text>
+  <rect x="532" y="336" width="98" height="52" rx="8" class="tint"/>
+  <text x="581" y="358" text-anchor="middle" class="h2" style="font-size:12.5px">Plan</text>
+  <text x="581" y="375" text-anchor="middle" class="xs">sort the fields</text>
+  <path d="M632 362 h10" class="flow" marker-end="url(#a)"/>
+  <rect x="646" y="336" width="98" height="52" rx="8" class="tint"/>
+  <text x="695" y="358" text-anchor="middle" class="h2" style="font-size:12.5px">Route</text>
+  <text x="695" y="375" text-anchor="middle" class="xs">to engines</text>
+  <path d="M746 362 h10" class="flow" marker-end="url(#a)"/>
+  <rect x="760" y="336" width="98" height="52" rx="8" class="tint"/>
+  <text x="809" y="358" text-anchor="middle" class="h2" style="font-size:12.5px">Validate</text>
+  <text x="809" y="375" text-anchor="middle" class="xs">with the form</text>
+  <path d="M860 362 h10" class="flow" marker-end="url(#a)"/>
+  <rect x="874" y="336" width="76" height="52" rx="8" fill="#3a4756"/>
+  <text x="912" y="358" text-anchor="middle" class="h2 w" style="font-size:12.5px">Answer</text>
+  <text x="912" y="375" text-anchor="middle" class="xs wm">saves nothing</text>
+  <text x="532" y="414" class="xs">Stateless: extract, decide, generate and chat return validated values.</text>
+  <text x="532" y="431" class="xs">Agent: Run task runs the same steps on a save through the UAG.</text>
+  <text x="532" y="448" class="mono xs">GET /agent/capabilities · engines, edition, license</text>
+
+  <!-- Shared core -->
+  <rect x="36" y="468" width="448" height="50" rx="9" class="tint"/>
+  <text x="52" y="489" class="h2">Form interpreter</text>
+  <text x="52" y="507" class="xs">Turns Form JSON into Markdown and JSON a model can read.</text>
+  <rect x="516" y="468" width="448" height="50" rx="9" class="tint"/>
+  <text x="532" y="489" class="h2">Submission pipeline</text>
+  <text x="532" y="507" class="xs">The form's rules, then Agent: Run task, then the save, forwarded to Form.io.</text>
+
+  <rect x="36" y="528" width="928" height="30" rx="8" fill="none" stroke="#8d99a8" stroke-dasharray="5 4"/>
+  <text x="52" y="548" class="xs"><tspan style="font-weight:700;fill:#2a333e">Modules</tspan>  add custom MCP tools, tool overrides, form actions, response templates, and a project template of forms and resources.</text>
+
+  <!-- Down to project, database and engines -->
+  <path d="M60 616 V574" class="flow" marker-end="url(#a)"/>
+  <text x="70" y="592" class="xs">reads /export</text>
+  <text x="70" y="606" class="xs">every PROJECT_TTL</text>
+  <path d="M200 574 V616" class="flow" marker-end="url(#a)"/>
+  <text x="210" y="599" class="xs">forwards every save</text>
+
+  <path d="M410 576 V614" class="flow" marker-start="url(#a)" marker-end="url(#a)"/>
+  <text x="420" y="599" class="xs">its own records only</text>
+
+  <path d="M730 574 V616" class="flow" marker-end="url(#a)"/>
+  <text x="740" y="599" class="xs">fields to answer</text>
+  <path d="M890 616 V574" class="back" marker-end="url(#b)"/>
+  <text x="900" y="599" class="xs">answers only</text>
+
+  <!-- Project -->
+  <rect x="20" y="620" width="300" height="100" rx="12" class="card"/>
+  <text x="36" y="646" class="h">Your Form.io project</text>
+  <text x="36" y="667" class="s">Open Source, Enterprise or hosted.</text>
+  <text x="36" y="686" class="s">Stores every submission; runs its</text>
+  <text x="36" y="703" class="s">own actions. Agents see forms tagged <tspan class="mono" style="fill:#3f7a22">uag</tspan>.</text>
+
+  <!-- UAG database -->
+  <rect x="350" y="620" width="300" height="100" rx="12" class="card" style="stroke-dasharray:5 4"/>
+  <text x="366" y="646" class="h">UAG database</text>
+  <text x="634" y="646" text-anchor="end" class="xs">optional · <tspan class="mono">MONGO</tspan></text>
+  <text x="366" y="667" class="s">Run records, remote MCP sign-in</text>
+  <text x="366" y="686" class="s">codes, the license grace period.</text>
+  <text x="366" y="703" class="s" style="font-weight:600;fill:#2a333e">Never submissions.</text>
+
+  <!-- Engines -->
+  <rect x="680" y="620" width="300" height="100" rx="12" class="card"/>
+  <text x="696" y="646" class="h">Engines</text>
+  <text x="964" y="646" text-anchor="end" class="xs">in the UAG or an engine server</text>
+  <text x="696" y="667" class="s"><tspan style="font-weight:700;fill:#2a333e">Decision</tspan>  jev, openai: closed sets</text>
+  <text x="696" y="686" class="s"><tspan style="font-weight:700;fill:#2a333e">Agent</tspan>  claude, openai, grok, gemini</text>
+  <text x="696" y="703" class="s">Agents may research, read-only.</text>
+
+  <text x="500" y="745" text-anchor="middle" class="s" style="font-weight:600;fill:#2a333e">Agents write only through the UAG, which validates with the form and forwards the save to Form.io. Engines never write.</text>
+</svg>

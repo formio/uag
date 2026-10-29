@@ -1,0 +1,110 @@
+    <section class="page-hero">
+      <div class="container">
+        <h1>Live demos of Agentic Forms.</h1>
+        <p class="lede mb-0">Each demo runs on Form.io and the UAG on this site. Try one, then open the flow viewer beside it to see every call the agents made. Each also links the prompt that builds it in your own project.</p>
+      </div>
+    </section>
+{{{licenseNotice}}}
+
+    <section class="section-tight">
+      <div class="container" style="display:grid;gap:28px">
+        <a class="card card-link example-card" href="/examples/conversation">
+          <div class="example-visual">
+            <svg viewBox="0 0 360 230" role="img" aria-label="A chat where the customer's messages fill the fields of a service request form.">
+              <rect x="10" y="10" width="200" height="210" rx="12" fill="#fff" stroke="#e0e5ec"/>
+              <rect x="24" y="28" width="150" height="34" rx="10" fill="#eeeff0"/><text x="34" y="49" font-size="10.5" fill="#3a4756">My internet is down since</text>
+              <rect x="56" y="72" width="140" height="44" rx="10" fill="#69b342"/><text x="66" y="90" font-size="10.5" fill="#fff">Sorry to hear that! What's</text><text x="66" y="104" font-size="10.5" fill="#fff">your full name?</text>
+              <rect x="24" y="126" width="160" height="34" rx="10" fill="#eeeff0"/><text x="34" y="147" font-size="10.5" fill="#3a4756">Marcus Webb, it's fully down</text>
+              <text x="24" y="190" font-size="9.5" fill="#5a9a39" font-family="JetBrains Mono, monospace">Formio.createChat · agent/chat</text>
+              <path d="M214 120 H240" stroke="#69b342" stroke-width="2.5"/><path d="M236 114 L244 120 L236 126z" fill="#69b342"/>
+              <rect x="248" y="30" width="104" height="170" rx="12" fill="#fff" stroke="#e0e5ec"/>
+              <text x="260" y="52" font-size="10" font-weight="700" fill="#0c141d">Service Request</text>
+              <g font-size="8.5" fill="#566073"><text x="260" y="72">Full name</text><text x="260" y="102">Category</text><text x="260" y="132">Urgency</text></g>
+              <rect x="260" y="76" width="80" height="14" rx="3" fill="#edfae6" stroke="#69b342"/><text x="264" y="86" font-size="8" fill="#3a4756">Marcus Webb</text>
+              <rect x="260" y="106" width="80" height="14" rx="3" fill="#edfae6" stroke="#69b342"/><text x="264" y="116" font-size="8" fill="#3a4756">internet</text>
+              <rect x="260" y="136" width="80" height="14" rx="3" fill="#edfae6" stroke="#69b342"/><text x="264" y="146" font-size="8" fill="#3a4756">high</text>
+              <rect x="260" y="166" width="46" height="16" rx="4" fill="#69b342"/><text x="283" y="177" text-anchor="middle" font-size="8" font-weight="700" fill="#fff">Submit</text>
+            </svg>
+          </div>
+          <div class="example-body">
+            <span class="num" style="font-size:12px;font-weight:700;color:var(--green-dark);letter-spacing:.08em">01 · CONVERSATION FORMS</span>
+            <h2 style="font-size:1.8rem;margin:0">Talk to a form</h2>
+            <div class="meta"><span class="tag tag-green">Open Source compatible</span><span class="tag">@formio/uag-js</span><span class="tag">agent/chat</span></div>
+            <p>A customer reports a problem in their own words. A service request form, embedded as a chat, asks one question at a time, maps answers onto the form's options, and submits data the form has validated once the customer confirms. The page never names a field.</p>
+            <p class="link-arrow">Try the demo</p>
+          </div>
+        </a>
+
+        <a class="card card-link example-card" href="/examples/workflow">
+          <div class="example-visual">
+            <svg viewBox="0 0 360 230" role="img" aria-label="An application flows through an admissions agent and, on the scholarship track, a finance agent.">
+              <rect x="10" y="80" width="80" height="70" rx="10" fill="#fff" stroke="#e0e5ec"/><text x="50" y="112" text-anchor="middle" font-size="10.5" font-weight="700" fill="#0c141d">Application</text><text x="50" y="128" text-anchor="middle" font-size="9" fill="#566073">submitted</text>
+              <path d="M94 115 H118" stroke="#69b342" stroke-width="2.5"/><path d="M114 109 L122 115 L114 121z" fill="#69b342"/>
+              <rect x="124" y="60" width="100" height="110" rx="12" fill="#3a4756"/><text x="174" y="86" text-anchor="middle" font-size="10.5" font-weight="700" fill="#fff">Admissions</text><text x="174" y="100" text-anchor="middle" font-size="9" fill="#b9c2ce">agent</text>
+              <g font-size="8.5" fill="#fff"><rect x="136" y="110" width="76" height="14" rx="3" fill="#56687d"/><text x="142" y="120">Academics 9</text><rect x="136" y="128" width="76" height="14" rx="3" fill="#56687d"/><text x="142" y="138">Essays 8</text><rect x="136" y="146" width="76" height="14" rx="3" fill="#69b342"/><text x="142" y="156">Scholarship</text></g>
+              <path d="M228 115 H252" stroke="#69b342" stroke-width="2.5" stroke-dasharray="4 4"/><path d="M248 109 L256 115 L248 121z" fill="#69b342"/>
+              <rect x="258" y="70" width="92" height="90" rx="12" fill="#edfae6" stroke="#d4edc4"/><text x="304" y="100" text-anchor="middle" font-size="10.5" font-weight="700" fill="#5a9a39">Finance</text><text x="304" y="114" text-anchor="middle" font-size="9" fill="#566073">agent</text><rect x="270" y="126" width="68" height="18" rx="9" fill="#69b342"/><text x="304" y="139" text-anchor="middle" font-size="8.5" font-weight="700" fill="#fff">Full ride</text>
+              <text x="180" y="200" text-anchor="middle" font-size="9.5" fill="#566073">no human · no chat window · no orchestrator</text>
+            </svg>
+          </div>
+          <div class="example-body">
+            <span class="num" style="font-size:12px;font-weight:700;color:var(--green-dark);letter-spacing:.08em">02 · AGENTIC WORKFLOW</span>
+            <h2 style="font-size:1.8rem;margin:0">Hand off the review</h2>
+            <div class="meta"><span class="tag">Open Source or Enterprise</span><span class="tag">Agent: Run task</span><span class="tag">Claude</span></div>
+            <p>A college application triggers an admissions agent that scores it against a rubric written in the form. On the scholarship track, its save triggers a finance agent. Change the rubric in the form builder and the next review follows it.</p>
+            <p class="link-arrow">Try the demo</p>
+          </div>
+        </a>
+
+        <a class="card card-link example-card" href="/examples/formflow">
+          <div class="example-visual">
+            <svg viewBox="0 0 360 230" role="img" aria-label="A claims wizard whose steps are chosen from the description, with suggested values highlighted.">
+              <rect x="10" y="10" width="340" height="210" rx="12" fill="#fff" stroke="#e0e5ec"/>
+              <rect x="10" y="10" width="100" height="210" rx="12" fill="#f4f5f7"/>
+              <g font-size="9.5" fill="#3a4756"><text x="22" y="40" font-weight="700">Your claim</text><text x="22" y="64">✓ What happened</text><text x="22" y="84" fill="#5a9a39" font-weight="600">+ Your vehicle</text><text x="22" y="104" fill="#5a9a39" font-weight="600">+ Injuries</text><text x="22" y="124" fill="#5a9a39" font-weight="600">+ Other party</text><text x="22" y="144">  Review</text></g>
+              <text x="22" y="186" font-size="8.5" fill="#0079c0">triage decided · 240 ms</text>
+              <text x="124" y="40" font-size="11" font-weight="700" fill="#0c141d">What happened?</text>
+              <rect x="124" y="50" width="212" height="44" rx="6" fill="#fff" stroke="#d7d7de"/><text x="132" y="68" font-size="9" fill="#3a4756">Rear-ended on Main St this</text><text x="132" y="82" font-size="9" fill="#3a4756">morning, my neck hurts…</text>
+              <g font-size="8.5" fill="#566073"><text x="124" y="114">Date of loss</text><text x="232" y="114">Location</text><text x="124" y="150">Injured person</text></g>
+              <rect x="124" y="118" width="100" height="18" rx="4" fill="#edfae6" stroke="#69b342"/><text x="130" y="131" font-size="8.5" fill="#3a4756">Oct 23, 2026</text>
+              <rect x="232" y="118" width="104" height="18" rx="4" fill="#edfae6" stroke="#69b342"/><text x="238" y="131" font-size="8.5" fill="#3a4756">Main Street</text>
+              <rect x="124" y="154" width="100" height="18" rx="4" fill="#edfae6" stroke="#69b342"/><text x="130" y="167" font-size="8.5" fill="#3a4756">You</text>
+              <text x="124" y="190" font-size="8.5" fill="#5a9a39">Suggested from your description</text>
+              <rect x="276" y="184" width="60" height="22" rx="5" fill="#69b342"/><text x="306" y="199" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">Continue</text>
+            </svg>
+          </div>
+          <div class="example-body">
+            <span class="num" style="font-size:12px;font-weight:700;color:var(--green-dark);letter-spacing:.08em">03 · AGENTIC FORMFLOW</span>
+            <h2 style="font-size:1.8rem;margin:0">Forms that fill themselves</h2>
+            <div class="meta"><span class="tag">Agent API</span><span class="tag">@formio/uag-js</span><span class="tag tag-blue">JEV + Claude</span></div>
+            <p>An insurance claim wizard. The policyholder describes the loss, a decision engine chooses which steps appear, extraction prefills them as suggestions, and the UAG decides again on the server before the claim is saved.</p>
+            <p class="link-arrow">Try the demo</p>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <section class="section section-dark">
+      <div class="container split">
+        <div>
+          <h2>Watch every agent call.</h2>
+          <p>Every demo has a live view of its own runs: the call into the UAG, what the UAG asked each engine, the read-only research an engine did through MCP, and the validated save. One request id ties every leg together, all the way through the engine server.</p>
+          <ul class="checks">
+            <li>You see only your own runs.</li>
+            <li>Each run shows the submission or Agent API call, the engine call, any research and the save.</li>
+            <li>Click a step to see what was sent and what came back.</li>
+          </ul>
+        </div>
+        <figure class="figure frame" style="border-color:#2c3540"><img src="/images/flow-viewer.png" alt="The agentic workflow demo beside its flow viewer: the application saved through the UAG, then the engine calls of the admissions and finance tasks, each with the fields it answered." loading="lazy"></figure>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head center">
+          <h2>Every demo is open source.</h2>
+          <p>The whole site, with its forms, demo back ends and flow viewer, is one Docker Compose stack in the UAG repository. The Agentic Coding Plugin has a prompt that builds each demo in your own project.</p>
+        </div>
+        <div style="text-align:center"><a class="btn btn-primary" href="{{links.github}}/tree/main/demo" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="/images/icons.svg#github"/></svg>View the demo source</a> <a class="btn btn-outline" href="{{links.plugin}}/tree/main/examples/agents" target="_blank" rel="noopener">Build them with your coding agent</a></div>
+      </div>
+    </section>
