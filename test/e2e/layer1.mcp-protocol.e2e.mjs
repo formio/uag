@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { startStack, getUagToken, connectMcp, formio, mcpText, UAG_URL } from './helpers/stack.mjs';
+import { startStack, getUagToken, connectMcp, formio, mcpText, UAG_URL, requireLicense } from './helpers/stack.mjs';
 
 /**
  * Layer 1: MCP protocol tests against a real UAG + Form.io OSS stack.
@@ -31,7 +31,8 @@ describe('Layer 1: UAG MCP protocol', function () {
             body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
         });
         expect(resp.status).to.equal(401);
-        expect(resp.headers.get('www-authenticate')).to.include('resource_metadata');
+        // OAuth sign-in for remote MCP clients is off (no MCP_OAUTH), so the challenge points nowhere else.
+        expect(resp.headers.get('www-authenticate')).to.equal('Bearer realm="uag-server"');
     });
 
     it('rejects a client_credentials grant with a bad admin key', async function () {
@@ -53,7 +54,9 @@ describe('Layer 1: UAG MCP protocol', function () {
         expect(names).to.include.members([
             'get_forms', 'get_form_fields', 'get_field_info', 'collect_field_data',
             'confirm_form_submission', 'submit_completed_form', 'find_submissions',
-            'submission_update', 'agent_provide_data', 'fetch_external_data',
+            'submission_update', 'agent_provide', 'agent_decide', 'fetch_external_data',
+            // The deprecated earlier name of agent_provide.
+            'agent_provide_data',
         ]);
     });
 
@@ -148,14 +151,15 @@ describe('Layer 1: UAG MCP protocol', function () {
         expect(text).to.include('protocol.tester@example.com');
     });
 
-    it('returns the agentic criteria prompt through agent_provide_data', async function () {
+    it('returns the agentic criteria prompt through agent_provide', async function () {
+        requireLicense(this);
         const submission = await formio.createSubmission('application', {
             firstName: 'Agent', lastName: 'Fixture', email: 'agent.fixture@example.com',
             gpa: 3.8, essay: 'A short but well structured essay about perseverance.',
         });
         const text = mcpText(await mcp.callTool({
-            name: 'agent_provide_data',
-            arguments: { form_name: 'application', submission_id: submission._id, persona: 'application' },
+            name: 'agent_provide',
+            arguments: { form_name: 'application', submission_id: submission._id, task: 'application' },
         }));
         // The rendered prompt must contain the criteria and the agent fields.
         expect(text).to.include('aiEssayScore');
@@ -163,5 +167,17 @@ describe('Layer 1: UAG MCP protocol', function () {
         expect(text).to.include('3.5');
         // ... and the existing submission values for the agent to analyze.
         expect(text).to.include('perseverance');
+    });
+
+    it('still answers through agent_provide_data, its earlier name, with the earlier persona argument', async function () {
+        requireLicense(this);
+        const submission = await formio.createSubmission('application', {
+            firstName: 'Legacy', lastName: 'Client', email: 'legacy.client@example.com',
+            gpa: 3.1, essay: 'An essay about patience.',
+        });
+        const args = { form_name: 'application', submission_id: submission._id };
+        const viaAlias = mcpText(await mcp.callTool({ name: 'agent_provide_data', arguments: { ...args, persona: 'application' } }));
+        const viaTool = mcpText(await mcp.callTool({ name: 'agent_provide', arguments: { ...args, task: 'application' } }));
+        expect(viaAlias).to.equal(viaTool);
     });
 });

@@ -231,7 +231,8 @@
               "html": "<h3>For Office Use Only - AI Assessment Criteria</h3><p>You are an admissions reviewer. Analyze this application submission and fill out the assessment fields below by following these rules exactly:</p><ul><li><b>aiEssayScore</b>: Score the application essay on writing quality, structure and impact. Provide an integer from 1 to 10.</li><li><b>aiRecommendation</b>: Set to the exact string 'accept' if the applicant GPA is greater than or equal to 3.5, otherwise set to the exact string 'reject'. Do not use any other values.</li><li><b>aiSummary</b>: Provide a 1-2 sentence summary of the applicant's strengths.</li></ul>",
               "properties": {
                 "uag": "application",
-                "uagField": "criteria"
+                "uagField": "criteria",
+                "uagTools": "find_submissions, get_forms"
               }
             },
             {
