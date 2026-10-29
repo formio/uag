@@ -1,0 +1,7 @@
+/* Default styles for Agent Input annotations. Override freely. */
+.uag-chip { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; font-size: 0.85em; padding: 2px 8px; border-radius: 10px; }
+.uag-confident { background: #e7f4ee; color: #1d5b3f; }
+.uag-uncertain { background: #fff4de; color: #6b4a07; }
+.uag-suggested { background: #eef1f6; color: #3b4658; }
+.uag-alternative { border: 1px solid currentColor; background: transparent; border-radius: 8px; padding: 0 6px; cursor: pointer; font: inherit; }
+.uag-error { margin-top: 4px; font-size: 0.85em; color: #8a1f1f; }
