@@ -3,8 +3,12 @@ import { randomBytes } from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
 import { PROFILES } from '../../demo/module/applicants.mjs';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { IMAGE, buildLocalImage, exampleStack, repoRoot, waitUntil } from './helpers/exampleStack.mjs';
 import { launchBrowser } from './helpers/browser.mjs';
+
+const execFileAsync = promisify(execFile);
 
 const PROJECT = 'uag-e2e-demo';
 const SITE = 'http://127.0.0.1:3430';
@@ -14,6 +18,18 @@ const UAG = 'http://127.0.0.1:3432';
 const ADMIN_EMAIL = 'admin@example.com';
 const REQUIRED = ['E2E_FORMIO_LICENSE', 'CLAUDE_API_KEY', 'TYPESAFE_API_KEY'];
 const UAG_LICENSE = process.env.E2E_DEMO_UAG_LICENSE || process.env.E2E_EXAMPLE_UAG_LICENSE;
+// A release's published images, instead of images built from this tree, to check what
+// was shipped: E2E_UAG_IMAGE, E2E_DEMO_IMAGE and E2E_ENGINES_IMAGE (all three), such as
+// formio/uag:2.0.0-rc.1. E2E_PLATFORM (such as linux/amd64) runs the UAG's own services
+// on that platform, to check another architecture; MongoDB and Form.io keep theirs.
+const PUBLISHED = { uag: process.env.E2E_UAG_IMAGE, demo: process.env.E2E_DEMO_IMAGE, engines: process.env.E2E_ENGINES_IMAGE };
+const published = Object.values(PUBLISHED).some(Boolean);
+if (published && !Object.values(PUBLISHED).every(Boolean)) {
+    throw new Error('Set all of E2E_UAG_IMAGE, E2E_DEMO_IMAGE and E2E_ENGINES_IMAGE, or none.');
+}
+const IMAGES = published ? PUBLISHED : { uag: IMAGE, demo: 'formio/uag-demo:e2e-local', engines: 'formio/uag-engines:e2e-local' };
+const PLATFORM = process.env.E2E_PLATFORM || '';
+const onPlatform = PLATFORM ? [`    platform: ${PLATFORM}`] : [];
 
 /**
  * Layer 3: the demo site as it ships, self-hosted. Its own docker-compose.yml
@@ -27,6 +43,8 @@ const UAG_LICENSE = process.env.E2E_DEMO_UAG_LICENSE || process.env.E2E_EXAMPLE_
  * Form.io reads a dotted host as a project subdomain). Everything is driven
  * through the site, as a visitor would: a real conversation (the UAG's agent/chat), real Run task actions and
  * engines settling two applicants, and the claims wizard triaged in a browser.
+ * With E2E_UAG_IMAGE, E2E_DEMO_IMAGE and E2E_ENGINES_IMAGE it runs a release's
+ * published images instead of building this tree.
  * This is the release check for the demo; it is skipped unless
  * E2E_FORMIO_LICENSE, E2E_DEMO_UAG_LICENSE (or E2E_EXAMPLE_UAG_LICENSE),
  * CLAUDE_API_KEY and TYPESAFE_API_KEY are set.
@@ -98,9 +116,9 @@ describe('Layer 3: the demo site, as it ships', function () {
                 DEMO_DAILY_NETWORK_BUDGET: '0',
                 // The suite is a scripted visitor; Turnstile is tested on its own.
                 DEMO_REQUIRE_TURNSTILE: 'false',
-                UAG_IMAGE: IMAGE,
-                DEMO_IMAGE: 'formio/uag-demo:e2e-local',
-                ENGINES_IMAGE: 'formio/uag-engines:e2e-local',
+                UAG_IMAGE: IMAGES.uag,
+                DEMO_IMAGE: IMAGES.demo,
+                ENGINES_IMAGE: IMAGES.engines,
             },
             override: [
                 'services:',
@@ -111,6 +129,7 @@ describe('Layer 3: the demo site, as it ships', function () {
                 '      default:',
                 '        aliases: [formio.e2e.test]',
                 '  formio-uag:',
+                ...onPlatform,
                 '    build: !reset null',
                 '    pull_policy: never',
                 // The UAG's own database, on Form.io's MongoDB: remote MCP sign-in and run records.
@@ -129,14 +148,24 @@ describe('Layer 3: the demo site, as it ships', function () {
                     `      - ${path.resolve(process.env.E2E_CORE_BUNDLE)}:/app/node_modules/@formio/appserver-core/server.js:ro`,
                 ] : []),
                 '  site:',
+                ...onPlatform,
                 '    ports: !override',
                 `      - "127.0.0.1:${new URL(SITE).port}:8080"`,
+                ...(PLATFORM ? ['setup', 'uag-flow', 'uag-engines'].flatMap((service) => [`  ${service}:`, ...onPlatform]) : []),
                 '',
             ].join('\n'),
         });
 
-        await buildLocalImage();
-        await stack.compose('build', 'setup', 'uag-engines');
+        if (published) {
+            // Pulled whole, so a stale local copy of a tag is never what is checked.
+            for (const image of Object.values(IMAGES)) {
+                await execFileAsync('docker', ['pull', ...(PLATFORM ? ['--platform', PLATFORM] : []), image], { timeout: 1200000 });
+            }
+        }
+        else {
+            await buildLocalImage();
+            await stack.compose('build', 'setup', 'uag-engines');
+        }
         await stack.compose('up', '-d', '--wait', 'mongo', 'api-server');
         await stack.compose('run', '--rm', 'setup').catch(async (error) => {
             error.message += `\n${error.stdout || ''}${error.stderr || ''}\nForm.io:\n${await stack.logs('api-server', 40)}`;
