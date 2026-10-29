@@ -1,0 +1,59 @@
+{
+  "name": "@formio/uag-sdk",
+  "version": "2.0.0",
+  "description": "Build engine packages for the Form.io Universal Agent Gateway (UAG): the engine contract, defineEngine, settings and instance resolution, the engine loader, and a conformance check.",
+  "keywords": [
+    "formio",
+    "uag",
+    "universal-agent-gateway",
+    "ai",
+    "agents",
+    "engine",
+    "sdk"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./loader": {
+      "types": "./loader.d.ts",
+      "default": "./loader.js"
+    },
+    "./conformance": {
+      "types": "./conformance.d.ts",
+      "default": "./conformance.js"
+    },
+    "./protocol": {
+      "types": "./protocol.d.ts",
+      "default": "./protocol.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "*.js",
+    "*.d.ts",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "mocha"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/formio/uag.git",
+    "directory": "packages/engine-sdk"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "chai": "^6.3.0",
+    "mocha": "^12.0.3"
+  }
+}
