@@ -1,6 +1,6 @@
 {
   "name": "@formio/uag-sdk",
-  "version": "2.0.0",
+  "version": "2.0.0-rc.1",
   "description": "Build engine packages for the Form.io Universal Agent Gateway (UAG): the engine contract, defineEngine, settings and instance resolution, the engine loader, and a conformance check.",
   "keywords": [
     "formio",

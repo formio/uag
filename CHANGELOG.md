@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.0
+## 2.0.0-rc.1
 
 The first release of the Agent API and of the "Agent: Run task" action (1.14.0 was never published). Coming from 1.13, the new features are off until enabled, and existing local MCP clients and conversation forms keep working. Remote MCP clients now need `MCP_OAUTH=true` and the UAG's own database (`MONGO`, licensed); `MONGO` no longer connects the UAG to a database for submissions; `BASE_URL` is optional; and the "Authorization Codes" resource is no longer created, so it can be deleted from the project. The Claude integration is retired, though `formio/uag-claude` 1.3.x keeps working against 2.0 until its webhooks move to Run task actions; see [MIGRATING-2.0.md](./MIGRATING-2.0.md). The appserver 2.16.0 upgrade (see Changed) brings three things to check: MCP clients sign in again once, a Form.io server with a self-signed certificate needs its CA trusted, and a module's template is now installed only at startup unless `TEMPLATE_SYNC=refresh`.
 
