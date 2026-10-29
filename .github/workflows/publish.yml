@@ -1,8 +1,10 @@
 name: Publish UAG
 
+# A pushed version tag publishes, from whatever branch it is on: tag a branch to
+# publish a release candidate for testing before its pull request is merged.
 on:
   push:
-    tags: ["v*"] # Triggers on version tags like v1.0.0
+    tags: ["v[0-9]*", "[0-9]*"] # v2.0.0-rc.1 or 2.0.0-rc.1
 
 jobs:
   publish:
@@ -18,7 +20,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      # Image tags are unprefixed (1.12.3), while the git tag carries a leading v,
+      # Image tags are unprefixed (1.12.3), while the git tag may carry a leading v,
       # so github.ref_name cannot be used directly.
       #
       # Versions here are bumped by hand, so tagging without editing package.json
@@ -30,13 +32,27 @@ jobs:
         id: version
         run: |
           set -euo pipefail
-          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          TAG="${GITHUB_REF#refs/tags/}"
+          TAG_VERSION="${TAG#v}"
           PKG_VERSION=$(jq -r .version package.json)
           if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-            echo "::error::Tag v${TAG_VERSION} does not match package.json (${PKG_VERSION}). Bump the version in package.json, commit it, then move the tag to that commit."
+            echo "::error::Tag ${TAG} does not match package.json (${PKG_VERSION}). Run \`yarn release:version ${TAG_VERSION}\`, commit it, then move the tag to that commit."
             exit 1
           fi
           echo "version=$TAG_VERSION" >> "$GITHUB_OUTPUT"
+          # A prerelease (2.0.0-rc.1) goes out under its own tag (rc), on npm and
+          # Docker Hub alike, so `npm install` and `:latest` keep the last release.
+          case "$TAG_VERSION" in
+            *-*)
+              PRE="${TAG_VERSION#*-}"
+              echo "channel=${PRE%%.*}" >> "$GITHUB_OUTPUT"
+              echo "prerelease=true" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "channel=latest" >> "$GITHUB_OUTPUT"
+              echo "prerelease=false" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
 
       ### Publish underlying npm package:
 
@@ -50,7 +66,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: "lts/*"
+          # Node 24, as the images use: Node 25 and later ship without corepack.
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
           # setup-node v5 enables package-manager caching by default, which is
           # what runs the `yarn cache dir` probe. Corepack shims are installed
@@ -72,10 +89,37 @@ jobs:
       - name: Build package
         run: yarn build --if-present
 
+      # Every package here is released at the UAG's version (`yarn release:version`;
+      # the release check refuses one out of step). Each is published when npm does
+      # not have its version yet, so a rerun never republishes one. They go first,
+      # in dependency order: the SDK, then the engines (openai before the grok and
+      # gemini engines built on it), then the engine server and @formio/uag-js,
+      # and the UAG after them, because it depends on the SDK.
+      # First publish of a brand-new package name may not be possible over OIDC;
+      # if this fails on the very first run, publish once locally and let CI take
+      # over from then on.
+      # The UAG's prepublishOnly runs this too, but only after the engine
+      # packages are already out; check every package before publishing any.
+      - name: Check the release
+        run: node scripts/check-release.mjs
+
+      - name: Publish the engine packages to npm
+        run: |
+          set -euo pipefail
+          for dir in packages/engine-sdk engines/jev engines/claude engines/openai engines/grok engines/gemini packages/engine-server packages/uag-js; do
+            NAME=$(jq -r .name "$dir/package.json")
+            VERSION=$(jq -r .version "$dir/package.json")
+            if npm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then
+              echo "npm already has ${NAME}@${VERSION} — skipping."
+            else
+              (cd "$dir" && npm publish --access public --tag "${{ steps.version.outputs.channel }}")
+            fi
+          done
+
       # No NODE_AUTH_TOKEN: OIDC supplies short-lived credentials, and leaving a
       # token in the environment makes npm prefer it and skip Trusted Publishing.
       - name: Publish package to npm
-        run: npm publish
+        run: npm publish --tag "${{ steps.version.outputs.channel }}"
 
       - name: Docker Login
         uses: docker/login-action@v4
@@ -101,78 +145,98 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           provenance: true
+          # latest for a release; rc (or beta, ...) for a prerelease.
           tags: |
-            formio/uag:latest
+            formio/uag:${{ steps.version.outputs.channel }}
             formio/uag:${{ steps.version.outputs.version }}
 
-      ### Publish the Claude integration (@formio/uag-claude + formio/uag-claude).
-      # Versioned independently of the core package on purpose: the module shares
-      # no code with UAG (it talks MCP/HTTP, imports no @formio/* package) and
-      # frequently does not change when core does — it sat at 1.2.0 from
-      # 2026-02-20 to 2026-04-17 across two core releases. Syncing the numbers
-      # would force rebuilds of an unchanged artifact and destroy the only signal
-      # the version carries. Instead every core tag checks whether the module's
-      # own version is already published and skips it when unchanged, so a
-      # release can never be silently forgotten. Compatibility between the two is
-      # documented in the README matrix, not implied by matching versions.
-      - name: Check whether the Claude integration needs publishing
-        id: claude
-        working-directory: integrations/claude
-        run: |
-          set -euo pipefail
-          VERSION=$(jq -r .version package.json)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-          if npm view "@formio/uag-claude@${VERSION}" version >/dev/null 2>&1; then
-            echo "npm already has @formio/uag-claude@${VERSION} — skipping npm."
-          else
-            echo "npm=publish" >> "$GITHUB_OUTPUT"
-          fi
-
-          CODE=$(curl -s -o /dev/null -w '%{http_code}' \
-            "https://hub.docker.com/v2/repositories/formio/uag-claude/tags/${VERSION}")
-          if [ "$CODE" = "200" ]; then
-            echo "Docker Hub already has formio/uag-claude:${VERSION} — skipping image."
-          else
-            echo "docker=publish" >> "$GITHUB_OUTPUT"
-          fi
-
-      # First publish of a brand-new package name may not be possible over OIDC;
-      # if this fails on the very first run, publish once locally and let CI take
-      # over from then on.
-      - name: Publish Claude integration to npm
-        if: steps.claude.outputs.npm == 'publish'
-        working-directory: integrations/claude
-        run: npm publish --access public
-
-      # Also via buildx, for two reasons: it gains arm64 like the core image, and
-      # a plain `docker build` would no longer work here anyway — with buildx set
-      # up as the default builder the result lands in the build cache rather than
-      # the local image store, so the follow-up tag and push would not find it.
-      - name: Build and push Claude integration image
-        if: steps.claude.outputs.docker == 'publish'
+      ### Publish the demo site image (formio/uag-demo), at the UAG's version.
+      - name: Build and push formio/uag-demo
         uses: docker/build-push-action@v6
         with:
-          context: integrations/claude
+          context: .
+          file: demo/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           provenance: true
           tags: |
-            formio/uag-claude:latest
-            formio/uag-claude:${{ steps.claude.outputs.version }}
+            formio/uag-demo:${{ steps.version.outputs.channel }}
+            formio/uag-demo:${{ steps.version.outputs.version }}
 
-      ### Publish MCP server:
+      ### Publish the engine server image (formio/uag-engines).
+      # Built only when Docker Hub does not have its package's version yet.
+      - name: Check whether the engine server image needs publishing
+        id: engine_server
+        run: |
+          set -euo pipefail
+          VERSION=$(jq -r .version packages/engine-server/package.json)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+            "https://hub.docker.com/v2/repositories/formio/uag-engines/tags/${VERSION}")
+          if [ "$CODE" = "200" ]; then
+            echo "Docker Hub already has formio/uag-engines:${VERSION} — skipping image."
+          else
+            echo "docker=publish" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and push formio/uag-engines
+        if: steps.engine_server.outputs.docker == 'publish'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/engine-server/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          provenance: true
+          tags: |
+            formio/uag-engines:${{ steps.version.outputs.channel }}
+            formio/uag-engines:${{ steps.engine_server.outputs.version }}
+
+      ### Publish MCP server (releases only: the registry lists one current version):
       - name: Install mcp-publisher
+        if: steps.version.outputs.prerelease != 'true'
         run: |
           curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
 
       - name: Authenticate to MCP Registry
+        if: steps.version.outputs.prerelease != 'true'
         run: ./mcp-publisher login dns --domain form.io --private-key ${{ secrets.MCP_PRIVATE_KEY }}
 
       - name: Set version in server.json
+        if: steps.version.outputs.prerelease != 'true'
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          VERSION=${{ steps.version.outputs.version }}
           jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
 
       - name: Publish server to MCP Registry
+        if: steps.version.outputs.prerelease != 'true'
         run: ./mcp-publisher publish
+
+      ### Deploy: a prerelease (2.0.0-rc.1) to the test environment, a release
+      # (2.0.0) to production. Each is optional: set the environment's hook URL as
+      # a secret, and its token if the hook needs one (sent as a bearer token):
+      #   DEPLOY_TEST_HOOK_URL, DEPLOY_TEST_HOOK_TOKEN
+      #   DEPLOY_PRODUCTION_HOOK_URL, DEPLOY_PRODUCTION_HOOK_TOKEN
+      # The hook gets the version and the image tags to deploy.
+      - name: Notify the deployment hook
+        env:
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+          TEST_URL: ${{ secrets.DEPLOY_TEST_HOOK_URL }}
+          TEST_TOKEN: ${{ secrets.DEPLOY_TEST_HOOK_TOKEN }}
+          PRODUCTION_URL: ${{ secrets.DEPLOY_PRODUCTION_HOOK_URL }}
+          PRODUCTION_TOKEN: ${{ secrets.DEPLOY_PRODUCTION_HOOK_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ "$PRERELEASE" = "true" ]; then TARGET=test URL="${TEST_URL:-}" TOKEN="${TEST_TOKEN:-}"
+          else TARGET=production URL="${PRODUCTION_URL:-}" TOKEN="${PRODUCTION_TOKEN:-}"; fi
+          if [ -z "$URL" ]; then
+            echo "No deployment hook for the ${TARGET} environment; nothing to deploy."
+            exit 0
+          fi
+          VERSION="${{ steps.version.outputs.version }}"
+          BODY=$(jq -n --arg environment "$TARGET" --arg version "$VERSION" --arg tag "$GITHUB_REF_NAME" --arg commit "$GITHUB_SHA" \
+            '{environment: $environment, version: $version, tag: $tag, commit: $commit,
+              images: {uag: "formio/uag:\($version)", demo: "formio/uag-demo:\($version)"}}')
+          curl -fsS --retry 3 -X POST "$URL" -H 'Content-Type: application/json' \
+            ${TOKEN:+-H "Authorization: Bearer $TOKEN"} -d "$BODY"
+          echo "Asked the ${TARGET} environment to deploy ${VERSION}."
