@@ -44,9 +44,10 @@ function extractValue(item: any, component: SelectComponent): any {
 
 /**
  * Check if a component is a select-type component with external data (url or resource).
+ * A radio can load its options from a URL too.
  */
 function isExternalSelect(component: Component): boolean {
-    if (component.type !== 'select' && component.type !== 'selectboxes') return false;
+    if (component.type !== 'select' && component.type !== 'selectboxes' && component.type !== 'radio') return false;
     const dataSrc = (component as SelectComponent).dataSrc;
     return dataSrc === 'url' || dataSrc === 'resource';
 }
@@ -78,7 +79,7 @@ function interpolateHeaders(
 }
 
 export const fetchExternalData = async (project: UAGProjectInterface): Promise<ToolInfo> => {
-    return defaultsDeep(project.config?.toolOverrides?.fetch_external_data || {}, {
+    return defaultsDeep({}, project.config?.toolOverrides?.fetch_external_data, {
         name: 'fetch_external_data',
         title: 'Fetch External Data',
         description: 'Fetch external data for a component that loads data from an external URL, a Form.io Resource, or a DataSource. Use this tool when `get_form_fields` indicates that a field requires calling `fetch_external_data` to retrieve its data. For select components, this returns the available options. For datasource components, this returns the fetched data. You can optionally provide a `search_value` to filter results server-side. If the component\'s URL or headers contain interpolation tokens (e.g. `{{ data.someField }}`), you MUST provide `form_data` with the current collected data so the tokens can be resolved.',
@@ -139,24 +140,15 @@ export const fetchExternalData = async (project: UAGProjectInterface): Promise<T
                 if (!isExternalSelect(component)) {
                     return project.mcpResponse(ResponseTemplate.fetchExternalDataError, {
                         dataPath: data_path,
-                        error: `Component at "${data_path}" is of type "${component.type}" and does not load external data. This tool only supports select/selectboxes components with dataSrc "url" or "resource", and datasource components.`
+                        error: `Component at "${data_path}" is of type "${component.type}" and does not load external data. This tool only supports select, selectboxes and radio components with dataSrc "url" or "resource", and datasource components.`
                     }, true);
                 }
 
+                // isExternalSelect() has checked that dataSrc is "url" or "resource".
                 const selectComponent = component as SelectComponent;
-                const dataSrc = selectComponent.dataSrc;
-                if (dataSrc !== 'url' && dataSrc !== 'resource') {
-                    return project.mcpResponse(ResponseTemplate.fetchExternalDataError, {
-                        dataPath: data_path,
-                        error: `Component at "${data_path}" has dataSrc "${dataSrc}". Only "url" and "resource" are supported by this tool.`
-                    }, true);
-                }
-                let items: any[] = [];
-                if (dataSrc === 'url') {
-                    items = await fetchUrlData(selectComponent, search_value, extra.authInfo, evalContext);
-                } else if (dataSrc === 'resource') {
-                    items = await fetchResourceData(selectComponent, search_value, extra.authInfo, project, evalContext);
-                }
+                const items = selectComponent.dataSrc === 'url'
+                    ? await fetchUrlData(selectComponent, search_value, extra.authInfo, evalContext)
+                    : await fetchResourceData(selectComponent, search_value, extra.authInfo, project, evalContext);
                 const options = items.map(item => ({
                     label: extractLabel(item, selectComponent, evalContext),
                     value: extractValue(item, selectComponent)

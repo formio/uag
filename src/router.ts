@@ -1,15 +1,14 @@
-import { Router, type Response as ExpressResponse } from 'express';
+import { Router, type Request, type Response as ExpressResponse } from 'express';
 import { UAGProjectInterface } from './UAGProjectInterface';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import type { ScopedTokenClaims } from './formflow';
 
 // Helper function to create JSON RPC error responses
-const createJsonRpcErrorResponse = (code: number, message: string) => {
-    return JSON.stringify({
-        error: { code, message },
-        id: null,
-        jsonrpc: "2.0",
-    });
-};
+const createJsonRpcErrorResponse = (code: number, message: string) => ({
+    error: { code, message },
+    id: null,
+    jsonrpc: "2.0",
+});
 
 /**
  * Handle errors that occur during response processing.
@@ -29,7 +28,7 @@ const handleResponseError = (error: unknown, res: ExpressResponse): boolean => {
         return true;
     }
     console.error("[formio-uag] error handling request", error);
-    res.status(500).json(JSON.parse(createJsonRpcErrorResponse(-32603, "Internal Server Error")));
+    res.status(500).json(createJsonRpcErrorResponse(-32603, "Internal Server Error"));
     return false;
 };
 
@@ -41,8 +40,9 @@ const handleResponseError = (error: unknown, res: ExpressResponse): boolean => {
 const connectMcpTransport = async (
     project: UAGProjectInterface,
     res: ExpressResponse,
+    scope?: ScopedTokenClaims,
 ): Promise<StreamableHTTPServerTransport> => {
-    const server = await project.buildMcpServer();
+    const server = await project.buildMcpServer(scope);
     const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,  // Use "undefined" to trigger stateless mode.
     });
@@ -57,25 +57,17 @@ const connectMcpTransport = async (
 export function UAGRouter(project: UAGProjectInterface): Router {
     const router: Router = Router();
 
-    // Handles the MCP post requests.
-    router.post('/', async (req, res) => {
+    // Handles the MCP requests: posts carry a JSON-RPC body, gets do not (health checks, etc).
+    const handleMcpRequest = (withBody: boolean) => async (req: Request, res: ExpressResponse) => {
         try {
-            const transport = await connectMcpTransport(project, res);
-            await transport.handleRequest(req as any, res as any, req.body);
+            const transport = await connectMcpTransport(project, res, (req as any).uagScope);
+            await transport.handleRequest(req as any, res as any, withBody ? req.body : undefined);
         } catch (error) {
             handleResponseError(error, res);
         }
-    });
-
-    // Handles the MCP get requests (for health checks, etc).
-    router.get('/', async (req, res) => {
-        try {
-            const transport = await connectMcpTransport(project, res);
-            await transport.handleRequest(req as any, res as any);
-        } catch (err) {
-            handleResponseError(err, res);
-        }
-    });
+    };
+    router.post('/', handleMcpRequest(true));
+    router.get('/', handleMcpRequest(false));
 
     // Return the router
     return router;
