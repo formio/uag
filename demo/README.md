@@ -114,7 +114,7 @@ The common ones are in [`.env.example`](./.env.example), and every one, with its
 | `CHAT_MAX_TURNS` | `30` | Turns one conversation may take before the visitor must start over. |
 | `CHAT_MAX_MESSAGE_LENGTH` | `2000` | The longest message the demo relays, in characters. Keep it within the UAG's `agentApi.chat.maxMessageLength`. |
 | `PROJECT_TTL` | `300` | Seconds between the UAG's re-reads of the project. |
-| `FLOW_ENGINES` | `inside` with `FLOW_UAG_URL`, else `remote` | Where the engines run, which sets what the flow viewer can show. `inside` the UAG, their calls never cross the network, so the viewer marks the engines as in the UAG and lights them when an Agent API call ends; `remote`, on an engine server behind the flow proxy, each engine call is its own step. |
+| `FLOW_ENGINES` | `inside` with `FLOW_UAG_URL`, else `remote` | Where the engines run, which sets what the flow viewer can show. `inside` the UAG, their calls never cross the network, so the viewer's map shows only your app, the UAG and Form.io, and each Agent API call says which engines answered and how fast; `remote`, on an engine server behind the flow proxy, each engine call is its own step. |
 | `DEMO_TEMPLATE_SYNC` | `import` | With `docker-compose.enterprise.yml`, `off` stops the setup job updating an existing project's forms from `module/project.json`. |
 
 ## Working on it

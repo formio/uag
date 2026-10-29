@@ -198,20 +198,30 @@ describe('Demo site app', function () {
     });
 
     describe('caching', function () {
-        it('has the deployed site revalidate the demo apps\' pages on every load, and cache their assets for an hour', async function () {
-            const demo = await site({ PROJECT_KEY, NODE_ENV: 'production', DEMO_REQUIRE_TURNSTILE: 'false' });
+        it('has a release\'s pages ask for their scripts by version, caches those for good, and revalidates everything else', async function () {
+            const demo = await site({ PROJECT_KEY, NODE_ENV: 'production', DEMO_REQUIRE_TURNSTILE: 'false', DEMO_ASSET_VERSION: '9.9.9-rc.9' });
             try {
-                for (const pathname of ['/apps/conversation/', '/apps/conversation/index.html', '/apps/workflow/']) {
+                for (const pathname of ['/apps/conversation/', '/apps/conversation/index.html', '/apps/workflow/', '/apps/conversation/chat.js', '/renderer/uag-js.css', '/js/flow-panel.js']) {
                     const response = await fetch(`${demo.url}${pathname}`);
                     expect(response.status, pathname).to.equal(200);
                     expect(response.headers.get('cache-control'), pathname).to.equal('no-cache');
                 }
-                expect((await fetch(`${demo.url}/apps/conversation/chat.js`)).headers.get('cache-control')).to.equal('public, max-age=3600');
-                expect((await fetch(`${demo.url}/renderer/uag-js.css`)).headers.get('cache-control')).to.equal('public, max-age=3600');
+                const page = await (await fetch(`${demo.url}/examples/workflow`)).text();
+                for (const asset of ['/css/site.css', '/js/site.js', '/js/flow-panel.js', '/js/demo.js']) {
+                    expect(page, asset).to.include(`${asset}?v=9.9.9-rc.9"`);
+                }
+                expect((await fetch(`${demo.url}/js/flow-panel.js?v=9.9.9-rc.9`)).headers.get('cache-control')).to.equal('public, max-age=31536000, immutable');
+                // Another release's version is not this one's file: revalidated, never kept.
+                expect((await fetch(`${demo.url}/js/flow-panel.js?v=1.0.0`)).headers.get('cache-control')).to.equal('no-cache');
             }
             finally {
                 await demo.close();
             }
+        });
+
+        it('versions the assets by the demo\'s package version unless told', function () {
+            expect(readConfig({ PROJECT_KEY }).assetVersion).to.equal(createRequire(import.meta.url)('../package.json').version);
+            expect(readConfig({ PROJECT_KEY, DEMO_ASSET_VERSION: 'x' }).assetVersion).to.equal('x');
         });
     });
 

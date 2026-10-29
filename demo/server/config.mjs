@@ -4,6 +4,7 @@
  * Everything that names a host lives here, so moving the site to another
  * domain is a change to DEMO_DOMAIN (or DEMO_PUBLIC_URL) and nothing else.
  */
+import fs from 'node:fs';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 
@@ -169,5 +170,8 @@ export function readConfig(env = process.env) {
         formioJsVersion: env.FORMIO_JS_VERSION || '5.6.1',
         rendererDir: env.RENDERER_DIR || path.resolve(here, '../../packages/uag-js'),
         root: path.resolve(here, '..'),
+        // Added to the URLs of the site's scripts and stylesheets (?v=), so a new
+        // release's are fetched at once while each stays cached between releases.
+        assetVersion: env.DEMO_ASSET_VERSION || JSON.parse(fs.readFileSync(path.resolve(here, '../package.json'), 'utf8')).version,
     };
 }

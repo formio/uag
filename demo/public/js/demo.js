@@ -40,6 +40,7 @@
       intro: flow.getAttribute('data-intro') || undefined,
       introInside: flow.getAttribute('data-intro-inside') || undefined,
       empty: flow.getAttribute('data-empty') || undefined,
+      emptyInside: flow.getAttribute('data-empty-inside') || undefined,
       scopes: (flow.getAttribute('data-scopes') || '').split(',').filter(Boolean),
     });
   }

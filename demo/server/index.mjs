@@ -74,11 +74,16 @@ export function createApp(config = readConfig(), overrides = {}) {
     app.use(securityHeaders(config));
     app.get('/health', (req, res) => res.json({ ok: true }));
 
-    // Pages are revalidated on every load, so a deploy shows at once; their assets are cached for an hour.
+    // A deploy shows at once: an asset requested with the release's version (?v=, as the
+    // pages ask for theirs) is cached for good, and everything else, pages included, is
+    // revalidated on every load (a 304 when it has not changed).
     const statics = {
-        maxAge: config.production ? '1h' : 0,
         index: 'index.html',
-        setHeaders: (res, file) => { if (file.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache'); },
+        cacheControl: false,
+        setHeaders: (res) => {
+            const versioned = config.production && res.req?.query?.v === config.assetVersion;
+            res.setHeader('Cache-Control', versioned ? 'public, max-age=31536000, immutable' : 'no-cache');
+        },
     };
     app.use(express.static(path.join(config.root, 'public'), statics));
     app.use('/renderer', express.static(config.rendererDir, statics));

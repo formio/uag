@@ -6,8 +6,9 @@
 // and the save. Request and response events of one leg share a reqId.
 //
 // When the engines run inside the UAG (the stream's hello says `engines: "inside"`),
-// the UAG's calls to them never cross the network, so they have no legs: the map
-// says where they run, and lights them when an Agent API call that used them ends.
+// the UAG's calls to them never cross the network, so they have no legs, and the map
+// shows only what can be seen: your app, the UAG and Form.io. Each Agent API call's
+// summary still says which engines answered and how fast.
 (function () {
   var HIDDEN = /^(notification|notifications\/.*|stream|ping)$/;
   var NODES = {
@@ -29,10 +30,16 @@
     return node;
   }
 
-  function mapSvg() {
-    var svg = '<svg viewBox="0 0 380 124" role="img" aria-label="Where the current step is running">';
-    Object.keys(EDGES).forEach(function (id) { svg += '<path class="edge" data-edge="' + id + '" d="' + EDGES[id] + '"/>'; });
-    Object.keys(NODES).forEach(function (id) {
+  // The map's nodes and edges when the engines run inside the UAG: no engine or model boxes.
+  var INSIDE = { nodes: ['app', 'uag', 'formio'], edges: ['app-uag', 'formio-uag', 'uag-formio'], width: 180 };
+
+  function mapSvg(inside) {
+    var nodes = inside ? INSIDE.nodes : Object.keys(NODES);
+    var edges = inside ? INSIDE.edges : Object.keys(EDGES);
+    var svg = '<svg viewBox="0 0 ' + (inside ? INSIDE.width : 380) + ' 124" role="img" aria-label="Where the current step is running"' +
+      (inside ? ' style="max-width:' + Math.round(INSIDE.width / 380 * 100) + '%;margin:0 auto"' : '') + '>';
+    edges.forEach(function (id) { svg += '<path class="edge" data-edge="' + id + '" d="' + EDGES[id] + '"/>'; });
+    nodes.forEach(function (id) {
       var n = NODES[id];
       svg += '<g class="node" data-node="' + id + '"><rect x="' + n.x + '" y="' + n.y + '" width="72" height="36" rx="7"/>' +
         '<text x="' + (n.x + 36) + '" y="' + (n.y + 16) + '" text-anchor="middle">' + n.label + '</text>' +
@@ -55,10 +62,8 @@
     return ['http', 'other'];
   }
 
-  function edgesFor(event, run, inside) {
+  function edgesFor(event, run) {
     if (event.kind === 'engine') return ['uag-engines', 'engines-models'];
-    // Every Agent API operation asks an engine; inside the UAG, its answer is the only sign of it.
-    if (inside && event.kind === 'agent' && event.phase === 'response' && event.status < 400) return ['app-uag', 'uag-engines', 'engines-models'];
     if (event.kind === 'mcp') return run.engine ? ['engines-uag'] : ['app-uag'];
     if (event.kind === 'agent') return ['app-uag'];
     if (/\/submission/.test(event.path || '')) return ['app-uag', 'uag-formio'];
@@ -127,19 +132,17 @@
     var activeTimers = {};
     var inside = false;
 
-    /** The engines run inside the UAG: say so on the map and in the intro. */
+    /** The engines run inside the UAG: draw only what can be seen, and say why in the intro. */
     function enginesInside() {
       inside = true;
       root.classList.add('flow-engines-inside');
-      var sub = map.querySelector('[data-node="engines"] .sub');
-      if (sub) sub.textContent = 'in the UAG';
-      var research = map.querySelector('[data-edge="engines-uag"]');
-      if (research) research.remove();
+      map.innerHTML = mapSvg(true);
       if (options.introInside) intro.textContent = options.introInside;
+      if (options.emptyInside) empty.textContent = options.emptyInside;
     }
 
     function activate(event, run) {
-      var edges = edgesFor(event, run, inside);
+      var edges = edgesFor(event, run);
       nodesForEdges(edges).concat(edges.map(function (e) { return 'edge:' + e; })).forEach(function (key) {
         var target = key.indexOf('edge:') === 0
           ? map.querySelector('[data-edge="' + key.slice(5) + '"]')

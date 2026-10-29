@@ -60,6 +60,7 @@ export function siteValues(config, page, extra = {}) {
         site: { url: config.publicUrl, year: new Date().getFullYear() },
         links: config.links,
         formioJsVersion: config.formioJsVersion,
+        assetVersion: config.assetVersion,
         page: { ...page, fullTitle, canonical: `${config.publicUrl}${page.route}`, bodyClass: `page-${page.view}` },
         nav,
         ...extra,
