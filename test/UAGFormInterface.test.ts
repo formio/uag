@@ -226,6 +226,21 @@ describe('UAGFormInterface', () => {
             expect(info.options?.[0]).to.deep.equal({ label: 'Red', value: 'red' });
         });
 
+        it('returns options for a radio component, which its rule refers to', () => {
+            const component = {
+                type: 'radio',
+                key: 'urgency',
+                label: 'Urgency',
+                values: [
+                    { label: 'Low', value: 'low' },
+                    { label: 'High', value: 'high' }
+                ]
+            } as any;
+            const info = uagForm.getComponentInfo(component, 'urgency');
+            expect(info.options).to.deep.equal([{ label: 'Low', value: 'low' }, { label: 'High', value: 'high' }]);
+            expect(uagForm.getComponentValueRule(component)).to.include('"**Options**" section');
+        });
+
         it('handles select with URL data source', () => {
             const component = {
                 type: 'select',
@@ -320,6 +335,25 @@ describe('UAGFormInterface', () => {
         });
     });
 
+    describe('getParentInfoFromComponent', () => {
+        it('treats a container saved with tree: true as a container, not a table', () => {
+            // The form builder saves containers with `tree: true`, as it does grids.
+            const container = { type: 'container', key: 'customer', label: 'Customer', input: true, tree: true, components: [] } as any;
+            const parent = uagForm.getParentInfoFromComponent(container, 'customer');
+            expect(parent?.isContainer).to.equal(true);
+            expect(parent?.isTable).to.not.equal(true);
+            expect(uagForm.getParentDataPath(parent)).to.equal('customer');
+            expect(uagForm.getComponentValueRule(container, 'customer')).to.contain('object/map');
+        });
+
+        it('treats a datagrid as a table', () => {
+            const grid = { type: 'datagrid', key: 'rows', label: 'Rows', input: true, tree: true, components: [] } as any;
+            const parent = uagForm.getParentInfoFromComponent(grid, 'rows');
+            expect(parent?.isTable).to.equal(true);
+            expect(uagForm.getParentDataPath(parent, 2)).to.equal('rows[2]');
+        });
+    });
+
     describe('getFields', () => {
         it('separates required and optional fields', async () => {
             const submission = { data: {} } as Submission;
@@ -364,6 +398,50 @@ describe('UAGFormInterface', () => {
             expect(fields.required.rules).to.have.property('textfield');
             expect(fields.required.rules).to.have.property('email');
             expect(fields.optional.rules).to.have.property('phoneNumber');
+        });
+
+        it('lists its own rule for a component whose rule differs from others of its type', async () => {
+            uagForm.form.components = [
+                { type: 'select', key: 'country', label: 'Country', input: true, dataSrc: 'url', data: { url: 'https://api.example.com/countries' } },
+                { type: 'select', key: 'color', label: 'Color', input: true, data: { values: [{ label: 'Red', value: 'red' }] } },
+                { type: 'select', key: 'shade', label: 'Shade', input: true, data: { values: [{ label: 'Dark', value: 'dark' }] } }
+            ] as any;
+            const fields = await uagForm.getFields({ data: {} } as Submission, mockAuthInfo);
+            const rules = fields.optional.rules;
+            // Keyed by type alone, the static selects' rule replaced the one telling
+            // the agent to fetch the country options.
+            expect(Object.keys(rules)).to.have.members(['select', 'select (color)', 'select (shade)']);
+            expect(rules.select).to.contain('fetch_external_data');
+            expect(rules['select (color)']).to.contain('**Options**');
+            expect(rules['select (shade)']).to.equal(rules['select (color)']);
+        });
+
+        describe('within a parent path', () => {
+            const name = { type: 'textfield', key: 'name', label: 'Name', input: true };
+            const notes = { type: 'textarea', key: 'customerNotes', label: 'Notes', input: true };
+            /** Hands the getFields processor these components at these paths. */
+            const feed = (entries: [any, string][]) => {
+                uagForm.process = async (_submission: Submission, _auth: any, _headers: any, _findQuery: any, additional: any[]) => {
+                    const getFields = additional.find((p: any) => p.name === 'getFields');
+                    for (const [component, path] of entries) {
+                        await getFields.postProcess({ component, path, value: undefined });
+                    }
+                    return {} as any;
+                };
+            };
+
+            it('includes only its children, not siblings whose key starts with it', async () => {
+                feed([[name, 'customer.name'], [notes, 'customerNotes']]);
+                const fields = await uagForm.getFields({ data: {} } as Submission, mockAuthInfo, 'customer');
+                const paths = [...fields.required.components, ...fields.optional.components].map((f) => f.path);
+                expect(paths).to.deep.equal(['customer.name']);
+            });
+
+            it('reports the row of the parent table, not of a table it sits in', async () => {
+                feed([[name, 'outer[0].inner[3].name']]);
+                const fields = await uagForm.getFields({ data: {} } as Submission, mockAuthInfo, 'outer[0].inner');
+                expect(fields.rowIndex).to.equal(3);
+            });
         });
     });
 
@@ -539,6 +617,27 @@ describe('UAGFormInterface', () => {
             expect(paths).to.not.include('email');
             expect(paths).to.not.include('phone');
             expect(paths).to.not.include('age');
+        });
+
+        it('indents values by how deeply they are nested, after leaving a nested component', () => {
+            uagForm.form.components = [
+                {
+                    type: 'container', key: 'outer', label: 'Outer', input: true, tree: true, components: [
+                        { type: 'datagrid', key: 'rows', label: 'Rows', input: true, tree: true, components: [
+                            { type: 'textfield', key: 'a', label: 'A', input: true }
+                        ] },
+                        { type: 'textfield', key: 'after', label: 'After', input: true }
+                    ]
+                },
+                { type: 'textfield', key: 'last', label: 'Last', input: true }
+            ] as any;
+            const formatted = uagForm.formatData({ outer: { rows: [{ a: 'x' }], after: 'y' }, last: 'z' });
+            const prefixOf = (label: string) => formatted.find((d) => d.label === label)?.prefix;
+            expect(prefixOf('Outer')).to.equal('');
+            expect(prefixOf('Rows')).to.equal('  ');
+            expect(prefixOf('A')).to.equal('    ');
+            expect(prefixOf('After')).to.equal('  ');
+            expect(prefixOf('Last')).to.equal('');
         });
 
         it('includes zero values', () => {

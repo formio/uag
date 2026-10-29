@@ -9,7 +9,6 @@ describe('UAGProjectInterface', () => {
         // Create a mock project instance
         project = Object.create(UAGProjectInterface.prototype);
         project.forms = {};
-        project.formNames = [];
         project.user = null;
         project.mcpServer = {
             registerTool: () => { }
@@ -170,7 +169,7 @@ describe('UAGProjectInterface', () => {
             await project.authorizeRequest(mockReq, mockRes, mockNext);
 
             expect(statusCode).to.equal(401);
-            expect(responseBody).to.have.property('detail');
+            expect(responseBody).to.include({ error: 'invalid_token' });
         });
 
         it('returns 401 when authorization fails', async () => {
@@ -203,7 +202,7 @@ describe('UAGProjectInterface', () => {
             await project.authorizeRequest(mockReq, mockRes, mockNext);
 
             expect(statusCode).to.equal(401);
-            expect(responseBody.detail).to.include('Invalid token');
+            expect(responseBody).to.include({ error: 'invalid_token', error_description: 'Invalid token' });
         });
 
         it('returns 401 when user is missing', async () => {
@@ -256,6 +255,42 @@ describe('UAGProjectInterface', () => {
 
             expect(headers).to.have.property('WWW-Authenticate');
             expect(headers['WWW-Authenticate']).to.include('Bearer');
+            // The UAG's own realm; uag-engines is the engine server.
+            expect(headers['WWW-Authenticate']).to.include('realm="uag-server"');
+            expect(headers['WWW-Authenticate']).to.not.include('resource_metadata');
+        });
+
+        /** The 401 header for a request, with a PKCE provider that is or is not ready for OAuth sign-in. */
+        async function challenge(oauthReady: boolean) {
+            let headers: any = {};
+            const req: any = { get: (name: string) => name.toLowerCase() === 'authorization' ? 'Bearer nope' : null };
+            const res: any = { status: () => res, set: (h: any) => { headers = { ...headers, ...h }; return res; }, json: () => res };
+            project.provider = () => ({
+                oauthReady,
+                publicUrl: () => 'https://ai.example.com',
+                authorize: async () => { throw new Error('Unauthorized'); }
+            }) as any;
+            await project.authorizeRequest(req, res, () => { });
+            return headers['WWW-Authenticate'];
+        }
+
+        it('points MCP clients at OAuth sign-in, at the URL derived from the request, when it is on', async () => {
+            expect(await challenge(true)).to.equal('Bearer realm="uag-server", error="invalid_token", error_description="Unauthorized", resource_metadata="https://ai.example.com/.well-known/oauth-protected-resource"');
+        });
+
+        it('does not point at OAuth sign-in when it is off', async () => {
+            expect(await challenge(false)).to.equal('Bearer realm="uag-server", error="invalid_token", error_description="Unauthorized"');
+        });
+
+        it('gives a request that presented no token the challenge without an error code (RFC 6750 3.1)', async () => {
+            let headers: any = {};
+            let body: any;
+            const req: any = { get: () => null };
+            const res: any = { status: () => res, set: (h: any) => { headers = { ...headers, ...h }; return res; }, json: (b: any) => { body = b; return res; } };
+            project.provider = () => ({ oauthReady: false, authorize: async () => { throw new Error('Authorization header missing'); } }) as any;
+            await project.authorizeRequest(req, res, () => { });
+            expect(headers['WWW-Authenticate']).to.equal('Bearer realm="uag-server"');
+            expect(body.error).to.equal('unauthorized');
         });
     });
 });

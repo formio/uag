@@ -8,22 +8,24 @@ import { findSubmission } from "./findSubmission";
 import { submissionUpdate } from "./submissionUpdate";
 import { ToolInfo } from "./utils";
 import { UAGProjectInterface } from "../UAGProjectInterface";
-import { agentProvideData } from "./agentProvideData";
+import { agentProvide } from "./agentProvide";
+import { agentDecide } from "./agentDecide";
 import { fetchExternalData } from "./fetchExternalData";
 export * from './utils';
 export * from './annotations';
-export { getForms, getFormFields, getFieldInfo, collectData, confirmSubmission, submitCompletedForm, findSubmission, submissionUpdate, fetchExternalData };
-export const getTools =  async (project: UAGProjectInterface): Promise<ToolInfo[]> => {
-    return [
-        await getForms(project),
-        await getFormFields(project),
-        await getFieldInfo(project),
-        await collectData(project),
-        await confirmSubmission(project),
-        await submitCompletedForm(project),
-        await findSubmission(project),
-        await submissionUpdate(project),
-        await agentProvideData(project),
-        await fetchExternalData(project)
-    ];
+export { getForms, getFormFields, getFieldInfo, collectData, confirmSubmission, submitCompletedForm, findSubmission, submissionUpdate, fetchExternalData, agentProvide, agentDecide };
+export const getTools = async (project: UAGProjectInterface): Promise<ToolInfo[]> => {
+    return Promise.all([
+        getForms(project),
+        getFormFields(project),
+        getFieldInfo(project),
+        collectData(project),
+        confirmSubmission(project),
+        submitCompletedForm(project),
+        findSubmission(project),
+        submissionUpdate(project),
+        agentProvide(project),
+        agentDecide(project),
+        fetchExternalData(project)
+    ]);
 };

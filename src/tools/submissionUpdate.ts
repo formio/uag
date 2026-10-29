@@ -7,7 +7,7 @@ import { SchemaBuilder } from './SchemaBuilder';
 import { overwrites } from './annotations';
 const error = require('debug')('formio:uag:submissionUpdate:error');
 export const submissionUpdate = async (project: UAGProjectInterface): Promise<ToolInfo> => {
-    return defaultsDeep(project.config?.toolOverrides?.submission_update || {}, {
+    return defaultsDeep({}, project.config?.toolOverrides?.submission_update, {
         name: 'submission_update',
         title: 'Submission Update',
         description: 'Apply multiple planned field updates to a selected submission after the user confirmed they wish to update the record.',

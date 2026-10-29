@@ -183,11 +183,11 @@ export class SchemaBuilder {
     }
 
     /**
-     * The agent persona "type" to use when processing the existing submission data. The persona provides context to the agent on how to interpret and understand the data within the form submission. If not provided, the default persona defined within the form's UAG settings will be used.
-     * @returns 
+     * The task to work on: the name of a task the form defines (the value of its
+     * components' `uag` property).
      */
-    persona() {
-        this.schema.persona = z.string().optional().describe('The agent persona "type" to use when processing the existing submission data. The persona provides context to the agent on how to interpret and understand the data within the form submission. If not provided, the default persona defined within the form\'s UAG settings will be used.');
+    task() {
+        this.schema.task = z.string().optional().describe('The name of a task defined on the form: the value of its components\' `uag` property, such as "triage". Not a description of the work. If not provided, the form\'s first task is used.');
         return this;
     }
 
