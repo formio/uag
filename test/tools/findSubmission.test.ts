@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { findSubmission } from '../../src/tools/findSubmission';
 import { ResponseTemplate } from '../../src/template';
-import { MockProjectInterface } from './mock';
+import { MockProjectInterface, MockFormInterface } from './mock';
 
 describe('findSubmission Tool', () => {
     let mockProject: any;
@@ -315,6 +315,63 @@ describe('findSubmission Tool', () => {
             { authInfo: mockAuthInfo }
         );
         expect(result.template).to.equal(ResponseTemplate.submissionPartialIdNotFound);
+    });
+
+    it('sends a regex pattern containing "/" in a form older servers read whole', async () => {
+        let sent = '';
+        mockProject.forms.testForm.find = async (query: any) => { sent = query['data.firstName__regex']; return { items: [] }; };
+        for (const pattern of ['\\d+/\\d+', '\\d+\\/\\d+']) {
+            await tool.execute(
+                { form_name: 'testForm', search_query: [{ data_path: 'firstName', operator: 'regex', search_value: pattern }] },
+                { authInfo: mockAuthInfo }
+            );
+            // How Form.io servers before FIO-12606 parse the value: the pattern ends at
+            // the next "/", and the rest is taken as flags (dropping the filter).
+            const parts = sent.match(/\/?([^/]+)\/?([^/]+)?/)!;
+            expect(parts[2], pattern).to.equal('i');
+            expect(new RegExp(parts[1], parts[2]).test('12/34'), pattern).to.equal(true);
+            expect(new RegExp(parts[1], parts[2]).test('1234'), pattern).to.equal(false);
+        }
+    });
+
+    it('returns submissionPartialIdNotFound when the only result does not match the partial ID', async () => {
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                search_query: [{ data_path: 'firstName', operator: 'equals', search_value: 'John' }],
+                submission_id_partial: '5678'
+            },
+            { authInfo: mockAuthInfo }
+        );
+        expect(result.template).to.equal(ResponseTemplate.submissionPartialIdNotFound);
+    });
+
+    it('refuses two criteria for the same field that would share a query parameter', async () => {
+        let searched = false;
+        mockProject.forms.testForm.find = async () => { searched = true; return { items: [] }; };
+        const result = await tool.execute(
+            {
+                form_name: 'testForm',
+                search_query: [
+                    { data_path: 'firstName', operator: 'starts_with', search_value: 'Jo' },
+                    { data_path: 'firstName', operator: 'ends_with', search_value: 'son' }
+                ]
+            },
+            { authInfo: mockAuthInfo }
+        );
+        // Sent as one query, the second would replace the first and widen the search.
+        expect(result.template).to.equal(ResponseTemplate.submissionSearchError);
+        expect(result.data.error).to.contain('cannot be combined');
+        expect(searched).to.equal(false);
+    });
+
+    it('offers forms added after an earlier request when the tool is overridden', async () => {
+        mockProject.mockConfig = { toolOverrides: { find_submissions: { description: 'Custom find' } } };
+        await findSubmission(mockProject);
+        mockProject.forms.laterForm = new MockFormInterface(mockProject, { title: 'Later Form', name: 'laterForm', tags: ['uag'], components: [] }, []);
+        const rebuilt = await findSubmission(mockProject);
+        expect(rebuilt.description).to.equal('Custom find');
+        expect((rebuilt.inputSchema as any).form_name.safeParse('laterForm').success).to.equal(true);
     });
 
     it('returns submissionPartialIdAmbiguous for ambiguous partial ID', async () => {

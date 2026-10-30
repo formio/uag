@@ -1,0 +1,95 @@
+    <section class="example-hero">
+      <div class="container">
+        <div class="example-topbar">
+          <p class="eyebrow"><a href="/examples">Examples</a>&nbsp;/&nbsp;Conversation Forms</p>
+          <div class="meta"><span class="tag tag-green">Open Source compatible</span><span class="tag">@formio/uag-js</span><span class="tag">agent/chat</span><span class="tag tag-blue">No field names in code</span></div>
+        </div>
+        <h1>Fill in a form by chatting.</h1>
+        <p class="lede">Describe a problem the way you would to a person. The chat asks only for what is missing, maps your words onto the form's own options, checks every answer against the form's rules, and submits only after you confirm.</p>
+        <ol class="how">
+          <li><strong>Embed</strong>The page calls <code>Formio.createChat</code> with the form's URL, as it would call <code>Formio.createForm</code>.</li>
+          <li><strong>Converse</strong>Each message goes to the form's <code>agent/chat</code> on the UAG, which reads the form's fields, rules and options, and answers with the next question.</li>
+          <li><strong>Collect</strong>The values it takes from your words, several from one sentence, are checked against the form and written into the form behind the chat. Invalid ones are refused with the form's own message.</li>
+          <li><strong>Confirm and submit</strong>A summary for you to approve, then the form submits itself through the UAG, like any form.</li>
+        </ol>
+      </div>
+    </section>
+{{{licenseNotice}}}
+
+    <section class="section-tight" style="padding-top:8px">
+      <div class="container">
+        <p class="notice" data-demo-notice hidden></p>
+        <div class="example-actions">
+          <button type="button" class="btn btn-primary btn-small" data-watch="/images/demo-conversation.gif" data-watch-title="Conversation Forms, recorded" data-watch-alt="A recording: the Service Request form tagged uag in the Form.io portal; a person describes an outage to the chat, which asks only for what is missing and maps one sentence onto several fields; the person confirms the summary and the form submits through the UAG; the submission appears in the portal."><svg aria-hidden="true"><use href="/images/icons.svg#play"/></svg>Watch the demo</button>
+          <a class="btn btn-outline btn-small" href="/developers/chat"><svg aria-hidden="true"><use href="/images/icons.svg#code"/></svg>Embed this chat in your app</a>
+          <a class="btn btn-outline btn-small" href="{{links.plugin}}/blob/main/examples/agents/service-chat.md" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="/images/icons.svg#plug"/></svg>Build it with your coding agent</a>
+        </div>
+        <div class="demo-layout">
+          <div class="browser">
+            <div class="browser-bar">
+              <div class="browser-dots"><span></span><span></span><span></span></div>
+              <div class="browser-url">support.example.com · Service request chat</div>
+              <a href="/apps/conversation/" target="_blank" rel="noopener">Open full screen ↗</a>
+            </div>
+            <div class="demo-gate" data-demo-gate hidden>
+              <div><h3>Start the live demo</h3><p>This demo calls a real model. Please confirm you are human first.</p><div data-turnstile></div></div>
+            </div>
+            <iframe title="Conversation form demo" data-demo-frame data-src="/apps/conversation/" hidden></iframe>
+          </div>
+          <div data-flow data-scopes="service-request" data-intro="Each chat turn is one run: the form's agent/chat on the UAG, and the agent engine it asked." data-intro-inside="Each chat turn is one run: the form's agent/chat on the UAG. The agent engine runs inside the UAG, so it answers as part of the turn." data-empty="Nothing yet. Send a message and each turn will appear here."></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>Things to try.</h2>
+        </div>
+        <div class="notes">
+          <div class="card"><h3>One sentence, several fields</h3><p>"I'm Marcus Webb, marcus@example.com, and it's completely down" fills the name, the email and the urgency, mapped to the form's <code>high</code> option rather than stored as prose.</p></div>
+          <div class="card"><h3>Validation the agent cannot skip</h3><p>Give an invalid email and the UAG rejects it with the form's own message. The chat has to ask again; nothing invalid is ever saved.</p></div>
+          <div class="card"><h3>The real form, one click away</h3><p>"Review form" shows the form behind the chat, filled in as you talk. Change anything there and the chat never writes over it.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tint">
+      <div class="container split">
+        <div>
+          <h2>Add it to your app.</h2>
+          <p>The chat is a formio.js display in <code>@formio/uag-js</code>. Register the UAG once, then render any form tagged <code>uag</code> as a chat, the same way you render it as a form. There is no model code and no server of your own: the conversation runs in the UAG, and the form submits through it.</p>
+          <ul class="checks">
+            <li>Templated and translated like any formio.js form, and themed with <code>--uag-chat-*</code> CSS properties.</li>
+            <li>Signed-in users chat with <strong>their</strong> Form.io permissions; public forms opt in with <code>uagAnonymous</code>, rate-limited.</li>
+            <li>Works on Form.io Open Source with an unlicensed UAG; it doesn't need an Agentic Formflow license.</li>
+          </ul>
+          <aside class="callout callout-tip" style="margin-top:24px" role="note"><span class="callout-label">Build it with your coding agent</span><p>Install the <a href="/developers/agentic-coding">Agentic Coding Plugin</a> and give your coding agent <a href="{{links.plugin}}/blob/main/examples/agents/service-chat.md" target="_blank" rel="noopener">this demo's prompt</a>. Its <code>formio-uag</code> skill tags the form, writes its fields for a model, asks you to confirm anonymous access and its rate limits, and adds the chat to your page.</p></aside>
+          <p style="margin-top:24px"><a class="link-arrow" href="/developers/chat">Chat widget guide</a> &nbsp; <a class="link-arrow" href="/developers/agent-api#chat">The agent/chat operation</a> &nbsp; <a class="link-arrow" href="{{links.sourceFile}}/demo/public/apps/conversation/chat.js" target="_blank" rel="noopener">This demo's source</a></p>
+        </div>
+        <div class="code"><div class="code-bar"><span>html</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-html">&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"&gt;
+&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.css"&gt;
+&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/uag-js@rc/uag-js.css"&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.js"&gt;&lt;/script&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/@formio/uag-js@rc/index.js"&gt;&lt;/script&gt;
+
+&lt;div id="chat"&gt;&lt;/div&gt;
+&lt;script&gt;
+  // A form tagged uag. On a public page it also needs uagAnonymous: see the Chat widget guide.
+  Formio.use(FormioUAG.UAG('https://uag.example.com'));
+  Formio.createChat(
+    document.getElementById('chat'),
+    'https://forms.example.com/myproject/servicerequest'
+  );
+&lt;/script&gt;</code></pre></div>
+      </div>
+    </section>
+
+    <section class="section-green">
+      <div class="container cta-band">
+        <div><h2>Next: agents that review every submission.</h2><p>A submitted application triggers two chained agents, with no chat window and no person in the loop.</p></div>
+        <div class="hero-actions"><a class="btn btn-light" href="/examples/workflow">Agentic Workflow <span class="arrow"></span></a></div>
+      </div>
+    </section>
+    <script src="/js/flow-panel.js?v={{assetVersion}}"></script>
+    <script src="/js/demo.js?v={{assetVersion}}"></script>

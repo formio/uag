@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1260 530" role="img" aria-labelledby="t d">
+  <title id="t">The UAG in front of Form.io</title>
+  <desc id="d">Your application points its project URL at the UAG instead of at Form.io, and sends each submission there with the user's x-jwt-token. The UAG runs in proxy mode: it forwards every submission and stores none, keeping only a copy of the project's forms. In order: 1, the UAG checks the user, verifying the x-jwt-token with Form.io. 2, the actions before the save run: Agent: Run task, whose answers join the one save, and any module actions. 3, the UAG forwards the request, a fixed step of every create and update, and of login and registration too; the token is forwarded unchanged, never re-signed. 4, Form.io checks roles and permissions, validates the submission, stores it and runs its own actions: Save Submission, Login, Role, Webhook, Email and Group. They never run in the UAG, so nothing runs twice. 5, the actions after the save run in the UAG: Agent: Run task runs in the background and saves its answers as an update through the UAG, and module actions run. 6, Form.io's response is passed back to the application, with the token Form.io issued on login. A submission sent straight to Form.io never passes through the UAG, so none of the UAG's actions run for it.</desc>
+  <defs>
+    <style>
+      text { font-family: Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; fill: #0c141d; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .lane { font-size: 15px; font-weight: 700; }
+      .sub { font-size: 11px; fill: #566073; }
+      .t { font-size: 12.5px; font-weight: 600; }
+      .e { font-size: 11px; fill: #3f7a22; font-weight: 600; }
+      .g { font-size: 11px; fill: #566073; }
+      .o { font-size: 11.5px; fill: #b4581f; font-weight: 600; }
+      .chip { font-size: 10.5px; fill: #2a333e; }
+      .num { font-size: 11px; font-weight: 700; fill: #fff; }
+      .task { fill: #fff; stroke: #3a4756; stroke-width: 1.5; }
+      .uag { fill: #edfae6; stroke: #69b342; stroke-width: 1.5; }
+      .chipbg { fill: #f1f3f6; stroke: #dde2e9; }
+      .input { fill: #fff; stroke: #c9d2dc; }
+      .flow { stroke: #3a4756; stroke-width: 1.8; fill: none; }
+      .call { stroke: #69b342; stroke-width: 2; fill: none; }
+      .back { stroke: #8d99a8; stroke-width: 1.8; fill: none; stroke-dasharray: 5 4; }
+      .skip { stroke: #e08a4f; stroke-width: 1.8; fill: none; stroke-dasharray: 6 5; }
+    </style>
+    <marker id="f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3a4756"/></marker>
+    <marker id="c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#69b342"/></marker>
+    <marker id="b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8d99a8"/></marker>
+    <marker id="s" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#e08a4f"/></marker>
+  </defs>
+  <rect x="1" y="1" width="1258" height="528" rx="18" fill="#fff" stroke="#e0e5ec"/>
+
+  <!-- Your application -->
+  <rect x="20" y="40" width="180" height="350" rx="12" fill="#f5f7fa" stroke="#c9d2dc"/>
+  <text x="36" y="68" class="lane">Your application</text>
+  <text x="36" y="86" class="sub">a page, an app, a portal</text>
+  <rect x="36" y="104" width="148" height="112" rx="8" fill="#fff" stroke="#c9d2dc"/>
+  <path d="M36 122 H184" stroke="#dde2e9"/>
+  <circle cx="47" cy="113" r="3" fill="#c9d2dc"/><circle cx="57" cy="113" r="3" fill="#c9d2dc"/><circle cx="67" cy="113" r="3" fill="#c9d2dc"/>
+  <rect x="48" y="134" width="124" height="14" rx="3" class="input"/>
+  <rect x="48" y="156" width="124" height="14" rx="3" class="input"/>
+  <rect x="48" y="178" width="124" height="14" rx="3" class="input"/>
+  <rect x="48" y="198" width="48" height="12" rx="3" fill="#3a4756"/>
+  <text x="36" y="246" class="t">Its project URL</text>
+  <text x="36" y="262" class="g">is the UAG's, not Form.io's:</text>
+  <text x="36" y="280" class="mono chip">uag.example.com</text>
+  <text x="36" y="324" class="t">Signed-in users</text>
+  <text x="36" y="340" class="g">send Form.io's token,</text>
+  <text x="36" y="356" class="mono chip">x-jwt-token</text>
+
+  <!-- The UAG -->
+  <rect x="300" y="40" width="620" height="350" rx="12" fill="#f7fcf4" stroke="#69b342" stroke-width="1.5"/>
+  <text x="320" y="68" class="lane">UAG</text>
+  <text x="360" y="68" class="g">proxy mode: forwards every submission, stores none</text>
+  <text x="320" y="86" class="sub">Keeps a copy of the project's forms. Built on @formio/core.</text>
+
+  <!-- 1. Check the user -->
+  <path d="M200 175 H316" class="call" marker-end="url(#c)"/>
+  <text x="208" y="152" class="e">a submission</text>
+  <text x="208" y="166" class="mono chip" style="fill:#3f7a22">+ x-jwt-token</text>
+  <rect x="320" y="130" width="176" height="90" rx="10" class="uag"/>
+  <circle cx="338" cy="151" r="10" fill="#3f7a22"/><text x="338" y="155" text-anchor="middle" class="num">1</text>
+  <text x="354" y="156" class="t">Check the user</text>
+  <text x="334" y="180" class="g">The x-jwt-token is</text>
+  <text x="334" y="194" class="g">verified with Form.io.</text>
+
+  <!-- 2. Before the save -->
+  <path d="M496 175 H518" class="flow" marker-end="url(#f)"/>
+  <rect x="522" y="130" width="176" height="90" rx="10" class="uag"/>
+  <circle cx="540" cy="151" r="10" fill="#3f7a22"/><text x="540" y="155" text-anchor="middle" class="num">2</text>
+  <text x="556" y="156" class="t">Before the save</text>
+  <text x="536" y="180" class="g">Agent: Run task: its</text>
+  <text x="536" y="194" class="g">answers join the one save.</text>
+  <text x="536" y="208" class="g">Module actions.</text>
+
+  <!-- 3. Forward -->
+  <path d="M698 175 H720" class="flow" marker-end="url(#f)"/>
+  <rect x="724" y="130" width="176" height="90" rx="10" class="task"/>
+  <circle cx="742" cy="151" r="10" fill="#3a4756"/><text x="742" y="155" text-anchor="middle" class="num">3</text>
+  <text x="758" y="156" class="t">Forward</text>
+  <text x="738" y="180" class="g">Every create and update;</text>
+  <text x="738" y="194" class="g">login and registration too.</text>
+  <text x="738" y="208" class="g">The token is never re-signed.</text>
+  <path d="M900 175 H1032" class="call" marker-end="url(#c)"/>
+  <text x="930" y="152" class="e">same request,</text>
+  <text x="930" y="166" class="e">same token</text>
+
+  <!-- 5. After the save -->
+  <rect x="522" y="290" width="378" height="80" rx="10" class="uag"/>
+  <circle cx="540" cy="311" r="10" fill="#3f7a22"/><text x="540" y="315" text-anchor="middle" class="num">5</text>
+  <text x="556" y="316" class="t">After the save</text>
+  <text x="536" y="340" class="g">Agent: Run task, in the background: its answers are saved</text>
+  <text x="536" y="354" class="g">as an update through the UAG. Module actions.</text>
+  <path d="M870 290 V224" class="flow" marker-end="url(#f)"/>
+  <text x="862" y="252" text-anchor="end" class="g">Run task's answers,</text>
+  <text x="862" y="266" text-anchor="end" class="g">as an update</text>
+
+  <!-- 6. The response -->
+  <path d="M1036 346 H904" class="back" marker-end="url(#b)"/>
+  <text x="930" y="322" class="g">Form.io's</text>
+  <text x="930" y="336" class="g">response</text>
+  <path d="M522 346 H204" class="back" marker-end="url(#b)"/>
+  <circle cx="338" cy="296" r="10" fill="#566073"/><text x="338" y="300" text-anchor="middle" class="num">6</text>
+  <text x="354" y="301" class="t">Passed back</text>
+  <text x="334" y="320" class="g">Form.io's response, with the</text>
+  <text x="334" y="334" class="g">token Form.io issued on login</text>
+
+  <!-- Form.io -->
+  <rect x="1020" y="40" width="220" height="350" rx="12" fill="#f5f7fa" stroke="#c9d2dc"/>
+  <text x="1036" y="68" class="lane">Form.io project</text>
+  <text x="1036" y="86" class="sub">the system of record</text>
+  <rect x="1036" y="104" width="188" height="250" rx="10" class="task"/>
+  <circle cx="1054" cy="125" r="10" fill="#3a4756"/><text x="1054" y="129" text-anchor="middle" class="num">4</text>
+  <text x="1070" y="130" class="t">Form.io handles it</text>
+  <text x="1050" y="160" class="g">Checks roles and permissions</text>
+  <text x="1050" y="178" class="g">Validates the submission</text>
+  <text x="1050" y="196" class="g">Stores it</text>
+  <text x="1050" y="214" class="g">Runs its own actions:</text>
+  <rect x="1050" y="224" width="92" height="20" rx="6" class="chipbg"/><text x="1096" y="238" text-anchor="middle" class="chip">Save Submission</text>
+  <rect x="1146" y="224" width="36" height="20" rx="6" class="chipbg"/><text x="1164" y="238" text-anchor="middle" class="chip">Login</text>
+  <rect x="1050" y="250" width="34" height="20" rx="6" class="chipbg"/><text x="1067" y="264" text-anchor="middle" class="chip">Role</text>
+  <rect x="1088" y="250" width="54" height="20" rx="6" class="chipbg"/><text x="1115" y="264" text-anchor="middle" class="chip">Webhook</text>
+  <rect x="1146" y="250" width="38" height="20" rx="6" class="chipbg"/><text x="1165" y="264" text-anchor="middle" class="chip">Email</text>
+  <rect x="1050" y="276" width="40" height="20" rx="6" class="chipbg"/><text x="1070" y="290" text-anchor="middle" class="chip">Group</text>
+  <text x="1050" y="322" class="g">They never run in the UAG,</text>
+  <text x="1050" y="336" class="g">so nothing runs twice.</text>
+  <text x="1036" y="376" class="sub">Every submission is stored here.</text>
+
+  <!-- Around the UAG -->
+  <path d="M110 390 V440 H1130 V394" class="skip" marker-end="url(#s)"/>
+  <text x="615" y="430" text-anchor="middle" class="o">Sent straight to Form.io, a submission never passes through the UAG: none of the UAG's actions run.</text>
+
+  <!-- Legend -->
+  <rect x="20" y="484" width="22" height="16" rx="4" class="uag"/>
+  <text x="50" y="496" class="g">the UAG's actions</text>
+  <rect x="162" y="484" width="22" height="16" rx="4" class="task"/>
+  <text x="192" y="496" class="g">a fixed step</text>
+  <path d="M278 492 H306" class="call" marker-end="url(#c)"/>
+  <text x="314" y="496" class="g">a request</text>
+  <path d="M378 492 H406" class="back" marker-end="url(#b)"/>
+  <text x="414" y="496" class="g">a response</text>
+  <path d="M484 492 H512" class="flow" marker-end="url(#f)"/>
+  <text x="520" y="496" class="g">next step</text>
+  <path d="M584 492 H612" class="skip" marker-end="url(#s)"/>
+  <text x="620" y="496" class="g">around the UAG</text>
+  <text x="1240" y="496" text-anchor="end" class="g">The user's token reaches Form.io unchanged, so Form.io's roles and permissions apply.</text>
+</svg>

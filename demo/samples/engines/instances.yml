@@ -1,0 +1,20 @@
+# Two instances of the Claude engine: a fast model, and a deeper one with more
+# research effort. Layer it on any Compose file whose UAG service is `formio-uag`, such as
+# ../custom-module:
+#
+#   docker compose -f docker-compose.yml -f ../engines/instances.yml up -d
+#
+# Fields go to the first agent engine that can answer them, `fast` here. Send a
+# task to `deep` with `uagEngine: "deep"` on its criteria component, or set
+# `routing` in the module's config.
+services:
+  formio-uag:
+    environment:
+      UAG_ENGINES: fast:claude,deep:claude
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:?set CLAUDE_API_KEY in .env}
+      LICENSE_KEY: ${LICENSE_KEY:-}
+      UAG_ENGINE_FAST_MODEL: claude-haiku-5-5
+      UAG_ENGINE_DEEP_MODEL: claude-opus-5-5
+      UAG_ENGINE_DEEP_RESEARCH_EFFORT: high
+      # Both instances share CLAUDE_API_KEY; UAG_ENGINE_DEEP_API_KEY would give
+      # one its own.

@@ -6,13 +6,13 @@
     "url": "https://github.com/formio/uag",
     "source": "github"
   },
-  "version": "1.13.2",
+  "version": "2.0.0-rc.5",
   "websiteUrl": "https://form.io",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@formio/uag",
-      "version": "1.13.2",
+      "version": "2.0.0-rc.5",
       "transport": {
         "type": "streamable-http",
         "url": "http://localhost:{PORT}/mcp"
@@ -40,8 +40,15 @@
           "isSecret": true
         },
         {
+          "name": "LICENSE_KEY",
+          "description": "Form.io license for a self-hosted Enterprise deployment; when it includes the UAG it also enables the Agent API. Not required for Community Edition, or for a project on Form.io's hosted service (https://*.form.io).",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
+        },
+        {
           "name": "UAG_LICENSE",
-          "description": "License for Enterprise deployment. Not required for Community Edition. ",
+          "description": "Deprecated: use LICENSE_KEY. Still read until UAG 3.0.",
           "isRequired": false,
           "format": "string",
           "isSecret": true
@@ -68,8 +75,15 @@
           "isSecret": false
         },
         {
+          "name": "TEMPLATE_SYNC",
+          "description": "When a module's template is installed into the project: boot, refresh or off (default: boot)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
           "name": "JWT_EXPIRE_TIME",
-          "description": "JWT token expiration in seconds (default: 3600)",
+          "description": "Lifetime of the tokens the UAG issues, in minutes (default: 60)",
           "isRequired": false,
           "format": "string",
           "isSecret": false
@@ -83,7 +97,7 @@
         },
         {
           "name": "MONGO",
-          "description": "Direct MongoDB connection URI (Enterprise)",
+          "description": "Optional. The UAG's own database (only uag-* collections, never submissions): run records, runs that survive a restart, remote MCP sign-in. Needs a license that includes the UAG.",
           "isRequired": false,
           "format": "string",
           "isSecret": true
@@ -96,9 +110,37 @@
           "isSecret": false
         },
         {
+          "name": "UAG_DATABASE",
+          "description": "The database to use on the MONGO connection. Default uag.",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "TASK_RUN_RETENTION_DAYS",
+          "description": "Days run records are kept. Default 90; 0 keeps them forever.",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
           "name": "BASE_URL",
-          "description": "The URL clients reach the UAG at. Published in the .well-known OIDC (PKCE) definitions and used for authentication callbacks, so remote agents cannot authenticate without it. Must be a public URL when remote agents connect in; a private or localhost URL is fine for a local MCP client.",
-          "isRequired": true,
+          "description": "Optional. The URL clients reach the UAG at, for the OAuth discovery documents remote MCP clients read. Derived from each request when unset.",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "MCP_OAUTH",
+          "description": "true turns on OAuth sign-in for remote MCP clients. Needs MONGO.",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        },
+        {
+          "name": "TRUST_PROXY",
+          "description": "Express's trust proxy (true, a number of hops, or addresses). Set it behind a reverse proxy, so the UAG reads its public URL from the forwarded headers.",
+          "isRequired": false,
           "format": "string",
           "isSecret": false
         },
@@ -111,7 +153,7 @@
         },
         {
           "name": "CORS",
-          "description": "CORS domain or JSON configuration (default: *)",
+          "description": "true (the default) allows every origin, false turns CORS off, any other value is the allowed origin, or several separated by commas",
           "isRequired": false,
           "format": "string",
           "isSecret": false

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apply | Northfield University (UAG demo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.css">
+<link rel="stylesheet" href="workflow.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="crest" aria-hidden="true">N</div>
+    <div>
+      <strong>Northfield University</strong>
+      <span>Undergraduate Admissions · a fictional school, for this demo</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="view" data-view="choose">
+      <h1>Apply for Fall 2027</h1>
+      <p class="lede">Start from a sample applicant, or write your own. Every application is reviewed by agents following the criteria in the form; no person reads it.</p>
+      <div class="profiles" data-profiles></div>
+      <details class="criteria">
+        <summary>What the admissions agent is told</summary>
+        <p class="hint">This is a content component in the application form, flagged <code>uag: admissions</code> and <code>uagField: criteria</code>. Edit it in the form builder and the next review follows it.</p>
+        <div data-criteria></div>
+      </details>
+    </section>
+
+    <section class="view" data-view="form" hidden>
+      <button type="button" class="back" data-back>← Choose another applicant</button>
+      <h1 data-form-title>Your application</h1>
+      <p class="lede">Change anything you like. The essay is what the agents weigh most.</p>
+      <div id="application"></div>
+      <p class="error" data-form-error role="alert" hidden></p>
+    </section>
+
+    <section class="view" data-view="status" hidden>
+      <p class="kicker">Application <span data-app-id></span></p>
+      <h1 data-status-title>Under review</h1>
+      <p class="lede" data-status-lede>Your application was saved. Its Run task action has started the admissions agent.</p>
+      <ol class="timeline" data-timeline>
+        <li data-stage="submitted" class="done"><strong>Submitted</strong><span>Saved to Form.io</span></li>
+        <li data-stage="admissions" class="active"><strong>Admissions review</strong><span>Reviewing against the criteria</span></li>
+        <li data-stage="decision"><strong>Decision</strong><span>Written back by the UAG</span></li>
+        <li data-stage="finance" hidden><strong>Scholarship review</strong><span>Started by the first agent's save</span></li>
+      </ol>
+      <div class="results" data-results hidden>
+        <div class="scores" data-scores></div>
+        <div class="rationale">
+          <h2>Admissions rationale</h2>
+          <p data-rationale></p>
+          <div data-finance hidden>
+            <h2>Scholarship award</h2>
+            <p class="award" data-award></p>
+            <p data-finance-rationale></p>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-outline-secondary" data-again>Submit another application</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.js"></script>
+  <script src="workflow.js"></script>
+  <script src="/js/requires-formflow.js"></script>
+</body>
+</html>

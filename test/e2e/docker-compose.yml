@@ -1,6 +1,8 @@
 services:
   mongo:
-    image: mongo
+    # Pinned: mongo:8 refuses to start on Linux kernels 6.19 and newer
+    # (SERVER-121912), which current Docker Desktop releases run.
+    image: mongo:7
     tmpfs:
       - /data/db
   formio:

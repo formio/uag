@@ -1,0 +1,47 @@
+{
+  "name": "@formio/uag-js",
+  "version": "2.0.0-rc.5",
+  "description": "The Form.io UAG for formio.js applications: register it once, and forms tagged \"uag\" save through the UAG and get Agent Input, without overwriting what the user entered.",
+  "keywords": [
+    "formio",
+    "formio.js",
+    "uag",
+    "universal-agent-gateway",
+    "ai",
+    "forms"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "module": "index.mjs",
+  "browser": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.mjs",
+      "require": "./index.js",
+      "default": "./index.js"
+    },
+    "./uag-js.css": "./uag-js.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "index.mjs",
+    "index.d.ts",
+    "uag-js.css",
+    "README.md",
+    "LICENSE.txt"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/formio/uag.git",
+    "directory": "packages/uag-js"
+  },
+  "peerDependencies": {
+    "@formio/js": ">=5"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

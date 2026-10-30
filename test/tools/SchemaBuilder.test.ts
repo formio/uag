@@ -109,10 +109,11 @@ describe('SchemaBuilder', () => {
         });
     });
 
-    describe('persona()', () => {
-        it('creates optional string', () => {
-            builder.persona();
-            expect(builder.schema).to.have.property('persona');
+    describe('task()', () => {
+        it('adds a task name, described as a name rather than a description of the work', () => {
+            builder.task();
+            expect(builder.schema).to.have.property('task');
+            expect(builder.schema.task.description).to.include('Not a description of the work');
         });
     });
 

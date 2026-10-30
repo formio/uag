@@ -1,0 +1,49 @@
+{
+  "name": "@formio/uag-engines",
+  "version": "2.0.0-rc.5",
+  "description": "Host engine packages for the Form.io Universal Agent Gateway (UAG) in their own process, behind the remote engine protocol, so model credentials and model traffic stay out of the UAG.",
+  "keywords": [
+    "formio",
+    "uag",
+    "universal-agent-gateway",
+    "ai",
+    "agents",
+    "engine",
+    "server",
+    "mcp"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "bin": "bin/uag-engines.js",
+  "files": [
+    "index.js",
+    "network.js",
+    "research.js",
+    "bin",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "mocha"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/formio/uag.git",
+    "directory": "packages/engine-server"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@formio/uag-sdk": "^2.0.0-rc.5",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "debug": "^4.4.3",
+    "express": "^5.3.0"
+  },
+  "devDependencies": {
+    "chai": "^6.3.0",
+    "mocha": "^12.0.3"
+  }
+}

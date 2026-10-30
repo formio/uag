@@ -1,12 +1,18 @@
 import { UAGProjectInterface } from "../../src/UAGProjectInterface";
+import { TEST_LICENSE } from '../agent/fixtures';
 import { UAGFormInterface } from "../../src/UAGFormInterface";
 import { ResponseTemplate } from "../../src/template";
 import { get } from "lodash";
 export class MockProjectInterface extends UAGProjectInterface {
+    /** Merged over the test license; set `license: ''` for an unlicensed project. */
+    public mockConfig: Record<string, any> = {};
+
     constructor(
         mockForms: Record<string, any> = {},
         submissions: Record<string, any[]> = {},
-        endpoint: string = 'https://mock.form.io'
+        // A local project, not a `*.form.io` name: those are Form.io's hosted
+        // service, which the license check would ask over the network.
+        endpoint: string = 'http://localhost:3001'
     ) {
         super(endpoint);
         for (const [key, formDef] of Object.entries(mockForms)) {
@@ -15,7 +21,6 @@ export class MockProjectInterface extends UAGProjectInterface {
                 this.forms[key] = form;
             }
         }
-        this.formNames = Object.keys(this.forms);
         this.uagTemplate = {
             renderTemplate: (templateName: string, data: any) => {
                 return JSON.stringify(data);
@@ -23,7 +28,7 @@ export class MockProjectInterface extends UAGProjectInterface {
         } as any;
     }
 
-    get config() { return {}; }
+    get config(): any { return { license: TEST_LICENSE, ...this.mockConfig }; }
     
     async getForm(formName: string) {
         return this.forms[formName] || null;

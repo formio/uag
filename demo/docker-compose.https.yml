@@ -1,0 +1,26 @@
+# Puts a local HTTPS load balancer (Caddy) in front of the site, as a deployment's
+# load balancer would be, at https://DEMO_DOMAIN with Caddy's own certificate
+# authority. For your machine or an internal network, not a public site. Add it
+# to docker-compose.yml, or name both in .env so plain `docker compose` uses them:
+#
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.https.yml
+#
+# Then point DEMO_DOMAIN at 127.0.0.1 in /etc/hosts and trust Caddy's root once
+# (README.md, "Run it over HTTPS locally").
+services:
+  https:
+    image: caddy:2
+    restart: always
+    depends_on: [site]
+    ports:
+      - "${HTTPS_BIND:-127.0.0.1}:443:443"
+      - "${HTTPS_BIND:-127.0.0.1}:80:80"
+    environment:
+      DEMO_DOMAIN: ${DEMO_DOMAIN:-ai.form.io}
+    volumes:
+      - ./https/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Keeps Caddy's certificate authority, so it is trusted once.
+      - caddy-data:/data
+
+volumes:
+  caddy-data:

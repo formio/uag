@@ -19,7 +19,6 @@ describe('tool annotations', () => {
     beforeEach(() => {
         project = Object.create(UAGProjectInterface.prototype);
         project.forms = {};
-        project.formNames = [];
         project.user = null;
     });
 
@@ -31,7 +30,7 @@ describe('tool annotations', () => {
         'fetch_external_data',
         'collect_field_data',
         'confirm_form_submission',
-        'agent_provide_data',
+        'agent_provide',
     ];
 
     // submit_completed_form creates a submission; submission_update calls

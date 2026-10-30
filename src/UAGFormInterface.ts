@@ -1,4 +1,6 @@
 import { AppServerForm, AuthRequest, FormInterface, InterpolatedError } from "@formio/appserver";
+import { flagOn } from "./formflow";
+import type { FormflowForm, FormflowTask } from "./formflow";
 import {
     Component,
     TextFieldComponent,
@@ -20,6 +22,9 @@ import { set, get, isObjectLike, isEqual, isString } from "lodash";
 import { UAGForm } from "./config";
 import { ParentInfo } from "./tools";
 import { NodeHtmlMarkdown } from 'node-html-markdown'
+import { Router } from "express";
+import { agentCredentials, FormAgentRouter } from "./agent/router";
+import type { UAGProjectInterface } from "./UAGProjectInterface";
 
 export type UAGComponentInfo = {
     path: string;
@@ -64,15 +69,88 @@ export type FormFieldInfo = {
     };
 }
 
+/** A field a chat may collect, with its current value. */
+export type ChatField = UAGComponentInfo & {
+    required: boolean;
+    empty: boolean;
+    value: any;
+};
+
+/** A component a chat cannot collect yet. */
+export type ChatUnsupportedField = { path: string; label: string; required: boolean; empty: boolean };
+
+export type ChatFields = {
+    fields: ChatField[];
+    unsupported: ChatUnsupportedField[];
+    errors: FormFieldError[];
+};
+
+/** Component types a chat cannot collect yet: tables, nested forms, uploads, drawings and the like. */
+const CHAT_UNSUPPORTED = new Set([
+    'datagrid', 'editgrid', 'datatable', 'dynamicWizard', 'tagpad', 'form', 'datamap', 'address',
+    'file', 'signature', 'sketchpad', 'datasource', 'password', 'captcha'
+]);
+
 export type UAGFields = {
-    persona: string;
+    task: string;
     criteria: string;
     components: Record<string, UAGComponentInfo>;
+    /** Data paths of the components flagged `uagField: "input"`: the source text for extraction and decisions. */
+    inputs?: string[];
+    /** Task-level settings, read from the custom properties of the task's criteria component (e.g. `uagEngine`, `uagTools`). */
+    settings?: Record<string, string>;
 }
 
-export class UAGFormInterface extends FormInterface {
-    public uag: UAGForm | null = null;
-    public uagFields: Record<string, UAGFields> = {};
+/**
+ * The components inside a layout or container flagged with `uag`, which makes
+ * each input inside it one of the task's fields. Panels, fieldsets, wells, tabs
+ * and containers hold theirs in `components`; columns in each column's
+ * `components`; tables in each cell's. Null for a component that holds none.
+ */
+function layoutChildren(component: Component): Component[] | null {
+    const comp: any = component;
+    if (Array.isArray(comp.components)) return comp.components;
+    if (Array.isArray(comp.columns)) return comp.columns.flatMap((column: any) => column?.components || []);
+    if (Array.isArray(comp.rows)) return comp.rows.flat().flatMap((cell: any) => cell?.components || []);
+    return null;
+}
+
+export class UAGFormInterface extends FormInterface implements FormflowForm {
+    // Declared rather than initialized: FormInterface's constructor calls setForm(), which sets
+    // these, and an initializer would run after it and reset them.
+    declare public uag: UAGForm | null;
+    declare public uagFields: Record<string, UAGFields>;
+
+    /**
+     * The form's routes, with its agent operations (`agent/extract`, `agent/decide`,
+     * `agent/generate`, `agent/chat`) beside its submissions: the project's authentication has
+     * already run, and the form is the one of the URL.
+     */
+    async router(): Promise<Router> {
+        const router = await super.router();
+        const project = this.project as unknown as UAGProjectInterface;
+        router.use(FormAgentRouter(project, agentCredentials(project)));
+        return router;
+    }
+
+    /**
+     * Sets the form, deriving its UAG registration and agent fields from it. The form is set again
+     * whenever it loads, and whenever a TTL refresh or a deploy brings a new version, so both are
+     * rebuilt from the form each time rather than added to what an earlier version left.
+     */
+    setForm(form: AppServerForm): AppServerForm {
+        this.uagFields = {};
+        const result = super.setForm(form);
+        const machineName = result.machineName;
+        this.uag = result.tags?.includes('uag') ? {
+            machineName,
+            name: result.name || result.path || machineName,
+            title: result.title || result.name || machineName,
+            description: result.properties?.description || `A form to submit new ${result.title} records.`
+        } : null;
+        return result;
+    }
+
     setComponent(
         form: AppServerForm,
         component: Component,
@@ -82,23 +160,34 @@ export class UAGFormInterface extends FormInterface {
         paths: ComponentPaths | undefined
     ): void {
         if (form.tags?.includes('uag') && component.properties?.uag) {
-            const persona = component.properties?.uag;
+            const task = component.properties?.uag;
             if (!this.uagFields) {
                 this.uagFields = {};
             }
-            let uagFields: any = this.uagFields[persona];
+            let uagFields: any = this.uagFields[task];
             if (!uagFields) {
-                uagFields = { components: {} };
+                uagFields = { task, components: {} };
             }
             if (component.properties?.uagField) {
                 const property = component.properties?.uagField;
-                if ((component as ContentComponent)?.html) {
+                if (property === 'input') {
+                    // An input can be a single field or a nested component; for a
+                    // nested one, every child value under this path is input.
+                    const inputPath = paths?.dataPath || component.key;
+                    uagFields.inputs = [...(uagFields.inputs || []), inputPath];
+                }
+                else if ((component as ContentComponent)?.html) {
                     uagFields[property] = this.htmlToMarkdown((component as ContentComponent).html);
+                }
+                if (property === 'criteria') {
+                    const { uag, uagField, ...settings } = component.properties || {};
+                    uagFields.settings = { ...(uagFields.settings || {}), ...settings };
                 }
             }
             else {
-                if ((component as HasChildComponents).components) {
-                    Utils.eachComponent((component as HasChildComponents).components, (subComp, subPath) => {
+                const children = layoutChildren(component);
+                if (children) {
+                    Utils.eachComponent(children, (subComp, subPath) => {
                         subPath = paths?.dataPath ? `${paths.dataPath}.${subPath}` : subPath;
                         const compInfo = this.getComponentInfo(subComp, subPath);
                         compInfo.rule = this.getComponentValueRule(subComp);
@@ -111,7 +200,7 @@ export class UAGFormInterface extends FormInterface {
                     uagFields.components[compInfo.path] = compInfo;
                 }
             }
-            this.uagFields[persona] = uagFields;
+            this.uagFields[task] = uagFields;
         }
         return super.setComponent(form, component, path, components, parent, paths);
     }
@@ -143,7 +232,8 @@ export class UAGFormInterface extends FormInterface {
         if (component.placeholder) {
             fieldInfo.prompt = component.placeholder;
         }
-        if (component.type === 'select' || component.type === 'selectboxes') {
+        // A radio's options are what its rule tells the agent to choose from.
+        if (component.type === 'select' || component.type === 'selectboxes' || component.type === 'radio') {
             if ((component as SelectComponent).dataSrc === 'url') {
                 fieldInfo.options = [{ label: '** USE fetch_external_data TOOL **', value: `Call the \`fetch_external_data\` tool with \`field_path\`="${path}" to retrieve available options from the external URL.` }];
             } else if ((component as SelectComponent).dataSrc === 'resource') {
@@ -156,10 +246,7 @@ export class UAGFormInterface extends FormInterface {
                     fieldInfo.options = [{ label: '', value: 'No options available' }];
                 }
                 else {
-                    fieldInfo.options = values.reduce((acc: { label: string; value: string }[], v: any) => {
-                        acc.push({ label: v.label, value: v.value });
-                        return acc;
-                    }, []);
+                    fieldInfo.options = values.map((v: any) => ({ label: v.label, value: v.value }));
                 }
             }
         }
@@ -182,21 +269,20 @@ export class UAGFormInterface extends FormInterface {
             label: parent.label || parent.key,
             data_path: parent_path
         };
-        if (
+        // The type comes first: the builder saves containers with `tree: true`
+        // too, and a container holds one object, not rows.
+        if (parent.type === 'form') {
+            parentInfo.isForm = true;
+        }
+        else if (parent.type === 'container') {
+            parentInfo.isContainer = true;
+        }
+        else if (
             (parent as any).tree ||
             parent.type === 'datagrid' ||
             parent.type === 'editgrid'
         ) {
             parentInfo.isTable = true;
-            return parentInfo;
-        }
-        if (parent.type === 'form') {
-            parentInfo.isForm = true;
-            return parentInfo;
-        }
-        if (parent.type === 'container') {
-            parentInfo.isContainer = true;
-            return parentInfo;
         }
         return parentInfo;
     }
@@ -234,20 +320,17 @@ export class UAGFormInterface extends FormInterface {
     }
 
     getComponentValueRule(component: Component, data_path?: string) {
-        let rule = '';
         const parent = this.getParentInfoFromComponent(component, data_path);
         if (parent?.isTable) {
-            rule += 'The value is a table of rows (array of objects), where each row is a new instance of data values for the child components. ' + this.getParentToolDescription(parent) + ' All `data_path`(s) for the components within this table should contain the current row index (e.g. `dataGrid[0].a`, `dataGrid[0].b`, `dataGrid[1].b`, etc.).';
-            return rule;
+            return 'The value is a table of rows (array of objects), where each row is a new instance of data values for the child components. ' + this.getParentToolDescription(parent) + ' All `data_path`(s) for the components within this table should contain the current row index (e.g. `dataGrid[0].a`, `dataGrid[0].b`, `dataGrid[1].b`, etc.).';
         }
         if (parent?.isForm) {
-            rule += 'The value is a nested form submission in the format `{data: {...}}` where `{...}` is the values for the child components. ' + this.getParentToolDescription(parent) + ' All `data_path`(s) for the components within this nested form should be prefixed with `data` (e.g. `nestedForm.data.exampleField`).';
-            return rule;
+            return 'The value is a nested form submission in the format `{data: {...}}` where `{...}` is the values for the child components. ' + this.getParentToolDescription(parent) + ' All `data_path`(s) for the components within this nested form should be prefixed with `data` (e.g. `nestedForm.data.exampleField`).';
         }
         if (parent?.isContainer) {
-            rule += 'The value is an object/map of nested component values in the format `{...}`. ' + this.getParentToolDescription(parent) + ' All `data_path`(s) for the components within this container should be prefixed with the container\'s `data_path` (e.g. `container.exampleField`).';
-            return rule;
+            return 'The value is an object/map of nested component values in the format `{...}`. ' + this.getParentToolDescription(parent) + ' All `data_path`(s) for the components within this container should be prefixed with the container\'s `data_path` (e.g. `container.exampleField`).';
         }
+        let rule = '';
         switch (component.type) {
             case 'tags':
                 rule += 'The value can be any alphanumeric string, containing letters, numbers, but no white space characters or symbols. Multiple tags should be comma-separated.';
@@ -315,8 +398,6 @@ export class UAGFormInterface extends FormInterface {
                     rule += `\n      - **${value.label}** (${value.value})`;
                 });
                 break;
-            default:
-                rule += '';
         }
         return rule;
     }
@@ -330,15 +411,10 @@ export class UAGFormInterface extends FormInterface {
      * @returns { boolean } - True if the component is a nested data component, false otherwise.
      */
     isNestedComponent(component: Component): boolean {
-        if (
-            (component as any).tree ||
+        return !!(component as any).tree ||
             component.type === 'datagrid' ||
             component.type === 'editgrid' ||
-            component.type === 'form'
-        ) {
-            return true;
-        }
-        return false;
+            component.type === 'form';
     }
 
     /**
@@ -386,13 +462,10 @@ export class UAGFormInterface extends FormInterface {
         findQuery: any = {},
         additional: any[] = []
     ) {
-        const processors = [...Processors, ...additional];
-
-        // Remove the 'fetch' processor since UAG handles this with the fetch_external_data tool.
-        const fetchIndex = processors.findIndex((p) => p.name === 'fetch');
-        if (fetchIndex !== -1) {
-            processors.splice(fetchIndex, 1);
-        }
+        // Leave out 'fetch', since the UAG handles it with the fetch_external_data tool, and
+        // 'dereference', which expands a "Save as reference" select or a Data Table from the
+        // database the UAG does not have: it would throw for every form with one.
+        const processors = [...Processors, ...additional].filter((p) => p.name !== 'fetch' && p.name !== 'dereference');
 
         // Return the processed submission data.
         const context = await super.process(submission, auth, headers, findQuery, processors);
@@ -467,19 +540,18 @@ export class UAGFormInterface extends FormInterface {
                             return;
                         }
                         if (typeof within === 'string') {
-                            if (path.startsWith(within) && (path !== within)) {
-                                // Make sure to set the largest index for the nested component.
-                                const indexMatch = path.match(/\[(\d+)\]/);
-                                fieldInfo.rowIndex = indexMatch?.length ? parseInt(indexMatch[indexMatch.length - 1], 10) : 0;
+                            // Only paths below `within`: "customerNotes" is not within "customer".
+                            const rest = path.slice(within.length);
+                            if (path.startsWith(within) && (rest.startsWith('.') || rest.startsWith('['))) {
+                                // The row of `within` itself, not of a table it sits in
+                                // ("outer[0].inner[3].x" is row 3 of "outer[0].inner").
+                                const indexMatch = rest.match(/^\[(\d+)\]/);
+                                fieldInfo.rowIndex = indexMatch ? parseInt(indexMatch[1], 10) : 0;
                             }
                             else {
+                                // If within is a string, then it is a single path to limit components within (non-inclusive).
                                 return;
                             }
-                        }
-
-                        // If within is a string, then it is a single path to limit components within (non-inclusive).
-                        if ((typeof within === 'string') && (!path.startsWith(within) || (path === within))) {
-                            return;
                         }
                     }
                     // If this is a component within the nested path, then skip it...
@@ -510,7 +582,13 @@ export class UAGFormInterface extends FormInterface {
 
                     // Add the component info to the appropriate list.
                     const criteria = component.validate?.required ? 'required' : 'optional';
-                    fieldInfo[criteria].rules[component.type] = this.getComponentValueRule(component, path);
+                    // Rules are listed by type, but some depend on the component (its
+                    // options source, multiple values, a survey's questions, a nested
+                    // component's path): one that differs gets an entry of its own.
+                    const rules = fieldInfo[criteria].rules;
+                    const rule = this.getComponentValueRule(component, path);
+                    const known = rules[component.type];
+                    rules[(known === undefined || known === rule) ? component.type : `${component.type} (${path})`] = rule;
                     fieldInfo[criteria].components.push(this.getComponentInfo(component, path));
                 }
             }
@@ -519,6 +597,79 @@ export class UAGFormInterface extends FormInterface {
             fieldInfo.errors = this.convertToFormFieldErrors(interpolateErrors(context.scope.errors));
         }
         return fieldInfo;
+    }
+
+    /** Whether the chat cannot collect this component yet, so the person finishes it in the form. */
+    isChatUnsupported(component: Component): boolean {
+        if (CHAT_UNSUPPORTED.has(component.type)) return true;
+        const dataSrc = (component as SelectComponent).dataSrc;
+        if (component.type === 'select' && (dataSrc === 'url' || dataSrc === 'resource')) return true;
+        if ((component as any).tree && component.type !== 'container') return true;
+        return ['nestedArray', 'nestedDataArray', 'dataObject', 'map'].includes(Utils.getModelType(component));
+    }
+
+    /** Data paths of the fields a task fills: its decision and value fields, not its inputs. */
+    taskOwnedPaths(): Set<string> {
+        const owned = new Set<string>();
+        for (const task of Object.values(this.uagFields || {})) {
+            Object.keys(task.components || {}).forEach((path) => owned.add(path));
+        }
+        return owned;
+    }
+
+    /**
+     * The fields a chat may collect on this data: visible input fields that a
+     * person may enter, filled or not, with the rules the MCP tools give
+     * agents. Fields a task fills (and `uagAuthoritative` ones), hidden,
+     * disabled and calculated fields are left out; components the chat
+     * cannot collect yet are listed in `unsupported`, and their children are
+     * not visited.
+     */
+    async chatFields(submission: Submission, authInfo: AuthRequest): Promise<ChatFields> {
+        const result: ChatFields = { fields: [], unsupported: [], errors: [] };
+        const owned = this.taskOwnedPaths();
+        const skipped: string[] = [];
+        const within = (path: string, parent: string) => path.startsWith(`${parent}.`) || path.startsWith(`${parent}[`);
+        const context = await this.process(submission, authInfo, null, null, [
+            {
+                name: 'chatFields',
+                shouldProcess: () => true,
+                process: async (context: any) => {
+                    const { component, path } = context;
+                    if (this.isChatUnsupported(component) && !skipped.some((parent) => within(path, parent))) {
+                        skipped.push(path);
+                    }
+                },
+                postProcess: async (context: any) => {
+                    const { component, path, value } = context;
+                    if (skipped.some((parent) => within(path, parent))) return;
+                    if (skipped[skipped.length - 1] === path) skipped.pop();
+                    if (!this.inputComponent(component) || component.type === 'container') return;
+                    // A field inside a hidden panel or container is only marked `intentionallyHidden`.
+                    if (component.scope?.conditionallyHidden || component.scope?.intentionallyHidden || component.hidden || component.type === 'hidden') return;
+                    const required = !!component.validate?.required;
+                    const empty = !componentHasValue(component, value);
+                    if (this.isChatUnsupported(component)) {
+                        result.unsupported.push({ path, label: component.label || component.key || path, required, empty });
+                        return;
+                    }
+                    if (component.disabled || component.persistent === false || (component.persistent as any) === 'client-only') return;
+                    if (component.calculateValue && !component.allowCalculateOverride) return;
+                    if (owned.has(path) || flagOn(component.properties?.uagAuthoritative)) return;
+                    result.fields.push({
+                        ...this.getComponentInfo(component, path),
+                        rule: this.getComponentValueRule(component, path),
+                        required,
+                        empty,
+                        value
+                    });
+                }
+            }
+        ]);
+        if (context.scope?.errors?.length) {
+            result.errors = this.convertToFormFieldErrors(interpolateErrors(context.scope.errors));
+        }
+        return result;
     }
 
     /**
@@ -618,7 +769,7 @@ export class UAGFormInterface extends FormInterface {
             }
         }, false, false, undefined, undefined, undefined, (component, data) => {
             if (this.isNestedComponent(component)) {
-                prefix = prefix.slice(0, -3);
+                prefix = prefix.slice(0, -2);
             }
             if (component.key === 'uag' || withinUAG) {
                 withinUAG = false;
@@ -634,6 +785,21 @@ export class UAGFormInterface extends FormInterface {
             created: submission.created,
             modified: submission.modified
         };
+    }
+
+    /** The form's name in Agentic Formflow responses and messages. */
+    get formflowName(): string {
+        return this.uag?.name || this.form?.name || '';
+    }
+
+    /** The form's tasks, for Agentic Formflow. */
+    formflowTasks(): Record<string, FormflowTask> {
+        return this.uagFields || {};
+    }
+
+    /** The submission's values in form order with their labels, for Agentic Formflow. */
+    formflowLabeledData(data: DataObject = {}): { path: string; label: string }[] {
+        return this.formatData(data).map(({ path, label }) => ({ path, label }));
     }
 
     htmlToMarkdown(html: string): string {

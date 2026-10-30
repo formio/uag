@@ -1,0 +1,59 @@
+# Splits the demo stack further. Add it to docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.split.yml up -d --build
+#
+#   uag-engines the engine server: JEV and Claude, with their API keys, so the
+#               UAG holds no model keys. Private.
+#   uag-flow    the flow proxy as its own service, in front of the UAG and the
+#               engine server, so the flow viewer also shows what the UAG asked
+#               each engine and the engines' research calls. Private.
+#
+# Needs ENGINE_SERVER_KEY and FLOW_KEY in .env as well.
+services:
+  uag-engines:
+    build: { context: .., dockerfile: packages/engine-server/Dockerfile }
+    image: ${ENGINES_IMAGE:-formio/uag-engines:demo}
+    restart: always
+    environment:
+      UAG_ENGINES: jev,claude
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:?set TYPESAFE_API_KEY in .env}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:?set CLAUDE_API_KEY in .env}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-5-5}
+      UAG_ENGINE_SERVER_KEY: ${ENGINE_SERVER_KEY:?set ENGINE_SERVER_KEY in .env (32+ characters)}
+      # Research calls the UAG's /mcp through the flow proxy, so they show in the viewer.
+      UAG_SERVER: http://uag-flow:3250
+
+  uag-flow:
+    build: { context: .., dockerfile: demo/Dockerfile }
+    image: ${DEMO_IMAGE:-formio/uag-demo:latest}
+    command: ["node", "flow/proxy.mjs"]
+    restart: always
+    environment:
+      PORT: 3250
+      UAG_URL: http://formio-uag:3200
+      ENGINES_URL: http://uag-engines:3300
+      FLOW_KEY: ${FLOW_KEY:?set FLOW_KEY in .env}
+
+  formio-uag:
+    depends_on:
+      uag-flow: { condition: service_started }
+      uag-engines: { condition: service_started }
+    environment:
+      # Both engines run on the engine server, through the flow proxy; the UAG holds no model keys.
+      UAG_ENGINES: jev:remote,claude:remote
+      UAG_ENGINE_JEV_URL: http://uag-flow:3250
+      UAG_ENGINE_JEV_KEY: ${ENGINE_SERVER_KEY}
+      UAG_ENGINE_CLAUDE_URL: http://uag-flow:3250
+      UAG_ENGINE_CLAUDE_KEY: ${ENGINE_SERVER_KEY}
+      TYPESAFE_API_KEY: ""
+      CLAUDE_API_KEY: ""
+
+  site:
+    depends_on:
+      uag-flow: { condition: service_started }
+    environment:
+      # The flow proxy is its own service here, not inside the site.
+      FLOW_UAG_URL: ""
+      UAG_URL: http://uag-flow:3250
+      FLOW_URL: http://uag-flow:3250
+      FLOW_KEY: ${FLOW_KEY}

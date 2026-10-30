@@ -17,7 +17,8 @@ export function spawnNode(scriptPath, { env = {}, cwd } = {}) {
         child,
         getOutput: () => output,
         kill: () => new Promise((resolve) => {
-            if (child.exitCode !== null) return resolve();
+            // A process stopped by a signal has no exit code, only a signal code.
+            if (child.exitCode !== null || child.signalCode !== null) return resolve();
             child.once('exit', resolve);
             child.kill('SIGTERM');
             setTimeout(() => child.kill('SIGKILL'), 3000).unref();

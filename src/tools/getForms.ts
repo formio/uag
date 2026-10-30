@@ -5,7 +5,7 @@ import { ResponseTemplate } from "../template";
 import { ToolInfo } from "./utils";
 import { reads } from './annotations';
 export const getForms = async (project: UAGProjectInterface): Promise<ToolInfo> => {
-    return defaultsDeep(project.config?.toolOverrides?.get_forms || {}, {
+    return defaultsDeep({}, project.config?.toolOverrides?.get_forms, {
         name: 'get_forms',
         title: 'Get Available Forms',
         description: 'Get a list of all available forms with their descriptions. Use this tool when a user expresses intent to add, create, submit, fill out, register for something (e.g., "I want to add a new Contact", "I need to submit a User Registration", "I met a contact who was the CMO", "What was the email of the contact"). This tool can also be used when they ask what forms are available.',

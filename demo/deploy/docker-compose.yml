@@ -1,0 +1,74 @@
+# The Form.io UAG demo site (ai.form.io), for deployment: the site and the UAG,
+# from released images, on the demo's project on Form.io's hosted service
+# (https://uag.form.io). Every setting is written here; nothing is read from the
+# environment or an .env file.
+#
+#   site        the website. The only service with a published port: plain HTTP
+#               on 8080. Your load balancer ends TLS and forwards every path of
+#               the domain to it.
+#   formio-uag  the Universal Agent Gateway, with the JEV and Claude engines
+#               inside it. Private; only the site reaches it.
+#
+# Before running it, replace each CHANGE_ME (a "$" in a value is written "$$"),
+# and set DEMO_DOMAIN to the domain the site is served at.
+#
+#   docker compose pull && docker compose up -d
+#
+# To move to another release, change both image tags. The site's health check
+# is GET /health.
+name: uag-demo
+
+services:
+  formio-uag:
+    image: formio/uag:2.0.0-rc.3
+    restart: always
+    environment:
+      PORT: "3200"
+      PROJECT: https://uag.form.io
+      # An API key of the project (its Settings, API Keys). Same value as the site's.
+      PROJECT_KEY: CHANGE_ME
+      # Signs the UAG's tokens. openssl rand -hex 32
+      JWT_SECRET: CHANGE_ME
+      JWT_EXPIRE_TIME: "60"
+      PROJECT_TTL: "300"
+      PROJECT_RETRIES: "30"
+      UAG_ENGINES: jev,claude
+      TYPESAFE_API_KEY: CHANGE_ME
+      CLAUDE_API_KEY: CHANGE_ME
+      CLAUDE_MODEL: claude-sonnet-5-5
+
+  site:
+    image: formio/uag-demo:2.0.0-rc.3
+    restart: always
+    depends_on:
+      - formio-uag
+    ports:
+      # Only the load balancer may reach this port: the site trusts the
+      # X-Forwarded-For header of whatever connects to it.
+      - "8080:8080"
+    volumes:
+      # The daily usage counters; keep it between restarts.
+      - demo-state:/data
+    environment:
+      NODE_ENV: production
+      PORT: "8080"
+      DEMO_DOMAIN: ai.formio.internal
+      # Only when the site is served over plain HTTP, not behind TLS:
+      # DEMO_PUBLIC_URL: http://ai.formio.internal
+      # Proxy hops in front of the site that add to X-Forwarded-For.
+      TRUST_PROXY: "1"
+      # Signs the visitor cookie. openssl rand -hex 32
+      DEMO_SECRET: CHANGE_ME
+      FORMIO_PROJECT_URL: https://uag.form.io
+      # The same project API key as the UAG's.
+      PROJECT_KEY: CHANGE_ME
+      FLOW_UAG_URL: http://formio-uag:3200
+      DEMO_STATE_DIR: /data
+      # The Cloudflare Turnstile human check in front of the live demos. Off for
+      # an internal site. A public site needs it: set "true" and add its keys.
+      DEMO_REQUIRE_TURNSTILE: "false"
+      # TURNSTILE_SITE_KEY: CHANGE_ME
+      # TURNSTILE_SECRET_KEY: CHANGE_ME
+
+volumes:
+  demo-state:
