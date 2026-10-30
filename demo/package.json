@@ -1,6 +1,6 @@
 {
   "name": "@formio/uag-demo",
-  "version": "2.0.0-rc.4",
+  "version": "2.0.0-rc.5",
   "private": true,
   "description": "The Form.io UAG marketing and demo site: the product pages, the three live examples, the flow viewer and the developer documentation.",
   "type": "module",

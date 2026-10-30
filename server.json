@@ -6,13 +6,13 @@
     "url": "https://github.com/formio/uag",
     "source": "github"
   },
-  "version": "2.0.0-rc.4",
+  "version": "2.0.0-rc.5",
   "websiteUrl": "https://form.io",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@formio/uag",
-      "version": "2.0.0-rc.4",
+      "version": "2.0.0-rc.5",
       "transport": {
         "type": "streamable-http",
         "url": "http://localhost:{PORT}/mcp"

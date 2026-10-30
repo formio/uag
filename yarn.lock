@@ -460,7 +460,7 @@ __metadata:
   resolution: "@formio/uag-claude@workspace:engines/claude"
   dependencies:
     "@anthropic-ai/sdk": "npm:1.3.0"
-    "@formio/uag-sdk": "npm:^2.0.0-rc.4"
+    "@formio/uag-sdk": "npm:^2.0.0-rc.5"
     chai: "npm:^6.3.0"
     mocha: "npm:^12.0.3"
   languageName: unknown
@@ -479,7 +479,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@formio/uag-engines@workspace:packages/engine-server"
   dependencies:
-    "@formio/uag-sdk": "npm:^2.0.0-rc.4"
+    "@formio/uag-sdk": "npm:^2.0.0-rc.5"
     "@modelcontextprotocol/sdk": "npm:1.32.2"
     chai: "npm:^6.3.0"
     debug: "npm:^4.4.3"
@@ -494,8 +494,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@formio/uag-gemini@workspace:engines/gemini"
   dependencies:
-    "@formio/uag-openai": "npm:^2.0.0-rc.4"
-    "@formio/uag-sdk": "npm:^2.0.0-rc.4"
+    "@formio/uag-openai": "npm:^2.0.0-rc.5"
+    "@formio/uag-sdk": "npm:^2.0.0-rc.5"
     chai: "npm:^6.3.0"
     mocha: "npm:^12.0.3"
   languageName: unknown
@@ -505,8 +505,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@formio/uag-grok@workspace:engines/grok"
   dependencies:
-    "@formio/uag-openai": "npm:^2.0.0-rc.4"
-    "@formio/uag-sdk": "npm:^2.0.0-rc.4"
+    "@formio/uag-openai": "npm:^2.0.0-rc.5"
+    "@formio/uag-sdk": "npm:^2.0.0-rc.5"
     chai: "npm:^6.3.0"
     mocha: "npm:^12.0.3"
   languageName: unknown
@@ -516,7 +516,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@formio/uag-jev@workspace:engines/jev"
   dependencies:
-    "@formio/uag-sdk": "npm:^2.0.0-rc.4"
+    "@formio/uag-sdk": "npm:^2.0.0-rc.5"
     "@typesafe-ai/sdk": "npm:0.7.0"
     chai: "npm:^6.3.0"
     mocha: "npm:^12.0.3"
@@ -535,25 +535,25 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@formio/uag-mai@workspace:engines/mai"
   dependencies:
-    "@formio/uag-openai": "npm:^2.0.0-rc.4"
-    "@formio/uag-sdk": "npm:^2.0.0-rc.4"
+    "@formio/uag-openai": "npm:^2.0.0-rc.5"
+    "@formio/uag-sdk": "npm:^2.0.0-rc.5"
     chai: "npm:^6.3.0"
     mocha: "npm:^12.0.3"
   languageName: unknown
   linkType: soft
 
-"@formio/uag-openai@npm:^2.0.0-rc.4, @formio/uag-openai@workspace:engines/openai":
+"@formio/uag-openai@npm:^2.0.0-rc.5, @formio/uag-openai@workspace:engines/openai":
   version: 0.0.0-use.local
   resolution: "@formio/uag-openai@workspace:engines/openai"
   dependencies:
-    "@formio/uag-sdk": "npm:^2.0.0-rc.4"
+    "@formio/uag-sdk": "npm:^2.0.0-rc.5"
     chai: "npm:^6.3.0"
     mocha: "npm:^12.0.3"
     openai: "npm:7.45.1"
   languageName: unknown
   linkType: soft
 
-"@formio/uag-sdk@npm:^2.0.0-rc.4, @formio/uag-sdk@workspace:packages/engine-sdk":
+"@formio/uag-sdk@npm:^2.0.0-rc.5, @formio/uag-sdk@workspace:packages/engine-sdk":
   version: 0.0.0-use.local
   resolution: "@formio/uag-sdk@workspace:packages/engine-sdk"
   dependencies:
@@ -570,7 +570,7 @@ __metadata:
     "@formio/appserver": "npm:^2.25.2"
     "@formio/core": "npm:2.9.0"
     "@formio/js": "npm:5.7.0"
-    "@formio/uag-sdk": "npm:^2.0.0-rc.4"
+    "@formio/uag-sdk": "npm:^2.0.0-rc.5"
     "@modelcontextprotocol/sdk": "npm:1.32.2"
     "@types/chai": "npm:^5.2.3"
     "@types/cors": "npm:^2.8.19"
