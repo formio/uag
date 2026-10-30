@@ -138,6 +138,7 @@ The deployment's own settings are optional. Each is taken from the root `.env` w
 | Setting | What |
 |---|---|
 | `ADMIN_EMAIL`, `ADMIN_PASS` | The portal administrator's sign-in. Default: `admin@example.com`, with a random password. Both are printed when the demo is up. |
+| `FORMIO_ADMIN_KEY` | Form.io's admin key, which the setup job creates the project with. |
 | `PROJECT_KEY` | The demo project's API key. |
 | `DB_SECRET`, `FORMIO_JWT_SECRET` | Form.io's database and token secrets. |
 | `UAG_JWT_SECRET`, `PORTAL_SECRET` | The UAG's token secret, and the secret the portal stage is connected with. |

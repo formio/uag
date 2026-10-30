@@ -55,7 +55,7 @@ export function enterpriseMissing(settings = process.env) {
  * Each is taken from `settings` when set there, and is otherwise random for
  * this start.
  */
-export const DEPLOYMENT_SETTINGS = ['ADMIN_PASS', 'PROJECT_KEY', 'DB_SECRET', 'FORMIO_JWT_SECRET', 'UAG_JWT_SECRET', 'PORTAL_SECRET', 'ENGINE_SERVER_KEY', 'FLOW_KEY', 'DEMO_SECRET'];
+export const DEPLOYMENT_SETTINGS = ['ADMIN_PASS', 'FORMIO_ADMIN_KEY', 'PROJECT_KEY', 'DB_SECRET', 'FORMIO_JWT_SECRET', 'UAG_JWT_SECRET', 'PORTAL_SECRET', 'ENGINE_SERVER_KEY', 'FLOW_KEY', 'DEMO_SECRET'];
 
 /**
  * Starts the stack. `site`, `portal` and `uag` are the URLs it is published at
@@ -85,7 +85,7 @@ export async function startEnterpriseDemo({ site = SITE, portal = PORTAL, uag = 
         env: {
             LICENSE_KEY: licenses.formio,
             LICENSE_REMOTE: settings.LICENSE_REMOTE || settings.E2E_FORMIO_LICENSE_REMOTE || '',
-            PORTAL_ENABLED: '1',
+            PORTAL_ENABLED: 'true',
             ADMIN_EMAIL: adminEmail,
             UAG_LICENSE: licenses.uag,
             TYPESAFE_API_KEY: settings.TYPESAFE_API_KEY,

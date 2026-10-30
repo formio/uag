@@ -301,7 +301,7 @@ describe('Layer 3: the Getting Started guides, as documented', function () {
         const secrets = {
             PROJECT_KEY: randomBytes(16).toString('hex'),
             JWT_SECRET: randomBytes(16).toString('hex'),
-            ADMIN_PASS: randomBytes(12).toString('hex'),
+            FORMIO_ADMIN_KEY: randomBytes(16).toString('hex'),
         };
 
         before(async function () {
@@ -324,13 +324,10 @@ describe('Layer 3: the Getting Started guides, as documented', function () {
                 '        aliases: [formio.e2e.test]',
                 '    environment:',
                 '      PORT: 3000',
-                // With its portal, which makes the administrator the project is created as.
-                '      PORTAL_ENABLED: "1"',
                 '      MONGO: mongodb://mongo:27017/formio',
                 '      DB_SECRET: ${JWT_SECRET}',
                 '      JWT_SECRET: ${JWT_SECRET}',
-                '      ADMIN_EMAIL: admin@example.com',
-                '      ADMIN_PASS: ${ADMIN_PASS}',
+                '      ADMIN_KEY: ${FORMIO_ADMIN_KEY}',
                 '      LICENSE_KEY: ${LICENSE_KEY}',
                 '      LICENSE_REMOTE: ${LICENSE_REMOTE}',
                 edit(service, [
@@ -352,9 +349,9 @@ describe('Layer 3: the Getting Started guides, as documented', function () {
                 if (!(await fetch(FORMIO)).ok) throw new Error('Form.io Enterprise is not up yet.');
             }, { timeoutMs: 300000, describe: () => stack.logs('formio-enterprise') });
             // A project named `yourproject` with the demo's forms (the claim form among them) and the
-            // key. Form.io answers before it has made its administrator, so log in until it can.
+            // key, made with Form.io's admin key. Retried while Form.io finishes starting.
             await waitUntil(() => exec(process.execPath, [path.join(repoRoot, 'demo/server/setup.mjs')], {
-                env: { ...process.env, FORMIO_SERVER: FORMIO, FORMIO_PROJECT_NAME: 'yourproject', FORMIO_PROJECT_TITLE: 'Your Project', ADMIN_EMAIL: 'admin@example.com', ...secrets },
+                env: { ...process.env, FORMIO_SERVER: FORMIO, FORMIO_PROJECT_NAME: 'yourproject', FORMIO_PROJECT_TITLE: 'Your Project', ...secrets },
                 timeout: 300000,
             }), { timeoutMs: 300000, intervalMs: 5000, describe: () => stack.logs('formio-enterprise') });
             const project = await (await fetch(`${FORMIO}/yourproject`, { headers: { 'x-token': secrets.PROJECT_KEY } })).json();

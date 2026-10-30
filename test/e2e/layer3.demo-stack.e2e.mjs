@@ -98,8 +98,11 @@ describe('Layer 3: the demo site, as it ships', function () {
             env: {
                 LICENSE_KEY: process.env.E2E_FORMIO_LICENSE,
                 LICENSE_REMOTE: process.env.E2E_FORMIO_LICENSE_REMOTE || '',
+                // Its portal, which its teams and the stage connected to the UAG need, and its administrator.
+                PORTAL_ENABLED: 'true',
                 ADMIN_EMAIL,
                 ADMIN_PASS: adminPass,
+                FORMIO_ADMIN_KEY: secret(),
                 DB_SECRET: secret(),
                 FORMIO_JWT_SECRET: secret(),
                 PROJECT_KEY: projectKey,
