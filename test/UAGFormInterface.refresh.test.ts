@@ -82,3 +82,21 @@ describe('UAGFormInterface task fields inside a flagged layout', () => {
         expect(fieldsOf(container)).to.deep.equal(['c.a', 'c.b']);
     });
 });
+
+// Validation runs on the UAG for Run task and the Agent API, which have no database
+// to expand references from.
+describe('UAGFormInterface validation of a form with references', () => {
+    const def = () => ({
+        _id: 'f', name: 'f', path: 'f', title: 'F', tags: ['uag'], components: [
+            { type: 'select', key: 'customer', label: 'Customer', input: true, dataSrc: 'resource', reference: true,
+                data: { resource: '507f1f77bcf86cd799439011' }, valueProperty: '', template: '<span>{{ item.data.name }}</span>' },
+            { type: 'textfield', key: 'summary', label: 'Summary', input: true, validate: { maxLength: 5 } }
+        ]
+    });
+
+    it('validates a "Save as reference" select\'s stored value without throwing, and still reports other errors', async () => {
+        const form = new UAGFormInterface(makeProject({}), def() as any);
+        const errors = await form.validateData({ data: { customer: { _id: '507f191e810c19729de860ea', data: { name: 'Acme' } }, summary: 'Far too long' } } as any, { admin: true } as any);
+        expect(errors.map((e) => e.path)).to.deep.equal(['summary']);
+    });
+});

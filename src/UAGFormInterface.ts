@@ -462,13 +462,10 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
         findQuery: any = {},
         additional: any[] = []
     ) {
-        const processors = [...Processors, ...additional];
-
-        // Remove the 'fetch' processor since UAG handles this with the fetch_external_data tool.
-        const fetchIndex = processors.findIndex((p) => p.name === 'fetch');
-        if (fetchIndex !== -1) {
-            processors.splice(fetchIndex, 1);
-        }
+        // Leave out 'fetch', since the UAG handles it with the fetch_external_data tool, and
+        // 'dereference', which expands a "Save as reference" select or a Data Table from the
+        // database the UAG does not have: it would throw for every form with one.
+        const processors = [...Processors, ...additional].filter((p) => p.name !== 'fetch' && p.name !== 'dereference');
 
         // Return the processed submission data.
         const context = await super.process(submission, auth, headers, findQuery, processors);
