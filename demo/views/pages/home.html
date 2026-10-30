@@ -1,7 +1,7 @@
     <section class="hero">
       <div class="container hero-grid">
         <div>
-          <h1><span class="accent">Your AI agents</span> that follow <span class="accent">your rules</span>.</h1>
+          <h1 class="hero-title"><span>Your agents</span> <span>follow <span class="accent">your rules</span></span> <span>within <span class="accent">your environment</span>.</span></h1>
           <p class="lede">Form.io's <strong>Universal Agent Gateway</strong> (UAG) sits between AI agents and your Form.io project. Agents read your forms to learn what to collect and how to behave. Every value they send back is checked against the form's own validation and saved according to the user's permissions, all within your <strong>own environment.</strong></p>
           <div class="hero-actions">
             <a class="btn btn-primary" href="/examples"><svg aria-hidden="true"><use href="/images/icons.svg#play"/></svg>See it live</a>
@@ -122,7 +122,7 @@
             <li>Agents automatically find the forms you tag, so you write no per-form agent code.</li>
           </ul>
         </div>
-        <figure class="figure diagram" aria-label="One form JSON feeds the Form.io renderer for people and the UAG for agents.">
+        <figure class="figure diagram figure-wide figure-narrow" aria-label="One form JSON feeds the Form.io renderer for people and the UAG for agents.">
           <svg viewBox="0 0 620 420" role="img">
             <defs>
               <marker id="r-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#69b342"/></marker>
@@ -197,21 +197,21 @@
             <span class="num">01 · CONVERSATION FORMS</span>
             <h3>Talk to a form</h3>
             <p>A customer describes a problem in plain language. The agent asks only what the form needs and submits validated data.</p>
-            <p class="link-arrow" style="margin-top:16px">Try it</p>
+            <p class="link-arrow">Try it</p>
           </a>
           <a class="card card-link" href="/examples/workflow">
             <div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#workflow"/></svg></div>
             <span class="num">02 · AGENTIC WORKFLOW</span>
             <h3>Hand off the review</h3>
             <p>An agent reviews each submission against criteria you define in the form and records its findings. When needed, it hands off to a second agent.</p>
-            <p class="link-arrow" style="margin-top:16px">Try it</p>
+            <p class="link-arrow">Try it</p>
           </a>
           <a class="card card-link" href="/examples/formflow">
             <div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#wizard"/></svg></div>
             <span class="num">03 · AGENTIC FORMFLOW</span>
             <h3>Forms that fill themselves</h3>
             <p>The user describes what happened. A decision engine picks the wizard pages that apply, and extraction prefills them for the user to check.</p>
-            <p class="link-arrow" style="margin-top:16px">Try it</p>
+            <p class="link-arrow">Try it</p>
           </a>
         </div>
       </div>
@@ -267,7 +267,7 @@
           </ul>
           <p style="margin-top:28px"><a class="link-arrow" href="/getting-started">Deploy it in your environment</a></p>
         </div>
-        <figure class="figure diagram" aria-label="Inside your network: your applications, Form.io, the UAG and its engines. Only model calls leave, and with local models nothing does.">
+        <figure class="figure diagram figure-wide figure-narrow" aria-label="Inside your network: your applications, Form.io, the UAG and its engines. Only model calls leave, and with local models nothing does.">
           <svg viewBox="0 0 560 430" role="img">
             <defs>
               <filter id="s-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0c141d" flood-opacity=".12"/></filter>
@@ -404,8 +404,7 @@ npx skills add formio/ai
 # Or, in Claude Code, the plugin with the Form.io MCP server
 /plugin marketplace add https://github.com/formio/ai.git
 /plugin install formio-ai@formio</code></pre></div>
-          <div class="code"><div class="code-bar"><span>Then ask your coding agent</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code>Put a chat on our public support page where customers describe
-their problem to an AI agent. The agent then interviews the user for the necessary information and submits our "serviceRequest" form for them.</code></pre></div>
+          <div class="code code-prose"><div class="code-bar"><span>Then ask your coding agent</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code>Put a chat on our public support page where customers describe their problem to an AI agent. The agent then interviews the user for the necessary information and submits our "serviceRequest" form for them.</code></pre></div>
         </div>
       </div>
     </section>

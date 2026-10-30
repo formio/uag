@@ -8,6 +8,13 @@
       var open = header.classList.toggle('open');
       toggle.setAttribute('aria-expanded', String(open));
     });
+    // Escape closes the open menu and returns focus to its button.
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape' || !header.classList.contains('open')) return;
+      header.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.focus();
+    });
   }
 
   // Tabs: <div class="tabs"><div class="tab-list" role="tablist"><button role="tab" aria-controls="id"> ...
@@ -33,6 +40,29 @@
       });
     });
   });
+
+  // The docs menu is the sidebar on desktop and starts folded on smaller
+  // screens, so the article is the first thing a phone shows.
+  var docsMenu = document.querySelector('.docs-menu');
+  if (docsMenu) {
+    var wide = window.matchMedia('(min-width: 981px)');
+    var fitMenu = function () { docsMenu.open = wide.matches; };
+    fitMenu();
+    wide.addEventListener('change', fitMenu);
+  }
+
+  // A diagram or table wider than its box scrolls sideways; mark the ones that
+  // do, so the page can say so (the hint is in site.css).
+  var scrollers = document.querySelectorAll('.figure-wide, .table-wrap');
+  function markScrollers() {
+    scrollers.forEach(function (box) {
+      box.classList.toggle('scrolls', box.scrollWidth > box.clientWidth + 1);
+    });
+  }
+  if (scrollers.length) {
+    markScrollers();
+    window.addEventListener('resize', markScrollers);
+  }
 
   // Copy buttons on code blocks.
   document.addEventListener('click', function (event) {

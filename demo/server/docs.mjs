@@ -60,6 +60,10 @@ function renderPage(body) {
                 if (!kind) return `<blockquote>${inner}</blockquote>\n`;
                 return `<div class="callout callout-${kind}"><span class="callout-label">${kind}</span>${inner.replace(CALLOUT, '<p>')}</div>\n`;
             },
+            // A diagram or screenshot opens full size, for reading its labels on a phone.
+            image(token) {
+                return `<a class="image-link" href="${escapeHtml(token.href)}" target="_blank" rel="noopener">${Renderer.prototype.image.call(this, token)}</a>`;
+            },
             table(token) {
                 return `<div class="table-wrap">${Renderer.prototype.table.call(this, token)}</div>`;
             },
