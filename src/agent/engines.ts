@@ -2,7 +2,7 @@ import path from 'path';
 import { engineInstances } from '@formio/uag-sdk';
 import type { EngineTypeDefinition } from '@formio/uag-sdk';
 import { enginePaths, loadEngines } from '@formio/uag-sdk/loader';
-import { Formflow } from '@formio/appserver-core';
+import { Formflow } from '@formio/appserver';
 import { EngineRegistry } from '../formflow';
 import { RemoteEngine } from './remote';
 import { StubAgentEngine, StubDecisionEngine } from './stubs';

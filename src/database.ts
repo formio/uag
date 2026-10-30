@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypto';
 import { Collection, Db, MongoClient, MongoClientOptions } from 'mongodb';
-import type { AuthCodeRecord, AuthCodeStore } from '@formio/appserver-core';
+import type { AuthCodeRecord, AuthCodeStore } from '@formio/appserver';
 const debug = require('debug')('formio:uag:database');
 
 /**

@@ -1,6 +1,7 @@
 import { Server, ServerModule } from '@formio/appserver';
 import { formflow } from './formflow';
 import { Router } from 'express';
+import path from 'path';
 import { UAGProjectInterface } from './UAGProjectInterface';
 import { UAGFormInterface } from './UAGFormInterface';
 import { defaultsDeep, get, set } from 'lodash';
@@ -18,26 +19,23 @@ export type UAGModule = ServerModule & {
 };
 
 /**
- * Agentic Formflow keeps its license state inside @formio/appserver-core, so the
- * UAG and @formio/appserver must load the same copy of it, at 2.24.1 or later.
- * A second copy (an older lockfile, or a package manager that nests it) would
- * otherwise fail in confusing ways; say what to do instead.
+ * Agentic Formflow keeps its license state inside @formio/appserver-core. The UAG
+ * loads it only through @formio/appserver, so the two always share one copy,
+ * which must be 2.24.1 or later. An older @formio/appserver, or an old lockfile,
+ * can still resolve an older one, which would fail in confusing ways; say what
+ * to do instead.
  */
-export function assertSingleCore(
-  core: any = require('@formio/appserver-core'),
-  appserver: any = require('@formio/appserver'),
-  version: string = String(require('@formio/appserver-core/package.json').version || '0.0.0')
-): void {
+export function assertSingleCore(version: string = appserverCoreVersion()): void {
   const [major, minor, patch] = version.split('.').map((part: string) => parseInt(part, 10) || 0);
   if (major < 2 || (major === 2 && (minor < 24 || (minor === 24 && patch < 1)))) {
-    throw new Error(`@formio/uag needs @formio/appserver-core 2.24.1 or later; ${version} is installed.`);
+    throw new Error(`@formio/uag needs @formio/appserver-core 2.24.1 or later, through @formio/appserver; ${version} is installed. Upgrade @formio/appserver.`);
   }
-  if (appserver.Formflow !== core.Formflow || appserver.ProjectInterface !== core.ProjectInterface) {
-    throw new Error(
-      'Two copies of @formio/appserver-core are installed: one for @formio/uag and an older one for @formio/appserver. ' +
-      'Upgrade @formio/appserver to 2.24.1 or later and deduplicate (for example `yarn dedupe @formio/appserver-core`).'
-    );
-  }
+}
+
+/** The version of the @formio/appserver-core that @formio/appserver loads. */
+function appserverCoreVersion(): string {
+  const appserver = path.dirname(require.resolve('@formio/appserver/package.json'));
+  return String(require(require.resolve('@formio/appserver-core/package.json', { paths: [appserver] })).version || '0.0.0');
 }
 
 /** The UAG's own database from the environment, when `MONGO` is set. */

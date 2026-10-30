@@ -1,8 +1,8 @@
-import { Formflow } from '@formio/appserver-core';
+import { Formflow } from '@formio/appserver';
 
 /**
- * Agentic Formflow from @formio/appserver-core, imported directly rather than
- * through @formio/appserver, under the names the UAG uses. Internal to the UAG:
+ * Agentic Formflow from @formio/appserver-core, through @formio/appserver (see
+ * assertSingleCore), under the names the UAG uses. Internal to the UAG:
  * applications reach Formflow as `Formflow` from this package's exports.
  */
 

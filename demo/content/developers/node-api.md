@@ -161,7 +161,7 @@ class UAGServer extends Server {
 }
 ```
 
-The constructor checks that exactly one copy of `@formio/appserver-core` 2.24.1 or later is installed, and throws if not (see [assertSingleCore](#public-exports)). It then fills every option you leave out from the environment, so `new UAGServer()` with no arguments configures itself the way the Docker image does.
+The constructor checks that the `@formio/appserver-core` that `@formio/appserver` loads, the UAG's only copy of it, is 2.24.1 or later, and throws if not (see [assertSingleCore](#public-exports)). It then fills every option you leave out from the environment, so `new UAGServer()` with no arguments configures itself the way the Docker image does.
 
 `UAGConfig` extends `ServerConfig`, the Form.io server options, with the UAG's own.
 
@@ -427,7 +427,7 @@ The service applies the same license check, permissions, routing, validation and
 |---|---|---|
 | `UAGServer` | class | The server. |
 | `UAGModule` | type | `ServerModule & { config?: UAGConfig }`. |
-| `assertSingleCore(core?, appserver?, version?)` | function | Throws unless one copy of `@formio/appserver-core` 2.24.1 or later is installed. The constructor calls it. Fix a second copy with `yarn dedupe @formio/appserver-core` (or your package manager's equivalent). |
+| `assertSingleCore(version?)` | function | Throws unless the `@formio/appserver-core` that `@formio/appserver` loads is 2.24.1 or later. The constructor calls it. Fix it by upgrading `@formio/appserver`. |
 | `UAGProjectInterface`, `UAGFormInterface` | classes | The project and form interfaces above. |
 | `UAGConfig`, `UAGForm`, `UAGTemplateConfig`, `UAGToolOverride`, `UAGEngineEntry`, `UAGRoutingConfig`, `UAGRateLimit`, `UAGAgentApiConfig` | types | Configuration types (`src/config.ts`). |
 | `trustProxySetting(value)` | function | Parses a `TRUST_PROXY` value into Express's `trust proxy` setting, or `undefined` when it is empty. See [Behind a reverse proxy](#behind-a-reverse-proxy). |

@@ -30,7 +30,7 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 | The UAG restart-loops with "Endpoint ... is not allowed for this license" | The license's endpoint allowlist does not include `PROJECT`'s host. Match the host to the license (trial licenses expect `api-server:3000`), or get a license for your endpoint. |
 | "License is not configured" for a `*.form.io` project | The hosted SaaS exemption does not apply: TLS checks are weakened (`NODE_TLS_REJECT_UNAUTHORIZED=0`, `NODE_EXTRA_CA_CERTS`, `NODE_USE_SYSTEM_CA`), or the server could not confirm it is the hosted service. The message names which. |
 | Startup stops naming an engine | That engine is misconfigured: its package is not installed, the name is duplicated, a required setting (such as an API key or model) is missing, or a `remote` instance's engine server refused its key or does not host it. |
-| "Two copies of @formio/appserver-core are installed" | An embedding application resolves two versions. Upgrade `@formio/appserver` to 2.24.1 or later and deduplicate (`yarn dedupe @formio/appserver-core`). |
+| "@formio/uag needs @formio/appserver-core 2.24.1 or later" | An embedding application installs an older `@formio/appserver`, or its lockfile resolves an older core for it. Upgrade `@formio/appserver`. |
 | Docker Compose fails with `set CLAUDE_API_KEY in .env` (or another `set ... in .env`) | A sample's `.env` is missing or incomplete. Copy `.env.example`; Compose validates every service even when you start only some. |
 
 ## The UAG's database

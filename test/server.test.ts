@@ -1,4 +1,6 @@
 import { assert } from 'chai';
+import fs from 'fs';
+import path from 'path';
 import { assertSingleCore, UAGServer } from '../src/index';
 
 describe('UAGServer.router', () => {
@@ -65,22 +67,27 @@ describe('UAGServer license', () => {
 });
 
 describe('assertSingleCore', () => {
-  const core = { Formflow: {}, ProjectInterface: class {} };
-
-  it('accepts one copy of core at 2.24.1 or later', () => {
-    assertSingleCore(core, core, '2.24.1');
-    assertSingleCore(core, core, '2.25.0');
-    assertSingleCore(core, core, '3.0.0');
+  it('accepts the core @formio/appserver loads at 2.24.1 or later', () => {
+    assertSingleCore();
+    assertSingleCore('2.24.1');
+    assertSingleCore('2.25.0');
+    assertSingleCore('3.0.0');
   });
 
-  it('refuses an older core, naming the version', () => {
-    assert.throws(() => assertSingleCore(core, core, '2.22.0'), /2\.24\.1 or later; 2\.22\.0 is installed/);
-    assert.throws(() => assertSingleCore(core, core, '2.23.1'), /2\.24\.1 or later; 2\.23\.1 is installed/);
-    assert.throws(() => assertSingleCore(core, core, '2.24.0'), /2\.24\.1 or later; 2\.24\.0 is installed/);
+  it('refuses an older core, naming the version and the package to upgrade', () => {
+    assert.throws(() => assertSingleCore('2.22.0'), /2\.24\.1 or later, through @formio\/appserver; 2\.22\.0 is installed\. Upgrade @formio\/appserver\./);
+    assert.throws(() => assertSingleCore('2.23.1'), /2\.23\.1 is installed/);
+    assert.throws(() => assertSingleCore('2.24.0'), /2\.24\.0 is installed/);
   });
 
-  it('refuses a second copy of core under @formio/appserver', () => {
-    assert.throws(() => assertSingleCore(core, { ProjectInterface: class {} }, '2.24.1'), /Two copies of @formio\/appserver-core/);
+  it('holds because the UAG reaches core only through @formio/appserver', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'));
+    assert.notProperty(pkg.dependencies, '@formio/appserver-core');
+    const files = (dir: string): string[] => fs.readdirSync(dir, { withFileTypes: true })
+      .flatMap((entry) => entry.isDirectory() ? files(path.join(dir, entry.name)) : [path.join(dir, entry.name)]);
+    const direct = files(path.resolve(__dirname, '../src'))
+      .filter((file) => /(from\s+|require\()['"]@formio\/appserver-core['"/]/.test(fs.readFileSync(file, 'utf8')));
+    assert.deepEqual(direct, []);
   });
 });
 

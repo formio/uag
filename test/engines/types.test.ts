@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import type * as Sdk from '@formio/uag-sdk';
 import type { LoadedEngine } from '@formio/uag-sdk/loader';
-import { Formflow } from '@formio/appserver-core';
+import { Formflow } from '@formio/appserver';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sdk = require('@formio/uag-sdk');
 
