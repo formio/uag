@@ -2,12 +2,58 @@ name: Publish UAG
 
 # A pushed version tag publishes, from whatever branch it is on: tag a branch to
 # publish a release candidate for testing before its pull request is merged.
+# Run it by hand (Actions, Publish UAG, Run workflow; or `gh workflow run
+# publish.yml --ref <branch>`) to run only the Getting Started guides, which
+# publishes nothing.
 on:
   push:
     tags: ["v[0-9]*", "[0-9]*"] # v2.0.0-rc.1 or 2.0.0-rc.1
+  workflow_dispatch:
 
 jobs:
+  # The Getting Started page is where most people first run the UAG. Run its three
+  # guides as documented (test/e2e/layer3.getting-started.e2e.mjs), against an
+  # image built from this tag, before anything is published. E2E_STRICT fails a
+  # guide whose keys or license are missing instead of skipping it.
+  getting-started:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      # As in the publish job: before setup-node, which probes yarn.
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Run the Getting Started guides
+        run: yarn test:getting-started
+        env:
+          E2E_STRICT: "true"
+          # A project on Form.io's hosted service with the demo's claim form, and an API key of it.
+          E2E_HOSTED_PROJECT_URL: ${{ vars.E2E_HOSTED_PROJECT_URL }}
+          E2E_HOSTED_PROJECT_KEY: ${{ secrets.E2E_HOSTED_PROJECT_KEY }}
+          # A Form.io license that includes the UAG and allows formio.e2e.test.
+          E2E_FORMIO_LICENSE: ${{ secrets.E2E_FORMIO_LICENSE }}
+          E2E_FORMIO_LICENSE_REMOTE: ${{ vars.E2E_FORMIO_LICENSE_REMOTE }}
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+
   publish:
+    needs: getting-started
+    # Only a version tag publishes; a run by hand stops after the guides.
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     environment: production
     permissions:

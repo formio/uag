@@ -29,6 +29,8 @@ Optional:
 | `E2E_FORMIO_LICENSE` | unset | A Form.io Enterprise `LICENSE_KEY`, for `layer3.demo-stack`. Set `E2E_FORMIO_LICENSE_REMOTE=true` when it is an offline (self-contained) license; otherwise the server keeps logging `License not found` and the setup job cannot log in. |
 | `E2E_CORE_BUNDLE` | unset | Path to a locally built appserver-core `build/server.js`, bind-mounted into the UAG container `layer3.demo-stack` starts, to check a core change before it is published. |
 | `E2E_LOCAL_CORE`, `E2E_LOCAL_APPSERVER` | unset | Paths to a built appserver-core's `build/` folder and a built appserver repository. Together, they build the UAG image `layer3.demo-stack` (and the demo recordings) start against those unpublished versions, which the UAG needs when it uses APIs the published ones lack. |
+| `E2E_HOSTED_PROJECT_URL`, `E2E_HOSTED_PROJECT_KEY` | unset | For `layer3.getting-started`: a project on Form.io's hosted service with the demo's `claim` form, such as https://uag.form.io, and an API key of it. |
+| `E2E_STRICT` | unset | `true` makes `layer3.getting-started` fail a guide whose variables are missing, instead of skipping it. The release workflow sets it. |
 | `E2E_DEMO_UAG_LICENSE` | unset | A `UAG_LICENSE` with the `uag` feature that allows `formio.e2e.test` (the same kind as `E2E_UAG_LICENSE`), for `layer3.demo-stack`, with `CLAUDE_API_KEY` and `TYPESAFE_API_KEY`. `E2E_EXAMPLE_UAG_LICENSE`, its earlier name, is still read. |
 
 ## Layers
@@ -269,6 +271,34 @@ Claude decline the weak applicant and award the strong one, and then stop
 changing either; and in a browser, the claims wizard's collision, stolen car
 and burst pipe examples are triaged as their kind of claim, with their steps
 added and no others, and the JEV and Claude legs shown in the flow viewer.
+
+**Layer 3 — the Getting Started guides, as documented** (`layer3.getting-started.e2e.mjs`,
+`yarn test:getting-started`; a few minutes): the release gate for the page most
+people run the UAG from first (`demo/views/pages/getting-started.html`). It reads
+each guide's commands from the page itself and changes only what it lists: the
+placeholders a reader fills in, the image under test, and host ports (3441 to
+3445), so a UAG already running on this machine is left alone. A page edit that
+removes text an edit expects fails the suite, naming the text.
+
+- **Open Source, self-hosted** (Docker only): the page's `docker-compose.yml`;
+  the portal login it names; a form tagged `uag` after the UAG started, which an
+  agent must be offered without a restart; the page's MCP client, which must
+  print the tools and exit by itself; a conversation that submits to Form.io;
+  and the Agent API's license answer.
+- **Hosted project** (`E2E_HOSTED_PROJECT_URL`, `E2E_HOSTED_PROJECT_KEY`,
+  `CLAUDE_API_KEY`): the page's `docker run`, its MCP client and its Agent API
+  `curl`, which must triage the claim. The project needs the demo's `claim`
+  form (`demo/module/project.json`); https://uag.form.io has it.
+- **Enterprise, self-hosted** (`E2E_FORMIO_LICENSE`, `CLAUDE_API_KEY`,
+  `TYPESAFE_API_KEY`): the page's `formio-uag` service beside Form.io
+  Enterprise, with `LICENSE_KEY` as its only license, so the license must
+  include the UAG and allow `formio.e2e.test`. Its project is made from the
+  demo's template; the MCP client and the `curl` run against it, with JEV
+  deciding the claim type.
+
+A guide whose variables are missing is skipped, unless `E2E_STRICT=true`, which
+the release workflow sets, so it fails instead. `E2E_UAG_IMAGE` runs a
+published image instead of building this tree.
 
 The layer 3 demo suite passes its own env file with `--env-file`, so the
 demo's own `.env` is never read, and always tears its stack down with its

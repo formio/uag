@@ -26,6 +26,7 @@
     "build:docker": "docker build -t formio/uag$(node -p \"require('./package.json').version.includes('-rc.') ? ':rc' : ''\") --platform=linux/amd64 .",
     "test": "tsc --noEmit -p tsconfig.test.json && mocha --no-node-snapshot",
     "test:e2e": "mocha --config .mocharc.e2e.json",
+    "test:getting-started": "mocha --no-config --node-option no-node-snapshot --require dotenv/config --timeout 1800000 test/e2e/layer3.getting-started.e2e.mjs",
     "release": "node scripts/release.mjs",
     "release:version": "node scripts/set-version.mjs",
     "dev": "tsx --no-node-snapshot index.js",

@@ -53,12 +53,13 @@
               </div></div>
               <div class="step"><div>
                 <h3>Run the UAG next to your applications</h3>
-                <p>A UAG serving a hosted Form.io project needs no license. Add <code>UAG_ENGINES</code> and a model key to use the Agent API.</p>
+                <p>A UAG serving a hosted Form.io project needs no license. Add <code>UAG_ENGINES</code> and a model key to use the Agent API. <code>PROJECT_TTL=60</code> picks up a form you add or change within a minute.</p>
                 <div class="code"><div class="code-bar"><span>bash</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-bash">docker run -d --name formio-uag -p 3200:3200 \
   -e PROJECT=https://yourproject.form.io \
   -e PROJECT_KEY=your-project-api-key \
   -e JWT_SECRET=$(openssl rand -hex 32) \
   -e LOGIN_FORM=https://yourproject.form.io/user/login \
+  -e PROJECT_TTL=60 \
   -e UAG_ENGINES=claude \
   -e CLAUDE_API_KEY=your-anthropic-key \
   formio/uag</code></pre></div>
@@ -105,6 +106,8 @@
       ADMIN_KEY: CHANGEME
       JWT_SECRET: CHANGEME
       LOGIN_FORM: http://localhost:3000/user/login
+      # Re-read the project every 10 seconds, so a form you tag shows up quickly.
+      PROJECT_TTL: 10
 
 volumes:
   mongo-data:</code></pre></div>
@@ -221,7 +224,8 @@ const mcp = new Client({ name: 'my-app', version: '1.0.0' });
 await mcp.connect(new StreamableHTTPClientTransport(new URL('http://localhost:3200/mcp'), {
   requestInit: { headers: { Authorization: `Bearer ${access_token}` } },
 }));
-console.log((await mcp.listTools()).tools.map((tool) => tool.name));</code></pre></div>
+console.log((await mcp.listTools()).tools.map((tool) => tool.name));
+await mcp.close();</code></pre></div>
             <p><a href="/developers/mcp-tools">Every MCP tool, with its arguments</a>.</p>
           </div>
           <div class="tab-panel" role="tabpanel" id="panel-api" aria-labelledby="tab-api" hidden>

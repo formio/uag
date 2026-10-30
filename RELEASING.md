@@ -16,6 +16,20 @@ Every package in this repository is released together, at one version: `@formio/
 
 The release check refuses a package out of step with the root version, a dependency range that does not accept it, a stale `lib/`, and a version the changelog does not describe. CI runs it with `--before-publish`, which skips only its check that the engine SDK is on npm: CI publishes the SDK next, and `@formio/uag`'s `prepublishOnly` runs the full check before it goes out.
 
+## The Getting Started gate
+
+Before it publishes anything, the workflow runs the Getting Started page's three guides as documented (`yarn test:getting-started`, `test/e2e/layer3.getting-started.e2e.mjs`) against an image built from the tag, with `E2E_STRICT=true`, so a guide that cannot run fails the release instead of being skipped. It needs these in the `production` environment:
+
+| Name | Kind | Purpose |
+|---|---|---|
+| `E2E_HOSTED_PROJECT_URL` | variable | A project on Form.io's hosted service with the demo's `claim` form, such as `https://uag.form.io`. |
+| `E2E_HOSTED_PROJECT_KEY` | secret | An API key of that project. |
+| `E2E_FORMIO_LICENSE` | secret | A Form.io license that includes the UAG and allows `formio.e2e.test`. |
+| `E2E_FORMIO_LICENSE_REMOTE` | variable | `true` when that license is an offline license. |
+| `CLAUDE_API_KEY`, `TYPESAFE_API_KEY` | secrets | The engines the guides use. |
+
+To check them without releasing, run the workflow by hand: **Actions → Publish UAG → Run workflow**, or `gh workflow run publish.yml --ref <branch>`. A run by hand runs only the guides and publishes nothing. Or run them locally with the same variables in `.env`; without them, the guides that need them are skipped.
+
 ## What the workflow publishes
 
 | Where | Release (`2.0.0`) | Prerelease (`2.0.0-rc.2`) |
