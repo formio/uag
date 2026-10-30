@@ -17,24 +17,28 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 | Which engines are on, and is Agentic Formflow allowed? | `GET /agent/capabilities` with a bearer token, or with `x-token`/`x-admin-key` from a server. |
 | What did a request do? | Every Agent API response carries `X-Request-Id`. Search the UAG log for it. Set `DEBUG=formio:*` for detail. |
 | What did a task run do? | With the database, open Action Logs in a portal stage connected to the UAG (classic portal). Without it, search the UAG log for `Run task "<task>" failed`. To see each field's `reason`, send the submission's data to the form's `{form}/agent/decide` or `{form}/agent/generate` with the task and `overwrite: true`; nothing is saved. |
-| What is an agentic run doing right now? | Put the [flow viewer](https://github.com/formio/uag/tree/main/demo/flow) in front of the UAG and engine server. |
+| What is an agentic run doing right now? | Put the [flow viewer](https://github.com/formio/uag/tree/v2.0.0-rc.5/demo/flow) in front of the UAG and engine server. |
 
 ## Startup
 
 | Symptom | Cause |
 |---|---|
-| The UAG exits with "No Form.io project could be loaded" | `PROJECT` is unreachable from inside the UAG container, or it is paired with the wrong credential: `ADMIN_KEY` for Open Source, `PROJECT_KEY` (plus a `LICENSE_KEY` when self-hosted Enterprise) for a project. Earlier log lines say why the load failed. |
+| The UAG exits with "No Form.io project could be loaded" | `PROJECT` is not set. |
+| The UAG exits with "Unable to load project from ..." or "Unable to load the project template from ..." | `PROJECT` is unreachable from inside the UAG container, or it is paired with the wrong credential: `ADMIN_KEY` for Open Source, `PROJECT_KEY` (plus a `LICENSE_KEY` when self-hosted Enterprise) for a project. Set `DEBUG=formio:error,formio:ProjectInterface` to see each attempt and the status Form.io answered (`401`: a wrong key). |
 | The UAG cannot reach the server at all, and every tool fails | `PROJECT` is an `https` URL with a self-signed certificate: set `NODE_TLS_REJECT_UNAUTHORIZED=0` (private deployments only). Otherwise `PROJECT` is a browser address, not a container-to-container one. |
 | The UAG exits on first boot, then works after a restart | Form.io was not answering yet. Add a healthcheck and `depends_on: condition: service_healthy`, or raise `PROJECT_RETRIES`. |
-| The UAG logs `401` right after starting | `PROJECT_KEY` is empty or wrong. In the demo stack, check the `setup` job's logs, then recreate the UAG container. |
+| With `DEBUG=formio:error`, the UAG logs `401` right after starting | `PROJECT_KEY` is empty or wrong. In the demo stack, check the `setup` job's logs, then recreate the UAG container. |
 | The UAG restart-loops with "Endpoint ... is not allowed for this license" | The license's endpoint allowlist does not include `PROJECT`'s host. Match the host to the license (trial licenses expect `api-server:3000`), or get a license for your endpoint. |
+| "License is not configured" for a self-hosted Enterprise project | `LICENSE_KEY` is not set. A project on a host other than a development one (`localhost`, `*.local`, ...) needs a license that includes the UAG. |
+| "This server needs a license that includes the UAG", with a reason for each key | `LICENSE_KEY: The license does not include the UAG.`: get a license with the UAG. `License is expired`: renew it. `License could not be verified ... no grace period ... (MONGO)`: the license server is unreachable, and without the UAG's database there is no grace period. `License is not an offline license. LICENSE_REMOTE is set`: unset `LICENSE_REMOTE` for an online key. |
+| The log warns "UAG_LICENSE is deprecated" | Put the license in `LICENSE_KEY` instead. `UAG_LICENSE` keeps working until UAG 3.0. |
 | "License is not configured" for a `*.form.io` project | The hosted SaaS exemption does not apply: TLS checks are weakened (`NODE_TLS_REJECT_UNAUTHORIZED=0`, `NODE_EXTRA_CA_CERTS`, `NODE_USE_SYSTEM_CA`), or the server could not confirm it is the hosted service. The message names which. |
 | Startup stops naming an engine | That engine is misconfigured: its package is not installed, the name is duplicated, a required setting (such as an API key or model) is missing, or a `remote` instance's engine server refused its key or does not host it. |
 | "@formio/uag needs Node started with --no-node-snapshot" | An embedding server started Node without the flag. Start `node --no-node-snapshot`, or set `NODE_OPTIONS=--no-node-snapshot`. |
 | The log warns "JWT_SECRET is not set" | Tokens are signed with a random secret for this process only: set `JWT_SECRET`, the same on every instance. |
 | The log warns "MCP_OAUTH is on, but LOGIN_FORM is not set" | The sign-in page would load the login form from `PROJECT`, a container address. Set `LOGIN_FORM` to the login form's public URL. |
-| "@formio/uag needs @formio/appserver-core 2.25.1 or later" | An embedding application installs an older `@formio/appserver`, or its lockfile resolves an older core for it. Upgrade `@formio/appserver`. |
-| Docker Compose fails with `set CLAUDE_API_KEY in .env` (or another `set ... in .env`) | A sample's `.env` is missing or incomplete. Copy `.env.example`; Compose validates every service even when you start only some. |
+| "@formio/uag needs @formio/appserver-core 2.25.2 or later" | An embedding application installs an older `@formio/appserver`, or its lockfile resolves an older core for it. Upgrade `@formio/appserver`. |
+| Docker Compose fails with `set CLAUDE_API_KEY in .env` (or another `set ... in .env`) | A sample's `.env` is missing or incomplete. For the demo stack, copy `.env.example`; for an engine sample, add the variables its table in `samples/engines/Readme.md` lists. Compose validates every service even when you start only some. |
 
 ## The UAG's database
 
@@ -71,7 +75,7 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 | `/auth/token` returns `400` | The `client_id` prefix is wrong (`formio-oss-x-admin-key` for Open Source, `<project name>-x-token` for a project), or the secret does not match `ADMIN_KEY` or `PROJECT_KEY`. |
 | A remote agent (claude.ai, a Claude Desktop connector) cannot authenticate | The discovery documents name a URL the agent cannot reach, often `http` behind a TLS proxy. Read `/.well-known/oauth-protected-resource`: behind a proxy, set `TRUST_PROXY` and forward `Host` and `X-Forwarded-Proto`, or set `BASE_URL` to the public HTTPS URL. |
 | The login page says it cannot load the form | `LOGIN_FORM` does not point at a login form JSON endpoint the browser can reach. |
-| A remote client asks to sign in again after a few hours | A sign-in lasts as long as the user's Form.io login token (Form.io's `jwt.expireTime`, 240 minutes by default), whatever `JWT_EXPIRE_TIME` says. |
+| A remote client asks to sign in again after a few hours | A sign-in lasts at most as long as the user's Form.io login token (Form.io's `jwt.expireTime`, 240 minutes by default). A client that does not refresh within twice `JWT_EXPIRE_TIME` (120 minutes by default) must sign in again too. |
 | A `refresh_token` exchange answers `400` | The login it wraps has expired, so it cannot be refreshed: sign in again. `client_credentials` returns no refresh token; request a new token with the credentials. |
 | A browser is refused by CORS from one of several applications | `CORS` lists the allowed origins, separated by commas. |
 | Tokens stop working after a restart, or on another instance | `JWT_SECRET` is unset (a random one is generated at each start) or differs between instances. |
@@ -146,8 +150,10 @@ More on [Chat widget](/developers/chat#troubleshooting).
 | A browser-decided value was stored as the user sent it | The submission was saved straight to Form.io, where no task runs, or the field is not marked `uagAuthoritative`. |
 | Runs after the save are lost when the UAG restarts | They are kept in memory: the UAG has no usable database (`durableRuns: false`), or the action names no agent role. |
 | Closed-set fields are never saved | Only an agent engine is enabled, and its answers are uncalibrated. Add `uagAgentDecides: "true"` to those fields, or enable a decision engine. |
+| A `uagAuthoritative` decision field is always empty | Only an agent engine answers it. An agent engine's answer is a suggestion, and a suggestion clears an authoritative field. Add `uagAgentDecides: "true"` to the field, or enable a decision engine. |
 | The agent fills some fields but not others | The missing ones lack the task's `uag` value (directly or from a container), the value does not exactly match the task name, or they already had a value. |
 | The submitter waits a long time after submitting | The Run task runs before the save. Agent runs take seconds to tens of seconds; set **When** to **After the save** unless the submitter needs the answer in the response. |
+| A chained Run task action never runs | It is set to run **Before the save**. Only actions that run **After the save** start from another task's save. Set the follow-on action's **When** to **After the save**. |
 | Chained tasks run again and again, then stop with "5 runs in a row were each started by the save of the one before" | A Run task on update whose conditions stay true after its own save, with a task that changes something each time. The UAG stops such a chain after 5 runs and logs `Run task "<task>" was not run on submission <id>`. Add a condition on a field the task fills, such as "`awardLevel` is empty". |
 | "Agent: Run task" opens as a blank page in the portal | The stage is not connected to the UAG, so the portal asks Form.io, which does not know the action. See [Connecting the Enterprise portal](/developers/deployment#connecting-the-enterprise-portal). |
 | Action Logs show no task runs | The UAG has no usable database, the stage is not connected to the UAG, or you use the new portal, which reads Action Logs from its own API server. |
@@ -170,6 +176,6 @@ More on [Chat widget](/developers/chat#troubleshooting).
 Run one of the samples to confirm the environment itself is sound, then compare its configuration with yours:
 
 - [Quickstart](/developers/quickstart) for a minimal stack.
-- The [conversation form](https://github.com/formio/uag/tree/main/demo), [workflow](https://github.com/formio/uag/tree/main/demo) and [custom module](https://github.com/formio/uag/tree/main/demo/samples/custom-module) samples for each pattern.
+- The [demo stack](https://github.com/formio/uag/tree/v2.0.0-rc.5/demo), with conversation forms and workflows, and the [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.5/demo/samples/custom-module).
 
-To report a bug, include the UAG version, the `X-Request-Id` of a failing request and the matching log lines. Report security issues privately; see [Security](/developers/security#reporting-a-vulnerability).
+To report a bug, include the `@formio/uag` version from `/status`, the `X-Request-Id` of a failing request and the matching log lines. Report security issues privately; see [Security](/developers/security#reporting-a-vulnerability).

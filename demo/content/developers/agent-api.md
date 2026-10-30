@@ -51,6 +51,8 @@ A form's operations take the same credentials as the form's submissions, so an a
 
 `GET /agent/capabilities` takes a UAG bearer token or a server key.
 
+The examples on this page send a user's token as `$FORMIO_TOKEN`: the `x-jwt-token` response header of a Form.io login (`POST {project}/user/login`). From a server, send `-H "x-admin-key: $ADMIN_KEY"` (Open Source) or `-H "x-token: $PROJECT_KEY"` instead.
+
 Every response, refusals included, carries an `X-Request-Id` header (send your own `X-Request-Id` to set it), and the same id is in every JSON body as `requestId`. Search the UAG logs for it when a request fails. Browsers can read the header: it is in the CORS exposed headers. Every error, whatever refused the request, has one shape; see [Errors](#errors).
 
 ## Common request fields
@@ -406,7 +408,7 @@ Every error from a form's agent operations and `/agent/capabilities` is JSON in 
 
 | Status | `code` | Cause |
 |---|---|---|
-| `400` | `invalid_request` | An unknown task (the message lists the form's tasks); a form with no tasks; extract with no `text` for a task with no input; `persona` with no `task`; `submissionId` sent to decide; a task whose `uagTools` names a tool that may write or does not exist (generate); a body that is not JSON; a chat turn whose `messages` are missing, too many, too long, malformed or do not end with the person's, or whose `data` is not an object. |
+| `400` | `invalid_request` | An unknown task (the message lists the form's tasks); a form with no tasks; extract with no `text` for a task with no input; `persona` with no `task`; `submissionId` sent to decide; a task whose `uagTools` names a tool that may write or does not exist (generate); a body that is not JSON; a chat turn whose `messages` are missing, too many, too long, malformed or do not end with the person's, whose `data` is not an object, or whose `locked` is not a list of at most 500 paths. |
 | `401` | `unauthorized` | No valid credential: an invalid or expired `x-jwt-token`, `x-remote-token` or bearer token; a wrong server key, or one sent with an `Origin` or `Sec-Fetch-Site` header; a scoped token; a portal team member whose permission does not allow writes. |
 | `401` | `sign_in_required` | No credential, on a form that does not allow anonymous use (`uagAnonymous`, and anonymous limits not `0`). |
 | `403` | `license_required` | Agentic Formflow is not licensed. The license is checked before the form's tasks are read, so an unlicensed deployment answers it for `extract`, `decide` and `generate` on every form, tagged `uag` or not. Chat never needs a license. |

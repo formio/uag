@@ -9,6 +9,8 @@ import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 
 const here = path.dirname(new URL(import.meta.url).pathname);
+// The site's version is the UAG release it ships with (set by "Update versions.").
+const version = JSON.parse(fs.readFileSync(path.join(here, '..', 'package.json'), 'utf8')).version;
 
 function int(value, fallback) {
     const parsed = parseInt(value ?? '', 10);
@@ -160,6 +162,10 @@ export function readConfig(env = process.env) {
             contactForm: env.CONTACT_FORM_URL || 'https://formio.form.io/contact',
             portal: env.PORTAL_URL || 'https://portal.form.io',
             github: env.GITHUB_URL || 'https://github.com/formio/uag',
+            // Links into the repository's files point at this release's tag, so they
+            // resolve before the release reaches the default branch.
+            source: `${env.GITHUB_URL || 'https://github.com/formio/uag'}/tree/v${version}`,
+            sourceFile: `${env.GITHUB_URL || 'https://github.com/formio/uag'}/blob/v${version}`,
             // The Agentic Coding Plugin (skills and the Form.io MCP server).
             plugin: env.PLUGIN_URL || 'https://github.com/formio/ai',
             formio: env.FORMIO_SITE_URL || 'https://form.io',
@@ -172,6 +178,6 @@ export function readConfig(env = process.env) {
         root: path.resolve(here, '..'),
         // Added to the URLs of the site's scripts and stylesheets (?v=), so a new
         // release's are fetched at once while each stays cached between releases.
-        assetVersion: env.DEMO_ASSET_VERSION || JSON.parse(fs.readFileSync(path.resolve(here, '../package.json'), 'utf8')).version,
+        assetVersion: env.DEMO_ASSET_VERSION || version,
     };
 }

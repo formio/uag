@@ -49,13 +49,13 @@ The `formio/uag` image starts with the module in `/app/module`, which by default
 ```yaml
 services:
   formio-uag:
-    image: formio/uag
+    image: formio/uag:rc
     volumes:
       - ./module:/app/module
 ```
 
 ```bash
-docker run -v "$PWD/module:/app/module" -e PROJECT=... formio/uag
+docker run -v "$PWD/module:/app/module" -e PROJECT=... formio/uag:rc
 ```
 
 A mounted module runs inside the UAG's own installation in `/app`, so `require()` finds the UAG's dependencies, such as `zod` and `lodash`, from `/app/node_modules`. It cannot `require('@formio/uag')` by name: the image is that package. The examples on this page therefore spell out annotations as plain objects rather than importing the `reads()` preset. A module that needs its own dependencies can bring them in its own `node_modules` folder.
@@ -72,9 +72,11 @@ UAG_MODULE=./module npx uag
 
 ```js
 const { UAGServer } = require('@formio/uag');
+
+// Inside an async main(), as in the Node.js API examples.
 const server = new UAGServer();
 server.use(require('./module'));
-app.use(await server.router());
+app.use(await server.router());   // app: your Express application
 ```
 
 Call `use()` before `router()`. Several modules can be used; their `config` objects are merged key by key, later modules winning. See [Where a value comes from](/developers/node-api#where-a-value-comes-from) for how arrays such as `tools` merge.
@@ -126,7 +128,7 @@ interface ToolAnnotations {
 }
 ```
 
-A tool without a `name` is skipped. Names must be unique: a custom tool with a built-in tool's name makes the MCP server fail to build, and every `/mcp` request with it. The built-in names are listed under [Overriding built-in tools](#overriding-built-in-tools).
+A tool without a `name` is skipped. Names must be unique: a custom tool with a built-in tool's name stops startup, with `router()` rejecting `Tool <name> is already registered`. The built-in names are listed under [Overriding built-in tools](#overriding-built-in-tools).
 
 ### The input schema
 
@@ -218,7 +220,7 @@ toolOverrides: { fetch_external_data: { name: '' } }
 
 Every built-in tool answers the model with a rendered [Lodash template](https://lodash.com/docs/4.17.15#template). Templates are Markdown with `<%= value %>` (insert), `<%- value %>` (insert, HTML-escaped) and `<% code %>` (JavaScript, for loops and conditions); `_` is Lodash inside a template.
 
-`config.responseTemplates` maps template names to template source. A name that matches a built-in template replaces it; any other name adds a template your tools can render with `project.mcpResponse(name, data)`. The built-in templates are the `.md` files in [`src/templates`](https://github.com/formio/uag/blob/main/src/templates), one per name.
+`config.responseTemplates` maps template names to template source. A name that matches a built-in template replaces it; any other name adds a template your tools can render with `project.mcpResponse(name, data)`. The built-in templates are the `.md` files in [`src/templates`](https://github.com/formio/uag/tree/v2.0.0-rc.5/src/templates), one per name.
 
 ```js
 const fs = require('fs');
@@ -232,7 +234,7 @@ responseTemplates: {
 }
 ```
 
-To change a built-in template, copy its file from `src/templates` and edit it. The data it receives is whatever its tool passes; read the tool in [`src/tools`](https://github.com/formio/uag/blob/main/src/tools) for the exact shape. For example, `get_forms` renders `getAvailableForms` with:
+To change a built-in template, copy its file from `src/templates` and edit it. The data it receives is whatever its tool passes; read the tool in [`src/tools`](https://github.com/formio/uag/tree/v2.0.0-rc.5/src/tools) for the exact shape. For example, `get_forms` renders `getAvailableForms` with:
 
 ```js
 {
@@ -252,6 +254,7 @@ To change a built-in template, copy its file from `src/templates` and edit it. T
 | `submissionsFound`, `noSubmissionsFound`, `submissionCount`, `submissionSearchError`, `submissionPartialIdAmbiguous`, `submissionPartialIdNotFound` | `find_submissions` |
 | `submissionUpdated`, `submissionUpdateError`, `submissionNotFound`, `submitValidationError`, `collectedData` | `submission_update` |
 | `agentProcessData`, `fieldList`, `fieldValues`, `submissionNotFound`, `uagComponentNotFound` | `agent_provide` |
+| `submissionNotFound` | `agent_decide` |
 | `fetchExternalData`, `fetchExternalDataError`, `formData`, `fieldValidationErrors` | `fetch_external_data` |
 | `formNotFound` | Most tools, when `form_name` names no form. |
 
@@ -302,7 +305,7 @@ interface Action {
 request reaches the form's route -> before actions, highest priority first -> the forward to Form.io* -> after actions -> response
 ```
 
-1. **Building.** When a form's submission chain is built, `executor` is called once for each action instance on the form, for each handler and method it is configured for. This happens at startup, and again on the next use after a `PROJECT_TTL` refresh brings a changed project. Do slow work here: read settings, create clients, compile patterns.
+1. **Building.** When a form's submission chain is built, `executor` is called for each action instance on the form, for each handler and method it is configured for. A form has two chains, built separately: its routes', at startup, and the one `form.submit()` uses (the MCP tools, for example), on first use. Both are built again after a `PROJECT_TTL` refresh brings a changed project. Do slow work here: read settings, create clients, compile patterns.
 2. **Ordering.** For one request, the matching instances run in two groups: `before` instances, then the operation itself, then `after` instances. Within a group they run by `priority`, highest first. For a create or an update, the operation is the forward to Form.io, a fixed step after every `before` instance, so a `before` action's changes always reach Form.io, which validates and stores them and runs its own actions on them.
 3. **Conditions.** Before each run, the instance's condition is checked: a field compared with a value, or custom JavaScript or JSONLogic. When it does not hold, the action is skipped.
 4. **Running.** The middleware gets the Express request and response:
@@ -380,7 +383,7 @@ In a portal stage connected to the UAG, a form's list of available actions is Fo
 | `before:access:<op>` | First, before the caller's access to the form is checked. Its middleware may set `req.forwardAuth`: an `AuthRequest` the submission is checked and forwarded to Form.io as instead of the caller. `req.auth` stays the caller for everything else, actions included. "Agent: Run task" uses it to create a submission on a user's behalf with an agent role. |
 | `before:submission`, `before:submission:<op>`, `before:<formName>:<op>` | After the access check (on an update, once the stored submission is loaded into `req.submission`, before the request's data replaces it), and before the `before` actions. `<op>` is `create`, `read`, `update`, `delete` or `index`. |
 | `after:<formName>:<op>`, `after:submission:<op>`, `after:submission` | After the response is prepared. |
-| `form:action`, `<handler>:form:action`, `<handler>:form:action:<method>`, `<handler>:form:<actionName>:<method>`, `<handler>:<formName>:<actionName>:<method>` | Just before each matching action instance. |
+| `form:action`, `<handler>:form:action`, `<handler>:form:action:<method>`, `<handler>:form:<actionName>:<method>`, `<handler>:<formName>:<actionName>:<method>` | At the start of the handler group (`before` or `after`) that has a matching action instance: all of the group's action hook middleware runs first, then its actions by priority. |
 
 ```js
 module.exports = {
@@ -410,11 +413,11 @@ module.exports = {
 };
 ```
 
-The `AUTHORIZE_HTML` environment variable does the same with the HTML itself as its value.
+The `AUTHORIZE_HTML` environment variable does the same with the HTML itself as its value, read once at startup. When both are set, `authAppHtml` wins.
 
 A replacement page must:
 
-1. Load `config.js` (relative to `/auth/authorize`, so `/auth/config.js`). It sets `window.authConfig = { loginForm, authEndpoint: '/auth/authorize' }`.
+1. Load `config.js` (relative to `/auth/authorize`, so `/auth/config.js`). It sets `window.authConfig = { loginForm, authEndpoint: 'authorize' }`. The endpoint is relative to the page, so it also works when the UAG is mounted under a path: post to `authConfig.authEndpoint` as given rather than to a fixed `/auth/authorize`.
 2. Sign the user in to Form.io, for example by rendering `authConfig.loginForm` with formio.js, and get their Form.io token (`Formio.getToken()`).
 3. POST JSON to `authConfig.authEndpoint` with the OAuth parameters from the page's query string and the token:
 
@@ -427,7 +430,7 @@ A replacement page must:
    ```
 4. Follow the `redirect` URL in the response: `{ "redirect": "<redirect_uri>?code=…&state=…" }`.
 
-The UAG answers `400` when `jwt` or `code_challenge` is missing or the `redirect_uri` is not allowed, and `401` when the Form.io project does not confirm the token. The [custom module example's `authorize.html`](https://github.com/formio/uag/blob/main/demo/samples/custom-module/module/authorize.html) is a complete page to start from: a Bootstrap layout around the same login flow.
+The UAG answers `400` when `jwt` or `code_challenge` is missing or the `redirect_uri` is not allowed, and `401` when the Form.io project does not confirm the token. The [custom module example's `authorize.html`](https://github.com/formio/uag/blob/v2.0.0-rc.5/demo/samples/custom-module/module/authorize.html) is a complete page to start from: a Bootstrap layout around the same login flow.
 
 The example module loads its `authorize.html` exactly this way, with `auth: { authAppHtml: fs.readFileSync(path.join(__dirname, 'authorize.html'), 'utf8') }`.
 
@@ -710,8 +713,8 @@ module.exports = {
     },
 
     /**
-     * Runs once per form, handler and method when the form's handlers are
-     * built, not per request: prepare everything here.
+     * Runs when the form's handlers are built (per chain, handler and
+     * method), not per request: prepare everything here.
      */
     async executor(form, action, handler, method) {
         const settings = action.settings || {};
@@ -768,7 +771,7 @@ services:
       ADMIN_KEY: CHANGEME
 
   formio-uag:
-    image: formio/uag
+    image: formio/uag:rc
     restart: always
     depends_on:
       - formio

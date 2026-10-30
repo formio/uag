@@ -29,7 +29,7 @@ UAG -> Form.io: the submission, after Run task
 
 ## Get it
 
-`npm install @formio/uag-js` (2.x). It has no dependencies, and works with formio.js 5 (`@formio/js` 5.x). It is an ES module, a CommonJS module, and the browser global `FormioUAG`.
+`npm install @formio/uag-js@rc` (2.x; `@rc` is the 2.0 release candidate). It has no dependencies, and works with formio.js 5 (`@formio/js` 5.x). It is an ES module, a CommonJS module, and the browser global `FormioUAG`.
 
 | File | What it is |
 |---|---|
@@ -61,10 +61,11 @@ Registering also adds the `chat` display and `Formio.createChat` (also exported 
 Or with script tags:
 
 ```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/uag-js@2.0.0/uag-js.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/uag-js@rc/uag-js.css">
 <script src="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@formio/uag-js@2.0.0/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@formio/uag-js@rc/index.js"></script>
 <script>
   Formio.use(FormioUAG.UAG('https://uag.example.com'));
 </script>
@@ -150,6 +151,7 @@ When the trigger fires, Agent Input sends the form's current data, and the UAG r
 UAG.attach(form: Webform | Wizard, options?: {
     task?: string;
     trigger?: 'blur' | 'pause' | 'next' | 'button';
+    uagUrl?: string;    // the UAG's URL, when not the one given to UAG()
     formUrl?: string;   // where the form's agent operations are; default: the form on the UAG
     pauseMs?: number;
     nextTimeoutMs?: number;
@@ -207,7 +209,7 @@ Content-Type: application/json
 Accept: text/event-stream
 x-jwt-token: <the user's Form.io token>
 
-{ "data": { "lossDescription": "Yesterday a pickup rear-ended my Civic…" } }
+{ "task": "triage", "data": { "lossDescription": "Yesterday a pickup rear-ended my Civic…" } }
 ```
 
 The UAG answers with Server-Sent Events: one `result` event per engine group as soon as it finishes (decisions first, since decision engines answer in milliseconds), an `error` event for a group whose engines all failed, then a `done` event with the full response. A failure that ends the request part way is an `error` event without a `kind`, and no `done`. Agent Input shows each `error` event at the input and passes it to `onError`.
@@ -300,7 +302,7 @@ Why a key must stay on the server:
 - A key runs as administrator: any form tagged `uag`, any task, and model calls billed to you. The relay decides which form and task the browser may use.
 - Server-to-server requests from your backend carry no `Origin`, so the UAG accepts the key there. Do not forward the browser's `Origin`, cookies or other headers.
 
-The relay below serves the page and the form definition, and relays extraction for one form and task, streaming the UAG's response back as it arrives. It is adapted from the [Agentic Formflow demo's back end](https://github.com/formio/uag/blob/main/demo/server/formflow.mjs).
+The relay below serves the page and the form definition, and relays extraction for one form and task, streaming the UAG's response back as it arrives. It is adapted from the [Agentic Formflow demo's back end](https://github.com/formio/uag/blob/v2.0.0-rc.5/demo/server/formflow.mjs), and needs Node.js 20.11 or later.
 
 ```js
 // server.mjs: node server.mjs
@@ -360,7 +362,7 @@ app.listen(PORT, () => console.log(`Claim intake at http://localhost:${PORT}`));
 ```
 
 ```bash
-npm install express @formio/uag-js
+npm install express @formio/uag-js@rc
 ```
 
 `public/index.html`, served by the relay above. It renders the `claim` wizard, attaches Agent Input with the `next` trigger, pointed at the relay, and shows what the agent is doing in a status line.

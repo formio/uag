@@ -39,7 +39,7 @@ Use it when model credentials and egress to model providers must be isolated fro
 ```yaml
 services:
   formio-uag:
-    image: formio/uag:2
+    image: formio/uag:rc
     environment:
       UAG_ENGINES: jev:remote,claude:remote
       UAG_ENGINE_JEV_URL: http://uag-engines:3300
@@ -53,7 +53,7 @@ services:
         condition: service_healthy
 
   uag-engines:
-    image: formio/uag-engines:2
+    image: formio/uag-engines:rc
     environment:
       UAG_ENGINES: jev,claude
       TYPESAFE_API_KEY: ${TYPESAFE_API_KEY}
@@ -73,7 +73,7 @@ On the UAG, `<name>:remote` is an instance hosted on an engine server. By defaul
 The image runs as the `node` user, exposes port 3300, and has a health check that calls `/health` with the key (every route requires it). Without Docker:
 
 ```bash
-npm install @formio/uag-engines @formio/uag-claude
+npm install @formio/uag-engines@rc @formio/uag-claude@rc
 UAG_ENGINES=claude CLAUDE_API_KEY=... UAG_ENGINE_SERVER_KEY=... \
 UAG_SERVER=http://formio-uag:3200 npx uag-engines
 ```
@@ -146,7 +146,7 @@ The id travels with the run:
 1. The UAG's `remote` engine sends it as `X-Request-Id` on each `decide` and `extract` call it makes for that request.
 2. The engine server sends it on with its research requests to the UAG's `/mcp`, and puts it in each failure's log line: `[uag-engines] [<id>] POST /v1/engines/claude/extract failed: ...` (with `DEBUG=formio:uag:engine-server`, the stack follows under the same id).
 
-A logging proxy in front of both, such as the demo site's [flow proxy](https://github.com/formio/uag/blob/main/demo/flow/proxy.mjs), can then group the request, every engine call and every research call of one run.
+A logging proxy in front of both, such as the demo site's [flow proxy](https://github.com/formio/uag/blob/v2.0.0-rc.5/demo/flow/proxy.mjs), can then group the request, every engine call and every research call of one run.
 
 The header is optional on every leg, and the protocol version does not change with it. Only an id of 1 to 128 letters, digits, `.`, `_`, `:` or `-` is accepted or passed on; anything else is dropped (the UAG generates its own instead). An "Agent: Run task" run carries the `X-Request-Id` of the submission request that started it, when that request sent one, and so does every run its save chains to. Engine calls with no such request behind them, such as a Run task on a save made through an MCP tool, carry none.
 
@@ -326,17 +326,24 @@ On the UAG side, a call that cannot reach the engine server fails with "The engi
 ```js
 const { createEngineServer } = require('@formio/uag-engines');
 
-const { app, engines, uagServer } = await createEngineServer({
-    env: process.env,                 // UAG_ENGINES, UAG_ENGINE_SERVER_KEY, UAG_SERVER, UAG_ENGINE_PATH
-    types: { keywords: require('uag-engine-keywords') },   // types resolved before packages
+async function main() {
+    const { app } = await createEngineServer({
+        env: process.env,                 // UAG_ENGINES, UAG_ENGINE_SERVER_KEY, UAG_SERVER, UAG_ENGINE_PATH
+        types: { keywords: require('uag-engine-keywords') },   // types resolved before packages
+    });
+    app.listen(3300, '10.0.0.5');
+}
+
+main().catch((err) => {
+    console.error(err.message);
+    process.exit(1);
 });
-app.listen(3300, '10.0.0.5');
 ```
 
 | Export | What it is |
 |---|---|
 | `createEngineServer({ env?, config?, types?, root?, connect? })` | Loads the engines and builds the app. Throws `EngineServerConfigError` for a missing or short key, a bad `UAG_SERVER`, or no engines. |
-| `engineServerApp({ engines, key, uagServer, connect? })` | The app for engines you already loaded. `connect(url, token, requestId)` is the MCP client factory, for tests. |
+| `engineServerApp({ engines, key, uagServer, connect? })` | The app for engines you already loaded: `engines` is what `loadEngines` returns, `[{ engine, type, package?, version? }]`, not bare engines. `connect(url, token, requestId)` is the MCP client factory, for tests. |
 | `keyMatches(presented, key)` | The constant-time key check. |
 | `describe(engine)` | An engine as `GET /v1/engines` lists it. |
 | `MIN_KEY_LENGTH` | `32`. |
@@ -344,7 +351,7 @@ app.listen(3300, '10.0.0.5');
 ## Adding engines to the image
 
 ```dockerfile
-FROM formio/uag-engines:2
+FROM formio/uag-engines:rc
 # The image runs as "node", which cannot create /engines; install as root.
 USER root
 RUN npm install --prefix /engines uag-engine-acme

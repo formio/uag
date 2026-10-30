@@ -36,13 +36,13 @@ services:
     depends_on:
       - mongo
     environment:
-      DEBUG: formio.*
+      DEBUG: formio:*
       NODE_CONFIG: '{"mongo": "mongodb://mongo:27017/formio-oss", "jwt": {"secret": "CHANGEME"}, "mongoSecret": "CHANGEME"}'
       ROOT_EMAIL: admin@example.com
       ROOT_PASSWORD: CHANGEME
       ADMIN_KEY: CHANGEME
   formio-uag:
-    image: formio/uag
+    image: formio/uag:rc
     restart: always
     links:
       - formio
@@ -52,7 +52,7 @@ services:
       - ./module:/app/module
     environment:
       PORT: 3200
-      DEBUG: formio.*
+      DEBUG: formio:*
       PROJECT: http://formio.local:3001
       ADMIN_KEY: CHANGEME
       JWT_SECRET: CHANGEME

@@ -50,7 +50,7 @@
           <div class="example-body">
             <span class="num" style="font-size:12px;font-weight:700;color:var(--green-dark);letter-spacing:.08em">02 · AGENTIC WORKFLOW</span>
             <h2 style="font-size:1.8rem;margin:0">Hand off the review</h2>
-            <div class="meta"><span class="tag">Open Source or Enterprise</span><span class="tag">Agent: Run task</span><span class="tag">Claude</span></div>
+            <div class="meta"><span class="tag">Open Source or Enterprise, licensed</span><span class="tag">Agent: Run task</span><span class="tag">Claude</span></div>
             <p>A college application triggers an admissions agent that reviews it against criteria defined in the form and records its decision. On the scholarship track, its save triggers a finance agent. Change the criteria in the form builder and the next review follows it.</p>
             <p class="link-arrow">Try the demo</p>
           </div>
@@ -88,14 +88,14 @@
       <div class="container split">
         <div>
           <h2>Watch every agent call.</h2>
-          <p>Every demo has a live view of its own runs: the call into the UAG, what the UAG asked each engine, the read-only research an engine did through MCP, and the validated save. One request id ties every leg together, all the way through the engine server.</p>
+          <p>Every demo has a live view of its own runs: the call into the UAG and the validated save. When the engines run on an engine server (<code>docker-compose.split.yml</code>), it also shows what the UAG asked each engine and the read-only research an engine did through MCP, with one request id tying every leg together.</p>
           <ul class="checks">
             <li>You see only your own runs.</li>
-            <li>Each run shows the submission or Agent API call, the engine call, any research and the save.</li>
+            <li>Each run shows the submission or Agent API call and the save, and, with an engine server, the engine call and any research.</li>
             <li>Click a step to see what was sent and what came back.</li>
           </ul>
         </div>
-        <figure class="figure frame" style="border-color:#2c3540"><img src="/images/flow-viewer.png" alt="The agentic workflow demo beside its flow viewer: the application saved through the UAG, then the engine calls of the admissions and finance tasks, each with the fields it answered." loading="lazy"></figure>
+        <figure class="figure frame" style="border-color:#2c3540"><a class="image-link" href="/images/flow-viewer.png" target="_blank" rel="noopener"><img src="/images/flow-viewer.png" alt="The agentic workflow demo beside its flow viewer: the application saved through the UAG, then the engine calls of the admissions and finance tasks, each with the fields it answered." loading="lazy"></a></figure>
       </div>
     </section>
 
@@ -105,6 +105,6 @@
           <h2>Every demo is open source.</h2>
           <p>The whole site, with its forms, demo back ends and flow viewer, is one Docker Compose stack in the UAG repository. The Agentic Coding Plugin has a prompt that builds each demo in your own project.</p>
         </div>
-        <div style="text-align:center"><a class="btn btn-primary" href="{{links.github}}/tree/main/demo" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="/images/icons.svg#github"/></svg>View the demo source</a> <a class="btn btn-outline" href="{{links.plugin}}/tree/main/examples/agents" target="_blank" rel="noopener">Build them with your coding agent</a></div>
+        <div class="hero-actions" style="justify-content:center"><a class="btn btn-primary" href="{{links.source}}/demo" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="/images/icons.svg#github"/></svg>View the demo source</a><a class="btn btn-outline" href="{{links.plugin}}/tree/main/examples/agents" target="_blank" rel="noopener">Build them with your coding agent</a></div>
       </div>
     </section>

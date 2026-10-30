@@ -151,7 +151,7 @@ describe('Layer 3: the Getting Started guides, as documented', function () {
         before(async function () {
             const [composeFile] = await documented('panel-oss');
             stack = await composeProject('uag-e2e-getting-started-oss', edit(composeFile, [
-                ['image: formio/uag\n', `image: ${UAG_IMAGE}\n`],
+                ['image: formio/uag:rc\n', `image: ${UAG_IMAGE}\n`],
                 ['"3000:3001"', '"3441:3001"'],
                 ['"3200:3200"', '"3442:3200"'],
             ]));
@@ -260,7 +260,7 @@ describe('Layer 3: the Getting Started guides, as documented', function () {
                 ['https://yourproject.form.io', projectUrl],
                 ['PROJECT_KEY=your-project-api-key', 'PROJECT_KEY="$PROJECT_KEY"'],
                 ['CLAUDE_API_KEY=your-anthropic-key', 'CLAUDE_API_KEY="$CLAUDE_API_KEY"'],
-                ['\n  formio/uag', `\n  ${UAG_IMAGE}`],
+                ['\n  formio/uag:rc', `\n  ${UAG_IMAGE}`],
             ]), env());
             await waitUntil(async () => {
                 const response = await fetch(`${UAG}/auth/token`, {
@@ -331,7 +331,7 @@ describe('Layer 3: the Getting Started guides, as documented', function () {
                 '      LICENSE_KEY: ${LICENSE_KEY}',
                 '      LICENSE_REMOTE: ${LICENSE_REMOTE}',
                 edit(service, [
-                    ['image: formio/uag\n', `image: ${UAG_IMAGE}\n    ports: ["3445:3200"]\n`],
+                    ['image: formio/uag:rc\n', `image: ${UAG_IMAGE}\n    ports: ["3445:3200"]\n`],
                     ['PROJECT: http://formio-enterprise:3000/yourproject', 'PROJECT: http://formio.e2e.test:3000/project/${E2E_PROJECT_ID}'],
                 ]),
                 '',

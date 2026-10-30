@@ -22,9 +22,9 @@ This page covers the `UAGServer` class and its configuration, modules, the proje
 ## Install
 
 ```bash
-npm install @formio/uag express dotenv
+npm install @formio/uag@rc express dotenv
 # Engines are separate packages. Install the ones you will enable:
-npm install @formio/uag-jev @formio/uag-claude
+npm install @formio/uag-jev@rc @formio/uag-claude@rc
 ```
 
 `isolated-vm` compiles a native module on install, so build images need `make`, `python3` and `g++` (on Alpine: `apk add make python3 g++`).
@@ -72,6 +72,7 @@ The `uag` command and the Docker image read `TRUST_PROXY` and set Express's `tru
 ```js
 const { UAGServer, trustProxySetting } = require('@formio/uag');
 
+// Inside main(), as in the server above.
 const app = express();
 const trust = trustProxySetting(process.env.TRUST_PROXY);
 if (trust !== undefined) app.set('trust proxy', trust);
@@ -117,7 +118,7 @@ main().catch((err) => {
 });
 ```
 
-The UAG's router ends with the project routes and an admin passthrough: a request with an admin credential (`x-admin-key`, `x-token`) for a path the UAG does not serve is forwarded to the Form.io server. Other requests it does not serve fall through to the routes after it. Register your own routes before `app.use(await server.router())` anyway, so admin requests reach them too, or mount the UAG under a path.
+The UAG's router mounts the project routes and an admin passthrough, then `/mcp` after them: a request with an admin credential (`x-admin-key`, `x-token`) for a path the UAG does not serve is forwarded to the Form.io server. Other requests it does not serve fall through to the routes after it. Register your own routes before `app.use(await server.router())` anyway, so admin requests reach them too, or mount the UAG under a path.
 
 ## What router() does
 
@@ -145,7 +146,7 @@ check the database -> connect to PROJECT, with retries -> sync the module's temp
 | `GET /action`, `GET /action/:id` | `ActionLogRouter` | Action Logs for a portal stage connected to the UAG: Form.io's entries with the UAG's run records. Without the database, passed through to Form.io. |
 | `GET /status` | Server | The `status` object (package versions by default). |
 | Form and submission paths, admin passthrough | Project router | Form.io's API for the project's forms, and admin requests forwarded to the Form.io server. |
-| `POST {form}/agent/extract`, `{form}/agent/decide`, `{form}/agent/generate` | `FormAgentRouter`, on each form's routes | A form's agent operations, under the form's path or `form/{formId}`, with the form's credentials (`agentCredentials`). See [Agent API](/developers/agent-api#urls). |
+| `POST {form}/agent/extract`, `{form}/agent/decide`, `{form}/agent/generate`, `{form}/agent/chat` | `FormAgentRouter`, on each form's routes | A form's agent operations and its [chat](/developers/chat), under the form's path or `form/{formId}`, with the form's credentials (`agentCredentials`), or anonymously where the form allows it. See [Agent API](/developers/agent-api#urls). |
 
 ## new UAGServer(config)
 
@@ -161,7 +162,7 @@ class UAGServer extends Server {
 }
 ```
 
-The constructor checks that the `@formio/appserver-core` that `@formio/appserver` loads, the UAG's only copy of it, is 2.25.1 or later, and throws if not (see [assertSingleCore](#public-exports)). It then fills every option you leave out from the environment, so `new UAGServer()` with no arguments configures itself the way the Docker image does.
+The constructor checks that the `@formio/appserver-core` that `@formio/appserver` loads, the UAG's only copy of it, is 2.25.2 or later, and throws if not (see [assertSingleCore](#public-exports)). It then fills every option you leave out from the environment, so `new UAGServer()` with no arguments configures itself the way the Docker image does.
 
 `UAGConfig` extends `ServerConfig`, the Form.io server options, with the UAG's own.
 
@@ -196,7 +197,7 @@ The constructor checks that the `@formio/appserver-core` that `@formio/appserver
 | `template` | `ProjectTemplate` | none | The project template the module needs the project to have. Usually set by a module. |
 | `retries` | `number` | `PROJECT_RETRIES`, else `5` | Attempts to load the project at startup. Also used by `remote` engines to describe themselves. |
 | `retryDelay` | `number` (ms) | `PROJECT_RETRY_DELAY`, else `5000` | First delay between attempts, doubled each time. |
-| `cors` | `CorsOptions \| boolean \| string` | `CORS`, else `'true'` | `true` allows every origin, `false` turns CORS off, any other string is the allowed origin, an object is passed to the `cors` package. |
+| `cors` | `CorsOptions \| boolean \| string` | `CORS`, else `'true'` | `true` allows every origin, `false` turns CORS off, any other string is an allowed origin (or several, separated by commas), an object is passed to the `cors` package. |
 | `maxBodySize` | `string` | `MAX_BODY_SIZE`, else `'16mb'` | The JSON body limit for the server's routes. The Agent API has its own limit of 5 MB. |
 | `cache` | `boolean` | `PROJECT_CACHE`, else `true` | With `db`, store each project load there and fall back to it when the project cannot be loaded. The UAG sets no `db`, so this has no effect unless you pass one. |
 | `db` | `DBConfig` | none | A database for the Form.io logic the UAG is built on. In the UAG, `MONGO` configures `database`, not `db`. |
@@ -228,9 +229,11 @@ For each option, the first of these wins:
 3. The environment variable in the tables above.
 4. The default.
 
-> **Warning:** `merge` combines arrays element by element. If two modules both set `config.tools`, the second module's first tool is merged into the first module's first tool. Combine tool lists yourself and pass one array:
+> **Warning:** `merge` combines arrays element by element. If two modules both set `config.tools`, the second module's first tool is merged into the first module's first tool. Use each module without its tools, then add the combined list once:
 >
 > ```js
+> server.use({ ...crm, config: { ...crm.config, tools: undefined } });
+> server.use({ ...billing, config: { ...billing.config, tools: undefined } });
 > server.use({ config: { tools: [...crm.config.tools, ...billing.config.tools] } });
 > ```
 
@@ -417,7 +420,7 @@ app.post('/internal/triage', express.json(), async (req, res) => {
 });
 ```
 
-The service applies the same license check, permissions, routing, validation and rate limits as the HTTP endpoints, and throws `Formflow.FormflowError` with an HTTP `status` (and `code`) on failure. Its methods are `extract`, `decide`, `generate` and `capabilities`, with the request bodies described in [Agent API](/developers/agent-api) plus `form`, the form's name (which the HTTP operations take from the URL), and `runTask(form, task, submission, auth, options)`, which runs a task on a submission as "Agent: Run task" does and returns the reconciled submission without saving it. `identity` decides who research tools and scoped tokens act as.
+The service applies the same license check, permissions, routing, validation and rate limits as the HTTP endpoints, and throws `Formflow.FormflowError` with an HTTP `status` (and `code`) on failure. Its methods are `extract`, `decide`, `generate` and `capabilities`, with the request bodies described in [Agent API](/developers/agent-api) plus `form`, the form's name (which the HTTP operations take from the URL), and `runTask(form, task, submission, auth, options)`, which runs a task on a submission as "Agent: Run task" does, without saving it. For `runTask`, `form` is the form object, not its name (`await project.formflowForm('claim')`), and the result is a `TaskRun`: the reconciled submission in `submission`, with `fields`, `written`, `cleared`, `refused`, `task`, `answer`, `results` and `failed`. `identity` decides who research tools and scoped tokens act as.
 
 ## Public exports
 
@@ -428,20 +431,20 @@ The service applies the same license check, permissions, routing, validation and
 | `UAGServer` | class | The server. |
 | `UAGModule` | type | `ServerModule & { config?: UAGConfig }`. |
 | `assertNodeSnapshotDisabled(execArgv?, nodeOptions?)` | function | Throws unless Node was started with `--no-node-snapshot` (in its arguments or `NODE_OPTIONS`). The constructor calls it. |
-| `assertSingleCore(version?)` | function | Throws unless the `@formio/appserver-core` that `@formio/appserver` loads is 2.25.1 or later. The constructor calls it. Fix it by upgrading `@formio/appserver`. |
+| `assertSingleCore(version?)` | function | Throws unless the `@formio/appserver-core` that `@formio/appserver` loads is 2.25.2 or later. The constructor calls it. Fix it by upgrading `@formio/appserver`. |
 | `UAGProjectInterface`, `UAGFormInterface` | classes | The project and form interfaces above. |
-| `UAGConfig`, `UAGForm`, `UAGTemplateConfig`, `UAGToolOverride`, `UAGEngineEntry`, `UAGRoutingConfig`, `UAGRateLimit`, `UAGAgentApiConfig` | types | Configuration types (`src/config.ts`). |
+| `UAGConfig`, `UAGForm`, `UAGTemplateConfig`, `UAGToolOverride`, `UAGEngineEntry`, `UAGRoutingConfig`, `UAGRateLimit`, `UAGAgentApiConfig`, `UAGAnonymousConfig`, `UAGChatConfig` | types | Configuration types (`src/config.ts`). |
 | `trustProxySetting(value)` | function | Parses a `TRUST_PROXY` value into Express's `trust proxy` setting, or `undefined` when it is empty. See [Behind a reverse proxy](#behind-a-reverse-proxy). |
 | `UAGTemplate`, `ResponseTemplate` | class, enum | The response template renderer, and the built-in template names. |
-| `UAGRouter(project)` | function | The `/mcp` router on its own. |
+| `UAGRouter(project)` | function | The bare MCP handler, with no authentication: tools then get no `extra.authInfo`. Mount it behind `project.authorizeRequest`, or use `project.uagRouter()`, which does. |
 | `ToolInfo`, `ToolAnnotations`, `ParentInfo`, `DataUpdate`, `SearchQuery` | types | Tool definition types. |
 | `reads(title)`, `creates(title)`, `overwrites(title)` | functions | Annotation presets for tools. |
 | `escapeSearchPattern(value)` | function | Escape a literal for a `__regex` query (handles `/`). |
-| `getTools(project)` and `getForms`, `getFormFields`, `getFieldInfo`, `collectData`, `confirmSubmission`, `submitCompletedForm`, `findSubmission`, `submissionUpdate`, `fetchExternalData`, `agentProvide`, `agentProvideData`, `agentDecide` | functions | The built-in tool factories: each takes the project and returns its `ToolInfo`. |
+| `getTools(project)` and `getForms`, `getFormFields`, `getFieldInfo`, `collectData`, `confirmSubmission`, `submitCompletedForm`, `findSubmission`, `submissionUpdate`, `fetchExternalData`, `agentProvide`, `agentDecide` | functions | The built-in tool factories: each takes the project and returns a promise of its `ToolInfo` (`await getForms(project)`); `getTools` resolves to all of them. |
 | `loadUAGEngines(config?, env?)` | function | Enable engines as `router()` does, returning an `EngineRegistry`. |
 | `BUILT_IN_ENGINES`, `RemoteEngine`, `StubDecisionEngine`, `StubAgentEngine`, `MIN_KEY_LENGTH`, `UAG_ROOT` | values | The built-in engine types, the shortest engine server key (32), and the UAG's install root, where engine packages are looked up first. |
 | `AgentRouter(project, authenticate)` | function | The router for `GET /agent/capabilities` on its own. |
-| `FormAgentRouter(project, credentials)`, `agentCredentials(project)` | functions | A form's agent operations (`agent/extract`, `agent/decide`, `agent/generate`), mounted on each form's routes, and the credential check they run behind. |
+| `FormAgentRouter(project, credentials)`, `agentCredentials(project)`, `agentNotFound(project)` | functions | A form's agent operations (`agent/extract`, `agent/decide`, `agent/generate`, `agent/chat`), mounted on each form's routes; the credential check they run behind; and the `404` for an agent operation of a form the project does not have. |
 | The Form.io server classes | various | `Server`, `ProjectInterface`, `FormInterface`, `AuthRequest`, `Action`, `ActionInfo`, `SubmissionRequest`, `SubmissionResponse`, `ServerConfig`, `Utils`, `Database`, the `Formflow` namespace and the rest of the Form.io logic the UAG is built on. |
 
 The package's types are in `lib/index.d.ts` (`"types": "lib/index.d.ts"`).

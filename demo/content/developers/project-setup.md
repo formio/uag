@@ -7,7 +7,7 @@ order: 35
 
 An agent that decides an application's outcome is only trustworthy if the applicant cannot decide it instead. This page sets up a Form.io Enterprise project so that the UAG's agents write the fields they own, users can submit but cannot write those fields, and administrators keep full control on Form.io.
 
-The UAG does not enforce this on its own. Form.io's role permissions do, and the UAG acts at Form.io with an **agent role** you create. Every request the UAG makes for a task carries either the credential of the caller who sent the submission or a token for the agent role. The UAG never puts its own project API key in place of either.
+The UAG does not enforce this on its own. Form.io's role permissions do, and the UAG acts at Form.io with an **agent role** you create. Every request the UAG makes for a task carries the credential of the caller who sent the submission, a token for the agent role, or a short-lived token the UAG signs for that user, with the roles they had when they submitted. The UAG never puts its own project API key in place of either.
 
 ## Two ways a task acts
 
@@ -17,7 +17,7 @@ An "Agent: Run task" action acts at Form.io in one of two ways, set by its **Age
 |---|---|---|
 | Saves the task's results as | The user who submitted, with their own token | The agent role, on the user's behalf |
 | Users must be allowed to | Create, read and update their own submissions (a run after the save loads the submission as the user) | Nothing beyond submitting through the UAG |
-| Keeps users off the agent's fields | Only for requests sent to the UAG | Everywhere, including requests sent straight to Form.io |
+| Keeps users off the agent's fields | Only for requests sent to the UAG | Everywhere, including requests sent straight to Form.io, once users have no create or update permission on the form (step 2) |
 | Runs after the save survive a UAG restart | No | Yes, with the UAG's database (`MONGO`) |
 | Needs `JWT_SECRET` shared with Form.io | No | Yes |
 
@@ -59,9 +59,9 @@ Administrators are unaffected: they edit submissions on Form.io as before, and t
 
 ## 3. Mark the fields the agent owns
 
-Give each field a task writes the property `uagAuthoritative: "true"`, alongside its `uag` task property. See [Form properties](/developers/form-properties).
+Give each field a task writes the property `uagAuthoritative: "true"`, alongside its `uag` task property. Set it on each field: on a panel or other container it is ignored. See [Form properties](/developers/form-properties).
 
-The UAG removes any value a client sends for these fields, on every request to the UAG, whatever the action's conditions or methods. On an update, the field keeps its stored value. Fields without `uagAuthoritative` stay editable, so a person can still correct a suggestion.
+Once the form has a Run task action for the field's task (step 4), the UAG removes any value a client sends for these fields, on every request to the UAG, whatever the action's conditions or methods. On an update, the field keeps its stored value. Fields without `uagAuthoritative` stay editable, so a person can still correct a suggestion.
 
 ## 4. Add "Agent: Run task"
 
@@ -94,7 +94,7 @@ When a submission arrives at the UAG, it decides how to create it from the form'
 
 ## Worked example: college admissions
 
-The [demo project](https://github.com/formio/uag/blob/main/demo/module/project.json) admits applicants with an `admissions` task and awards aid with a `finance` task. The demo site runs on Form.io's hosted service, so its actions name no agent role and act as the site; on a self-hosted Enterprise project, set it up with an agent role as follows.
+The [demo project](https://github.com/formio/uag/blob/v2.0.0-rc.5/demo/module/project.json) admits applicants with an `admissions` task and awards aid with a `finance` task. The demo site runs on Form.io's hosted service, so its actions name no agent role and act as the site; on a self-hosted Enterprise project, set it up with an agent role as follows.
 
 1. Roles: `Applicant` (signs in), `Agent` (no users), `Reviewer` (staff).
 2. The Application form grants `Agent` Create All, Read All and Update All; `Applicant` Read Own only; `Reviewer` Read All.
@@ -103,7 +103,7 @@ The [demo project](https://github.com/formio/uag/blob/main/demo/module/project.j
    - `admissions`, the whole task, after the save, on create;
    - `finance`, the whole task, after the save, on update, when `status` is `scholarshipEvaluation` and `awardLevel` is empty.
 
-An applicant submits to the UAG. The agent creates the application, owned by the applicant, and the applicant gets Form.io's response at once. In the background, the admissions task runs and the agent saves its decision as an update. That update starts the finance task. If the applicant posts to Form.io directly, Form.io refuses: their role may not create applications there.
+An applicant submits to the UAG. The agent creates the application, owned by the applicant, and the applicant gets Form.io's response at once. In the background, the admissions task runs and the agent saves its decision as an update. When admissions puts the applicant on the scholarship track, that update starts the finance task. If the applicant posts to Form.io directly, Form.io refuses: their role may not create applications there.
 
 ## Limitations
 

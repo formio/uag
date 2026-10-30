@@ -53,7 +53,7 @@ services:
       retries: 40
 
   formio-uag:
-    image: formio/uag
+    image: formio/uag:rc
     restart: always
     depends_on:
       formio:
@@ -80,7 +80,7 @@ docker compose up -d
 docker compose logs -f formio-uag
 ```
 
-When the UAG is ready it prints:
+When the UAG is ready it prints, among other lines:
 
 ```
 [formio-uag] Open Source edition. Agentic Formflow requires a license (LICENSE_KEY) that includes the UAG, or a project on Form.io's hosted service; MCP and conversation forms are unaffected.
@@ -93,7 +93,7 @@ Form.io is at http://localhost:3000 (log in as `admin@example.com` with `ROOT_PA
 
 ### 3. Give the agent a form
 
-Agents see only forms tagged `uag`. Create one with the admin key (or in the portal, under **Form Settings → Tags**):
+Agents see only forms tagged `uag`. Create one with the admin key (or in the portal, under **Settings → Tags**):
 
 ```bash
 curl -s -X POST http://localhost:3000/form \
@@ -125,7 +125,7 @@ If your forms already live on Form.io's hosted SaaS, run the UAG yourself and po
 
 1. **Create a project.** Sign in at https://portal.form.io and create a project, or open an existing one. Note its API endpoint, `https://<project>.form.io`.
 2. **Create an API key.** In the project, open **Project Settings → API Keys** and add a key. The UAG uses it as `PROJECT_KEY`. Treat it as a secret: it grants administrator access to the project.
-3. **Tag a form.** Open a form, add `uag` under **Form Settings → Tags**, and save.
+3. **Tag a form.** Open a form, add `uag` under **Settings → Tags**, and save.
 4. **Run the UAG.**
 
 ```bash
@@ -133,14 +133,14 @@ docker run -d --name formio-uag -p 3200:3200 \
   -e PROJECT="https://<project>.form.io" \
   -e PROJECT_KEY="<your API key>" \
   -e JWT_SECRET="<a long random string>" \
-  formio/uag
+  formio/uag:rc
 ```
 
 Hosted SaaS projects need no license: they run under Form.io's own license, as the Enterprise edition, and Agentic Formflow is allowed (`/agent/capabilities` reports `reason: "hosted"`). A license is needed only when you self-host Form.io Enterprise; see [Deployment](/developers/deployment#licensing).
 
-> **Note:** The exemption rests on the project's `https://*.form.io` certificate, so it is turned off by anything that weakens that proof: `NODE_TLS_REJECT_UNAUTHORIZED=0`, or extra certificate authorities (`NODE_EXTRA_CA_CERTS`, `NODE_USE_SYSTEM_CA`). It does not cover a database of the UAG's own (`MONGO`), which needs a license that includes the UAG on every edition.
+> **Note:** The exemption rests on the project's `https://*.form.io` certificate, so it is turned off by anything that weakens that proof: `NODE_TLS_REJECT_UNAUTHORIZED=0`, or extra certificate authorities (`NODE_EXTRA_CA_CERTS`, `NODE_USE_SYSTEM_CA`). It does not cover a database of the UAG's own (`MONGO`). The database needs a license that includes the UAG, unless the project and the database are both on development hosts (`localhost`, `*.local`); Compose service names such as `formio` and `mongo` are not, so without a license give both services a `*.local` network alias, or run them on `localhost`.
 
-In the commands below, a hosted project uses its own name in the `client_id` (`<project>-x-token`) and its API key as the secret.
+In the commands below, a hosted project uses its own name in the `client_id` (`<project>-x-token`) and its API key as the secret: set `PROJECT_KEY` instead of `ADMIN_KEY`, send `-H "x-token: $PROJECT_KEY"` where a command sends `x-admin-key`, and where a step runs `docker compose up -d`, remove the container (`docker rm -f formio-uag`) and run the `docker run` command again with the new `-e` settings.
 
 ## First calls
 
@@ -229,7 +229,8 @@ curl -s $UAG/agent/capabilities -H "x-admin-key: $ADMIN_KEY"
   "operations": {
     "extract": { "available": false, "engines": [] },
     "decide": { "available": false, "engines": [] },
-    "generate": { "available": false, "engines": [] }
+    "generate": { "available": false, "engines": [] },
+    "chat": { "available": false, "engines": [] }
   },
   "edition": "open-source",
   "formflow": { "licensed": false, "allowed": false, "reason": "unlicensed" },
@@ -261,7 +262,35 @@ A form's operations are under the form's URL on the UAG, as its submissions are:
 { "requestId": "b011c34d-9bda-447c-bb8d-9e53f8d362dc", "error": "The form \"supportRequest\" defines no tasks." }
 ```
 
-The form defines no task yet, so the UAG answers `400` and says so. Add a task (see [Concepts](/developers/concepts)) and call it again. Their answers are placeholders: to decide for real, enable a real engine such as `jev` or `claude` (see [Engines](/developers/engines)), which needs a `LICENSE_KEY` that includes the UAG, or a project on Form.io's hosted service.
+The form defines no task yet, so the UAG answers `400` and says so. Give it one: a criteria content component, and the `uag` property on the field the task decides (see [Concepts](/developers/concepts)). This replaces the form with the same fields plus a `triage` task that decides `urgency` (on a hosted project, add the same two properties in the form builder instead):
+
+```bash
+FORM_ID=$(curl -s http://localhost:3000/supportrequest -H "x-admin-key: $ADMIN_KEY" \
+  | node -pe 'JSON.parse(require("fs").readFileSync(0))._id')
+curl -s -X PUT http://localhost:3000/form/$FORM_ID \
+  -H "x-admin-key: $ADMIN_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "title": "Support Request",
+    "name": "supportRequest",
+    "path": "supportrequest",
+    "type": "form",
+    "tags": ["uag"],
+    "components": [
+      { "type": "textfield", "key": "fullName", "label": "Full name", "input": true, "validate": { "required": true } },
+      { "type": "email", "key": "email", "label": "Email", "input": true, "validate": { "required": true } },
+      { "type": "content", "key": "triageCriteria", "input": false,
+        "html": "<p>Decide how urgent the request is: high when the customer cannot work at all, otherwise low.</p>",
+        "properties": { "uag": "triage", "uagField": "criteria" } },
+      { "type": "radio", "key": "urgency", "label": "Urgency", "input": true,
+        "properties": { "uag": "triage" },
+        "values": [ { "label": "Low", "value": "low" }, { "label": "High", "value": "high" } ] },
+      { "type": "button", "key": "submit", "label": "Submit", "input": true, "action": "submit" }
+    ]
+  }'
+```
+
+Wait `PROJECT_TTL` seconds and run the `decide` call again: `urgency` now comes back with the stub's placeholder answer. To decide for real, enable a real engine such as `jev` or `claude` (see [Engines](/developers/engines)), which needs a `LICENSE_KEY` that includes the UAG, or a project on Form.io's hosted service.
 
 ## Next steps
 

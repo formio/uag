@@ -7,7 +7,7 @@ order: 50
 
 Claude can use your forms directly. Connected to the UAG, it lists the `uag`-tagged forms a user may use, asks for what each one needs, validates the answers against the form, and saves the submission, all as the user who signed in. Nothing about your forms is written into Claude: the form is the rulebook, read at the moment of use.
 
-This page connects two Claude clients, and shows how Form.io roles decide what the agent may do. It follows the [custom module sample](https://github.com/formio/uag/tree/main/demo/samples/custom-module), a Community Edition project with **Customer** and **Employee** resources where managers onboard employees and employees onboard customers. No license is needed.
+This page connects two Claude clients, and shows how Form.io roles decide what the agent may do. It follows the [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.5/demo/samples/custom-module), a Community Edition project with **Customer** and **Employee** resources where managers onboard employees and employees onboard customers. No license is needed.
 
 | Client | How it connects | What the UAG needs |
 |---|---|---|
@@ -23,9 +23,9 @@ Either way the user signs in through the UAG's OAuth (PKCE) flow, with the proje
 The sample runs Form.io Community Edition, MongoDB, the UAG, and nginx, which serves Form.io and the UAG on one port, `3000`. nginx sends `/mcp`, `/auth` and `/.well-known` to the UAG and everything else to Form.io, so one origin serves the forms, the login page and the MCP endpoint.
 
 ```bash
-git clone https://github.com/formio/uag.git
+git clone -b v2.0.0-rc.5 https://github.com/formio/uag.git
 cd uag/demo/samples/custom-module
-# Replace every CHANGEME in docker-compose.yml first.
+# In docker-compose.yml first: replace every CHANGEME (both ADMIN_KEY values must be the same).
 docker compose up -d
 ```
 
@@ -33,7 +33,7 @@ The UAG's settings in that file:
 
 ```yaml
   formio-uag:
-    image: formio/uag
+    image: formio/uag:rc            # the 2.0 release candidate
     volumes:
       - ./module:/app/module        # the module: its forms, roles, actions and templates
     environment:
@@ -54,7 +54,7 @@ At startup the UAG installs the module's template: the **Customer** and **Employ
 
 ### Create a manager and an employee
 
-Open http://localhost:3000, log in as `admin@example.com` with the password from the Compose file, open the **Employee** resource and use **Enter Data** to create two records:
+Open http://localhost:3000, log in as `admin@example.com` with the Compose file's `ROOT_PASSWORD`, open the **Employee** resource and use **Enter Data** to create two records:
 
 | First name | Last name | Email | Role | Password |
 |---|---|---|---|---|
@@ -177,12 +177,15 @@ Edit a resource in the portal (add a field, change an option, rewrite a descript
 
 ## Shaping the agent with a module
 
-The sample is a [module](/developers/modules): a folder mounted at `/app/module` that carries the project template, actions, response templates and tool overrides. This one overrides the `get_forms` description so Claude checks permissions before asking for fields:
+The sample is a [module](/developers/modules): a folder mounted at `/app/module` that carries the project template, actions, response templates and tool overrides. This one replaces the login page with its own (`auth.authAppHtml`), and overrides the `get_forms` description so Claude checks permissions before asking for fields:
 
 ```js
+const fs = require('fs');
+const path = require('path');
 module.exports = {
   config: {
     template: require('./project.json'),
+    auth: { authAppHtml: fs.readFileSync(path.join(__dirname, 'authorize.html'), 'utf8') },
     responseTemplates: require('./templates'),
     toolOverrides: {
       get_forms: {
@@ -194,14 +197,14 @@ module.exports = {
 };
 ```
 
-A module can also replace the login page, add MCP tools, and add form actions that run after the UAG has validated what the agent sent. See [Modules](/developers/modules).
+A module can also add MCP tools, and add form actions that run after the UAG has validated what the agent sent. See [Modules](/developers/modules).
 
 ## Troubleshooting
 
 | Symptom | Cause |
 |---|---|
 | The login page says it cannot load the form | `LOGIN_FORM` does not point at a login form's JSON endpoint that the browser can reach. |
-| Claude lists no forms, or says a form does not exist | The form is not tagged `uag`, the user lacks access, or the project cache has not refreshed. Restart the UAG to re-register at once. |
+| Claude lists no forms, or says a form does not exist | The form is not tagged `uag`, the user lacks access, or the project cache has not refreshed. Restart the UAG to re-register at once. Claude reads the tool list when it connects, so after tagging a new form, restart Claude Desktop or reconnect the connector. |
 | `mcp-remote` keeps signing in as the wrong user | Delete `~/.mcp-auth` and sign in again. |
 | Claude asks to sign in again after a few hours | A sign-in lasts as long as the user's Form.io login token (Form.io's `jwt.expireTime`, 240 minutes by default), whatever `JWT_EXPIRE_TIME` says. Raise Form.io's setting for longer sessions. |
 | `mcp-remote` or a connector says the server does not support sign-in, and `/.well-known/*` answers `404` | OAuth sign-in is off: `MCP_OAUTH` is not `true`, or the UAG has no usable database (`MONGO` unset, or no license to use it). The UAG's startup log says which. |

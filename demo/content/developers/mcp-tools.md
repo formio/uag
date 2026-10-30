@@ -22,7 +22,7 @@ To offer a conversation on a web page without running an MCP client and a model 
 | **Authentication** | `Authorization: Bearer <UAG access token>` on every request. Without a valid token the UAG answers `401` with `WWW-Authenticate: Bearer realm="uag-server"` (RFC 6750): when a token was sent, the header adds `error="invalid_token"` and its reason, and the body is `{ "error": "invalid_token", "error_description": "..." }`; with no token, the body's `error` is `unauthorized`. When OAuth sign-in for remote clients is on (`MCP_OAUTH`, with the UAG's database), the header also names `resource_metadata`, the UAG's `/.well-known/oauth-protected-resource`. |
 | **Capabilities** | Tools. The tool list is built per request from the forms currently registered, plus any custom tools from a [module](/developers/modules). |
 
-The `form_name` argument of every tool is an enumeration of the registered form names, so a client sees exactly which forms exist in the tool schema, and a call naming any other form fails argument validation.
+The `form_name` argument of every tool is an enumeration of the registered form names, so a client sees exactly which forms exist in the tool schema, and a call naming any other form fails argument validation. Clients read the tool list when they connect, so a form tagged afterwards appears once the client reconnects.
 
 ## How agents connect
 
@@ -31,9 +31,10 @@ Decide first which side opens the connection. It determines whether the UAG need
 | Connection | Who runs the MCP client | Public URL needed? | Authentication |
 |---|---|---|---|
 | **Local client** | Your application, integration, or engine server, running alongside the UAG | No. `http://localhost:3200` or a private network name is enough. | `client_credentials` grant at `/auth/token` with a server-side key. Always on; needs no other setting. |
-| **Remote client** | A client that runs the browser sign-in: claude.ai connectors, Claude Desktop custom connectors, the Anthropic MCP connector, and `mcp-remote` | For connectors, yes: `/mcp`, `/auth/*` and `/.well-known/*` must be reachable over HTTPS. `mcp-remote` runs on your machine, so a local URL works. | Browser-based OAuth 2.0 authorization code flow with PKCE. Needs `MCP_OAUTH=true` and the UAG's database (`MONGO`). |
+| **Remote client** | A client that runs the browser sign-in: claude.ai connectors, Claude Desktop custom connectors, and `mcp-remote` | For connectors, yes: `/mcp`, `/auth/*` and `/.well-known/*` must be reachable over HTTPS. `mcp-remote` runs on your machine, so a local URL works. | Browser-based OAuth 2.0 authorization code flow with PKCE. Needs `MCP_OAUTH=true` and the UAG's database (`MONGO`). |
+| **Anthropic MCP connector** (Messages API) | Anthropic's servers, with a token your application gives them | Yes: `/mcp` over HTTPS. | A UAG access token you pass as the connector's `authorization_token`: a `client_credentials` token, or a user's token from your own sign-in. Needs no `MCP_OAUTH`. |
 
-With a local client nothing dials into your network: your code connects out to the UAG, calls the tools, and passes the results to whichever model it uses. This is the recommended model for server-to-server automation, and it keeps the whole stack inside your security boundary. Both models can be used against one deployment at the same time.
+With a local client nothing dials into your network: your code connects out to the UAG, calls the tools, and passes the results to whichever model it uses. This is the recommended model for server-to-server automation, and it keeps the whole stack inside your security boundary. All of these can be used against one deployment at the same time.
 
 ```sequence
 participants: Your app (MCP client), Model API, UAG*, Remote agent
@@ -102,10 +103,10 @@ UAG --> MCP client: access token for /mcp
 | `GET /.well-known/oauth-authorization-server` | Authorization, token and registration endpoints; `code_challenge_methods_supported: ["S256"]`. |
 | `POST /auth/register` | Dynamic client registration. Returns a `client_id` for the client. |
 | `GET /auth/authorize` | The login page. It loads the form at `LOGIN_FORM` (default `{PROJECT}/user/login`) in the user's browser. |
-| `POST /auth/authorize` | Called by the login page with the user's Form.io token and the `code_challenge`. Issues a one-time code and redirects to the client's `redirect_uri`. Refusals are OAuth errors (`invalid_request`, `access_denied`), which the login page shows to the person. |
+| `POST /auth/authorize` | Called by the login page with the user's Form.io token and the `code_challenge`. Issues a one-time code and answers `{ "redirect": "<redirect_uri>?code=…" }`; the login page then goes to that address (a [module](/developers/modules)'s own login page must do the same). Refusals are OAuth errors (`invalid_request`, `access_denied`), which the login page shows to the person. |
 | `POST /auth/token` | `authorization_code` (with `code_verifier`), `refresh_token`, or `client_credentials`. |
 
-A Form.io token signed with the UAG's own `JWT_SECRET` (on Form.io Enterprise with a shared secret) is trusted as issued, without asking Form.io, so a Form.io logout does not end the access token wrapping it before it expires. Any other is trusted only after the project that issued it confirms it, and then the user's roles come from Form.io, never from the token's claims; a user of another project is refused. Every later tool call runs as that user, with that user's permissions.
+A Form.io token the UAG can verify with its own `JWT_SECRET` is trusted as issued only when it names no Form.io session. Form.io Enterprise login tokens name one (`jti`), so they are confirmed with Form.io, and a Form.io logout ends the access token wrapping them. Any other token is trusted only after the project that issued it confirms it, and then the user's roles come from Form.io, never from the token's claims; a user of another project is refused. Every later tool call runs as that user, with that user's permissions.
 
 Everything the flow advertises is built from the UAG's public URL. The UAG derives it from each request: the `Host` header, or, when `TRUST_PROXY` is set, the reverse proxy's `X-Forwarded-Proto` and `X-Forwarded-Host`. `BASE_URL` overrides it. If the advertised URL is one the client cannot reach (`http` behind a TLS proxy without `TRUST_PROXY`, for example), authentication fails even though the UAG is running. [Connect Claude](/developers/connect-claude) walks through both Claude clients.
 
@@ -135,7 +136,7 @@ Every built-in tool carries [MCP annotations](https://modelcontextprotocol.io/sp
 | [`agent_decide`](#agentdecide) | Reads | A task's decision questions as structured JSON. |
 | [`fetch_external_data`](#fetchexternaldata) | Reads | Options or data for a URL, resource or data source component. |
 
-Results are Markdown text in a single `text` content block, rendered from [response templates](/developers/modules) a module can override. A result that reports a problem (an unknown form, a validation failure, a missing submission) sets `isError: true`. `agent_decide`, and `collect_field_data` with `as_json`, return JSON text plus the same object as `structuredContent`.
+Results are Markdown text in a single `text` content block, rendered from [response templates](/developers/modules) a module can override. A result that reports a failure sets `isError: true`: an unknown form, a save refused by validation (`submit_completed_form`, `submission_update`), a missing submission for `submission_update`, `agent_provide` or `agent_decide`, and a refused search. Validation errors from `collect_field_data` and `confirm_form_submission` are ordinary results, since they are part of the conversation: the agent asks again. `agent_decide`, and `collect_field_data` with `as_json`, return JSON text plus the same object as `structuredContent`; with `as_json`, validation errors come back as `{ "errors": [{ "path", "label", "error" }] }` with `isError: true`.
 
 All tools run with the caller's identity. A form the caller cannot access is still listed by `get_forms`, marked as having no access, and Form.io refuses the operations the caller is not permitted.
 
@@ -191,7 +192,7 @@ Applies `updates` to `form_data`, runs the form's processing and validation, and
 | `form_data` | object | No, default `{}` | Everything collected so far, without the updates applied. |
 | `updates` | `{ data_path, new_value }[]` | Yes | The values the user just gave. Several fields can come from one message. |
 | `parent_path` | string | No | The nested component being collected. |
-| `as_json` | boolean | No, default `false` | Return the processed submission (or the errors) as JSON instead of text. |
+| `as_json` | boolean | No, default `false` | Return the processed submission as JSON instead of text, or the errors as `{ "errors": [...] }` with `isError: true`. |
 
 ### `confirm_form_submission`
 
@@ -358,7 +359,12 @@ async function getToken() {
 async function connect() {
   const mcp = new Client({ name: 'uag-chat-example', version: '1.0.0' });
   const transport = new StreamableHTTPClientTransport(new URL(`${UAG_URL}/mcp`), {
-    requestInit: { headers: { Authorization: `Bearer ${await getToken()}` } },
+    // Every request asks getToken(), so a long-lived connection gets a new token before the old one expires.
+    fetch: async (url, init = {}) => {
+      const headers = new Headers(init.headers);
+      headers.set('Authorization', `Bearer ${await getToken()}`);
+      return fetch(url, { ...init, headers });
+    },
   });
   await mcp.connect(transport);
   return mcp;

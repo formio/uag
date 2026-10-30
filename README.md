@@ -90,7 +90,7 @@ services:
       retries: 40
 
   formio-uag:
-    image: formio/uag
+    image: formio/uag:rc
     depends_on:
       formio: { condition: service_healthy }
     ports: ["3200:3200"]
@@ -267,7 +267,7 @@ app.use(await server.router());
 app.listen(process.env.PORT || 3200);
 ```
 
-Run Node 22 or newer with `--no-node-snapshot` (isolated-vm, which runs form logic, needs it), and install the engines you use next to the UAG (`npm install @formio/uag-claude`). See [Node.js API](https://ai.form.io/developers/node-api).
+Run Node 22 or newer with `--no-node-snapshot` (isolated-vm, which runs form logic, needs it), and install the engines you use next to the UAG (`npm install @formio/uag-claude@rc`). See [Node.js API](https://ai.form.io/developers/node-api).
 - **[`@formio/uag-js`](./packages/uag-js)** connects a formio.js application to the UAG. Register it once with `Formio.use(UAG('https://uag.example.com'))`: submissions of forms tagged `uag` are then saved through the UAG, and Agent Input fills those forms from what the user wrote, through `{form}/agent/extract`, when they leave the input, pause, move to the next page, or press a button. `Formio.createChat(element, formUrl)` renders any of them as a chat instead, templated, translated and themed like a formio.js form. See [JavaScript (formio.js)](https://ai.form.io/developers/renderer) and [Chat widget](https://ai.form.io/developers/chat).
 
 ## Deployment

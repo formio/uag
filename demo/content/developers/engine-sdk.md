@@ -14,12 +14,12 @@ This page is the complete reference for the contract, then two full example engi
 | Import | Contents |
 |---|---|
 | `@formio/uag-sdk` | The contract's types, `ENGINE_API_VERSION`, `defineEngine`, `EngineError`, `EngineConfigError`, settings and instance helpers, and the structured-output helpers. |
-| `@formio/uag-sdk/conformance` | `checkEngine`, the conformance check. |
+| `@formio/uag-sdk/conformance` | `checkEngine`, the conformance check, and the fixed inputs it sends (`STATE`, `FIELDS`, `SCHEMA`, `QUESTIONS` and the `LOOKUP` tool), for your fakes. |
 | `@formio/uag-sdk/loader` | `loadEngines`, `createEngine`, `resolveType`, `enginePaths`: how hosts find and create engines. |
 | `@formio/uag-sdk/protocol` | The remote engine protocol's checks, used by the `remote` type and the engine server. See [Engine server](/developers/engine-server). |
 
 ```bash
-npm install @formio/uag-sdk
+npm install @formio/uag-sdk@rc
 ```
 
 The SDK requires Node.js 22 or later and has no dependencies.
@@ -68,7 +68,7 @@ module.exports = defineEngine({
 | `uag-engine-<type>` | Anyone | `UAG_ENGINES=<type>` |
 | Any other name, such as `@acme/uag-engine-x` | Anyone | `UAG_ENGINES=<name>:@acme/uag-engine-x`, or the bare package name |
 
-A type name is looked up as `@formio/uag-<type>`, then `uag-engine-<type>`. Name an unscoped package `uag-engine-<type>` so users can enable it by its type name alone. The package's `type` must match: `uag-engine-keywords` exports `type: 'keywords'`.
+A type name is looked up as `@formio/uag-<type>`, then `uag-engine-<type>`. Name an unscoped package `uag-engine-<type>` so users can enable it by its type name alone. By convention the package's `type` matches: `uag-engine-keywords` exports `type: 'keywords'`. The loader does not check it, but an instance enabled by the bare package name is named after the `type`.
 
 The package's `main` exports the definition (`module.exports = defineEngine(...)`). A transpiled module whose `default` export is the definition, with `__esModule` set, also loads. Packages are loaded with `require()`, so an ES module package needs Node 22.12 or later.
 
@@ -339,7 +339,7 @@ Every request carries a `signal`. The UAG aborts it when the engine's routing ti
 - Check `signal.throwIfAborted()` before you start and between research rounds.
 - Pass `signal` to every HTTP call, so an abort cancels the request in flight.
 - After an abort, reject. Do not start another round of tool calls.
-- Keep your client's own timeout and retries inside the routing timeout. The official engines read `config.routing.timeouts[name]` in `create` for this.
+- Keep your client's own timeout and retries inside the routing timeout. Jev, for example, reads `config.routing.timeouts[name]` (else `config.agentApi.timeout`) in `create` to size its SDK's timeout.
 
 ### Errors
 
@@ -437,7 +437,7 @@ uag-engine-keywords/
   "files": ["index.js"],
   "engines": { "node": ">=22.0.0" },
   "scripts": { "test": "node --test" },
-  "dependencies": { "@formio/uag-sdk": "^2.0.0" }
+  "dependencies": { "@formio/uag-sdk": "^2.0.0-rc.4" }
 }
 ```
 
@@ -816,7 +816,7 @@ With `toolRounds: 5` and the conformance check's `maxIterations: 2`, the two res
 | An engine server | Install it there the same ways; the UAG reaches it with `UAG_ENGINES=keywords:remote`. See [Engine server](/developers/engine-server). |
 
 ```dockerfile
-FROM formio/uag
+FROM formio/uag:rc
 RUN npm install --prefix /engines uag-engine-keywords
 ENV UAG_ENGINE_PATH=/engines
 ```
@@ -825,7 +825,7 @@ ENV UAG_ENGINE_PATH=/engines
 
 ## Versions
 
-`ENGINE_API_VERSION` is `1` in `@formio/uag-sdk` 2.x, and every UAG 2.x supports it. Depend on `@formio/uag-sdk@^2`. A future contract version will be refused by older hosts with an error that names both versions, rather than failing at the first request.
+`ENGINE_API_VERSION` is `1` in `@formio/uag-sdk` 2.x, and every UAG 2.x supports it. Depend on `@formio/uag-sdk@^2.0.0-rc.4`, which also matches 2.0.0 and later 2.x releases. A future contract version will be refused by older hosts with an error that names both versions, rather than failing at the first request.
 
 ## Next steps
 

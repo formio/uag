@@ -21,14 +21,14 @@ examples.json + form.json -> uag-eval -> one engine call per example* -> answers
 
 ## License
 
-`uag-eval` is part of Agentic Formflow. Evaluating a real engine needs a `LICENSE_KEY` that includes the UAG and allows the project URL you pass as `--project`. Because the run is offline, a local project URL does not stand in for the license. The stub engines (`stub-decision`) need neither, which is useful for trying the command and its file formats.
+`uag-eval` is part of Agentic Formflow. Evaluating a real engine needs a `LICENSE_KEY` that includes the UAG and allows the project URL you pass as `--project`. Because the run is offline, a hosted (`*.form.io`) project URL does not stand in for the license. The stub engines (`stub-decision`) need neither, which is useful for trying the command and its file formats.
 
 ## Run it
 
 In the Docker image, which includes the official engines:
 
 ```bash
-docker run --rm -v "$PWD:/work" -w /work -e TYPESAFE_API_KEY -e LICENSE_KEY --entrypoint node formio/uag \
+docker run --rm -v "$PWD:/work" -w /work -e TYPESAFE_API_KEY -e LICENSE_KEY --entrypoint node formio/uag:rc \
   --no-node-snapshot /app/bin/uag-eval.js --form claim.json --examples claim-examples.json --task triage --engine jev \
   --project https://forms.example.com/claims --json report.json
 ```
@@ -36,7 +36,7 @@ docker run --rm -v "$PWD:/work" -w /work -e TYPESAFE_API_KEY -e LICENSE_KEY --en
 With the npm package, install the engine's package next to it:
 
 ```bash
-npm install @formio/uag @formio/uag-jev
+npm install @formio/uag@rc @formio/uag-jev@rc
 NODE_OPTIONS=--no-node-snapshot npx uag-eval --form claim.json --examples claim-examples.json \
   --task triage --engine jev --project https://forms.example.com/claims --json report.json
 ```
@@ -54,7 +54,7 @@ From a checkout of the UAG repository: `yarn install && yarn build`, then `node 
 | `--task <name>` | no | The task to evaluate. Default: the form's first task. (`--persona`, its 1.x name, is refused.) |
 | `--engine <name>` | no | The decision engine: an instance named in `UAG_ENGINES`, evaluated with its own settings, or an entry in the same syntax (`jev`, `next:jev`, `decide:openai`). Default: the first instance in `UAG_ENGINES`. |
 | `--json <file>` | no | Also write the full report as JSON. |
-| `--project <url>` | no | The project URL the evaluation is for, which the license must allow. Default: none. |
+| `--project <url>` | no | The project URL the evaluation is for, which the license must allow. Default: `http://offline.invalid`, which no license allowlist includes, so pass it with a real engine. |
 
 Each flag takes the next argument as its value. Unknown flags are ignored.
 
@@ -69,11 +69,11 @@ Each flag takes the next argument as its value. Unknown flags are ignored.
 ```bash
 # The deployed instance, with its own settings:
 UAG_ENGINES=jev,next:jev UAG_ENGINE_NEXT_MODEL=jev-1.14.0 TYPESAFE_API_KEY=... \
-  uag-eval --form claim.json --examples claim-examples.json --engine next
+  NODE_OPTIONS=--no-node-snapshot npx uag-eval --form claim.json --examples claim-examples.json --engine next
 
 # An instance that is not deployed yet, as an entry:
 OPENAI_API_KEY=... UAG_ENGINE_DECIDE_KIND=decision UAG_ENGINE_DECIDE_MODEL=gpt-6-luna \
-  uag-eval --form claim.json --examples claim-examples.json --engine decide:openai
+  NODE_OPTIONS=--no-node-snapshot npx uag-eval --form claim.json --examples claim-examples.json --engine decide:openai
 ```
 
 Run each engine you are considering on the same examples to compare them.
@@ -83,6 +83,12 @@ Run each engine you are considering on the same examples to compare them.
 Any Form.io form definition with a task. `uag-eval` adds the `uag` tag if the form does not have it, and takes the form's name from `name`, else `path`. The task's criteria, input, `uagContext` and decision field properties are read from the form as the UAG reads them; see [Form properties](/developers/form-properties).
 
 Resource-backed selects need a live project for their options, so they are skipped.
+
+To try the command, use the demo's claim form, which the examples and report below are for. From a checkout of the UAG repository:
+
+```bash
+node -e "console.log(JSON.stringify(require('./demo/module/project.json').forms.claim))" > claim.json
+```
 
 ## The examples file
 
@@ -167,7 +173,7 @@ Set the result on the field:
 | Field | Property |
 |---|---|
 | Choice or score | `uagThreshold`, such as `0.7` |
-| Yes/no, select boxes | `uagUncertainBand`, such as `0.1-0.5` |
+| Yes/no, select boxes | `uagUncertainBand`, such as `0.3-0.7` |
 
 Or change the defaults for the project with `agentApi.threshold` and `agentApi.uncertainBand` (see [Engines and routing](/developers/engines#agent-api-defaults)).
 

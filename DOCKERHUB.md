@@ -21,7 +21,7 @@ docker run -d --name formio-uag -p 3200:3200 \
   -e JWT_SECRET=your-jwt-secret \
   -e LOGIN_FORM=https://forms.example.com/user/login \
   --restart unless-stopped \
-  formio/uag
+  formio/uag:rc
 ```
 
 Against a self-hosted Form.io Enterprise project, use `PROJECT_KEY` and `LICENSE_KEY` in place of `ADMIN_KEY`. A project on Form.io's hosted service (`PROJECT=https://myproject.form.io`) needs only `PROJECT_KEY`:
@@ -33,10 +33,10 @@ docker run -d --name formio-uag -p 3200:3200 \
   -e LICENSE_KEY=your-license \
   -e JWT_SECRET=your-jwt-secret \
   --restart unless-stopped \
-  formio/uag
+  formio/uag:rc
 ```
 
-Docker Compose is the recommended path for anything beyond a single container. Working stacks — including one that runs the UAG alongside a Form.io OSS server — are in the repository's [`demo/`](https://github.com/formio/uag/tree/main/demo) folder: the whole [ai.form.io](https://ai.form.io) demo site, and [samples](https://github.com/formio/uag/tree/main/demo/samples) you can start from.
+Docker Compose is the recommended path for anything beyond a single container. Working stacks — including one that runs the UAG alongside a Form.io OSS server — are in the repository's [`demo/`](https://github.com/formio/uag/tree/v2.0.0-rc.5/demo) folder: the whole [ai.form.io](https://ai.form.io) demo site, and [samples](https://github.com/formio/uag/tree/v2.0.0-rc.5/demo/samples) you can start from.
 
 ## Connecting an agent
 
@@ -68,7 +68,7 @@ docker run -d --name formio-uag -p 3200:3200 \
   -e TYPESAFE_API_KEY=your-typesafe-key \
   -e CLAUDE_API_KEY=your-claude-key \
   -e LICENSE_KEY=your-license \
-  formio/uag
+  formio/uag:rc
 ```
 
 The Agent API and Run task are Agentic Formflow, an Enterprise feature. A project on Form.io's hosted service runs it with real engines and no license. When you self-host, real engines need a license in `LICENSE_KEY` that includes the UAG (an online license with UAG servers, or an offline license with the `uag` option), wherever the project runs (`UAG_LICENSE` still works, but is deprecated). Conversation forms need no license, and run on Form.io Open Source: the MCP tools, and a form's chat (`{form}/agent/chat`, which `Formio.createChat` in `@formio/uag-js` embeds in a page) with any agent engine. The stub engines (`stub-decision`, `stub-agent`) run without one, for trying the API out. The [License documentation](https://github.com/formio/uag#license) covers when a hosted project still needs a license.
@@ -101,7 +101,7 @@ Callers send the signed-in user's Form.io token (`x-jwt-token`), a portal team m
 | `JWT_EXPIRE_TIME` | Lifetime of the tokens the UAG issues, in minutes. Default `60`. |
 | `PORTAL_SECRET` | Enterprise only. Lets a Form.io Enterprise portal stage connect to the UAG, where you add Run task actions to forms. |
 | `CORS` | `true` (the default) allows every origin, `false` turns CORS off, and any other value is the allowed origin, such as `https://app.example.com`, or several separated by commas. |
-| `DEBUG` | Debug log filter, e.g. `formio.*`. |
+| `DEBUG` | Debug log filter, e.g. `formio:*`. |
 | `UAG_ENGINES` | Comma-separated Agent API engine instances to enable, each `<type>` or `<name>:<type>`: `jev`, `claude`, `openai`, `grok`, `gemini`, `remote` (and `stub-decision` / `stub-agent` for testing). Unset enables none. |
 | `UAG_ENGINE_<NAME>_<SETTING>` | One instance's setting, such as `UAG_ENGINE_FAST_MODEL`. For a `remote` instance, `_URL` (the engine server) and `_KEY` (its key, at least 32 characters). |
 | `UAG_ENGINE_PATH` | Absolute directories with more engine packages installed, such as a mounted volume. |
@@ -125,7 +125,7 @@ Forms and resources are cached and refreshed on the `PROJECT_TTL` interval, so a
 ## Links
 
 - Source and full documentation: https://github.com/formio/uag
-- Live demos of conversation forms, agentic workflows and Agentic Formflow: https://ai.form.io/examples (source: https://github.com/formio/uag/tree/main/demo)
+- Live demos of conversation forms, agentic workflows and Agentic Formflow: https://ai.form.io/examples (source: https://github.com/formio/uag/tree/v2.0.0-rc.5/demo)
 - Engine server image, for running engines in their own container: https://hub.docker.com/r/formio/uag-engines
 - MCP server for building and managing Form.io forms from a coding agent: https://hub.docker.com/r/formio/mcp
 - Agentic Coding Plugin, so your coding agent can tag forms, deploy the UAG and wire applications to it: https://github.com/formio/ai (`npx skills add formio/ai`)

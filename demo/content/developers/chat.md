@@ -40,16 +40,16 @@ Chat is part of conversation forms: it works on Form.io Open Source with no UAG 
 
 ## Get it
 
-The chat is part of `@formio/uag-js` 2.x (`npm install @formio/uag-js`), with formio.js 5 (`@formio/js` 5.x). Registering the module with `Formio.use(UAG(...))` registers the chat display and `Formio.createChat`, beside the submission routing and Agent Input described in [JavaScript (formio.js)](/developers/renderer). `uag-js.css` holds the chat's default styles. The form view (Review form, Edit in form) is an ordinary formio.js form, so load your framework's CSS as for any form: Bootstrap 5 for formio.js's default templates.
+The chat is part of `@formio/uag-js` 2.x (`npm install @formio/uag-js@rc` for the 2.0 release candidate), with formio.js 5 (`@formio/js` 5.x). Registering the module with `Formio.use(UAG(...))` registers the chat display and `Formio.createChat`, beside the submission routing and Agent Input described in [JavaScript (formio.js)](/developers/renderer). `uag-js.css` holds the chat's default styles. The form view (Review form, Edit in form) is an ordinary formio.js form, so load your framework's CSS as for any form: Bootstrap 5 for formio.js's default templates.
 
 With script tags:
 
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/uag-js@2/uag-js.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/uag-js@rc/uag-js.css">
 <script src="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@formio/uag-js@2/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@formio/uag-js@rc/index.js"></script>
 
 <div id="chat"></div>
 <script>
@@ -80,7 +80,7 @@ Render from the form's URL when the chat should save: a form rendered from a def
 ## How a conversation goes
 
 1. The chat shows a greeting (your `greeting`, or one naming the form) and any `suggestions`.
-2. The person sends a message. The chat posts the conversation so far, the form's current data, and the fields the person set in the form itself (`locked`) to `agent/chat`, shows a typing indicator, and keeps the composer disabled until the turn is over.
+2. The person sends a message. The chat posts the conversation so far, the form's current data, and the fields the person set in the form itself (`locked`) to `agent/chat`, shows a typing indicator, and disables **Send** until the turn is over (the person can keep typing).
 3. The UAG answers with the next message (`reply`, at most `agentApi.chat.maxMessageLength` characters) and the values it took from the conversation (`patch`). The chat shows the reply, and writes each value into the form's own component, so conditionals that depend on it react at once. A value the form refused is not in `patch`; the reply asks again.
 4. When the UAG reports the form `complete` (every required field filled and valid), the chat shows a summary of the form's values with **Submit** and **Edit in the form**. The person can also confirm by typing ("yes, submit it"), which the UAG reports as `confirmed`.
 5. On **Submit** (or a confirmation), the chat calls the form's own `submit()`: formio.js validates the form and sends the submission to the UAG, which runs the form's actions and saves it in Form.io. The chat then says it was submitted. If the save fails, it shows the error and the person can fix the form and submit again.
@@ -194,7 +194,7 @@ What the chat needs from a template is its `ref` attributes. Keep the ones a rep
 | `uagChatSuggestion` | each suggestion (`uagChatSuggestions`) | Sends its text. |
 | `uagChatSubmit`, `uagChatEdit` | buttons (`uagChatSummary`) | Submit, and open the form. |
 
-Replace a template for one chat with `options.templates`, or for every chat with `Formio.use`, under the name of the framework your application renders with, which is `Formio.Templates.framework`. On a default `@formio/js` 5 install that is `bootstrap` (its Bootstrap 5 templates are registered under that name); a set registered under any other name, `bootstrap5` included, is not the current framework and is ignored:
+Replace a template for one chat with `options.templates`, or for every chat with `Formio.use`, under the name of the framework your application renders with, which is `Formio.Templates.framework`, or `bootstrap` when that is unset, as on a default `@formio/js` 5 install (its Bootstrap 5 templates are registered under that name); a set registered under any other name, `bootstrap5` included, is not the current framework and is ignored:
 
 ```js
 // Every chat: messages as Bootstrap cards.
@@ -309,7 +309,7 @@ The conversation lives in the browser: the UAG stores nothing between turns. Wit
 A visitor who is not signed in has no Form.io token. Two ways to offer them a chat:
 
 - **Anonymous use.** Set [`uagAnonymous: "true"`](/developers/form-properties#uaganonymous) on the form, and let the Anonymous role create its submissions. The UAG then answers visitors directly, rate-limited per address and in total, together with the form's other anonymous agent operations (`AGENT_ANONYMOUS_RATE_LIMIT`, default 10 a minute per address, and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`, default 100). Every anonymous turn spends your model budget: set the limits for what you are prepared to pay, and a spend limit at your model provider.
-- **A relay of your own,** when you need more: a CAPTCHA, a daily budget, your own sessions. The relay checks what it must, then calls the UAG with a key the browser never sees. Either point only the turns at it with `chatUrl`, or register the relay's base URL as the UAG's URL (`Formio.use(UAG(relayUrl))`) and have it serve the UAG's paths for your form: the form (`{relay}/{formPath}`), its turns (`{relay}[/project/{id}]/form/{id}/agent/chat`) and its save (`{relay}[/project/{id}]/form/{id}/submission`). The [demo's relay](https://github.com/formio/uag/blob/main/demo/server/conversation.mjs) does the second, so the page's code is exactly an application's, and adds a bot check and a daily budget from each turn's `engine.usage`.
+- **A relay of your own,** when you need more: a CAPTCHA, a daily budget, your own sessions. The relay checks what it must, then calls the UAG with a key the browser never sees. Either point only the turns at it with `chatUrl`, or register the relay's base URL as the UAG's URL (`Formio.use(UAG(relayUrl))`) and have it serve the UAG's paths for your form: the form (`{relay}/{formPath}`), its turns (`{relay}[/project/{id}]/form/{id}/agent/chat`) and its save (`{relay}[/project/{id}]/form/{id}/submission`). The [demo's relay](https://github.com/formio/uag/blob/v2.0.0-rc.5/demo/server/conversation.mjs) does the second, so the page's code is exactly an application's, and adds a bot check and a daily budget from each turn's `engine.usage`.
 
 The UAG refuses project and admin keys on browser requests, so a key cannot be used from a page; see [Security](/developers/security#chat).
 

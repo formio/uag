@@ -15,7 +15,7 @@ The UAG is a long-lived HTTP server you deploy next to a Form.io project. It is 
 |---|---|---|
 | **Docker image** `formio/uag` | Almost always | Includes the UAG and every official engine (`jev`, `claude`, `openai`, `grok`, `gemini`). Listens on `PORT` (default 3200). |
 | **Docker Compose** | Running Form.io and the UAG together, or with an engine server | The samples are Compose stacks. |
-| **`npx uag`** | A Node.js host without Docker | Install `@formio/uag` and the engine packages you need. Reads the same environment, plus `UAG_MODULE`. |
+| **`npx uag`** | A Node.js host without Docker | Install `@formio/uag@rc` and the engine packages you need. Reads the same environment, plus `UAG_MODULE`. |
 | **Embedded in Express** | Your own Node.js application hosts the UAG | `new UAGServer(config)`; see [Node.js API](/developers/node-api). |
 
 Outside Docker, the UAG needs Node.js 22 or newer, and Node must run with `--no-node-snapshot` (the `uag` command adds it itself) because `isolated-vm`, which runs form logic, requires it.
@@ -27,13 +27,13 @@ docker run -d --name formio-uag --restart unless-stopped -p 3200:3200 \
   -e PROJECT=https://forms.example.com \
   -e ADMIN_KEY=... \
   -e JWT_SECRET=... \
-  formio/uag
+  formio/uag:rc
 ```
 
 The image starts `node --no-node-snapshot index.js`, which loads the module in `/app/module`. Mount your own [module](/developers/modules) there to add forms, actions, tools and configuration:
 
 ```bash
-docker run -v "$PWD/module:/app/module" ... formio/uag
+docker run -v "$PWD/module:/app/module" ... formio/uag:rc
 ```
 
 ### Docker Compose
@@ -48,18 +48,23 @@ For an Enterprise server in the same stack:
 
 ```yaml
 services:
-  formio-enterprise:
+  # Name the service to match your license's endpoint allowlist (trial licenses: api-server).
+  api-server:
     image: formio/formio-enterprise
     environment:
       PORT: 3000
       LICENSE_KEY: ${LICENSE_KEY}
       # ...database and secrets
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 5s
+      retries: 60
   formio-uag:
-    image: formio/uag
+    image: formio/uag:rc
     depends_on:
-      - formio-enterprise
+      api-server: { condition: service_healthy }
     environment:
-      PROJECT: http://formio-enterprise:3000/myproject
+      PROJECT: http://api-server:3000/myproject
       PROJECT_KEY: ${PROJECT_KEY}
       # The same Form.io license, which must include the UAG.
       LICENSE_KEY: ${LICENSE_KEY}
@@ -67,7 +72,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
 ```
 
-The project API key must exist before the UAG starts, which is why the [demo stack](https://github.com/formio/uag/tree/main/demo), self-hosted (`docker-compose.enterprise.yml`), starts Form.io, runs a setup job that creates the project and installs the key ([`server/setup.mjs`](https://github.com/formio/uag/blob/main/demo/server/setup.mjs)), and only then starts the UAG.
+The project API key must exist before the UAG starts, which is why the [demo stack](https://github.com/formio/uag/tree/v2.0.0-rc.5/demo), self-hosted (`docker-compose.enterprise.yml`), starts Form.io, runs a setup job that creates the project and installs the key ([`server/setup.mjs`](https://github.com/formio/uag/blob/v2.0.0-rc.5/demo/server/setup.mjs)), and only then starts the UAG.
 
 To run engines in their own container, see [Engine server](/developers/engine-server).
 
@@ -88,7 +93,7 @@ The Form.io deployment the UAG serves:
 | Deployment | `PROJECT` | Credential |
 |---|---|---|
 | Open Source | The server's root, `http://formio:3001` or `https://forms.example.com` | `ADMIN_KEY` |
-| Enterprise, self-hosted | The project endpoint, `http://formio-enterprise:3000/myproject` or `https://forms.example.com/myproject` | `PROJECT_KEY`, plus `LICENSE_KEY` |
+| Enterprise, self-hosted | The project endpoint, `http://api-server:3000/myproject` or `https://forms.example.com/myproject` | `PROJECT_KEY`, plus `LICENSE_KEY` |
 | Hosted SaaS | `https://<project>.form.io` | `PROJECT_KEY` |
 
 It does not need public DNS. If it is an `https` URL with a self-signed certificate, the UAG cannot connect until you set `NODE_TLS_REJECT_UNAUTHORIZED=0`, which disables certificate checks for every outbound request; do that only on deployments unreachable from outside your network.
@@ -115,13 +120,13 @@ The login form JSON endpoint the `/auth/authorize` page loads, such as `https://
 | `JWT_SECRET` | random per start, with a warning | **Required in practice.** Signs the UAG's own tokens. Set it to the Form.io Enterprise server's `JWT_SECRET` for an agent to act on users' behalf (see [Project setup for agents](/developers/project-setup)). Set it the same on every instance, or tokens break on restart. |
 | `JWT_EXPIRE_TIME` | `60` | Lifetime of the UAG's access tokens, in **minutes**. A token from OAuth sign-in ends with the user's Form.io login token if that is sooner, and its refresh token cannot outlive it either. `client_credentials` returns no refresh token. |
 | `BASE_URL` | derived from each request | The URL clients reach the UAG at, for the OAuth discovery documents. Set it only when the derived URL is wrong. |
-| `TRUST_PROXY` | unset | Express's `trust proxy`: `true`, a number of proxy hops, or addresses (`loopback, 10.0.0.0/8`). Set it behind a reverse proxy, so the UAG reads its public URL and callers' addresses from the forwarded headers. |
+| `TRUST_PROXY` | unset | Express's `trust proxy`: `true`, a number of proxy hops, or addresses (`loopback, 10.0.0.0/8`). Set it behind a reverse proxy, so the UAG reads its public URL and callers' addresses from the forwarded headers. Read by the `uag` command and the Docker image; an application that embeds the UAG calls `app.set('trust proxy', ...)` itself. |
 | `MCP_OAUTH` | `false` | `true` turns on OAuth sign-in for remote MCP clients (claude.ai and Claude Desktop connectors): the browser sign-in page, client registration and the discovery documents. Needs the UAG's database (`MONGO`), and a license to use it. Local clients use `/auth/token`, which is always on. |
 | `AGENT_ANONYMOUS_RATE_LIMIT` | `10` | Requests a minute one client address may make to the agent operations of forms that allow anonymous use ([`uagAnonymous`](/developers/form-properties#uaganonymous)). Counted by each UAG process; behind a reverse proxy, set `TRUST_PROXY` so the address is the visitor's. `0` turns anonymous use off. |
 | `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT` | `100` | Requests a minute from all anonymous visitors together, per UAG process: with several replicas, the total is replicas × this. `0` turns anonymous use off. |
 | `LOGIN_FORM` | `{PROJECT}/user/login` | The login form the browser loads at `/auth/authorize`. |
 | `PORTAL_SECRET` | none | Enterprise: lets a Form.io Enterprise portal stage connect to the UAG. See [Connecting the Enterprise portal](#connecting-the-enterprise-portal). |
-| `PORT` | `3200` | The port the UAG listens on. |
+| `PORT` | `3200` | The port the UAG listens on. Read by the `uag` command and the Docker image; an application that embeds the UAG chooses its own port. |
 
 ### Project sync
 
@@ -152,7 +157,7 @@ The login form JSON endpoint the `/auth/authorize` page loads, such as `https://
 | `CORS` | `true` | `true` allows every origin, `false` turns CORS off, and any other value is the allowed origin, or several separated by commas (`https://app.example.com,https://admin.example.com`). Restrict it before exposing the UAG. |
 | `MAX_BODY_SIZE` | `16mb` | Largest JSON request body the UAG accepts, the same as Form.io's. Bodies are parsed before authentication, so raise it only as far as the forms need. A form's agent operations take at most 5 MB whatever it is set to. |
 | `NODE_TLS_REJECT_UNAUTHORIZED` | unset | `0` to accept a self-signed `PROJECT` certificate. Never on a deployment reachable from outside. Turns off the hosted SaaS exemption. |
-| `DEBUG` | unset | Debug logging, for example `formio.*` or `formio:uag*`. |
+| `DEBUG` | unset | Debug logging, for example `formio:*` or `formio:uag*`. |
 | `UAG_MODULE` | none | For the `uag` command only: a file or folder exporting a module. The Docker image loads `/app/module` instead. |
 
 ### Engines
@@ -205,7 +210,7 @@ Running against a self-hosted Enterprise project and Agentic Formflow are licens
 
 **Which variable.** Put the license in `LICENSE_KEY`: Form.io Enterprise reads the same variable, so one Form.io license runs both. `UAG_LICENSE` still works, and is deprecated. With both set, a feature is on when either key grants it; `LICENSE_KEY` is only checked when `UAG_LICENSE` does not include the UAG for the endpoint, and the startup line names the key that licensed Agentic Formflow.
 
-**Running against a self-hosted Enterprise project.** The project needs a license that includes the UAG, and the license's endpoint allowlist must include `PROJECT`'s host. Development endpoints need none: `localhost`, `*.localhost`, `lvh.me`, `*.lvh.me`, `*.local` and `file:` URLs. A project that fails the check does not load, and the UAG exits saying why ("Endpoint ... is not allowed for this license", for example). Trial licenses carry such allowlists, which is why the workflow sample names its Form.io service `api-server`.
+**Running against a self-hosted Enterprise project.** The project needs a license that includes the UAG, and the license's endpoint allowlist must include `PROJECT`'s host. Development endpoints need none: `localhost`, `*.localhost`, `lvh.me`, `*.lvh.me`, `*.local` and `file:` URLs. A project that fails the check does not load, and the UAG exits saying why ("Endpoint ... is not allowed for this license", for example). Trial licenses carry such allowlists, which is why the demo stack's self-hosted overlay (`docker-compose.enterprise.yml`) names its Form.io service `api-server`.
 
 **Agentic Formflow.** The Agent API's `extract`, `decide` and `generate`, the "Agent: Run task" action, the `agent_decide` and `agent_provide` MCP tools and `uag-eval` need a license that includes the UAG for the project's endpoint (any license allows `localhost`), wherever the project runs. Without it they run only:
 
@@ -271,7 +276,7 @@ On a fresh database it writes its schema marker first, then creates its collecti
 
 ### The database's license
 
-Using the database needs a license that includes the UAG, on Open Source, Enterprise and Form.io's hosted service alike, unless the project and the database are both on development hosts (`localhost`, `*.localhost`, `lvh.me`, `*.lvh.me`, `*.local`). The [custom module sample](https://github.com/formio/uag/tree/main/demo/samples/custom-module) names its services `formio.local` and `mongo.local` for that reason.
+Using the database needs a license that includes the UAG, on Open Source, Enterprise and Form.io's hosted service alike, unless the project and the database are both on development hosts (`localhost`, `*.localhost`, `lvh.me`, `*.lvh.me`, `*.local`). The [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.5/demo/samples/custom-module) names its services `formio.local` and `mongo.local` for that reason.
 
 Without the license, the UAG still starts, with the database features off. It creates and changes nothing in the database, closes the connection, and says why:
 
@@ -339,10 +344,10 @@ The UAG and each engine package are versioned independently from 2.0.0. Pick a c
 
 For a reproducible deployment:
 
-- **Pin image tags.** The samples reference images without a tag so they always pull the latest release. Production should pin `formio/uag:<version>` (and `formio/uag-engines:<version>`, `formio/formio-enterprise:<version>`).
+- **Pin image tags.** The samples use the `rc` channel tag, which moves to each new release candidate. Production should pin `formio/uag:<version>` (and `formio/uag-engines:<version>`, `formio/formio-enterprise:<version>`).
 - **Pin models.** Set `CLAUDE_MODEL`, `TYPESAFE_MODEL` and the other model variables to specific versions. A new UAG release may change an engine's default, and answers differ between models. Run [`uag-eval`](/developers/evaluation) before changing one.
-- **Keep `@formio/appserver` current.** When embedding the UAG, it reaches `@formio/appserver-core` only through `@formio/appserver`, so there is one copy of it, which must be 2.25.1 or later; the UAG refuses to start with an older one, and says what to upgrade.
-- **Roll back** by pinning the previous image. Stored submissions are unaffected; UAG 1.x ignores the `metadata.uag.generated` provenance that 2.0 adds. See [MIGRATING-2.0.md](https://github.com/formio/uag/blob/main/MIGRATING-2.0.md) when upgrading from 1.x.
+- **Keep `@formio/appserver` current.** When embedding the UAG, it reaches `@formio/appserver-core` only through `@formio/appserver`, so there is one copy of it, which must be 2.25.2 or later; the UAG refuses to start with an older one, and says what to upgrade.
+- **Roll back** by pinning the previous image. Stored submissions are unaffected; UAG 1.x ignores the `metadata.uag.generated` provenance that 2.0 adds. See [MIGRATING-2.0.md](https://github.com/formio/uag/blob/v2.0.0-rc.5/MIGRATING-2.0.md) when upgrading from 1.x.
 
 ### A smaller image
 
@@ -353,7 +358,7 @@ FROM node:24-alpine AS build
 WORKDIR /app
 # isolated-vm, which runs form logic, compiles on install.
 RUN apk add --no-cache make python3 g++
-RUN npm install --omit=dev @formio/uag @formio/uag-claude
+RUN npm install --omit=dev @formio/uag@rc @formio/uag-claude@rc
 
 FROM node:24-alpine
 WORKDIR /app
@@ -362,6 +367,9 @@ COPY --from=build /app/node_modules ./node_modules
 # COPY module ./module
 # ENV UAG_MODULE=./module
 ENV NODE_OPTIONS=--no-node-snapshot
+# The same health check as the formio/uag image.
+HEALTHCHECK --interval=15s --timeout=3s --start-period=60s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3200)+'/status').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
 ENTRYPOINT ["node_modules/.bin/uag"]
 ```
 
@@ -380,7 +388,7 @@ The UAG holds no conversation state, and `/mcp` is stateless, so instances can s
 
 ## Verifying a deployment
 
-`GET /status` needs no credential and answers `200` with package versions once the UAG is serving: it opens its port only after the project, the engines and the database are ready. The `formio/uag` image declares a `HEALTHCHECK` on it, and it suits load-balancer checks and Kubernetes probes.
+`GET /status` needs no credential and answers `200` once the UAG is serving, reporting the UAG version (`@formio/uag`) and the versions of the Form.io packages it runs on: it opens its port only after the project, the engines and the database are ready. The `formio/uag` image declares a `HEALTHCHECK` on it, and it suits load-balancer checks and Kubernetes probes.
 
 ```bash
 # Tokens can be issued (always on):
@@ -394,4 +402,4 @@ curl -s -o /dev/null -w '%{http_code}\n' https://uag.example.com/.well-known/oau
 curl -s https://uag.example.com/agent/capabilities -H "x-token: $PROJECT_KEY"
 ```
 
-The UAG's log shows whether it uses a database (`Using the database "uag": ...`, `No database (MONGO): ...`, or `The database (MONGO) is not used: ...` with the reason), the edition line, and `Form.io UAG server running on port 3200` once it is serving. If it exits instead, the line before says why: no project could be loaded (check `PROJECT` and its credential), a license problem, a database the UAG may not use (see [The signature check](#the-signature-check)), or a misconfigured engine. See [Troubleshooting](/developers/troubleshooting).
+The UAG's log shows whether it uses a database (`Using the database "uag": ...`, `No database (MONGO): ...`, or `The database (MONGO) is not used: ...` with the reason), the edition line, and `Form.io UAG server running on port 3200` once it is serving. If it exits instead, the `Failed to start server:` line says why: `No Form.io project could be loaded` (`PROJECT` is not set), `Unable to load project from ...` or `Unable to load the project template from ...` (`PROJECT` is unreachable, or paired with the wrong credential; set `DEBUG=formio:error` to see each attempt's status), a license problem, a database the UAG may not use (see [The signature check](#the-signature-check)), or a misconfigured engine. See [Troubleshooting](/developers/troubleshooting).

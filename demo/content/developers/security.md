@@ -40,7 +40,7 @@ Tasks run only on submissions sent to the UAG. A submission sent straight to For
 
 | Secret | Purpose |
 |---|---|
-| `PROJECT_KEY` (Enterprise, hosted) or `ADMIN_KEY` (Open Source) | The UAG's administrator credential for the Form.io deployment. The UAG uses it on its own account only to read the project (its export, at startup and on each `PROJECT_TTL` refresh) and for template sync. It is also accepted from callers as an admin credential. An admin caller's requests are forwarded to Form.io as administrator, so a task such a caller starts without an agent role acts as administrator too. A task never uses it for anyone else. |
+| `PROJECT_KEY` (Enterprise, hosted) or `ADMIN_KEY` (Open Source) | The UAG's administrator credential for the Form.io deployment. The UAG uses it on its own account only to read the project (its export, at startup and on each `PROJECT_TTL` refresh), for template sync, and to forward the requests of [portal team members](#portal-team-members) once Form.io's team rules allow them. It is also accepted from callers as an admin credential. An admin caller's requests are forwarded to Form.io as administrator, so a task such a caller starts without an agent role acts as administrator too. A task never uses it for anyone else. |
 | `JWT_SECRET` | Signs every token the UAG issues: access tokens, refresh tokens and scoped tokens. Set it to the Form.io Enterprise server's own `JWT_SECRET` to let a Run task act with an agent role (see [Acting on behalf of users](#acting-on-behalf-of-users)); it is then equivalent to administrator access to Form.io. If unset, the UAG generates a random one at startup, so every token stops working when it restarts, and instances behind a load balancer reject each other's tokens. Always set it, to the same value on every instance. |
 | `PORTAL_SECRET` | Lets a Form.io Enterprise portal stage connect to the UAG. |
 | `MONGO` | The connection string of the UAG's own database, when it has one. |
@@ -87,12 +87,12 @@ Below `team_admin`, the project's `settings` (keys and secrets), `settings_encry
 ### UAG tokens
 
 - **Access tokens** are signed with `JWT_SECRET` and wrap the Form.io identity they were issued for. They last `JWT_EXPIRE_TIME` minutes (default 60), and never longer than the Form.io login they wrap. Refresh tokens, issued only for OAuth sign-in, last at most twice as long, never past that login, and can only be exchanged for a new access token, never used for access. `client_credentials` returns none.
-- **How a Form.io token is trusted.** When the login page posts a user's Form.io token to `/auth/authorize`, and when an access token wrapping it is used, a token signed with the UAG's own `JWT_SECRET` (on Form.io Enterprise with a shared secret) is trusted as issued, with the roles its claims give. Any other token is trusted only once the issuing project confirms it, and then the user's roles and admin status come from Form.io rather than from the token's claims; a user of another project is refused. The answer is cached for a minute.
-- **Logouts.** A Form.io session token sent as `x-jwt-token`, or carried in a scoped token, is always checked with Form.io, so a logout takes effect within a minute. An access token is not: with a shared secret, one issued from a session token is honored until it, or the Form.io token inside it, expires, whatever happens to the session. Keep `JWT_EXPIRE_TIME` short where that matters.
+- **How a Form.io token is trusted.** When the login page posts a user's Form.io token to `/auth/authorize`, and when an access token wrapping it is used, a token signed with the UAG's own `JWT_SECRET` (on Form.io Enterprise with a shared secret) that names no Form.io session is trusted as issued, with the roles its claims give. Any other token is trusted only once the issuing project confirms it, and then the user's roles and admin status come from Form.io rather than from the token's claims; a user of another project is refused. The answer is cached for a minute.
+- **Logouts.** A Form.io session token (one with a `jti` claim, as Form.io Enterprise logins have) is always checked with Form.io, even with a shared secret: sent as `x-jwt-token`, carried in a scoped token, or wrapped in an access token. A logout takes effect within a minute, or two for an access token, whose check is cached too. A token that names no session is honored until it expires, so keep `JWT_EXPIRE_TIME` short where that matters.
 - **OAuth sign-in for remote MCP clients is off by default.** It needs `MCP_OAUTH=true` and the UAG's database. `/auth/token` with `client_credentials` and refresh tokens is always on.
 - **Authorization codes** are single-use, bound to the PKCE `code_challenge` (`S256`), and expire after 10 minutes. The UAG's database stores them by their SHA-256 hash, with the token each one exchanges for sealed under a key derived from the code, so it never holds a usable code or token. Redirect URIs with unsafe schemes are refused.
 
-Long `JWT_EXPIRE_TIME` values (the samples use a year) are convenient for demos and wrong for production; a stolen token is valid until it expires.
+Long `JWT_EXPIRE_TIME` values (the repository's `.env.example` uses years) are convenient for development and wrong for production; a stolen token is valid until it expires.
 
 ## Scoped tokens for remote engines
 
@@ -197,7 +197,7 @@ Enabling an engine sends submission data to its provider: TypeSafe for `jev`, An
 - MCP conversations send whatever the MCP client sends to its model; the UAG sends nothing to a model itself.
 - A form's chat sends its agent engine: the UAG's chat instructions, the form's title, description and `uagChatInstructions`; the conversation (the newest messages within `agentApi.chat.maxTranscriptChars`); for each field the chat may collect, its path, label, type, description, placeholder, value rule, format and static options, and its current value (each value cut to 500 characters, all of them within `maxTranscriptChars`); the labels of the fields still needed, the optional ones and those to finish in the form; and today's date. Nothing else from the request's `data` is sent: not task fields, hidden fields or fields the chat cannot collect.
 
-`fetch_external_data` calls the URLs configured on the form's select and data source components, from the UAG's network. Treat the right to edit forms as the right to choose what the UAG fetches.
+`fetch_external_data` calls the URLs configured on the form's select and data source components, from the UAG's network. Treat the right to edit forms as the right to choose what the UAG fetches. The URL, headers and filter are filled in with the form data the caller sends, so a template such as `{{data.field}}` lets an agent choose part of the request: keep submitted values out of URL templates. With **Authenticate** on, the caller's token is sent to that URL as `x-jwt-token`, so use it only for hosts you trust. The UAG does not block private or internal addresses.
 
 ## Production checklist
 
@@ -233,10 +233,10 @@ Enabling an engine sends submission data to its provider: TypeSafe for `jev`, An
 
 **Operations**
 
-- Raise `PROJECT_TTL` from the samples' 10 seconds; each refresh re-reads the project export.
+- Raise `PROJECT_TTL` from the custom module sample's 10 seconds (the default is 900); each refresh re-reads the project export.
 - Log and keep `X-Request-Id` values; they tie a failing request to the UAG's log.
 - Track the latest releases: only the latest published version of each package and image receives security fixes.
 
 ## Reporting a vulnerability
 
-Do not open a public issue. Report privately to [security@form.io](mailto:security@form.io), or through GitHub's [private vulnerability reporting](https://github.com/formio/uag/security/advisories/new) for the repository, with the affected package or image and its version. Receipt is acknowledged within five business days. See [SECURITY.md](https://github.com/formio/uag/blob/main/SECURITY.md).
+Do not open a public issue. Report privately to [security@form.io](mailto:security@form.io), or through GitHub's [private vulnerability reporting](https://github.com/formio/uag/security/advisories/new) for the repository, with the affected package or image and its version. Receipt is acknowledged within five business days. See [SECURITY.md](https://github.com/formio/uag/blob/v2.0.0-rc.5/SECURITY.md).

@@ -38,7 +38,7 @@ The UAG is built from layers that either supply context to the agent or accept d
 | **MCP interface** | `/mcp` serves the [Model Context Protocol](https://modelcontextprotocol.io) over Streamable HTTP. Each request gets its own MCP server instance (stateless mode), so concurrent requests never share a transport. | [MCP tools](/developers/mcp-tools) |
 | **Agent API** | `{form}/agent/*`, under each form's URL on the UAG, runs a form's tasks inside the UAG with model engines you enable, and returns validated values. It is the HTTP surface for applications. It saves nothing. | [Agent API](/developers/agent-api) |
 | **Authentication** | Form.io's own: a Form.io user token works against the UAG as against Form.io, and is forwarded unchanged. For MCP, the UAG issues its own tokens: servers use the `client_credentials` grant or an admin credential, and remote MCP clients can sign users in through an OAuth 2.0 flow with PKCE (`MCP_OAUTH`), with whatever login the project uses (Form.io login, SAML, OIDC, custom). | [Security](/developers/security) |
-| **Built-in tools** | Twelve MCP tools that list forms, describe fields, validate and collect data, submit, search, update, and expose tasks. Each is annotated as read or write. | [MCP tools](/developers/mcp-tools) |
+| **Built-in tools** | Eleven MCP tools that list forms, describe fields, validate and collect data, submit, search, update, and expose tasks. Each is annotated as read or write. | [MCP tools](/developers/mcp-tools) |
 | **Custom tools and actions** | A module can add MCP tools, override the built-in ones, and add form actions: Express middleware that runs after the UAG has validated what an agent sent. | [Modules](/developers/modules) |
 | **Built-in actions** | The UAG forwards every submission to Form.io, which runs the form's own actions (Save Submission, Webhook, Email and the rest) as it always does. The UAG adds one action of its own, "Agent: Run task", which runs one of the form's tasks before the save or after it. | [Workflows](/developers/workflows) |
 | **Response templates** | What the tools return to the agent is rendered from Lodash templates, which a module can override. | [Modules](/developers/modules) |
@@ -83,8 +83,8 @@ The UAG supports three usage patterns. They share the same forms, authentication
 | Pattern | Who drives | Entry point | Model runs | License |
 |---|---|---|---|---|
 | **Conversation forms** | A person, through an agent or a chat on your page | `/mcp`, or a form's `agent/chat` | In the MCP client (Claude, your own app), or in the UAG through an agent engine | None |
-| **Agentic workflows** | A submission sent to the UAG | The "Agent: Run task" action, after the save | In the UAG, through an engine | Agentic Formflow |
-| **Agentic Formflow** | An application, or a person typing in a form | `{form}/agent/extract`, `/decide`, `/generate` | In the UAG, through engines | Agentic Formflow |
+| **Agentic workflows** | A submission sent to the UAG | The "Agent: Run task" action, after the save | In the UAG, through an engine | A license that includes the UAG, or a hosted project |
+| **Agentic Formflow** | An application, or a person typing in a form | `{form}/agent/extract`, `/decide`, `/generate` | In the UAG, through engines | A license that includes the UAG, or a hosted project |
 
 ### Conversation forms over MCP
 
@@ -172,7 +172,7 @@ note formio.js + @formio/uag-js: fills empty fields as suggestions
 
 ## Where the models run
 
-The UAG never trains or hosts a model. In MCP conversations, the client's model does the reasoning. In a form's [chat](/developers/chat), workflows and Agentic Formflow, the UAG calls **engines**: adapters for a model provider, each its own npm package (`jev`, `claude`, `openai`, `grok`, `gemini`). The `formio/uag` image includes all of them, and none runs until you name it in `UAG_ENGINES`. Engines can also run in a separate engine server container, so model keys and model traffic stay out of the UAG.
+The UAG never trains or hosts a model. In MCP conversations, the client's model does the reasoning. In a form's [chat](/developers/chat), workflows and Agentic Formflow, the UAG calls **engines**: adapters for a model provider, each its own npm package (`jev`, `claude`, `openai`, `grok`, `gemini`). The `formio/uag:rc` image includes all of them, and none runs until you name it in `UAG_ENGINES`. Engines can also run in a separate engine server container, so model keys and model traffic stay out of the UAG.
 
 Engines only answer. The UAG decides which fields each engine sees, validates every answer, and performs every write. See [Engines](/developers/engines) and [Engine server](/developers/engine-server).
 

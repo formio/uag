@@ -19,7 +19,7 @@ The UAG is built on Form.io core logic, using `@formio/core` processors, but it 
 | The UAG's own action, **Agent: Run task**, and any action a [module](/developers/modules) adds | In the UAG: before the forward, or after it. |
 | The forward itself | A fixed step of every create and update, between the "before" and "after" actions. |
 
-A Form.io user token (`x-jwt-token`) works against the UAG as it does against Form.io: the UAG verifies it with Form.io and forwards it unchanged, never re-signed, so Form.io's roles and permissions apply. A submission sent straight to Form.io never passes through the UAG, so none of the UAG's actions run for it.
+A Form.io user token (`x-jwt-token`) works against the UAG as it does against Form.io: the UAG verifies it with Form.io and forwards it unchanged, never re-signed, so Form.io's roles and permissions apply. The exception is a create that a Run task action with an agent role makes on the user's behalf; see [Project setup for agents](/developers/project-setup). A submission sent straight to Form.io never passes through the UAG, so none of the UAG's actions run for it.
 
 ## The `uag` tag
 
@@ -37,7 +37,7 @@ A tagged form is all a conversation form needs. An agent reads its fields, label
 
 ## Tasks
 
-A **task** is a unit of work the form defines for an agent: what to do, what to read, and which fields to fill. Before UAG 2.0 tasks were called personas; the MCP tools and `uag-eval` still accept the older name (see [Earlier names](#earlier-names)).
+A **task** is a unit of work the form defines for an agent: what to do, what to read, and which fields to fill. Before UAG 2.0 tasks were called personas; 2.0 removed that name everywhere (see [Earlier names](#earlier-names)).
 
 A task is made of components that carry the same value in their `uag` custom property. That value is the task's name:
 
@@ -53,11 +53,11 @@ Custom properties are set in the builder under a component's **API → Custom Pr
 
 | Surface | Saves | Use it for |
 |---|---|---|
-| The **Agent: Run task** action | Yes. Before the save, its answers are part of the one save; after the save, they are saved as an update through the UAG, which runs the form's update actions, so tasks chain. | Workflows with no person in the loop, and re-deciding sensitive fields on the server. See [Workflows](/developers/workflows). |
+| The **Agent: Run task** action | Yes. Before the save, its answers are part of the one save; after the save, they are saved as an update through the UAG, which runs the form's update actions, so tasks chain (through actions that run after the save). | Workflows with no person in the loop, and re-deciding sensitive fields on the server. See [Workflows](/developers/workflows). |
 | The Agent API: `{form}/agent/extract`, `{form}/agent/decide`, `{form}/agent/generate`, under the form's URL on the UAG | No. It is stateless: it answers from the data in the request, and never reads or writes a stored submission. | Pages and applications that fill a form as a person works on it. See [Agent API](/developers/agent-api). |
 | The `agent_provide` and `agent_decide` MCP tools | No. They only read: they hand an MCP client the task, and the client writes with `submission_update`. | An MCP client that does the task with its own model. See [MCP tools](/developers/mcp-tools). |
 
-Run task and the Agent API are Agentic Formflow, which needs a license that includes the UAG or a project on Form.io's hosted service; see [Licensing](/developers/agent-api#licensing).
+Run task, the Agent API's extract, decide and generate, and the `agent_provide` and `agent_decide` MCP tools are Agentic Formflow, which needs a license that includes the UAG or a project on Form.io's hosted service; see [Licensing](/developers/agent-api#licensing).
 
 ![The demo's First Notice of Loss form: its input, its criteria, two decision fields and two value fields, all in the triage task.](/images/uag-task-anatomy.svg)
 
@@ -85,7 +85,7 @@ A task only ever fills its own fields. Values an engine returns for any other pa
 
 ### Nested components
 
-Flag a container (a Panel, Fieldset, Well or Container) with `uag: "<task>"` and every input inside it belongs to the task. This is the usual way to give a task a whole "For office use only" section.
+Flag a container (a Panel, Fieldset, Well, Tabs, Columns, Table or Container) with `uag: "<task>"` and every input inside it belongs to the task. Only `uag` applies to what is inside: set `uagAuthoritative`, `uagAgentDecides`, `uagEngine` and the decision settings on each field. This is the usual way to give a task a whole "For office use only" section.
 
 Fields inside repeating rows (a Data Grid or Edit Grid) are not answered. They are listed in the response's `excluded` with the reason `inside repeating rows`.
 
@@ -128,10 +128,14 @@ When a task lists research tools in `uagTools`, an agent engine may also call th
 A form can define several tasks, each with its own criteria and fields. This models a process with stages: in a college application, an `admissions` task decides whether to admit, and a `finance` task, with entirely different criteria, assesses aid for the admitted applicants.
 
 ```json
-{ "key": "admissionsCriteria", "type": "content", "properties": { "uag": "admissions", "uagField": "criteria" } }
-{ "key": "financeCriteria",    "type": "content", "properties": { "uag": "finance",    "uagField": "criteria" } }
-{ "key": "status",      "type": "select", "properties": { "uag": "admissions" } }
-{ "key": "awardLevel",  "type": "select", "properties": { "uag": "finance" } }
+[
+  { "key": "admissionsCriteria", "type": "content", "properties": { "uag": "admissions", "uagField": "criteria" } },
+  { "key": "financeCriteria",    "type": "content", "properties": { "uag": "finance",    "uagField": "criteria" } },
+  { "key": "status", "type": "select", "data": { "values": [{ "label": "Accepted", "value": "accepted" }, { "label": "Declined", "value": "declined" }] },
+    "properties": { "uag": "admissions" } },
+  { "key": "awardLevel", "type": "select", "data": { "values": [{ "label": "Full Ride", "value": "fullRide" }, { "label": "$1000 Reward", "value": "reward1000" }] },
+    "properties": { "uag": "finance" } }
+]
 ```
 
 When a request names no task:
@@ -155,7 +159,7 @@ The UAG sorts every target field into one of two kinds, and routes each kind to 
 | **Decision** | Radio and select with static values, single or multiple (a multiple select is asked as one yes/no question per option); checkbox; select boxes; survey; single-value resource selects whose whole resource fits the decision engine's option limit (255 for Jev) | A decision engine, with a calibrated confidence. If none answers, an agent engine as a fallback, uncalibrated. | `confident`, `uncertain` or `missing` (`suggested` from an agent engine) |
 | **Value** | Everything else: text, dates, numbers, currency, emails, multi-value or large resource selects, selects fed by a URL | An agent engine | `suggested` or `missing` |
 
-The `uag*` switches (`uagAuthoritative`, `uagAgentDecides`, `uagScale`, `uagOrderCheck`, and the form's `uagAnonymous` and `uagChat`) take `"true"` or `"false"` as the portal saves them, or a JSON boolean. A `uag` property on a Panel, Fieldset, Well, Tabs, Columns, Table or Container makes every input inside it one of the task's fields.
+The `uag*` switches (`uagAuthoritative`, `uagAgentDecides`, `uagScale`, `uagOrderCheck`, and the form's `uagAnonymous` and `uagChat`) take `"true"` or `"false"` as the portal saves them, or a JSON boolean.
 
 A radio or single select whose options exceed the decision engine's limit becomes a value field. `uagEngine` on a component, or on the criteria for the whole task, overrides the routing.
 
@@ -196,7 +200,7 @@ Every response lists target fields that were not answered, with a reason:
 
 Stateless operations (extract, decide, generate) return values and save nothing. **Agent: Run task** reconciles the answers with what the submission holds (the submitted data before the save, the stored submission after it):
 
-- **Decision fields** take a `confident` answer. Otherwise they keep their stored value, which a person may have confirmed, unless the field is marked `uagAuthoritative: "true"`, in which case an answer that is not confident clears it so a person decides. A field marked `uagAgentDecides: "true"` also takes an agent engine's `suggested` answer.
+- **Decision fields** take a `confident` answer. Otherwise they keep their stored value, which a person may have confirmed, unless the field is marked `uagAuthoritative: "true"`, in which case an answer that is not confident (including an agent engine's `suggested` answer, without `uagAgentDecides`) clears it so a person decides. A field marked `uagAgentDecides: "true"` also takes an agent engine's `suggested` answer.
 - **Value fields** take a generated value only while they are empty and visible. A generated value never replaces one already there, so running a task again on its own output changes nothing.
 - **Fields the task owns.** For every task a form's Run task actions run, values a client sends for the task's `uagAuthoritative` fields (decision and value fields alike, and their confidence fields) are removed before anything runs: on a create they start empty, on an update they keep their stored values. Only the task sets them. See [`uagAuthoritative`](/developers/form-properties#uagauthoritative).
 
@@ -245,7 +249,7 @@ Optionally, the UAG has a MongoDB database of its own (`MONGO`, with the databas
 
 | Collection | Holds | Enables |
 |---|---|---|
-| `uag-taskruns` | A record of each Run task run: its task, status, the engines that answered and the paths it wrote (never the values) | Run records in the project's Action Logs, and runs after the save that survive a restart and are taken by one replica at a time |
+| `uag-taskruns` | A record of each Run task run: its task, status, the engines that answered and the paths it wrote (never the values) | Run records in the project's Action Logs and, for actions with an agent role, runs after the save that survive a restart and are taken by one replica at a time |
 | `uag-authcodes` | Authorization codes for remote MCP clients, stored by their SHA-256 hash, with their tokens sealed | OAuth sign-in for remote MCP clients (`MCP_OAUTH`) |
 | `uag-meta` | The database's schema version, and when a license server outage began | The startup check, and the 12-hour license grace period |
 
@@ -300,4 +304,4 @@ What the UAG makes of it:
 
 ## Earlier names
 
-Tasks were called personas before UAG 2.0, and 2.0 removed the old names: the MCP tools take `task` (and `agent_provide_data` is `agent_provide`), `uag-eval` takes `--task`, and the Agent API refuses a body that names `persona` and no `task`. See [MIGRATING-2.0.md](https://github.com/formio/uag/blob/main/MIGRATING-2.0.md).
+Tasks were called personas before UAG 2.0, and 2.0 removed the old names: the MCP tools take `task` (and `agent_provide_data` is `agent_provide`), `uag-eval` takes `--task`, and the Agent API refuses a body that names `persona` and no `task`. See [MIGRATING-2.0.md](https://github.com/formio/uag/blob/v2.0.0-rc.5/MIGRATING-2.0.md).

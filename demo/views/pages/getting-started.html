@@ -62,7 +62,7 @@
   -e PROJECT_TTL=60 \
   -e UAG_ENGINES=claude \
   -e CLAUDE_API_KEY=your-anthropic-key \
-  formio/uag</code></pre></div>
+  formio/uag:rc</code></pre></div>
               </div></div>
               <div class="step"><div>
                 <h3>Connect an agent</h3>
@@ -96,7 +96,7 @@
       ADMIN_KEY: CHANGEME
 
   formio-uag:
-    image: formio/uag
+    image: formio/uag:rc
     restart: always
     depends_on: [formio]
     ports:
@@ -115,11 +115,11 @@ volumes:
               <div class="step"><div>
                 <h3>Start it</h3>
                 <div class="code"><div class="code-bar"><span>bash</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-bash">docker compose up -d
-open http://localhost:3000     # the Form.io portal: admin@example.com / CHANGEME</code></pre></div>
+# Then browse to http://localhost:3000, the Form.io portal: admin@example.com / CHANGEME</code></pre></div>
               </div></div>
               <div class="step"><div>
                 <h3>Tag a form and connect</h3>
-                <p>Create a form in the portal, tag it <code>uag</code>, and connect an agent to <code>http://localhost:3200/mcp</code>. Everything stays on your machine. Conversation forms run here with no license. The Agent API, workflows and Agentic Formflow need a <code>LICENSE_KEY</code> that includes the UAG, or a project on Form.io's hosted service (tab 1).</p>
+                <p>Create a form in the portal, tag it <code>uag</code>, and connect an agent to <code>http://localhost:3200/mcp</code>. Everything stays on your machine. Conversation forms over MCP run here with no license. The <a href="/developers/chat">chat widget</a> needs no license either, but needs an agent engine: add <code>UAG_ENGINES: claude</code> and <code>CLAUDE_API_KEY</code> to the UAG. The Agent API's <code>extract</code>, <code>decide</code> and <code>generate</code>, workflows and Agentic Formflow need a <code>LICENSE_KEY</code> that includes the UAG, or a project on Form.io's hosted service (tab 1).</p>
               </div></div>
             </div>
           </div>
@@ -133,7 +133,7 @@ open http://localhost:3000     # the Form.io portal: admin@example.com / CHANGEM
               <div class="step"><div>
                 <h3>Point the UAG at your project</h3>
                 <div class="code"><div class="code-bar"><span>yaml</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-yaml">  formio-uag:
-    image: formio/uag
+    image: formio/uag:rc
     restart: always
     environment:
       # A container-to-container address: the UAG never needs a public one.
@@ -149,7 +149,7 @@ open http://localhost:3000     # the Form.io portal: admin@example.com / CHANGEM
               </div></div>
               <div class="step"><div>
                 <h3>Keep model keys out of the gateway (optional)</h3>
-                <p>Run the engines on <code>formio/uag-engines</code>, or use a local model through Ollama or vLLM so no data leaves your network. <a href="/developers/engines">Engine setups</a>.</p>
+                <p>Run the engines on <code>formio/uag-engines:rc</code>, or use a local model through Ollama or vLLM so no data leaves your network. <a href="/developers/engines">Engine setups</a>.</p>
               </div></div>
               <div class="step"><div>
                 <h3>Harden it</h3>
@@ -171,11 +171,12 @@ open http://localhost:3000     # the Form.io portal: admin@example.com / CHANGEM
           <li><strong>Tag it <code>uag</code></strong>The UAG registers only tagged forms, so you decide exactly what agents can see.</li>
           <li><strong>Write the criteria</strong>A content component with <code>uag=&lt;task&gt;</code> and <code>uagField=criteria</code>: plain-language instructions, like onboarding a new employee.</li>
           <li><strong>Flag the agent fields</strong>Give each field the agent fills the same <code>uag</code> property, or wrap them in a panel that carries it.</li>
+          <li><strong>Name the input (optional)</strong>Give the free-text field a person types into <code>uagField=input</code>, so <code>@formio/uag-js</code> and <code>agent/extract</code> fill the task from it.</li>
           <li><strong>Trigger it</strong>From a chat over MCP, <code>@formio/uag-js</code> as users type, or an "Agent: Run task" action when a submission is saved through the UAG.</li>
         </ol>
-        <div class="grid grid-2" style="margin-top:32px">
-          <figure class="figure frame"><img src="/images/criteria-properties.png" alt="The criteria content component's custom properties: uag set to the task name and uagField set to criteria." loading="lazy"></figure>
-          <figure class="figure frame"><img src="/images/agent-field-property.png" alt="An agent field's custom property uag, set to the task name." loading="lazy"></figure>
+        <div class="grid grid-2 grid-shots" style="margin-top:32px">
+          <figure class="figure frame"><a class="image-link" href="/images/criteria-properties.png" target="_blank" rel="noopener"><img src="/images/criteria-properties.png" alt="The criteria content component's custom properties: uag set to the task name and uagField set to criteria." loading="lazy"></a></figure>
+          <figure class="figure frame"><a class="image-link" href="/images/agent-field-property.png" target="_blank" rel="noopener"><img src="/images/agent-field-property.png" alt="An agent field's custom property uag, set to the task name." loading="lazy"></a></figure>
         </div>
         <p style="margin-top:28px;text-align:center">Or ask your coding agent: <em>"Make our claim form agent-ready, with a triage task that decides the claim type from the description."</em> <a class="link-arrow" href="/developers/agentic-coding">Agentic Coding Plugin</a></p>
       </div>
@@ -194,7 +195,7 @@ open http://localhost:3000     # the Form.io portal: admin@example.com / CHANGEM
             <button role="tab" id="tab-api" aria-controls="panel-api" aria-selected="false" tabindex="-1">Agent API</button>
           </div>
           <div class="tab-panel" role="tabpanel" id="panel-claude" aria-labelledby="tab-claude">
-            <p>Turn on browser sign-in on the UAG with <code>MCP_OAUTH=true</code> and a database (<code>MONGO</code>), then add the UAG to <code>claude_desktop_config.json</code>. The first connection opens your Form.io login, and Claude then acts with that user's roles. The database needs a license that includes the UAG, unless the project and the database are both on development hosts such as <code>localhost</code> or <code>*.local</code>.</p>
+            <p>Turn on browser sign-in on the UAG with <code>MCP_OAUTH=true</code> and a database (<code>MONGO</code>), then add the UAG to <code>claude_desktop_config.json</code>. The first connection opens your Form.io login, and Claude then acts with that user's roles. The database needs a license that includes the UAG, unless the project and the database are both on development hosts (<code>localhost</code>, <code>*.local</code>); Compose service names such as <code>formio</code> and <code>mongo</code> are not, so without a license give both services a <code>*.local</code> network alias, or run them on <code>localhost</code>.</p>
             <div class="code"><div class="code-bar"><span>json</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-json">{
   "mcpServers": {
     "formio-uag": {
@@ -206,7 +207,7 @@ open http://localhost:3000     # the Form.io portal: admin@example.com / CHANGEM
             <p>Then ask: <em>"I would like to add a new customer."</em> <a href="/developers/connect-claude">Full guide, including claude.ai connectors</a>.</p>
           </div>
           <div class="tab-panel" role="tabpanel" id="panel-mcp" aria-labelledby="tab-mcp" hidden>
-            <p>Server-side clients exchange the project key for a token, then connect over streamable HTTP. Nothing dials back in, so the UAG can stay private.</p>
+            <p>Server-side clients exchange the project key for a token, then connect over streamable HTTP. Nothing dials back in, so the UAG can stay private. Run <code>npm install @modelcontextprotocol/sdk</code>, save this as <code>client.mjs</code>, and run it with Node.js 22 or newer.</p>
             <div class="code"><div class="code-bar"><span>js</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-js">import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
@@ -229,7 +230,7 @@ await mcp.close();</code></pre></div>
             <p><a href="/developers/mcp-tools">Every MCP tool, with its arguments</a>.</p>
           </div>
           <div class="tab-panel" role="tabpanel" id="panel-api" aria-labelledby="tab-api" hidden>
-            <p>Fill a task's fields from free text. Decisions come from a decision engine, open values from an agent engine, and nothing is saved until you say so. The operations are under the form's URL on the UAG.</p>
+            <p>Fill a task's fields from free text. Decisions come from a decision engine, open values from an agent engine, and nothing is saved until you say so. The operations are under the form's URL on the UAG. This call assumes a form <code>claim</code> with a <code>triage</code> task, like the demo's (<a href="{{links.sourceFile}}/demo/module/project.json" target="_blank" rel="noopener">its template</a>). On Open Source, leave out <code>/yourproject</code> and send <code>x-admin-key: $ADMIN_KEY</code>.</p>
             <div class="code"><div class="code-bar"><span>bash</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-bash">curl -X POST http://localhost:3200/yourproject/claim/agent/extract \
   -H 'Content-Type: application/json' \
   -H "x-token: $PROJECT_KEY" \
