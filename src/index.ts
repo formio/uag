@@ -21,14 +21,14 @@ export type UAGModule = ServerModule & {
 /**
  * Agentic Formflow keeps its license state inside @formio/appserver-core. The UAG
  * loads it only through @formio/appserver, so the two always share one copy,
- * which must be 2.24.1 or later. An older @formio/appserver, or an old lockfile,
+ * which must be 2.25.1 or later. An older @formio/appserver, or an old lockfile,
  * can still resolve an older one, which would fail in confusing ways; say what
  * to do instead.
  */
 export function assertSingleCore(version: string = appserverCoreVersion()): void {
   const [major, minor, patch] = version.split('.').map((part: string) => parseInt(part, 10) || 0);
-  if (major < 2 || (major === 2 && (minor < 24 || (minor === 24 && patch < 1)))) {
-    throw new Error(`@formio/uag needs @formio/appserver-core 2.24.1 or later, through @formio/appserver; ${version} is installed. Upgrade @formio/appserver.`);
+  if (major < 2 || (major === 2 && (minor < 25 || (minor === 25 && patch < 1)))) {
+    throw new Error(`@formio/uag needs @formio/appserver-core 2.25.1 or later, through @formio/appserver; ${version} is installed. Upgrade @formio/appserver.`);
   }
 }
 

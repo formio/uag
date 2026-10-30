@@ -318,9 +318,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@formio/appserver-core@npm:^2.24.3":
-  version: 2.24.3
-  resolution: "@formio/appserver-core@npm:2.24.3"
+"@formio/appserver-core@npm:^2.25.1":
+  version: 2.25.1
+  resolution: "@formio/appserver-core@npm:2.25.1"
   dependencies:
     "@formio/core": "npm:2.9.0"
     "@formio/node-fetch-http-proxy": "npm:^1.2.0"
@@ -345,15 +345,15 @@ __metadata:
     resolve: "npm:^1.22.13"
     statuses: "npm:^2.0.2"
     xss: "npm:^1.0.17"
-  checksum: 10c0/de71ec2af75ed7041137cd9e5f8cfab072e968e6dfcdceed6f00121e376de715505e240bf0236aff576a28562dc52616170fff569f88e7f3184a803df46a1592
+  checksum: 10c0/4ecf403cf2b510029f8132a13e89262d2ff918cb6827866423e1c75c6331839dd31331f131db675e9a7b7c56cdc6a5e7bd626b7203fa54625945ef7a81ffa80d
   languageName: node
   linkType: hard
 
-"@formio/appserver@npm:^2.24.3":
-  version: 2.24.3
-  resolution: "@formio/appserver@npm:2.24.3"
+"@formio/appserver@npm:^2.25.1":
+  version: 2.25.1
+  resolution: "@formio/appserver@npm:2.25.1"
   dependencies:
-    "@formio/appserver-core": "npm:^2.24.3"
+    "@formio/appserver-core": "npm:^2.25.1"
     "@formio/core": "npm:2.9.0"
     async: "npm:^3.2.6"
     bcryptjs: "npm:^3.0.3"
@@ -363,7 +363,7 @@ __metadata:
     jsonwebtoken: "npm:^9.0.3"
     lodash: "npm:^4.18.1"
     mongodb: "npm:^7.7.0"
-  checksum: 10c0/386952003751cff73f9b6c05e16862633d8ea1a0eca3d97e137eccac21c2e9d2c01a3f554c7245de5c62ef142989765a346e583515303f5f013a3f91436c4c5c
+  checksum: 10c0/7c1be1a7967c0527b6f8f7038e15217d70ea633c1cc5e4e8f885da18dbb6317e0fff34da081d6c6347c309826f3268db891132e34a70c34e5b1075955679a593
   languageName: node
   linkType: hard
 
@@ -567,7 +567,7 @@ __metadata:
   resolution: "@formio/uag@workspace:."
   dependencies:
     "@anthropic-ai/sdk": "npm:^1.3.0"
-    "@formio/appserver": "npm:^2.24.3"
+    "@formio/appserver": "npm:^2.25.1"
     "@formio/core": "npm:2.9.0"
     "@formio/js": "npm:5.7.0"
     "@formio/uag-sdk": "npm:^2.0.0-rc.3"

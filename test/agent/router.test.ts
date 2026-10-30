@@ -538,7 +538,7 @@ describe('Agent API admin credentials', () => {
     it('refuses admin credentials from a browser', async () => {
         const res = await request(adminApp()).get('/agent/capabilities').set('x-token', 'project-key').set('Origin', 'https://app.example.com');
         expect(res.status, `${res.status} ${res.text} ${JSON.stringify(res.headers)}`).to.equal(401);
-        expect(res.body.detail).to.contain('browser');
+        expect(res.body.code).to.equal('unauthorized'); expect(res.body.error).to.contain('browser');
     });
 
     it('refuses a scoped token, which is only for /mcp', async () => {
