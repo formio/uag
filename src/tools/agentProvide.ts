@@ -2,10 +2,10 @@ import { UAGProjectInterface } from "../UAGProjectInterface";
 import { ResponseTemplate } from "../template";
 import { ToolInfo } from "./utils";
 import { UAGComponentInfo, UAGFormInterface } from "../UAGFormInterface";
-import { defaultsDeep, omit } from "lodash";
+import { defaultsDeep } from "lodash";
 import { SchemaBuilder } from "./SchemaBuilder";
 import { reads } from './annotations';
-import { formflow, FormflowError, resolveTaskName, warnLegacy } from "../formflow";
+import { formflow } from "../formflow";
 
 const DESCRIPTION = 'Provides a mechanism for agents to process existing submission data, understand it, and then to provide additional data values provided a criteria and form context.';
 
@@ -31,70 +31,37 @@ async function refusal(project: UAGProjectInterface): Promise<{ error: string; c
  * agent writes its values with `submission_update`.
  */
 export const agentProvide = async (project: UAGProjectInterface): Promise<ToolInfo> => {
-    // Overrides written for the tool's earlier name still apply, except a rename,
-    // which belongs to the deprecated tool and would clash with it.
-    const overrides = project.config?.toolOverrides;
-    const own = overrides?.agent_provide || (overrides?.agent_provide_data ? omit(overrides.agent_provide_data, 'name') : {});
     // Merged into a new object: the overrides are shared config, and the tools are
     // built again for every request.
-    return defaultsDeep({}, own, provideTool(project, 'agent_provide'));
+    return defaultsDeep({}, project.config?.toolOverrides?.agent_provide, provideTool(project));
 };
 
-/**
- * `agent_provide_data`: the earlier name of `agent_provide`, kept so MCP clients
- * and integrations that call it keep working. Removed in a future major release.
- */
-export const agentProvideData = async (project: UAGProjectInterface): Promise<ToolInfo> => {
-    const tool = provideTool(project, 'agent_provide_data');
-    const execute = tool.execute;
-    return defaultsDeep({}, project.config?.toolOverrides?.agent_provide_data, {
-        ...tool,
-        title: 'Agent Provide Data (deprecated)',
-        description: `Deprecated: use \`agent_provide\`, which takes the same arguments. ${DESCRIPTION}`,
-        execute: (args: any, extra: any) => {
-            warnLegacy('agent_provide_data', 'the agent_provide_data MCP tool; use agent_provide.');
-            return execute(args, extra);
-        }
-    });
-};
-
-function provideTool(project: UAGProjectInterface, name: string): ToolInfo {
+function provideTool(project: UAGProjectInterface): ToolInfo {
     return {
-        name,
+        name: 'agent_provide',
         title: 'Agent Provide',
         description: DESCRIPTION,
         annotations: reads('Process submission data'),
         inputSchema: (new SchemaBuilder(project))
             .form_name()
             .submission_id()
-            .task()
-            .persona().schema,
+            .task().schema,
         execute: async (args: {
             form_name: string;
             submission_id: string;
             task?: string;
-            persona?: string;
         }, extra: any) => {
             const { form_name, submission_id } = args;
             const refused = await refusal(project);
             if (refused) return project.mcpJSONResponse(refused, true);
-            let requested: string | undefined;
-            try {
-                requested = resolveTaskName(args, name);
-            }
-            catch (err: any) {
-                if (err instanceof FormflowError) return project.mcpJSONResponse({ error: err.message }, true);
-                throw err;
-            }
+            const requested = args.task || undefined;
             const form = await project.getForm(form_name) as UAGFormInterface;
             if (!form) {
                 return project.mcpResponse(ResponseTemplate.formNotFound, { formName: form_name }, true);
             }
 
             const task = requested || Object.keys(form.uagFields)[0] || 'default';
-            // Templates get the task under both names: deployments may have
-            // customized a template that still renders `persona`.
-            const names = { task, persona: task };
+            const names = { task };
             const uag = form.uagFields[task];
             if (!uag) {
                 return project.mcpResponse(ResponseTemplate.uagComponentNotFound, {

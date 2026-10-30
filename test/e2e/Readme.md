@@ -40,16 +40,8 @@ Boots Form.io OSS + Mongo (Docker) and the UAG server (local process, from
 `./lib`, with the test module in `./module`). A real MCP client exercises the
 streamable-http transport: authentication, tool listing, uag-tag filtering,
 field discovery, data collection, validation, submission, and the
-`agent_provide` criteria prompt (and its deprecated name, `agent_provide_data`) — with results verified directly against
+`agent_provide` criteria prompt — with results verified directly against
 the Form.io REST API.
-
-**Retired Claude integration** (`layer1.uag-claude-1x.e2e.mjs`, no Claude; needs `E2E_UAG_LICENSE`):
-Installs the published `@formio/uag-claude` 1.3.2 from npm (once, into the
-system temp directory) and runs it, unchanged, against UAG 2.0, with a scripted
-Messages API in place of Claude (`ANTHROPIC_BASE_URL`). Shows that its
-`agent_provide_data` webhook still saves through the UAG's MCP tools, and that
-a direct command still runs, for deployments that have not moved to the Agent
-API yet.
 
 **Concurrency** (`layer1.concurrency.e2e.mjs`, no Claude): the UAG previously
 shared a single `McpServer` across all requests and reconnected it to a new

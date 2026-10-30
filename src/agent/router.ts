@@ -48,10 +48,17 @@ function contextOf(req: AgentRequest): OperationContext {
     return { auth: req.auth, requestId: req.requestId, identity: callerIdentity(req.auth, req) };
 }
 
-/** The task the request names, if any. */
+/**
+ * The task the request names, if any. A request that still names a 1.x
+ * `persona` is refused: ignoring it would run every task, an engine call each.
+ */
 function taskOf(req: AgentRequest): string | undefined {
+    const named = (value: unknown): value is string => typeof value === 'string' && value.trim() !== '';
     const task = req.body?.task;
-    return typeof task === 'string' && task ? task : undefined;
+    if (named(req.body?.persona) && !named(task)) {
+        throw new FormflowError(400, 'UAG 2.0 renamed "persona" to "task". Send "task" instead.');
+    }
+    return named(task) ? task : undefined;
 }
 
 /**

@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { agentProvide, agentProvideData } from '../../src/tools/agentProvide';
+import { agentProvide } from '../../src/tools/agentProvide';
 import { ResponseTemplate } from '../../src/template';
 import { MockProjectInterface, MockFormInterface } from './mock';
 import { requireTestLicense } from '../agent/fixtures';
@@ -88,13 +88,11 @@ describe('agent_provide tool', () => {
     describe('without a license', () => {
         it('refuses, as an agentic workflow, before reading the form or the submission', async () => {
             mockProject.mockConfig = { license: '' };
-            for (const run of [tool, await agentProvideData(mockProject as any)]) {
-                const result = await run.execute({ form_name: 'testForm', submission_id: 'sub123' }, { authInfo: mockAuthInfo });
-                expect(result.isError).to.equal(true);
-                const body = JSON.parse(result.content[0].text);
-                expect(body.code).to.equal('license_required');
-                expect(body.error).to.contain('conversation forms do not need either');
-            }
+            const result = await tool.execute({ form_name: 'testForm', submission_id: 'sub123' }, { authInfo: mockAuthInfo });
+            expect(result.isError).to.equal(true);
+            const body = JSON.parse(result.content[0].text);
+            expect(body.code).to.equal('license_required');
+            expect(body.error).to.contain('conversation forms do not need either');
         });
     });
 
@@ -173,8 +171,8 @@ describe('agent_provide tool', () => {
             { authInfo: mockAuthInfo }
         );
         expect(result.template).to.equal(ResponseTemplate.agentProcessData);
-        // Both names reach the template: a customized template may still render `persona`.
-        expect(result.data).to.include({ task: 'analyst', persona: 'analyst' });
+        expect(result.data).to.include({ task: 'analyst' });
+        expect(result.data).to.not.have.property('persona');
         expect(result.data.criteria).to.include('Analyze');
         expect(result.data.values).to.exist;
         expect(result.data.fields).to.exist;
@@ -189,80 +187,20 @@ describe('agent_provide tool', () => {
         expect(result.data.task).to.equal('analyst');
     });
 
-    it('accepts the legacy persona argument, which stays in its schema', async () => {
+    it('takes task, and has no persona argument', () => {
         expect(tool.inputSchema).to.have.property('task');
-        expect(tool.inputSchema).to.have.property('persona');
-        const result = await tool.execute(
-            { form_name: 'testForm', submission_id: 'sub123', persona: 'analyst' },
-            { authInfo: mockAuthInfo }
-        );
-        expect(result.data.task).to.equal('analyst');
+        expect(tool.inputSchema).to.not.have.property('persona');
     });
 
-    it('refuses a task and persona that disagree', async () => {
-        const result = await tool.execute(
-            { form_name: 'testForm', submission_id: 'sub123', task: 'analyst', persona: 'reviewer' },
-            { authInfo: mockAuthInfo }
-        );
-        expect(result.isError).to.equal(true);
-    });
-
-    it('respects tool overrides from config, and those written for its earlier name', async () => {
-        const withOverrides = (toolOverrides: any) => {
-            const project = new MockProjectInterface({ testForm: { title: 'Test Form', name: 'testForm', tags: ['uag'], components: [] } });
-            Object.defineProperty(project, 'config', { get: () => ({ toolOverrides }) });
-            return project;
-        };
-        const own = await agentProvide(withOverrides({ agent_provide: { description: 'Custom provide' } }));
-        expect(own.description).to.equal('Custom provide');
-        // An override for agent_provide_data applies to agent_provide too, except a rename.
-        const legacy = withOverrides({ agent_provide_data: { name: 'custom_agent_data', description: 'Custom agent data tool' } });
-        const renamed = await agentProvide(legacy);
-        expect(renamed.name).to.equal('agent_provide');
-        expect(renamed.description).to.equal('Custom agent data tool');
-        const alias = await agentProvideData(legacy);
-        expect(alias.name).to.equal('custom_agent_data');
-    });
-
-    it('builds the same tools on every request from an override for its earlier name', async () => {
-        const toolOverrides: any = { agent_provide_data: { description: 'Custom agent data tool' } };
+    it('respects tool overrides from config, and builds the same tool on every request', async () => {
+        const toolOverrides: any = { agent_provide: { description: 'Custom provide' } };
         const project = new MockProjectInterface({ testForm: { title: 'Test Form', name: 'testForm', tags: ['uag'], components: [] } });
         Object.defineProperty(project, 'config', { get: () => ({ toolOverrides }) });
-        // Built in getTools() order, once per request: the deprecated tool must not
-        // write its title and execute into the shared override for the next request.
         for (let request = 0; request < 2; request++) {
             const provide = await agentProvide(project);
-            await agentProvideData(project);
-            expect(provide.title, `request ${request + 1}`).to.equal('Agent Provide');
+            expect(provide.name).to.equal('agent_provide');
+            expect(provide.description, `request ${request + 1}`).to.equal('Custom provide');
         }
-        expect(toolOverrides.agent_provide_data).to.deep.equal({ description: 'Custom agent data tool' });
-    });
-
-    describe('agent_provide_data, its deprecated name', () => {
-        const realWarn = console.warn;
-        afterEach(() => { console.warn = realWarn; });
-
-        it('is served with the same arguments and answers, and says it is deprecated', async () => {
-            const alias = await agentProvideData(mockProject);
-            expect(alias.name).to.equal('agent_provide_data');
-            expect(alias.description).to.match(/^Deprecated: use `agent_provide`/);
-            expect(Object.keys(alias.inputSchema || {})).to.deep.equal(Object.keys(tool.inputSchema || {}));
-            const args = { form_name: 'testForm', submission_id: 'sub123', task: 'analyst' };
-            const viaAlias = await alias.execute(args, { authInfo: mockAuthInfo });
-            const viaTool = await tool.execute(args, { authInfo: mockAuthInfo });
-            expect(viaAlias).to.deep.equal(viaTool);
-        });
-
-        it('logs one deprecation notice for many calls', async () => {
-            const warnings: string[] = [];
-            console.warn = (message: any) => { warnings.push(String(message)); };
-            const alias = await agentProvideData(mockProject);
-            for (let i = 0; i < 3; i++) {
-                await alias.execute({ form_name: 'testForm', submission_id: 'sub123', task: 'analyst' }, { authInfo: mockAuthInfo });
-            }
-            // At most one: the notice is logged once per process, so an earlier test may have logged it.
-            const notices = warnings.filter((message) => message.includes('agent_provide_data MCP tool'));
-            expect(notices.length).to.be.at.most(1);
-        });
+        expect(toolOverrides.agent_provide).to.deep.equal({ description: 'Custom provide' });
     });
 });

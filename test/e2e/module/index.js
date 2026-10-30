@@ -2,7 +2,7 @@
  * UAG module configuration used by the end-to-end test suite. Provides the
  * test project template (uag-tagged customer resource with required and
  * conditional fields, plus a college application form configured for the
- * agent_provide_data workflow, the FNOL wizard's claim form, and the Agent API
+ * agent_provide workflow, the FNOL wizard's claim form, and the Agent API
  * suites' incident and routing forms), and the scripted engine types those
  * suites enable with UAG_ENGINES.
  *

@@ -55,9 +55,9 @@ describe('Layer 1: UAG MCP protocol', function () {
             'get_forms', 'get_form_fields', 'get_field_info', 'collect_field_data',
             'confirm_form_submission', 'submit_completed_form', 'find_submissions',
             'submission_update', 'agent_provide', 'agent_decide', 'fetch_external_data',
-            // The deprecated earlier name of agent_provide.
-            'agent_provide_data',
         ]);
+        // agent_provide's 1.x name was removed in 2.0.
+        expect(names).to.not.include('agent_provide_data');
     });
 
     it('exposes only uag-tagged forms through get_forms', async function () {
@@ -167,17 +167,5 @@ describe('Layer 1: UAG MCP protocol', function () {
         expect(text).to.include('3.5');
         // ... and the existing submission values for the agent to analyze.
         expect(text).to.include('perseverance');
-    });
-
-    it('still answers through agent_provide_data, its earlier name, with the earlier persona argument', async function () {
-        requireLicense(this);
-        const submission = await formio.createSubmission('application', {
-            firstName: 'Legacy', lastName: 'Client', email: 'legacy.client@example.com',
-            gpa: 3.1, essay: 'An essay about patience.',
-        });
-        const args = { form_name: 'application', submission_id: submission._id };
-        const viaAlias = mcpText(await mcp.callTool({ name: 'agent_provide_data', arguments: { ...args, persona: 'application' } }));
-        const viaTool = mcpText(await mcp.callTool({ name: 'agent_provide', arguments: { ...args, task: 'application' } }));
-        expect(viaAlias).to.equal(viaTool);
     });
 });

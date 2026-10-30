@@ -117,13 +117,6 @@ describe('SchemaBuilder', () => {
         });
     });
 
-    describe('persona()', () => {
-        it('creates optional string', () => {
-            builder.persona();
-            expect(builder.schema).to.have.property('persona');
-        });
-    });
-
     describe('data_path()', () => {
         it('creates string', () => {
             builder.data_path();

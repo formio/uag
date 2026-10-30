@@ -6,7 +6,7 @@
  *            [--engine jev] [--json report.json]
  *
  * --form      A Form.io form definition (JSON export).
- * --task      The task to evaluate (default: the form's first). `--persona` is the old name.
+ * --task      The task to evaluate (default: the form's first).
  * --examples  A JSON array of { "id", "data": { ... }, "expected": { "<path>": <value or null> } }.
  *             null means "the input does not say", which expects the field to stay empty.
  * --engine    The decision engine to evaluate: an instance named in UAG_ENGINES, or an
@@ -25,7 +25,7 @@ require('dotenv/config');
 const { readFileSync, writeFileSync } = require('fs');
 const { parseInstances } = require('@formio/uag-sdk');
 const { ProjectInterface, UAGProjectInterface, UAGFormInterface, loadUAGEngines } = require('../lib');
-const { FormflowService, formatReport, resolveTaskName } = require('../lib/formflow');
+const { FormflowService, formatReport } = require('../lib/formflow');
 
 /**
  * The instance to evaluate: the one UAG_ENGINES names `name`, so a deployed
@@ -51,7 +51,11 @@ async function main() {
         console.error('Usage: uag-eval --form <form.json> --examples <examples.json> [--task <name>] [--engine <name>] [--json <out.json>] [--project <url>]');
         process.exit(2);
     }
-    const task = resolveTaskName(opts, 'uag-eval');
+    if (opts.persona !== undefined) {
+        console.error('uag-eval: --persona was renamed --task in UAG 2.0.');
+        process.exit(2);
+    }
+    const task = opts.task || undefined;
     const formDef = JSON.parse(readFileSync(opts.form, 'utf8'));
     const examples = JSON.parse(readFileSync(opts.examples, 'utf8'));
     const entry = engineEntry(opts.engine, process.env);

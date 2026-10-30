@@ -387,10 +387,31 @@ describe('Agent API', () => {
     });
 
     describe('legacy names', () => {
-        it('does not read persona in place of task', async () => {
+        it('refuses a 1.x persona with no task, rather than running every task', async () => {
+            const decider = stubDecisionEngine({ record: true });
+            const { project } = setup([decider]);
+            const res = await request(app(project)).post('/claim/agent/decide').send({ persona: 'triage', data: description });
+            expect(res.status, res.text).to.equal(400);
+            expect(res.body.error).to.contain('renamed "persona" to "task"');
+            expect(res.body.requestId).to.be.a('string');
+            expect(decider.calls).to.equal(0);
+        });
+
+        it('refuses a persona sent with an empty or null task, and ignores an empty persona', async () => {
             const { project } = setup([stubDecisionEngine()]);
-            // A persona naming no task would be refused if it were read.
-            const res = await request(app(project)).post('/claim/agent/decide').send({ persona: 'finance', data: description });
+            for (const task of ['', '  ', null]) {
+                const res = await request(app(project)).post('/claim/agent/decide').send({ persona: 'triage', task, data: description });
+                expect(res.status, JSON.stringify(task)).to.equal(400);
+            }
+            for (const persona of ['', null]) {
+                const res = await request(app(project)).post('/claim/agent/decide').send({ persona, data: description });
+                expect(res.status, JSON.stringify(persona)).to.equal(200);
+            }
+        });
+
+        it('reads task and ignores persona when a request sends both', async () => {
+            const { project } = setup([stubDecisionEngine()]);
+            const res = await request(app(project)).post('/claim/agent/decide').send({ task: 'triage', persona: 'finance', data: description });
             expect(res.status, res.text).to.equal(200);
             expect(res.body.tasks).to.deep.equal(['triage']);
         });

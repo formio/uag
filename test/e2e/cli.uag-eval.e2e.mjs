@@ -61,10 +61,10 @@ describe('uag-eval command', function () {
         expect(json.fields.map((f) => f.path)).to.have.members(['triage.claimType', 'triage.injuryInvolved']);
     });
 
-    it('still accepts the legacy --persona flag', async function () {
-        const { code, stdout } = await run(['--form', path.join(dir, 'claim.json'), '--examples', path.join(dir, 'examples.json'), '--persona', 'triage', '--engine', 'stub-decision']);
-        expect(code).to.equal(0);
-        expect(stdout).to.include('task "triage"');
+    it('refuses the 1.x --persona flag, saying it is now --task', async function () {
+        const { code, stderr } = await run(['--form', path.join(dir, 'claim.json'), '--examples', path.join(dir, 'examples.json'), '--persona', 'triage', '--engine', 'stub-decision']);
+        expect(code).to.equal(2);
+        expect(stderr).to.include('--persona was renamed --task');
     });
 
     it('explains how to call it when arguments are missing', async function () {

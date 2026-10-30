@@ -192,15 +192,6 @@ export class SchemaBuilder {
     }
 
     /**
-     * The legacy name for `task`. Kept in the schema so clients that still send
-     * it are not silently given the default task.
-     */
-    persona() {
-        this.schema.persona = z.string().optional().describe('Deprecated: the former name for `task`. Send `task` instead.');
-        return this;
-    }
-
-    /**
      * The data_path of a specific field within the form.
      */
     data_path() {

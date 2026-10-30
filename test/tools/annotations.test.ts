@@ -31,7 +31,6 @@ describe('tool annotations', () => {
         'collect_field_data',
         'confirm_form_submission',
         'agent_provide',
-        'agent_provide_data',
     ];
 
     // submit_completed_form creates a submission; submission_update calls

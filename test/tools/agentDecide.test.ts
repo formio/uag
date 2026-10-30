@@ -46,14 +46,11 @@ describe('agent_decide tool', () => {
         expect(result.structuredContent.error).to.contain('decide the claim type').and.contain('triage');
     });
 
-    it('accepts the legacy persona argument, and refuses one that disagrees with task', async () => {
+    it('takes task, and has no persona argument', async () => {
         expect(tool.inputSchema).to.have.property('task');
-        expect(tool.inputSchema).to.have.property('persona');
-        const legacy = await tool.execute({ form_name: 'claim', persona: 'triage', form_data: {} }, { authInfo: auth });
-        expect(legacy.structuredContent.task).to.equal('triage');
-        const conflict = await tool.execute({ form_name: 'claim', task: 'triage', persona: 'finance', form_data: {} }, { authInfo: auth });
-        expect(conflict.isError).to.equal(true);
-        expect(conflict.structuredContent.error).to.contain('"persona"');
+        expect(tool.inputSchema).to.not.have.property('persona');
+        const result = await tool.execute({ form_name: 'claim', task: 'triage', form_data: {} }, { authInfo: auth });
+        expect(result.structuredContent.task).to.equal('triage');
     });
 
     it('reports that the license is required on an unlicensed production deployment', async () => {

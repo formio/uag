@@ -49,8 +49,6 @@ export type UAGToolOverride = {
   submission_update?: ToolInfo;
   find_submissions?: ToolInfo;
   agent_provide?: ToolInfo;
-  /** @deprecated The earlier name of `agent_provide`; also applied to it when `agent_provide` is not set. */
-  agent_provide_data?: ToolInfo;
   agent_decide?: ToolInfo;
   fetch_external_data?: ToolInfo;
 };
