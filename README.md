@@ -323,7 +323,7 @@ The full table, with the Agent API's errors: [Troubleshooting](https://ai.form.i
 | [`@formio/uag-sdk`](./packages/engine-sdk) | 2.x | ≥ 2.0.0 | Engine contract version 1, remote engine protocol version 1. |
 | [`@formio/uag-engines`](./packages/engine-server), image `formio/uag-engines` | 2.x | ≥ 2.0.0 | The engine server. |
 | [`@formio/uag-js`](./packages/uag-js) | 2.x | ≥ 2.0.0 | The formio.js module: saves `uag` forms through the UAG, adds Agent Input, and renders forms as a chat. Runs in the browser. |
-| `@formio/uag-claude` | 1.3.x | ≥ 1.12.0 | The retired Claude integration. Security fixes only; see [MIGRATING-2.0.md](./MIGRATING-2.0.md). |
+| `@formio/uag-claude` | 1.3.x | 1.12.0 – 1.13.x | The retired Claude integration (against 2.0, only its direct commands). Security fixes only; see [MIGRATING-2.0.md](./MIGRATING-2.0.md). |
 
 `@formio/uag-claude` 2.x is the Claude *engine*, not the 1.x integration; pin `@formio/uag-claude@^1` if you still install the integration. Upgrading from 1.x: [MIGRATING-2.0.md](./MIGRATING-2.0.md).
 

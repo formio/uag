@@ -14,7 +14,7 @@ This page covers the `UAGServer` class and its configuration, modules, the proje
 | Requirement | Why |
 |---|---|
 | Node.js 22 or later | `@formio/uag` and every engine package declare `"node": ">=22.0.0"`. |
-| `--no-node-snapshot` | Form logic (conditionals, calculated values, custom validation) runs in `isolated-vm`, which needs Node's startup snapshot turned off. Pass it to `node`, or set `NODE_OPTIONS=--no-node-snapshot`. The `uag` command adds it for you. |
+| `--no-node-snapshot` | Form logic (conditionals, calculated values, custom validation) runs in `isolated-vm`, which needs Node's startup snapshot turned off: without it the process can crash later, in native code. Pass it to `node`, or set `NODE_OPTIONS=--no-node-snapshot`. The `UAGServer` constructor refuses to start without it, saying so; the `uag` command adds it for you. |
 | A Form.io project | `PROJECT` must point at a reachable Open Source server (with `ADMIN_KEY`) or an Enterprise project (with `PROJECT_KEY` and a `LICENSE_KEY`). Without one, `router()` throws. |
 | `JWT_SECRET` | Tokens the UAG issues are signed with it. With an agent role, it must be the Form.io Enterprise server's. See [Deployment](/developers/deployment). |
 | Optional: `MONGO` | The UAG's own database, for run records, runs that survive a restart and remote MCP sign-in (`MCP_OAUTH`). See [The UAG database](#the-uag-database). |
@@ -61,7 +61,7 @@ node --no-node-snapshot server.js
 
 `require('dotenv/config')` loads a `.env` file from the working directory, as the `uag` command does.
 
-> **Note:** Mount the router at the root of your application (`app.use(router)`, not `app.use('/uag', router)`). With `MCP_OAUTH`, MCP clients look for `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server` at the root of the UAG's public URL, and the login page posts to the absolute path `/auth/authorize`.
+> **Note:** The router can be mounted under a path (`app.use('/uag', router)`): the Agent API, the chat, submissions, `/status`, `/mcp` with `client_credentials` and `@formio/uag-js` (given `https://app.example.com/uag` as the UAG's URL) all work there. Remote MCP sign-in (`MCP_OAUTH`) is the exception: MCP clients look for `/.well-known/oauth-protected-resource` and `/.well-known/oauth-authorization-server` at the root of the host, so serve the UAG at a host's root (a host name of its own) when it is on.
 
 ## Behind a reverse proxy
 
@@ -117,7 +117,7 @@ main().catch((err) => {
 });
 ```
 
-The UAG's router ends with the project routes and an admin passthrough to the Form.io server, which answer for most paths. Register your own routes before `app.use(await server.router())`.
+The UAG's router ends with the project routes and an admin passthrough: a request with an admin credential (`x-admin-key`, `x-token`) for a path the UAG does not serve is forwarded to the Form.io server. Other requests it does not serve fall through to the routes after it. Register your own routes before `app.use(await server.router())` anyway, so admin requests reach them too, or mount the UAG under a path.
 
 ## What router() does
 
@@ -161,7 +161,7 @@ class UAGServer extends Server {
 }
 ```
 
-The constructor checks that the `@formio/appserver-core` that `@formio/appserver` loads, the UAG's only copy of it, is 2.24.1 or later, and throws if not (see [assertSingleCore](#public-exports)). It then fills every option you leave out from the environment, so `new UAGServer()` with no arguments configures itself the way the Docker image does.
+The constructor checks that the `@formio/appserver-core` that `@formio/appserver` loads, the UAG's only copy of it, is 2.25.1 or later, and throws if not (see [assertSingleCore](#public-exports)). It then fills every option you leave out from the environment, so `new UAGServer()` with no arguments configures itself the way the Docker image does.
 
 `UAGConfig` extends `ServerConfig`, the Form.io server options, with the UAG's own.
 
@@ -197,7 +197,7 @@ The constructor checks that the `@formio/appserver-core` that `@formio/appserver
 | `retries` | `number` | `PROJECT_RETRIES`, else `5` | Attempts to load the project at startup. Also used by `remote` engines to describe themselves. |
 | `retryDelay` | `number` (ms) | `PROJECT_RETRY_DELAY`, else `5000` | First delay between attempts, doubled each time. |
 | `cors` | `CorsOptions \| boolean \| string` | `CORS`, else `'true'` | `true` allows every origin, `false` turns CORS off, any other string is the allowed origin, an object is passed to the `cors` package. |
-| `maxBodySize` | `string` | `MAX_BODY_SIZE`, else `'100mb'` | The JSON body limit for the server's routes. The Agent API has its own limit of 5 MB. |
+| `maxBodySize` | `string` | `MAX_BODY_SIZE`, else `'16mb'` | The JSON body limit for the server's routes. The Agent API has its own limit of 5 MB. |
 | `cache` | `boolean` | `PROJECT_CACHE`, else `true` | With `db`, store each project load there and fall back to it when the project cannot be loaded. The UAG sets no `db`, so this has no effect unless you pass one. |
 | `db` | `DBConfig` | none | A database for the Form.io logic the UAG is built on. In the UAG, `MONGO` configures `database`, not `db`. |
 | `status` | `any` | the package versions | The body of `GET /status`. |
@@ -210,7 +210,7 @@ The constructor checks that the `@formio/appserver-core` that `@formio/appserver
 | `adminKey` | `string` | `ADMIN_KEY` | Open Source: the server's admin key. Also accepted as `x-admin-key` on the Agent API. |
 | `projectKey` | `string` | `PROJECT_KEY` | Enterprise: the project's API key. Also accepted as `x-token` on the Agent API. |
 | `secret` | `string` | `JWT_SECRET`; a random value per process when unset | Signs the tokens the UAG issues, scoped tokens for remote research, and, for a Run task action with an agent role, the agent's Form.io tokens (it must then be the Form.io Enterprise server's). Set it: a random secret invalidates every token at each restart. |
-| `expire` | `number` (minutes) | `JWT_EXPIRE_TIME`, else `3600` | Lifetime of the tokens the UAG issues. |
+| `expire` | `number` (minutes) | `JWT_EXPIRE_TIME`, else `60` | Lifetime of the tokens the UAG issues. |
 | `portal` | `string` | `PORTAL_SECRET` | Enterprise: lets the Form.io portal connect to the UAG. |
 | `pkce` | `boolean` | `true` | The provider that issues UAG tokens at `/auth/token` and checks them on `/mcp` and the Agent API. |
 | `mcpOAuth` | `boolean` | `MCP_OAUTH === 'true'` | OAuth sign-in for remote MCP clients: discovery, the login page and client registration. Needs the UAG's database; without it, the UAG starts with sign-in off and says why. |
@@ -427,7 +427,8 @@ The service applies the same license check, permissions, routing, validation and
 |---|---|---|
 | `UAGServer` | class | The server. |
 | `UAGModule` | type | `ServerModule & { config?: UAGConfig }`. |
-| `assertSingleCore(version?)` | function | Throws unless the `@formio/appserver-core` that `@formio/appserver` loads is 2.24.1 or later. The constructor calls it. Fix it by upgrading `@formio/appserver`. |
+| `assertNodeSnapshotDisabled(execArgv?, nodeOptions?)` | function | Throws unless Node was started with `--no-node-snapshot` (in its arguments or `NODE_OPTIONS`). The constructor calls it. |
+| `assertSingleCore(version?)` | function | Throws unless the `@formio/appserver-core` that `@formio/appserver` loads is 2.25.1 or later. The constructor calls it. Fix it by upgrading `@formio/appserver`. |
 | `UAGProjectInterface`, `UAGFormInterface` | classes | The project and form interfaces above. |
 | `UAGConfig`, `UAGForm`, `UAGTemplateConfig`, `UAGToolOverride`, `UAGEngineEntry`, `UAGRoutingConfig`, `UAGRateLimit`, `UAGAgentApiConfig` | types | Configuration types (`src/config.ts`). |
 | `trustProxySetting(value)` | function | Parses a `TRUST_PROXY` value into Express's `trust proxy` setting, or `undefined` when it is empty. See [Behind a reverse proxy](#behind-a-reverse-proxy). |

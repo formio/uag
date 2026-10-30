@@ -83,7 +83,7 @@
         },
         {
           "name": "JWT_EXPIRE_TIME",
-          "description": "Lifetime of the tokens the UAG issues, in minutes (default: 3600)",
+          "description": "Lifetime of the tokens the UAG issues, in minutes (default: 60)",
           "isRequired": false,
           "format": "string",
           "isSecret": false
@@ -153,7 +153,7 @@
         },
         {
           "name": "CORS",
-          "description": "true (the default) allows every origin, false turns CORS off, any other value is the one allowed origin",
+          "description": "true (the default) allows every origin, false turns CORS off, any other value is the allowed origin, or several separated by commas",
           "isRequired": false,
           "format": "string",
           "isSecret": false

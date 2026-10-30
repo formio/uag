@@ -40,7 +40,6 @@ The UAG's settings in that file:
       PROJECT: http://formio.local:3001
       ADMIN_KEY: CHANGEME
       JWT_SECRET: CHANGEME
-      JWT_EXPIRE_TIME: 525600       # minutes: a year, so a demo login does not expire
       LOGIN_FORM: http://localhost:3000/employee/login
       PROJECT_TTL: 10
       MCP_OAUTH: "true"             # browser sign-in for MCP clients
@@ -204,6 +203,7 @@ A module can also replace the login page, add MCP tools, and add form actions th
 | The login page says it cannot load the form | `LOGIN_FORM` does not point at a login form's JSON endpoint that the browser can reach. |
 | Claude lists no forms, or says a form does not exist | The form is not tagged `uag`, the user lacks access, or the project cache has not refreshed. Restart the UAG to re-register at once. |
 | `mcp-remote` keeps signing in as the wrong user | Delete `~/.mcp-auth` and sign in again. |
+| Claude asks to sign in again after a few hours | A sign-in lasts as long as the user's Form.io login token (Form.io's `jwt.expireTime`, 240 minutes by default), whatever `JWT_EXPIRE_TIME` says. Raise Form.io's setting for longer sessions. |
 | `mcp-remote` or a connector says the server does not support sign-in, and `/.well-known/*` answers `404` | OAuth sign-in is off: `MCP_OAUTH` is not `true`, or the UAG has no usable database (`MONGO` unset, or no license to use it). The UAG's startup log says which. |
 | A remote connector cannot authenticate | The discovery documents name a URL the connector cannot reach, often `http` behind a TLS proxy. Read `/.well-known/oauth-protected-resource`; set `TRUST_PROXY` behind a proxy, or `BASE_URL` to the public HTTPS URL. |
 | Every `/mcp` request returns `401` | The client sends no bearer token, or its token is not valid: expired, or signed with a different `JWT_SECRET` (a restart without a fixed `JWT_SECRET`, or another instance). |

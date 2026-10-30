@@ -127,7 +127,7 @@ To add it in the Form.io Enterprise portal, use a stage connected to the UAG; se
 | Before the save, the whole task | Some field groups | The save is forwarded without those answers. |
 | After the save | Anything | The submitter's response was already sent and is unaffected. For the whole task, the answers that were obtained are saved; for decision fields only, nothing is. The failure is logged (`[formio-uag] Run task "<task>" failed for submission <id> of "<form>": ...`) and, with the database, recorded. |
 
-Other errors from a run before the save are answered with their status, as `{ name, message }`, with `code` and `edition` when the license is missing.
+Other errors from a run before the save are answered with their status in Form.io's shape, `{ name, message, code }` (with `edition` when the license is missing), so formio.js shows them as it shows Form.io's. `code` is stable: `license_required`, `decision_unavailable`, `rate_limited`, `forbidden`, `invalid_request`, `configuration_error`.
 
 ### What a run after the save does
 
@@ -138,6 +138,12 @@ Other errors from a run before the save are answered with their status, as `{ na
 5. If a person saved the submission while the task ran, the save is refused as a conflict, and the run starts again once on the new version. If the submission changes again, the run fails (`409`) and saves nothing.
 
 Each UAG instance runs up to four runs at a time; the rest wait their turn.
+
+### Values the form refuses
+
+Every run validates its answers with the form's own rules before anything is saved. A value the run wrote that the form refuses (too long, not matching the pattern or input mask, out of range, failing custom validation) is left out, as if no engine had answered: the field is reported `missing` with the reason `failed validation: <the form's message>`, an authoritative field is cleared for a person, and any other field keeps the value it had. The rest of the run's answers are saved. So an engine's mistake never refuses a person's submission before the save, and never costs a run after the save its other answers. Errors in values the run did not write are left for Form.io to report. A run after the save logs what it left out (`[formio-uag] Run task "<task>" left out answers the form refused for submission <id> of "<form>": <path> (<message>)`), and, with the database, its record and the Action Logs name those fields.
+
+Engines are told each field's validation in its rule ([Context](/developers/concepts#context)), so this should be rare; when a field is often left out for failing validation, state the constraint in the field's description or the criteria as well.
 
 ## Chaining tasks
 
@@ -183,7 +189,7 @@ The finance task's save is an update too, so it runs the update actions again. T
 
 As a last guard, the UAG stops a chain after 5 runs in a row that were each started by the save of the run before, and logs `[formio-uag] Run task "<task>" was not run ...` instead of starting a sixth.
 
-Rely on the first, not only the second. Without a condition, every update still runs the task and calls the engines, and a whole task re-decides its decision fields on every run: with `uagAgentDecides`, an agent that answers differently each time saves, and so starts itself, again. Check condition operators carefully: a condition with an operator the UAG does not know always holds.
+Rely on the first, not only the second. Without a condition, every update still runs the task and calls the engines, and a whole task re-decides its decision fields on every run: with `uagAgentDecides`, an agent that answers differently each time saves, and so starts itself, again. An action whose condition names an operator Form.io does not know (a typo, or a format from elsewhere) is never run: the UAG logs `[formio] The "<action>" action of the form "<form>" is skipped: its conditions use an operator Form.io does not know (...)` once, with the operators it accepts.
 
 > **Tip:** An agent that "runs continuously and burns credits" is almost always a Run task action on update whose condition stays true.
 
@@ -286,9 +292,12 @@ To see what the engines answer for some data without saving anything, call the s
 | The run fails with `license_required` | The license does not include the UAG for the project's endpoint (see [Licensing](/developers/deployment#licensing)). |
 | A submission is refused with `503` | A decisions-only task before the save could not decide some fields: no engine is enabled (check `UAG_ENGINES`), or every engine that could answer failed. With a `remote` engine, also check the engine server's logs. |
 | A run after the save fails saying the token is not accepted | The action names no agent role, and the caller's token expired or was logged out before the run. |
+| A run after the save fails: the submission "was not found, or the user the run acts as may not read it" | The action names no agent role, and the submitter's roles may not read the submission. Give them Read Own, or give the action an agent role. |
+| A field is always left empty, `failed validation: ...` | The engine's answer breaks one of the field's rules. State the rule in the field's description or the criteria, or loosen the validation. |
 | A run fails saying `JWT_SECRET` must be the same as Form.io Enterprise's | The action names an agent role, and the UAG's `JWT_SECRET` differs from the Form.io server's. |
 | Closed-set fields are never saved | Only an agent engine is enabled. Add `uagAgentDecides: "true"` to those fields, or enable a decision engine. |
-| An agent runs continuously | A Run task action on update has a condition that stays true, or an operator the UAG does not know. |
+| An agent runs continuously | A Run task action on update has a condition that stays true after its own save. |
+| A Run task never runs, and the log says its conditions use an operator Form.io does not know | Fix the operator in the action's conditions; the log line lists the ones it accepts. |
 | A value the client sent is not stored | The field is `uagAuthoritative` in a task a Run task action runs: only the task sets it. |
 | Some fields are filled, others are not | The missing ones lack the task's `uag` value (or inherit it from a container), already had a value, or are hidden by the form's conditionals. |
 | A run is lost when the UAG restarts | Runs are kept in memory without the database, and for actions without an agent role. |

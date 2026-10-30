@@ -51,7 +51,7 @@ From a checkout of the UAG repository: `yarn install && yarn build`, then `node 
 |---|---|---|
 | `--form <file>` | yes | A Form.io form definition, as JSON (the form's export, or the form's entry from a project template). |
 | `--examples <file>` | yes | The labeled examples. See [The examples file](#the-examples-file). |
-| `--task <name>` | no | The task to evaluate. Default: the form's first task. `--persona` is the earlier name and still works. |
+| `--task <name>` | no | The task to evaluate. Default: the form's first task. (`--persona`, its 1.x name, is refused.) |
 | `--engine <name>` | no | The decision engine: an instance named in `UAG_ENGINES`, evaluated with its own settings, or an entry in the same syntax (`jev`, `next:jev`, `decide:openai`). Default: the first instance in `UAG_ENGINES`. |
 | `--json <file>` | no | Also write the full report as JSON. |
 | `--project <url>` | no | The project URL the evaluation is for, which the license must allow. Default: none. |

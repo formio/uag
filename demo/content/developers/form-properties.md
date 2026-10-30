@@ -183,7 +183,7 @@ A tool that may write, or that does not exist, is refused when the task is plann
 "properties": { "uag": "admissions", "uagField": "criteria", "uagTools": "find_submissions" }
 ```
 
-The tools that qualify are those annotated read-only: `get_forms`, `get_form_fields`, `get_field_info`, `collect_field_data`, `confirm_form_submission`, `find_submissions`, `agent_provide` (and its deprecated name `agent_provide_data`), `agent_decide` and `fetch_external_data`, plus any custom tool whose annotations set `readOnlyHint: true`.
+The tools that qualify are those annotated read-only: `get_forms`, `get_form_fields`, `get_field_info`, `collect_field_data`, `confirm_form_submission`, `find_submissions`, `agent_provide`, `agent_decide` and `fetch_external_data`, plus any custom tool whose annotations set `readOnlyHint: true`.
 
 ### `uagEngine`
 
@@ -274,7 +274,7 @@ Asks the field as a score over ordered levels instead of a choice. It takes effe
 | **Default** | On |
 | **Value** | `"false"` to turn it off |
 
-By default every choice question is asked a second time with its options in reverse order, because decision models favor the first option they see. If the two answers differ, the field is `uncertain`. Turn it off to halve the questions for a field whose options are unambiguous.
+By default every choice question is asked a second time with its options in reverse order, because decision models favor the first option they see. If the two answers differ, the field is `uncertain`. Turn it off to drop that second question (two questions instead of three, with the mention check) for a field whose options are unambiguous.
 
 ### `uagConfidenceField`
 

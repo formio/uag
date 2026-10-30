@@ -194,13 +194,13 @@ What the chat needs from a template is its `ref` attributes. Keep the ones a rep
 | `uagChatSuggestion` | each suggestion (`uagChatSuggestions`) | Sends its text. |
 | `uagChatSubmit`, `uagChatEdit` | buttons (`uagChatSummary`) | Submit, and open the form. |
 
-Replace a template for one chat with `options.templates`, or for every chat with `Formio.use`, under the framework your application uses (`bootstrap`, `bootstrap5`, `tailwind`, …):
+Replace a template for one chat with `options.templates`, or for every chat with `Formio.use`, under the name of the framework your application renders with, which is `Formio.Templates.framework`. On a default `@formio/js` 5 install that is `bootstrap` (its Bootstrap 5 templates are registered under that name); a set registered under any other name, `bootstrap5` included, is not the current framework and is ignored:
 
 ```js
 // Every chat: messages as Bootstrap cards.
 Formio.use({
   templates: {
-    bootstrap5: {
+    [Formio.Templates.framework || 'bootstrap']: {
       uagChatMessage: {
         form: '<div class="card mb-2 {{ ctx.role === "user" ? "ms-auto text-bg-primary" : "" }}" style="max-width: 80%">' +
               '<div class="card-body py-2">{{ ctx.html }}</div></div>'

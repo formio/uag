@@ -56,7 +56,6 @@ services:
       PROJECT: http://formio.local:3001
       ADMIN_KEY: CHANGEME
       JWT_SECRET: CHANGEME
-      JWT_EXPIRE_TIME: 525600
       LOGIN_FORM: http://localhost:3000/employee/login
       PROJECT_TTL: 10
       # Sign-in for MCP clients (mcp-remote, Claude connectors), with its codes in the UAG's database.

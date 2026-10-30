@@ -16,7 +16,7 @@ An "Agent: Run task" action acts at Form.io in one of two ways, set by its **Age
 | | No agent role | With an agent role |
 |---|---|---|
 | Saves the task's results as | The user who submitted, with their own token | The agent role, on the user's behalf |
-| Users must be allowed to | Create and update their own submissions | Nothing beyond submitting through the UAG |
+| Users must be allowed to | Create, read and update their own submissions (a run after the save loads the submission as the user) | Nothing beyond submitting through the UAG |
 | Keeps users off the agent's fields | Only for requests sent to the UAG | Everywhere, including requests sent straight to Form.io |
 | Runs after the save survive a UAG restart | No | Yes, with the UAG's database (`MONGO`) |
 | Needs `JWT_SECRET` shared with Form.io | No | Yes |

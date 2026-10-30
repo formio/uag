@@ -202,7 +202,7 @@ toolOverrides: {
 | `submit_completed_form` | Create the submission. |
 | `find_submissions` | Search submissions, or count them. |
 | `submission_update` | Change an existing submission. |
-| `agent_provide` | A task's fields and criteria for the agent to fill (`agent_provide_data` is its deprecated name, and an override under that key also applies to `agent_provide` when `agent_provide` has none). |
+| `agent_provide` | A task's fields and criteria for the agent to fill. |
 | `agent_decide` | A task's decision questions as JSON. |
 | `fetch_external_data` | Options for resource, URL-backed select and data source fields. |
 

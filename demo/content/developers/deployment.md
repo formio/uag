@@ -112,8 +112,8 @@ The login form JSON endpoint the `/auth/authorize` page loads, such as `https://
 | `PROJECT` | none, **required** | The Open Source server URL, or the Enterprise or hosted project endpoint. |
 | `PROJECT_KEY` | none | Enterprise and hosted: the project API key (**Project Settings → API Keys**). Also accepted from callers as `x-token`. |
 | `ADMIN_KEY` | none | Open Source: the server's admin key. Also accepted from callers as `x-admin-key`. |
-| `JWT_SECRET` | random per start | **Required in practice.** Signs the UAG's own tokens. Set it to the Form.io Enterprise server's `JWT_SECRET` for an agent to act on users' behalf (see [Project setup for agents](/developers/project-setup)). Set it the same on every instance, or tokens break on restart. |
-| `JWT_EXPIRE_TIME` | `3600` | Lifetime of the UAG's access tokens, in **minutes** (3600 is 60 hours). Refresh tokens last twice as long. |
+| `JWT_SECRET` | random per start, with a warning | **Required in practice.** Signs the UAG's own tokens. Set it to the Form.io Enterprise server's `JWT_SECRET` for an agent to act on users' behalf (see [Project setup for agents](/developers/project-setup)). Set it the same on every instance, or tokens break on restart. |
+| `JWT_EXPIRE_TIME` | `60` | Lifetime of the UAG's access tokens, in **minutes**. A token from OAuth sign-in ends with the user's Form.io login token if that is sooner, and its refresh token cannot outlive it either. `client_credentials` returns no refresh token. |
 | `BASE_URL` | derived from each request | The URL clients reach the UAG at, for the OAuth discovery documents. Set it only when the derived URL is wrong. |
 | `TRUST_PROXY` | unset | Express's `trust proxy`: `true`, a number of proxy hops, or addresses (`loopback, 10.0.0.0/8`). Set it behind a reverse proxy, so the UAG reads its public URL and callers' addresses from the forwarded headers. |
 | `MCP_OAUTH` | `false` | `true` turns on OAuth sign-in for remote MCP clients (claude.ai and Claude Desktop connectors): the browser sign-in page, client registration and the discovery documents. Needs the UAG's database (`MONGO`), and a license to use it. Local clients use `/auth/token`, which is always on. |
@@ -149,8 +149,8 @@ The login form JSON endpoint the `/auth/authorize` page loads, such as `https://
 | `UAG_DATABASE` | `uag` | The database the UAG uses on the `MONGO` connection, selected by name, so `MONGO` can be the connection string Form.io uses. A database of its own is recommended. |
 | `MONGO_CONFIG` | none | JSON options for the MongoDB driver. |
 | `TASK_RUN_RETENTION_DAYS` | `90` | Days a run record is kept. `0` keeps records forever. |
-| `CORS` | `true` | `true` allows every origin, `false` turns CORS off, and any other value is the one allowed origin. Restrict it before exposing the UAG. |
-| `MAX_BODY_SIZE` | `100mb` | Largest JSON request body the UAG accepts. A form's agent operations take at most 5 MB whatever it is set to. |
+| `CORS` | `true` | `true` allows every origin, `false` turns CORS off, and any other value is the allowed origin, or several separated by commas (`https://app.example.com,https://admin.example.com`). Restrict it before exposing the UAG. |
+| `MAX_BODY_SIZE` | `16mb` | Largest JSON request body the UAG accepts, the same as Form.io's. Bodies are parsed before authentication, so raise it only as far as the forms need. A form's agent operations take at most 5 MB whatever it is set to. |
 | `NODE_TLS_REJECT_UNAUTHORIZED` | unset | `0` to accept a self-signed `PROJECT` certificate. Never on a deployment reachable from outside. Turns off the hosted SaaS exemption. |
 | `DEBUG` | unset | Debug logging, for example `formio.*` or `formio:uag*`. |
 | `UAG_MODULE` | none | For the `uag` command only: a file or folder exporting a module. The Docker image loads `/app/module` instead. |
@@ -332,7 +332,7 @@ The UAG and each engine package are versioned independently from 2.0.0. Pick a c
 | `@formio/uag-gemini` | 2.x | >= 2.0.0 | Built on `@formio/uag-openai`. No default model. |
 | `@formio/uag-engines` | 2.x | >= 2.0.0 | The engine server. Docker image `formio/uag-engines`. |
 | `@formio/uag-js` | 2.x | >= 2.0.0 | The formio.js module, for the browser: saves `uag` forms through the UAG and adds Agent Input. Published on npm. |
-| `@formio/uag-claude` | 1.3.x | >= 1.12.0 | The retired Claude integration, deprecated. Works against 2.0 as against 1.13. |
+| `@formio/uag-claude` | 1.3.x | 1.12.0 – 1.13.x | The retired Claude integration, deprecated. Against 2.0 only its direct commands work: its `agent_provide_data` webhooks need 1.x. |
 | `@formio/uag-claude` | 1.2.x | 1.10.0 – 1.11.x | The retired Claude integration. |
 
 `@formio/uag-claude` 2.x is the Claude **engine**, which runs inside the UAG. The retired integration is 1.x and the `formio/uag-claude` image; pin `@formio/uag-claude@^1` if you install the integration from npm. It receives security fixes only.
@@ -341,7 +341,7 @@ For a reproducible deployment:
 
 - **Pin image tags.** The samples reference images without a tag so they always pull the latest release. Production should pin `formio/uag:<version>` (and `formio/uag-engines:<version>`, `formio/formio-enterprise:<version>`).
 - **Pin models.** Set `CLAUDE_MODEL`, `TYPESAFE_MODEL` and the other model variables to specific versions. A new UAG release may change an engine's default, and answers differ between models. Run [`uag-eval`](/developers/evaluation) before changing one.
-- **Keep `@formio/appserver` current.** When embedding the UAG, it reaches `@formio/appserver-core` only through `@formio/appserver`, so there is one copy of it, which must be 2.24.1 or later; the UAG refuses to start with an older one, and says what to upgrade.
+- **Keep `@formio/appserver` current.** When embedding the UAG, it reaches `@formio/appserver-core` only through `@formio/appserver`, so there is one copy of it, which must be 2.25.1 or later; the UAG refuses to start with an older one, and says what to upgrade.
 - **Roll back** by pinning the previous image. Stored submissions are unaffected; UAG 1.x ignores the `metadata.uag.generated` provenance that 2.0 adds. See [MIGRATING-2.0.md](https://github.com/formio/uag/blob/main/MIGRATING-2.0.md) when upgrading from 1.x.
 
 ### A smaller image
@@ -374,11 +374,13 @@ The UAG holds no conversation state, and `/mcp` is stateless, so instances can s
 - Set the same `JWT_SECRET` on every instance, so each accepts the others' tokens.
 - Each instance keeps its own project cache and refreshes on its own `PROJECT_TTL` timer, so instances can briefly serve different versions of a form after a change.
 - Rate-limit counters are per process: each instance has its own allowance.
-- With `TEMPLATE_SYNC=boot`, every instance installs missing template items at startup. Installation only adds what is missing, but consider `off` and a single provisioning step for large fleets.
+- With `TEMPLATE_SYNC=boot`, every instance installs missing template items at startup. Installation only adds what is missing, and instances starting together do not install anything twice (Form.io refuses the second copy, and the UAG counts what another instance installed as installed), but consider `off` and a single provisioning step for large fleets.
 - Give every instance the same `MONGO` and `UAG_DATABASE`. The instances then share authorization codes for remote MCP sign-in, so a code issued by one can be exchanged at another, and they share run records.
 - A run after the save is durable only with the database and an action that names an agent role. Such a run is recorded before the submitter gets the response, and one instance at a time takes it, under a lease it renews (see [Runs after the save](#runs-after-the-save)). Any other run after the save runs in the instance that received the submission, and is lost if that instance stops.
 
 ## Verifying a deployment
+
+`GET /status` needs no credential and answers `200` with package versions once the UAG is serving: it opens its port only after the project, the engines and the database are ready. The `formio/uag` image declares a `HEALTHCHECK` on it, and it suits load-balancer checks and Kubernetes probes.
 
 ```bash
 # Tokens can be issued (always on):

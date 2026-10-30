@@ -30,7 +30,10 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 | The UAG restart-loops with "Endpoint ... is not allowed for this license" | The license's endpoint allowlist does not include `PROJECT`'s host. Match the host to the license (trial licenses expect `api-server:3000`), or get a license for your endpoint. |
 | "License is not configured" for a `*.form.io` project | The hosted SaaS exemption does not apply: TLS checks are weakened (`NODE_TLS_REJECT_UNAUTHORIZED=0`, `NODE_EXTRA_CA_CERTS`, `NODE_USE_SYSTEM_CA`), or the server could not confirm it is the hosted service. The message names which. |
 | Startup stops naming an engine | That engine is misconfigured: its package is not installed, the name is duplicated, a required setting (such as an API key or model) is missing, or a `remote` instance's engine server refused its key or does not host it. |
-| "@formio/uag needs @formio/appserver-core 2.24.1 or later" | An embedding application installs an older `@formio/appserver`, or its lockfile resolves an older core for it. Upgrade `@formio/appserver`. |
+| "@formio/uag needs Node started with --no-node-snapshot" | An embedding server started Node without the flag. Start `node --no-node-snapshot`, or set `NODE_OPTIONS=--no-node-snapshot`. |
+| The log warns "JWT_SECRET is not set" | Tokens are signed with a random secret for this process only: set `JWT_SECRET`, the same on every instance. |
+| The log warns "MCP_OAUTH is on, but LOGIN_FORM is not set" | The sign-in page would load the login form from `PROJECT`, a container address. Set `LOGIN_FORM` to the login form's public URL. |
+| "@formio/uag needs @formio/appserver-core 2.25.1 or later" | An embedding application installs an older `@formio/appserver`, or its lockfile resolves an older core for it. Upgrade `@formio/appserver`. |
 | Docker Compose fails with `set CLAUDE_API_KEY in .env` (or another `set ... in .env`) | A sample's `.env` is missing or incomplete. Copy `.env.example`; Compose validates every service even when you start only some. |
 
 ## The UAG's database
@@ -68,6 +71,9 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 | `/auth/token` returns `400` | The `client_id` prefix is wrong (`formio-oss-x-admin-key` for Open Source, `<project name>-x-token` for a project), or the secret does not match `ADMIN_KEY` or `PROJECT_KEY`. |
 | A remote agent (claude.ai, a Claude Desktop connector) cannot authenticate | The discovery documents name a URL the agent cannot reach, often `http` behind a TLS proxy. Read `/.well-known/oauth-protected-resource`: behind a proxy, set `TRUST_PROXY` and forward `Host` and `X-Forwarded-Proto`, or set `BASE_URL` to the public HTTPS URL. |
 | The login page says it cannot load the form | `LOGIN_FORM` does not point at a login form JSON endpoint the browser can reach. |
+| A remote client asks to sign in again after a few hours | A sign-in lasts as long as the user's Form.io login token (Form.io's `jwt.expireTime`, 240 minutes by default), whatever `JWT_EXPIRE_TIME` says. |
+| A `refresh_token` exchange answers `400` | The login it wraps has expired, so it cannot be refreshed: sign in again. `client_credentials` returns no refresh token; request a new token with the credentials. |
+| A browser is refused by CORS from one of several applications | `CORS` lists the allowed origins, separated by commas. |
 | Tokens stop working after a restart, or on another instance | `JWT_SECRET` is unset (a random one is generated at each start) or differs between instances. |
 | A Form.io user token (`x-jwt-token`) is refused with `401` | Form.io's `/current` refused it: it expired, the user logged out, or Form.io could not be reached. A refusal is remembered for 10 seconds. |
 | `mcp-remote` signs in as the wrong user | Delete `~/.mcp-auth` and sign in again. |
@@ -95,6 +101,8 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 | `403` with `code: "license_required"` | Agentic Formflow is not allowed here: no `LICENSE_KEY` (or `UAG_LICENSE`) that includes the UAG for the project's endpoint, and the project is not on Form.io's hosted service (a project on this machine, or an Open Source server, needs the license too). Conversation forms, and a form's chat, are unaffected. The startup log says so too. |
 | `403` "You do not have ... access" | The caller lacks create access on the form. |
 | `503` "No enabled engine can serve" | `UAG_ENGINES` is unset, or names no engine that can do the operation's work. |
+| `400` 'UAG 2.0 renamed "persona" to "task"' | The request still sends 1.x's `persona`. Send `task`. |
+| A suggested value comes with `reason: "failed validation: ..."` | The engine's answer breaks one of the field's rules. It is kept for the person to correct; a Run task leaves such a value out. |
 | `400` naming the task | An unknown task (the message lists the form's tasks), extract with no `text` for a task with no input, or a `uagTools` entry that may write or does not exist. |
 | `400` on decide with a `submissionId` | Decide works on the data in the request and saves nothing. To decide a stored submission's fields, run its task when it is saved, with an "Agent: Run task" action. |
 | A call to `/agent/provide` fails | It was removed in 2.0. Use an "Agent: Run task" action on the form, or `{form}/agent/generate` and `{form}/agent/decide` on the submission's data. |
@@ -123,6 +131,8 @@ More on [Chat widget](/developers/chat#troubleshooting).
 | Symptom | Cause |
 |---|---|
 | Nothing happens when a submission is created | The submission was sent straight to Form.io: Run task runs only for submissions sent to the UAG, so point the application's project URL at the UAG. Otherwise the action's **Methods** or conditions do not match, or its **Task** is not set. |
+| A run after the save fails: the submission "was not found, or the user the run acts as may not read it" | The action names no agent role, and the submitter may not read the submission. Grant Read Own, or give the action an agent role. |
+| A field a task should fill stays empty, `failed validation: ...` in the run's results | The engine's answer broke one of the field's rules, so the run left it out rather than fail the save. State the rule in the field's description or the criteria. |
 | A run after the save did nothing visible | It failed in the background, which never affects the submitter's response. The UAG logs `[formio-uag] Run task "<task>" failed for submission <id> of "<form>": <reason>`. With the database, the run is also recorded, and Action Logs in a connected classic portal stage show it with its error. A run that changes nothing saves nothing, and is recorded as such. |
 | A run fails: "Form.io refused the token the UAG signed ... JWT_SECRET must be the same as Form.io Enterprise's" | The action names an agent role, and the UAG's `JWT_SECRET` differs from the Form.io server's. See [Project setup for agents](/developers/project-setup). |
 | A run without an agent role fails with an authorization error | It acts with the submitter's own token, which expired or was logged out before the run. Give the action an agent role, or keep tokens valid for longer than a run takes. |

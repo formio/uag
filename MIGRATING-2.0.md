@@ -12,17 +12,15 @@ You only need to do this for forms with a Run task action: a task runs only for 
 
 What a form defines with the `uag` property — a criteria component, an optional input, and the fields it fills — is now called a **task**. Form definitions do not change: `uag="finance"` now defines the `finance` task.
 
-Requests, MCP tools and settings take `task`. The MCP tools and `uag-eval` still accept the earlier name until a future major release; the Agent API and `@formio/uag-js` do not:
+Requests, MCP tools and settings take `task`, and the earlier names are gone:
 
-| Where | New | Still accepted |
+| Where | 1.x | 2.0 |
 |---|---|---|
-| Agent API request bodies | `task` | Nothing: rename `persona` to `task` |
-| `agent_provide`, `agent_decide` (MCP) | `task` | `persona` |
-| MCP tool name | `agent_provide` | `agent_provide_data` (same arguments and answer) |
-| `@formio/uag-js` option (formerly the `@formio/uag-renderer` option) | `task` | Nothing: rename `persona` to `task` |
-| `uag-eval` | `--task` | `--persona` |
-
-Where the earlier name is still accepted, sending both names with different values is refused with `400`. The UAG logs one deprecation notice for each kind of use.
+| Agent API request bodies | `persona` | `task`. A body that names `persona` and no `task` is refused with `400`. |
+| `agent_provide`, `agent_decide` (MCP) | `persona` | `task` |
+| MCP tool name | `agent_provide_data` | `agent_provide` (the same arguments and answer) |
+| `@formio/uag-js` option (formerly the `@formio/uag-renderer` option) | `persona` | `task` |
+| `uag-eval` | `--persona` | `--task`. `--persona` is refused. |
 
 ## Remote MCP clients
 
@@ -83,7 +81,7 @@ To run a task again on stored submissions, save them again through the UAG.
 
 ## The Claude integration is retired
 
-`integrations/claude` (`@formio/uag-claude` 1.x, `formio/uag-claude`) is retired in 2.0. From 2.0.0, the npm name `@formio/uag-claude` carries the Claude *engine*, which runs inside the UAG 2.x and is not a server; if you install the integration from npm, pin `@formio/uag-claude@^1`. The engine's README maps the 1.x settings to 2.0 under [Upgrading from 1.x](https://github.com/formio/uag/blob/main/engines/claude/README.md#upgrading-from-1x), and npm marks 1.x deprecated once 2.0.0 is published. Its 1.3.x release keeps working against UAG 2.0 — its commands and its `agent_provide_data` webhooks behave as they did against 1.13 — and gets security fixes only, from the `1.x` branch. Move off it when you can:
+`integrations/claude` (`@formio/uag-claude` 1.x, `formio/uag-claude`) is retired in 2.0. From 2.0.0, the npm name `@formio/uag-claude` carries the Claude *engine*, which runs inside the UAG 2.x and is not a server; if you install the integration from npm, pin `@formio/uag-claude@^1`. The engine's README maps the 1.x settings to 2.0 under [Upgrading from 1.x](https://github.com/formio/uag/blob/main/engines/claude/README.md#upgrading-from-1x), and npm marks 1.x deprecated once 2.0.0 is published. Its 1.3.x release gets security fixes only, from the `1.x` branch. Its `agent_provide_data` webhooks need UAG 1.x, since 2.0 removed that tool: move them to Run task before upgrading the UAG. Its direct commands drive a model over the UAG's other MCP tools, which 2.0 still serves.
 
 | Integration | 2.0 |
 |---|---|

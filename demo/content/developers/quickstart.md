@@ -172,13 +172,12 @@ curl -s -X POST $UAG/auth/token \
 {
   "access_token": "eyJhbGciOiJIUzI1NiIs...",
   "token_type": "Bearer",
-  "expires_in": 216000,
-  "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
+  "expires_in": 3600,
   "scope": "formio"
 }
 ```
 
-`expires_in` is in seconds: `JWT_EXPIRE_TIME` (minutes, default 3600) times 60. A `400` means the `client_id` prefix or the secret is wrong.
+`expires_in` is in seconds: `JWT_EXPIRE_TIME` (minutes, default 60) times 60. A `400` means the `client_id` prefix or the secret is wrong.
 
 ```bash
 TOKEN=$(curl -s -X POST $UAG/auth/token -H 'Content-Type: application/json' \

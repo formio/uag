@@ -19,7 +19,7 @@ To offer a conversation on a web page without running an MCP client and a model 
 | **Transport** | Streamable HTTP. `POST` for JSON-RPC requests, `GET` for the server stream. |
 | **Sessions** | None. The UAG runs in stateless mode and builds a fresh MCP server for every request, so requests are independent and can run concurrently. A client does not need to keep a session id. |
 | **Server info** | `name: "formio-uag"` |
-| **Authentication** | `Authorization: Bearer <UAG access token>` on every request. Without a valid token the UAG answers `401` with `WWW-Authenticate: Bearer realm="uag-server"`. When OAuth sign-in for remote clients is on (`MCP_OAUTH`, with the UAG's database), the header also names `resource_metadata`, the UAG's `/.well-known/oauth-protected-resource`. |
+| **Authentication** | `Authorization: Bearer <UAG access token>` on every request. Without a valid token the UAG answers `401` with `WWW-Authenticate: Bearer realm="uag-server"` (RFC 6750): when a token was sent, the header adds `error="invalid_token"` and its reason, and the body is `{ "error": "invalid_token", "error_description": "..." }`; with no token, the body's `error` is `unauthorized`. When OAuth sign-in for remote clients is on (`MCP_OAUTH`, with the UAG's database), the header also names `resource_metadata`, the UAG's `/.well-known/oauth-protected-resource`. |
 | **Capabilities** | Tools. The tool list is built per request from the forms currently registered, plus any custom tools from a [module](/developers/modules). |
 
 The `form_name` argument of every tool is an enumeration of the registered form names, so a client sees exactly which forms exist in the tool schema, and a call naming any other form fails argument validation.
@@ -62,17 +62,19 @@ Content-Type: application/json
 ```
 
 ```json
-{ "access_token": "eyJ...", "token_type": "Bearer", "expires_in": 216000, "refresh_token": "eyJ...", "scope": "formio" }
+{ "access_token": "eyJ...", "token_type": "Bearer", "expires_in": 3600, "scope": "formio" }
 ```
 
 | Response | Cause |
 |---|---|
 | `200` | A token. `expires_in` is in seconds: `JWT_EXPIRE_TIME` minutes times 60. |
-| `400` | Missing `client_id` or `client_secret`, a wrong project-name prefix, or a wrong secret. Also an `authorization_code` grant while OAuth sign-in is off. |
+| `400` | An OAuth error (RFC 6749, section 5.2), `{ "error": "...", "error_description": "..." }`: `invalid_request` (a parameter is missing), `invalid_client` (a wrong project-name prefix or secret), `invalid_grant` (an unknown, used or expired code, a wrong `code_verifier`, or a refresh token whose sign-in expired), `unsupported_grant_type` (an unknown grant, or `authorization_code` while OAuth sign-in is off). Token responses and errors carry `Cache-Control: no-store`. |
 
 A `client_credentials` token acts as the project administrator. Every tool call can then read and write anything in the project, so use it for trusted automation only. To act as a particular person, authenticate that person and use their token instead (see [Security](/developers/security#credential-modes)).
 
-Cache the token and request a new one shortly before `expires_in` runs out, or exchange the `refresh_token` (valid for twice as long) with `grant_type: "refresh_token"`.
+Cache the token and request a new one with `client_credentials` shortly before `expires_in` runs out. A `client_credentials` exchange returns no refresh token (RFC 6749, section 4.4.3).
+
+A token from OAuth sign-in wraps the user's Form.io login token, so neither it nor its `refresh_token` outlives that login: `expires_in` is the shorter of `JWT_EXPIRE_TIME` and the login's own lifetime (Form.io's `jwt.expireTime`, 240 minutes by default). After that the client signs the user in again.
 
 ### Remote clients: OAuth with PKCE
 
@@ -100,7 +102,7 @@ UAG --> MCP client: access token for /mcp
 | `GET /.well-known/oauth-authorization-server` | Authorization, token and registration endpoints; `code_challenge_methods_supported: ["S256"]`. |
 | `POST /auth/register` | Dynamic client registration. Returns a `client_id` for the client. |
 | `GET /auth/authorize` | The login page. It loads the form at `LOGIN_FORM` (default `{PROJECT}/user/login`) in the user's browser. |
-| `POST /auth/authorize` | Called by the login page with the user's Form.io token and the `code_challenge`. Issues a one-time code and redirects to the client's `redirect_uri`. |
+| `POST /auth/authorize` | Called by the login page with the user's Form.io token and the `code_challenge`. Issues a one-time code and redirects to the client's `redirect_uri`. Refusals are OAuth errors (`invalid_request`, `access_denied`), which the login page shows to the person. |
 | `POST /auth/token` | `authorization_code` (with `code_verifier`), `refresh_token`, or `client_credentials`. |
 
 A Form.io token signed with the UAG's own `JWT_SECRET` (on Form.io Enterprise with a shared secret) is trusted as issued, without asking Form.io, so a Form.io logout does not end the access token wrapping it before it expires. Any other is trusted only after the project that issued it confirms it, and then the user's roles come from Form.io, never from the token's claims; a user of another project is refused. Every later tool call runs as that user, with that user's permissions.
@@ -132,7 +134,6 @@ Every built-in tool carries [MCP annotations](https://modelcontextprotocol.io/sp
 | [`agent_provide`](#agentprovide) | Reads | A task's criteria, a submission's values and the task's fields, as instructions. |
 | [`agent_decide`](#agentdecide) | Reads | A task's decision questions as structured JSON. |
 | [`fetch_external_data`](#fetchexternaldata) | Reads | Options or data for a URL, resource or data source component. |
-| `agent_provide_data` | Reads | Deprecated name of `agent_provide`, with the same arguments. |
 
 Results are Markdown text in a single `text` content block, rendered from [response templates](/developers/modules) a module can override. A result that reports a problem (an unknown form, a validation failure, a missing submission) sets `isError: true`. `agent_decide`, and `collect_field_data` with `as_json`, return JSON text plus the same object as `structuredContent`.
 
@@ -254,9 +255,8 @@ Returns a task's criteria, the submission's values and the task's fields as one 
 | `form_name` | enum | Yes | The form. |
 | `submission_id` | string | Yes in practice | The submission to process. |
 | `task` | string | No | The task name (its `uag` value). Default: the form's first task. |
-| `persona` | string | No | Deprecated name for `task`. Different values for both are refused. |
 
-It refuses a task without criteria or without fields. Like `agent_decide`, it is part of Agentic Formflow: without a license that includes the UAG, or a project on Form.io's hosted service, it returns `{ error, code: "license_required" }`. `agent_provide_data` is the same tool under its pre-2.0 name.
+It refuses a task without criteria or without fields. Like `agent_decide`, it is part of Agentic Formflow: without a license that includes the UAG, or a project on Form.io's hosted service, it returns `{ error, code: "license_required" }`.
 
 ### `agent_decide`
 
@@ -268,7 +268,6 @@ Returns a task's decision questions as JSON, so the client can answer them with 
 | `submission_id` | string | One of these | A stored submission. Filled and hidden decision fields are included, for re-deciding. |
 | `form_data` | object | One of these | In-flight data, nested by data path. |
 | `task` | string | No | The task. Default: the form's first task. |
-| `persona` | string | No | Deprecated name for `task`. |
 
 ```json
 {

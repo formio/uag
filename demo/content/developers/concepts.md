@@ -119,7 +119,7 @@ To give a task one or two extra values without making them input, list their dat
 "properties": { "uag": "triage", "uagField": "criteria", "uagContext": "policyNumber, customer.tier" }
 ```
 
-Agent engines also receive each target field's label, type, description, rule, format and options, and a JSON schema for the answer. Decision engines receive compiled questions (see [How decisions are asked](#how-decisions-are-asked)).
+Agent engines also receive each target field's label, type, description, rule, format and options, and a JSON schema for the answer. The rule states the field's validation too: lengths, word counts, the pattern, the range, the input mask and fixed date limits (not `required`, so an engine is never pushed to invent a value, and not custom validation, which cannot be stated). The form still validates every answer; see [Values the form refuses](/developers/workflows#values-the-form-refuses). Decision engines receive compiled questions (see [How decisions are asked](#how-decisions-are-asked)).
 
 When a task lists research tools in `uagTools`, an agent engine may also call those read-only tools before it answers. See [Security](/developers/security#research-identity).
 
@@ -152,8 +152,10 @@ The UAG sorts every target field into one of two kinds, and routes each kind to 
 
 | Kind | Components | Answered by | Result status |
 |---|---|---|---|
-| **Decision** | Radio and select with static values; checkbox; select boxes; survey; single-value resource selects whose whole resource fits the decision engine's option limit (255 for Jev) | A decision engine, with a calibrated confidence. If none answers, an agent engine as a fallback, uncalibrated. | `confident`, `uncertain` or `missing` (`suggested` from an agent engine) |
+| **Decision** | Radio and select with static values, single or multiple (a multiple select is asked as one yes/no question per option); checkbox; select boxes; survey; single-value resource selects whose whole resource fits the decision engine's option limit (255 for Jev) | A decision engine, with a calibrated confidence. If none answers, an agent engine as a fallback, uncalibrated. | `confident`, `uncertain` or `missing` (`suggested` from an agent engine) |
 | **Value** | Everything else: text, dates, numbers, currency, emails, multi-value or large resource selects, selects fed by a URL | An agent engine | `suggested` or `missing` |
+
+The `uag*` switches (`uagAuthoritative`, `uagAgentDecides`, `uagScale`, `uagOrderCheck`, and the form's `uagAnonymous` and `uagChat`) take `"true"` or `"false"` as the portal saves them, or a JSON boolean. A `uag` property on a Panel, Fieldset, Well, Tabs, Columns, Table or Container makes every input inside it one of the task's fields.
 
 A radio or single select whose options exceed the decision engine's limit becomes a value field. `uagEngine` on a component, or on the criteria for the whole task, overrides the routing.
 
@@ -298,12 +300,4 @@ What the UAG makes of it:
 
 ## Earlier names
 
-Tasks were called personas before UAG 2.0. The MCP tools and `uag-eval` keep accepting the old names until a future major release, and the UAG logs one deprecation notice per kind of use:
-
-| Where | Current | Still accepted |
-|---|---|---|
-| `agent_provide`, `agent_decide` | `task` | `persona` |
-| MCP tool | `agent_provide` | `agent_provide_data` |
-| `uag-eval` | `--task` | `--persona` |
-
-Sending both names with different values is refused with `400`. The Agent API and `@formio/uag-js` take only `task`.
+Tasks were called personas before UAG 2.0, and 2.0 removed the old names: the MCP tools take `task` (and `agent_provide_data` is `agent_provide`), `uag-eval` takes `--task`, and the Agent API refuses a body that names `persona` and no `task`. See [MIGRATING-2.0.md](https://github.com/formio/uag/blob/main/MIGRATING-2.0.md).

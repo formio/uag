@@ -98,9 +98,9 @@ Callers send the signed-in user's Form.io token (`x-jwt-token`), a portal team m
 | `PROJECT_TTL` | Seconds between project refreshes. Default `900`; `0` disables refresh entirely. Values under 60 are not recommended — a refresh calls the project export API, which is expensive. |
 | `TEMPLATE_SYNC` | When a module's template is installed into the project: `boot` at startup (default), `refresh` also on every `PROJECT_TTL` refresh, or `off` never. Only what the project is missing is installed. |
 | `LOGIN_FORM` | URL of the login form JSON used by the browser login flow, so it must be reachable by that browser. Default `{PROJECT}/user/login`. |
-| `JWT_EXPIRE_TIME` | Lifetime of the tokens the UAG issues, in minutes. Default `3600` (60 hours). |
+| `JWT_EXPIRE_TIME` | Lifetime of the tokens the UAG issues, in minutes. Default `60`. |
 | `PORTAL_SECRET` | Enterprise only. Lets a Form.io Enterprise portal stage connect to the UAG, where you add Run task actions to forms. |
-| `CORS` | `true` (the default) allows every origin, `false` turns CORS off, and any other value is the one allowed origin, such as `https://app.example.com`. |
+| `CORS` | `true` (the default) allows every origin, `false` turns CORS off, and any other value is the allowed origin, such as `https://app.example.com`, or several separated by commas. |
 | `DEBUG` | Debug log filter, e.g. `formio.*`. |
 | `UAG_ENGINES` | Comma-separated Agent API engine instances to enable, each `<type>` or `<name>:<type>`: `jev`, `claude`, `openai`, `grok`, `gemini`, `remote` (and `stub-decision` / `stub-agent` for testing). Unset enables none. |
 | `UAG_ENGINE_<NAME>_<SETTING>` | One instance's setting, such as `UAG_ENGINE_FAST_MODEL`. For a `remote` instance, `_URL` (the engine server) and `_KEY` (its key, at least 32 characters). |

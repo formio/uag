@@ -51,18 +51,18 @@ A form's operations take the same credentials as the form's submissions, so an a
 
 `GET /agent/capabilities` takes a UAG bearer token or a server key.
 
-A credential the agent operations refuse is answered `401` with `{ "detail": "..." }`. A Form.io token (`x-jwt-token`) or portal remote token (`x-remote-token`) that is invalid or expired is refused earlier, by the project's own authentication, with the reason as plain text (for example `Token Expired`). Every response after authentication carries an `X-Request-Id` header (send your own `X-Request-Id` to set it), and the same id is in every JSON body as `requestId`. Search the UAG logs for it when a request fails. Browsers can read the header: it is in the CORS exposed headers.
+Every response, refusals included, carries an `X-Request-Id` header (send your own `X-Request-Id` to set it), and the same id is in every JSON body as `requestId`. Search the UAG logs for it when a request fails. Browsers can read the header: it is in the CORS exposed headers. Every error, whatever refused the request, has one shape; see [Errors](#errors).
 
 ## Common request fields
 
 | Field | Type | Endpoints | Meaning |
 |---|---|---|---|
-| `task` | string | All | The task (the `uag` value) to run. Defaults differ per endpoint; see each one. |
+| `task` | string | extract, decide, generate | The task (the `uag` value) to run. Defaults differ per endpoint; see each one. A body that names 1.x's `persona` and no `task` is refused with `400`, since ignoring it would run every task. Chat reads no task. |
 | `data` | object | extract, decide, generate | The submission data to work from, nested as in a Form.io submission (`{ "customer": { "name": "..." } }`). |
 | `overwrite` | boolean | extract, decide, generate | Default `false`: only empty fields are answered, and filled ones are listed in `excluded` as `already has a value`. |
 | `text` | string | extract | Source text. Replaces the task's input for this call. |
 
-Request bodies are limited to 5 MB; a larger one is answered `413` with `{ error }`, before a request id is assigned.
+Request bodies are limited to 5 MB; a larger one is answered `413` (`payload_too_large`).
 
 ## The result object
 
@@ -186,7 +186,7 @@ event: done
 data: {"requestId":"b1ff8531-...","tasks":["triage"],"data":{...},"fields":{...},"errors":[],"excluded":[...],"engines":[...]}
 ```
 
-The stream opens only once the request is planned, so a request that is refused (bad credentials, unknown form or task, no engine, no license) gets an ordinary JSON error with its status. A failure after the stream opened arrives as a final `error` event carrying `{ requestId, error }`.
+The stream opens only once the request is planned, so a request that is refused (bad credentials, unknown form or task, no engine, no license) gets an ordinary JSON error with its status. A failure after the stream opened arrives as a final `error` event carrying `{ requestId, error, code }`.
 
 `EventSource` cannot send a POST body, so read the stream with `fetch`:
 
@@ -396,18 +396,30 @@ curl -s https://uag.example.com/agent/capabilities -H "Authorization: Bearer $TO
 
 ## Errors
 
-Error bodies are `{ requestId, error }`, with `code` and `edition` added when the license is missing. Refusals before the operation starts carry no `requestId`: credential and anonymous refusals are `{ detail }` (a Form.io or remote token the project's authentication refuses is plain text), and the `404` for a form the project does not have and the `413` are `{ error }`. A `500` says only "The request failed. See the UAG logs for this request id."
+Every error from a form's agent operations and `/agent/capabilities` is JSON in one shape, whatever refused the request (the operation, the credential check, the project's authentication, the body parser):
 
-| Status | Cause |
-|---|---|
-| `400` | An unknown task (the message lists the form's tasks); a form with no tasks; extract with no `text` for a task with no input; `submissionId` sent to decide; a task whose `uagTools` names a tool that may write or does not exist (generate); a chat turn whose `messages` are missing, too many, too long, malformed or do not end with the person's, or whose `data` is not an object. |
-| `401` | No valid credential; a server key sent with an `Origin` or `Sec-Fetch-Site` header; a scoped token; a portal team member whose permission does not allow writes; no credential on a form that does not set `uagAnonymous`. Body: `{ detail }`, or plain text for an invalid or expired `x-jwt-token` or `x-remote-token`. |
-| `403` | Agentic Formflow is not licensed (`code: "license_required"`), or the caller lacks the form access the operation needs (for an anonymous visitor, the Anonymous role may not create the form's submissions), or the form sets `uagChat: "false"` (chat). The license is checked before the form's tasks are read, so an unlicensed deployment answers `403` for `extract`, `decide` and `generate` on every form the project has, tagged `uag` or not. Chat never needs a license. |
-| `404` | The form does not exist or is not tagged `uag`. The operations at the UAG's root (`/agent/extract`, `/agent/decide`, `/agent/generate`) no longer exist. |
-| `502` | Chat: every engine that could answer failed or timed out. The engines' errors are in the UAG's logs, under the request id. |
-| `413` | The request body is larger than 5 MB. |
-| `429` | The caller is over its rate limit, an anonymous visitor is over the anonymous limits, or every engine that could answer is. Carries `Retry-After` in seconds when the caller is limited, and, for chat, when every engine is. |
-| `503` | No enabled engine can serve the operation ("Enable one with UAG_ENGINES"); for chat, no agent engine is enabled. |
+```json
+{ "requestId": "b1ff8531-...", "error": "Chat is turned off for the form \"servicerequest\".", "code": "chat_disabled" }
+```
+
+`requestId` equals the `X-Request-Id` header. `error` is for people and may change; branch on `code`, which is stable. A `license_required` error also carries `edition`. A `500` never carries details: its `error` is "The request failed. See the UAG logs for this request id."
+
+| Status | `code` | Cause |
+|---|---|---|
+| `400` | `invalid_request` | An unknown task (the message lists the form's tasks); a form with no tasks; extract with no `text` for a task with no input; `persona` with no `task`; `submissionId` sent to decide; a task whose `uagTools` names a tool that may write or does not exist (generate); a body that is not JSON; a chat turn whose `messages` are missing, too many, too long, malformed or do not end with the person's, or whose `data` is not an object. |
+| `401` | `unauthorized` | No valid credential: an invalid or expired `x-jwt-token`, `x-remote-token` or bearer token; a wrong server key, or one sent with an `Origin` or `Sec-Fetch-Site` header; a scoped token; a portal team member whose permission does not allow writes. |
+| `401` | `sign_in_required` | No credential, on a form that does not allow anonymous use (`uagAnonymous`, and anonymous limits not `0`). |
+| `403` | `license_required` | Agentic Formflow is not licensed. The license is checked before the form's tasks are read, so an unlicensed deployment answers it for `extract`, `decide` and `generate` on every form, tagged `uag` or not. Chat never needs a license. |
+| `403` | `forbidden` | The caller lacks the form access the operation needs (for an anonymous visitor, the Anonymous role may not create the form's submissions). |
+| `403` | `chat_disabled` | Chat: the form sets `uagChat: "false"`. |
+| `404` | `form_not_found` | The form does not exist or is not tagged `uag`. The operations at the UAG's root (`/agent/extract`, `/agent/decide`, `/agent/generate`) no longer exist. |
+| `413` | `payload_too_large` | The request body is larger than 5 MB. |
+| `429` | `rate_limited` | The caller is over its rate limit, an anonymous visitor is over the anonymous limits, or every engine that could answer is. Carries `Retry-After` in seconds when the caller is limited, and, for chat, when every engine is. |
+| `500` | `internal_error` | An unexpected failure; see the UAG's log under the request id. |
+| `502` | `engines_failed` | Chat: every engine that could answer failed or timed out. The engines' errors are in the UAG's logs, under the request id. |
+| `503` | `no_engine` | No enabled engine can serve the operation ("Enable one with UAG_ENGINES"); for chat, no agent engine is enabled. |
+
+The project's Form.io routes (forms, submissions, login) keep Form.io's answers, so formio.js shows them as it does Form.io's: a submission refused by a Run task before the save is `{ name, message, code }` (see [Workflows](/developers/workflows#failures)). `/auth/token` answers OAuth errors (see [MCP tools](/developers/mcp-tools#how-agents-connect)).
 
 ## Rate limits
 
