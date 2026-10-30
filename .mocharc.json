@@ -4,5 +4,5 @@
   "spec": ["test/**/*.ts", "packages/*/test/**/*.test.js", "engines/*/test/**/*.test.js", "demo/test/**/*.test.mjs"],
   "recursive": true,
   "timeout": 5000,
-  "node-option": ["no-experimental-strip-types"]
+  "node-option": ["no-experimental-strip-types", "no-node-snapshot"]
 }

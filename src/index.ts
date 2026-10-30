@@ -39,6 +39,41 @@ function appserverCoreVersion(): string {
   return String(require(require.resolve('@formio/appserver-core/package.json', { paths: [appserver] })).version || '0.0.0');
 }
 
+/**
+ * isolated-vm, which runs form logic, needs Node's startup snapshot off. Without
+ * it nothing fails at once: the process can crash later, in native code. So an
+ * embedding server that forgot the flag is stopped here, saying what to do.
+ */
+export function assertNodeSnapshotDisabled(execArgv: string[] = process.execArgv, nodeOptions: string = process.env.NODE_OPTIONS || ''): void {
+  if (execArgv.includes('--no-node-snapshot') || /(^|\s)--no-node-snapshot(\s|$)/.test(nodeOptions)) return;
+  throw new Error('@formio/uag needs Node started with --no-node-snapshot: isolated-vm, which runs form logic, can crash the process without it. ' +
+    'Start node with --no-node-snapshot, or set NODE_OPTIONS=--no-node-snapshot. The uag command and the formio/uag image do this for you.');
+}
+
+/** A host name a browser cannot reach: a container or service name, with no dot. */
+function internalHost(url: string): boolean {
+  try {
+    const { hostname } = new URL(url);
+    return !!hostname && hostname !== 'localhost' && !hostname.includes('.') && !hostname.includes(':');
+  }
+  catch {
+    return false;
+  }
+}
+
+/** Warnings for settings that start fine and fail later, in ways far from their cause. */
+function warnAboutSettings(config: UAGConfig, secretGiven: boolean): void {
+  if (!secretGiven) {
+    console.warn('[formio-uag] JWT_SECRET is not set, so the UAG signs its tokens with a random secret that lasts only as long as this process: ' +
+      'every token stops working when it restarts, and other instances refuse it. Set JWT_SECRET, the same on every instance.');
+  }
+  const auth: any = config.auth || {};
+  if (auth.mcpOAuth && !auth.loginForm && internalHost(String(config.project || ''))) {
+    console.warn(`[formio-uag] MCP_OAUTH is on, but LOGIN_FORM is not set: the sign-in page loads ${String(config.project).replace(/\/+$/, '')}/user/login, ` +
+      'an address a person\'s browser cannot reach. Set LOGIN_FORM to the login form\'s public URL.');
+  }
+}
+
 /** The UAG's own database from the environment, when `MONGO` is set. */
 function databaseFromEnv(env: NodeJS.ProcessEnv = process.env): UAGConfig['database'] {
   const url = get(env, 'MONGO', '').toString();
@@ -60,8 +95,11 @@ export class UAGServer extends Server {
   private pendingDatabase?: UAGDatabase;
 
   constructor(config?: UAGConfig) {
+    assertNodeSnapshotDisabled();
     assertSingleCore();
     const configuredDb = !!config?.db;
+    // Read before the server fills in a random one.
+    const secretGiven = !!(config?.auth?.secret || get(process.env, 'JWT_SECRET', '').toString());
     const uagLicense = get(process.env, 'UAG_LICENSE', '').toString();
     if (uagLicense) {
       console.warn('[formio-uag] UAG_LICENSE is deprecated. Put a Form.io license that includes the UAG in LICENSE_KEY instead; UAG_LICENSE keeps working until UAG 3.0.');
@@ -83,6 +121,8 @@ export class UAGServer extends Server {
       retryDelay: parseInt(get(process.env, 'PROJECT_RETRY_DELAY', 5000).toString(), 10),
       submissionProxy: true,
       processAsClient: true,
+      // Bodies are parsed before authentication, so keep them to what Form.io accepts.
+      maxBodySize: get(process.env, 'MAX_BODY_SIZE', '16mb').toString(),
       auth: { pkce: true, mcpOAuth: get(process.env, 'MCP_OAUTH', '').toString() === 'true' },
       database: databaseFromEnv()
     }));
@@ -92,6 +132,7 @@ export class UAGServer extends Server {
       delete this.module.db;
       delete this.config.db;
     }
+    warnAboutSettings(this.config, secretGiven);
     this.use({
       ProjectInterface: UAGProjectInterface,
       FormInterface: UAGFormInterface,

@@ -312,7 +312,7 @@ describe('UAG database', function () {
             const server: any = new UAGServer({ project: 'http://localhost:3001' } as any);
             await server.connectDatabase();
             await server.enableDatabase(projectWith(true));
-            expect(warn[0]).to.contain('MCP_OAUTH is set, but remote MCP sign-in is off');
+            expect(warn.join('\n')).to.contain('MCP_OAUTH is set, but remote MCP sign-in is off');
             expect(server.config.auth.authCodeStore).to.equal(undefined);
         });
 

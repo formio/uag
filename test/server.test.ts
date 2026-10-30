@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import fs from 'fs';
 import path from 'path';
-import { assertSingleCore, UAGServer } from '../src/index';
+import { assertNodeSnapshotDisabled, assertSingleCore, UAGServer } from '../src/index';
 
 describe('UAGServer.router', () => {
   // Running the image with no PROJECT — or with an unreachable one — used to
@@ -91,6 +91,67 @@ describe('assertSingleCore', () => {
     const direct = files(path.resolve(__dirname, '../src'))
       .filter((file) => /(from\s+|require\()['"]@formio\/appserver-core['"/]/.test(fs.readFileSync(file, 'utf8')));
     assert.deepEqual(direct, []);
+  });
+});
+
+describe('assertNodeSnapshotDisabled', () => {
+  it('accepts --no-node-snapshot on the command line or in NODE_OPTIONS', () => {
+    assertNodeSnapshotDisabled();
+    assertNodeSnapshotDisabled(['--no-node-snapshot'], '');
+    assertNodeSnapshotDisabled([], '--max-old-space-size=4096 --no-node-snapshot');
+  });
+
+  it('refuses to start without it, saying how to start Node', () => {
+    assert.throws(() => assertNodeSnapshotDisabled([], ''), /needs Node started with --no-node-snapshot.*NODE_OPTIONS=--no-node-snapshot/);
+    assert.throws(() => assertNodeSnapshotDisabled(['--inspect'], '--no-node-snapshotx'), /--no-node-snapshot/);
+  });
+});
+
+describe('UAGServer settings that fail far from their cause', () => {
+  const saved = { ...process.env };
+  let warnings: string[] = [];
+  const original = console.warn;
+  beforeEach(() => {
+    warnings = [];
+    console.warn = (...args: any[]) => { warnings.push(args.join(' ')); };
+    for (const name of ['JWT_SECRET', 'MAX_BODY_SIZE', 'LOGIN_FORM', 'MCP_OAUTH', 'PROJECT']) delete process.env[name];
+  });
+  afterEach(() => {
+    console.warn = original;
+    process.env = { ...saved };
+  });
+
+  it('warns when JWT_SECRET is not set, and not when it is', () => {
+    new UAGServer({ project: 'http://formio:3001' } as any);
+    assert.match(warnings.join('\n'), /JWT_SECRET is not set/);
+    warnings = [];
+    process.env.JWT_SECRET = 'a-secret';
+    new UAGServer({ project: 'http://formio:3001' } as any);
+    new UAGServer({ project: 'http://formio:3001', auth: { secret: 'given' } } as any);
+    assert.notMatch(warnings.join('\n'), /JWT_SECRET/);
+  });
+
+  it('parses bodies up to 16mb by default, as Form.io does, and MAX_BODY_SIZE changes it', () => {
+    assert.equal((new UAGServer({ project: 'http://formio:3001' } as any) as any).config.maxBodySize, '16mb');
+    process.env.MAX_BODY_SIZE = '50mb';
+    assert.equal((new UAGServer({ project: 'http://formio:3001' } as any) as any).config.maxBodySize, '50mb');
+  });
+
+  it('warns when remote sign-in would send browsers to a container address', () => {
+    process.env.JWT_SECRET = 'a-secret';
+    process.env.MCP_OAUTH = 'true';
+    new UAGServer({ project: 'http://formio:3001' } as any);
+    assert.match(warnings.join('\n'), /LOGIN_FORM is not set/);
+    warnings = [];
+    for (const project of ['https://forms.example.com/myproject', 'http://localhost:3001', 'http://formio.local:3001']) {
+      new UAGServer({ project } as any);
+    }
+    process.env.LOGIN_FORM = 'https://forms.example.com/user/login';
+    new UAGServer({ project: 'http://formio:3001' } as any);
+    delete process.env.LOGIN_FORM;
+    delete process.env.MCP_OAUTH;
+    new UAGServer({ project: 'http://formio:3001' } as any);
+    assert.notMatch(warnings.join('\n'), /LOGIN_FORM/);
   });
 });
 

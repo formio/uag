@@ -48,4 +48,8 @@ COPY --from=builder /app/index.js ./
 # The engine packages, which node_modules links to.
 COPY --from=builder /app/packages/engine-sdk ./packages/engine-sdk
 COPY --from=builder /app/engines ./engines
+# The UAG listens only once its project, engines and database are ready, and
+# /status needs no credential, so a 200 means it is serving.
+HEALTHCHECK --interval=15s --timeout=3s --start-period=60s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3200)+'/status').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
 ENTRYPOINT ["node", "--no-node-snapshot", "index.js"]
