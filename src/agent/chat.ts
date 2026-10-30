@@ -1,6 +1,6 @@
 import { cloneDeep, get, isEqual, set, unset } from "lodash";
 import type { AuthRequest } from "@formio/appserver";
-import { formflow, FormflowError, RateLimitError } from "../formflow";
+import { formflow, FormflowError, RateLimitError, ruleWithConstraints } from "../formflow";
 import type { AgentEngine, ExtractRequest, ExtractResponse, FieldSpec, ToolCallResult } from "../formflow";
 import type { UAGProjectInterface } from "../UAGProjectInterface";
 import type { ChatField, ChatFields, ChatUnsupportedField, FormFieldError, UAGFormInterface } from "../UAGFormInterface";
@@ -224,7 +224,9 @@ function fieldSpec(form: UAGFormInterface, field: ChatField): FieldSpec {
         label: field.label,
         type: field.type,
         description: [field.required ? 'Required.' : 'Optional.', field.description, field.prompt && `Placeholder: ${field.prompt}`].filter(Boolean).join(' '),
-        rule: field.rule || '',
+        // The host's rule, then the component's validation (lengths, pattern, range, mask), so a
+        // first answer is likely to pass the form's checks.
+        rule: ruleWithConstraints(field.rule, component),
     };
     if (field.format) spec.format = field.format;
     const options = staticOptions(field);

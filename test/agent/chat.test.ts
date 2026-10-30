@@ -220,6 +220,16 @@ describe('Chat: a turn', function () {
         expect(sent.tools).to.equal(undefined);
     });
 
+    it('tells the engine each field\'s validation in its rule', async () => {
+        const fake = engine('agent1', () => ({ values: { [REPLY]: 'And your account number?', [CONFIRMED]: false } }));
+        const { project, form } = setup([fake.engine]);
+        await chatTurn(project, form, say('Hi'), { auth: fullAuth });
+        const account = fake.calls[0].request.fields.find((field: any) => field.path === 'accountNumber');
+        expect(account.rule).to.contain('`^\\d{8}$`');
+        const name = fake.calls[0].request.fields.find((field: any) => field.path === 'name');
+        expect(name.rule).to.not.contain('required');
+    });
+
     it('takes valid values, puts back invalid ones, and drops fields a person may not enter', async () => {
         const fake = engine('agent1', (_request, n) => n === 1
             ? { values: { name: 'Ada', email: 'ada at example', issueType: 'outage', priority: 'high', ticket: 'T-1', source: 'x', [REPLY]: 'Got it!' } }

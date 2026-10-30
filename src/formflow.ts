@@ -30,6 +30,7 @@ export const {
     formatReport,
     flagOn,
     flagOff,
+    ruleWithConstraints,
 } = Formflow;
 
 export type AgentEngine = Formflow.AgentEngine;
