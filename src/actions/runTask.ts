@@ -5,6 +5,7 @@ import type { FormflowForm } from '../formflow';
 import { MAX_CHAIN, RUN_TASK_ACTING_FOR, RUN_TASK_AS_USER, RUN_TASK_CALLER, RUN_TASK_CHAIN, RUN_TASK_IDENTITY, RUN_TASK_REQUEST_ID, RUN_TASK_SAVE, taskRunner } from '../runner';
 import { safeRequestId } from '@formio/uag-sdk/protocol';
 import { withRequestId } from '../agent/requestId';
+import { errorCode } from '../agent/errors';
 import type { TaskRunOutcome } from '../runner';
 import { actingForOf, agentAuth } from '../identity';
 import type { UAGFormInterface } from '../UAGFormInterface';
@@ -98,12 +99,12 @@ export function onBehalfHook() {
             if (roles.length > 1) {
                 console.error(`[formio-uag] The Run task actions of "${form.name}" that run on create name different agent roles ` +
                     `(${actions.map((action) => action.title || action.machineName).join(', ')}). Choose one agent role for them all.`);
-                return res.status(500).json({ name: 'ConfigurationError', message: `The form "${form.name}" is not configured correctly: its Run task actions name different agent roles.` });
+                return res.status(500).json({ name: 'ConfigurationError', message: `The form "${form.name}" is not configured correctly: its Run task actions name different agent roles.`, code: 'configuration_error' });
             }
             const [role] = roles;
             const submitters = actions.flatMap((action) => action.settings.submitterRoles || []).map(String);
             if (!AuthRequest.hasRole([role], access[AuthorizedStateType.ALL], project) || !has(submitters)) {
-                return res.status(403).json({ name: 'ForbiddenError', message: 'You may not submit this form.' });
+                return res.status(403).json({ name: 'ForbiddenError', message: 'You may not submit this form.', code: 'forbidden' });
             }
             try {
                 req.forwardAuth = await agentAuth(project, actingFor, role, { task: actions[0].settings.task });
@@ -139,7 +140,7 @@ function refuse(res: SubmissionResponse, err: any) {
     res.status(err.status).json({
         name: err.name,
         message: err.message,
-        ...(err.code && { code: err.code }),
+        code: err.code || errorCode(err.status),
         ...((err as any).edition && { edition: (err as any).edition })
     });
 }

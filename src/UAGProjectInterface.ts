@@ -177,10 +177,16 @@ export class UAGProjectInterface extends ProjectInterface implements FormflowHos
             // Point MCP clients at OAuth sign-in only when it is on (MCP_OAUTH, with the database).
             const pkce: any = this.provider<AuthProviderInterface>('auth.pkce');
             const metadata = pkce?.oauthReady ? `, resource_metadata="${pkce.publicUrl(req)}/.well-known/oauth-protected-resource"` : '';
+            // RFC 6750 3.1: a request that presented a token is told it is invalid; one
+            // that presented none gets no error code, only the challenge.
+            const presented = !!bearerOf(req.get('authorization'));
+            const description = String(err?.message || err || 'Unauthorized').replace(/["\\]/g, '');
+            const challenge = presented ? `, error="invalid_token", error_description="${description}"` : '';
             return res.status(401).set({
-                'WWW-Authenticate': `Bearer realm="uag-server"${metadata}`
+                'WWW-Authenticate': `Bearer realm="uag-server"${challenge}${metadata}`
             }).json({
-                detail: err.message || err
+                error: presented ? 'invalid_token' : 'unauthorized',
+                error_description: presented ? description : 'Send an access token: Authorization: Bearer <token>.'
             });
         }
     }

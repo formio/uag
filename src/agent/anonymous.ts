@@ -75,13 +75,13 @@ export function anonymousGate(project: UAGProjectInterface) {
         const form: any = request.form;
         const limits = anonymousLimits(project);
         if (limits.perAddress === 0 || limits.total === 0 || !flagOn(form?.form?.properties?.uagAnonymous)) {
-            return res.status(401).json({ detail: 'Sign in to use this form\'s agent operations.' });
+            return res.status(401).json({ error: 'Sign in to use this form\'s agent operations.', code: 'sign_in_required' });
         }
         const taken = limiterFor(project).take(String(req.ip || req.socket?.remoteAddress || ''), limits);
         if (!taken.allowed) {
             debug(`Refused an anonymous ${req.method} ${req.path}: over the anonymous rate limit.`);
             res.set('Retry-After', String(taken.retryAfter));
-            return res.status(429).json({ detail: 'Too many requests. Try again shortly.' });
+            return res.status(429).json({ error: 'Too many requests. Try again shortly.', code: 'rate_limited' });
         }
         let permissions: Record<string, boolean> = {};
         try {
@@ -91,7 +91,7 @@ export function anonymousGate(project: UAGProjectInterface) {
             permissions = {};
         }
         if (!permissions.create) {
-            return res.status(403).json({ detail: 'Anonymous visitors may not submit this form.' });
+            return res.status(403).json({ error: 'Anonymous visitors may not submit this form.', code: 'forbidden' });
         }
         next();
     };

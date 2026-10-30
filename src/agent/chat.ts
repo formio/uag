@@ -464,7 +464,7 @@ export async function chatTurn(project: UAGProjectInterface, form: UAGFormInterf
     const request = readChatRequest(body, settings);
     const engines = chatEngines(project, settings);
     if (!engines.length) {
-        throw new FormflowError(503, 'No enabled engine can serve chat. Enable an agent engine with UAG_ENGINES.');
+        throw new FormflowError(503, 'No enabled engine can serve chat. Enable an agent engine with UAG_ENGINES.', 'no_engine');
     }
     const service = formflow(project);
     const before = await form.chatFields({ data: cloneDeep(request.data) } as any, context.auth);

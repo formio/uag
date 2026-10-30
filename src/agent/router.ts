@@ -1,8 +1,7 @@
-import { randomUUID } from "crypto";
 import { escapeRegExp } from "lodash";
 import express, { NextFunction, Request, RequestHandler, Response, Router } from "express";
 import { SubmissionRequest } from "@formio/appserver";
-import { safeRequestId } from "@formio/uag-sdk/protocol";
+import { errorCode, INTERNAL_ERROR, requestIdOf } from "./errors";
 import { bearerOf, flagOff, formflow, FormflowError, FormflowService, callerIdentity, isScopedToken, OperationContext, OperationResult, RateLimitError, resultEvent } from "../formflow";
 import type { UAGProjectInterface } from "../UAGProjectInterface";
 import { withRequestId } from "./requestId";
@@ -102,16 +101,16 @@ function agentEndpoints(project: UAGProjectInterface) {
         if (req.body === undefined) return parse(req, res, next);
         const length = Number(req.get('content-length')) || Buffer.byteLength(JSON.stringify(req.body ?? null));
         if (length > AGENT_BODY_LIMIT) {
-            return res.status(413).json({ error: `The request body is larger than the agent operations' limit of ${AGENT_BODY_LIMIT / (1024 * 1024)} MB.` });
+            return res.status(413).json({ error: `The request body is larger than the agent operations' limit of ${AGENT_BODY_LIMIT / (1024 * 1024)} MB.`, code: 'payload_too_large' });
         }
         next();
     };
 
-    // Request id, after authentication: refused requests carry none. One that
-    // is not a short token is replaced, so it is never echoed, logged or sent on.
+    // The request id, usually assigned already by agentErrorShape, ahead of every
+    // refusal. One that is not a short token is replaced, so it is never echoed,
+    // logged or sent on.
     const requestId = (req: any, res: Response, next: NextFunction) => {
-        req.requestId = safeRequestId(req.get('x-request-id')) || randomUUID();
-        res.set('X-Request-Id', req.requestId);
+        requestIdOf(req, res);
         next();
     };
 
@@ -134,8 +133,8 @@ function agentEndpoints(project: UAGProjectInterface) {
                 }
                 const body = {
                     requestId: agentReq.requestId,
-                    error: status === 500 ? 'The request failed. See the UAG logs for this request id.' : err.message,
-                    ...(err instanceof FormflowError && err.code && { code: err.code }),
+                    error: status === 500 ? INTERNAL_ERROR : err.message,
+                    code: (err instanceof FormflowError && err.code) || errorCode(status),
                     ...(err?.edition && { edition: err.edition })
                 };
                 if (res.headersSent) {
@@ -196,12 +195,12 @@ export function agentNotFound(project: UAGProjectInterface): RequestHandler {
             ? forms.some((form) => String(form.form?._id || '') === byId[1]) || !!(await (project as any).getKnownFormById?.(byId[1]))
             : !!formPath && forms.some((form) => String(form.path || '').toLowerCase() === formPath.toLowerCase());
         if (known) return next();
-        res.status(404).json({ error: `The form "${byId ? byId[1] : formPath}" does not exist or is not tagged "uag".` });
+        res.status(404).json({ error: `The form "${byId ? byId[1] : formPath}" does not exist or is not tagged "uag".`, code: 'form_not_found' });
     };
 }
 
-function refuse(res: Response, detail: string) {
-    return res.status(401).json({ detail });
+function refuse(res: Response, error: string) {
+    return res.status(401).json({ error, code: 'unauthorized' });
 }
 
 /**
@@ -278,10 +277,10 @@ export function FormAgentRouter(project: UAGProjectInterface, credentials: Reque
     route('chat', 'chat', async (req, res, service) => {
         const form = await project.formflowForm(formOf(req)) as UAGFormInterface | null;
         if (!form) {
-            throw new FormflowError(404, `The form "${formOf(req)}" does not exist or is not tagged "uag".`);
+            throw new FormflowError(404, `The form "${formOf(req)}" does not exist or is not tagged "uag".`, 'form_not_found');
         }
         if (flagOff(form.form?.properties?.uagChat)) {
-            throw new FormflowError(403, `Chat is turned off for the form "${form.formflowName}".`);
+            throw new FormflowError(403, `Chat is turned off for the form "${form.formflowName}".`, 'chat_disabled');
         }
         service.requireAccess(req.auth, form, ['create']);
         res.json(await chatTurn(project, form, req.body, { auth: req.auth as any, requestId: req.requestId }));

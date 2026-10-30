@@ -517,7 +517,7 @@ describe('Agent API admin credentials', () => {
         const { project } = setup([jev]);
         const res = await request(credentialApp(project, {})).post('/claim/agent/decide').set('x-token', 'wrong').send({ data: description });
         expect(res.status, res.text).to.equal(401);
-        expect(res.body.detail).to.contain('Invalid');
+        expect(res.body.code).to.equal('unauthorized'); expect(res.body.error).to.contain('Invalid');
         expect(jev.calls).to.equal(0);
     });
 
@@ -526,7 +526,7 @@ describe('Agent API admin credentials', () => {
         for (const [name, value] of [['Origin', 'https://app.example.com'], ['Sec-Fetch-Site', 'same-origin']]) {
             const res = await request(credentialApp(project, { admin: true })).post('/claim/agent/decide').set('x-token', 'project-key').set(name, value).send({ data: description });
             expect(res.status, name).to.equal(401);
-            expect(res.body.detail).to.contain('browser');
+            expect(res.body.code).to.equal('unauthorized'); expect(res.body.error).to.contain('browser');
         }
     });
 
@@ -548,7 +548,7 @@ describe('Agent API admin credentials', () => {
         const token = issueScopedToken(project, { admin: true }, [], 30000);
         const res = await request(credentialApp(project, { admin: true })).post('/claim/agent/decide').set('Authorization', `Bearer ${token}`).send({ data: {} });
         expect(res.status, res.text).to.equal(401);
-        expect(res.body.detail).to.contain('/mcp');
+        expect(res.body.code).to.equal('unauthorized'); expect(res.body.error).to.contain('/mcp');
     });
 
     it('never matches when no key is configured', async () => {

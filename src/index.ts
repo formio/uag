@@ -1,6 +1,6 @@
 import { Server, ServerModule } from '@formio/appserver';
 import { formflow } from './formflow';
-import { Router } from 'express';
+import { Request, Response, Router } from 'express';
 import path from 'path';
 import { UAGProjectInterface } from './UAGProjectInterface';
 import { UAGFormInterface } from './UAGFormInterface';
@@ -8,6 +8,7 @@ import { defaultsDeep, get, set } from 'lodash';
 import { UAGConfig } from './config';
 import { loadUAGEngines } from './agent/engines';
 import { agentNotFound } from './agent/router';
+import { agentErrorShape, errorBody, isAgentApiRequest, requestIdOf } from './agent/errors';
 import { UAGDatabase } from './database';
 import { TaskRunStore } from './runs';
 import { ActionLogRouter } from './actionLogs';
@@ -162,6 +163,18 @@ export class UAGServer extends Server {
     }
   }
 
+  /**
+   * An Agent API request that failed before its handlers (a body that is not JSON,
+   * one over the size limit) is answered in the Agent API's error shape; every other
+   * route keeps Form.io's plain-text answer.
+   */
+  protected sendError(req: Request, res: Response, status: number, message: string, err?: any): void {
+    if (!isAgentApiRequest(req)) return super.sendError(req, res, status, message, err);
+    const error = err?.type === 'entity.parse.failed' ? 'The request body is not valid JSON.' : message;
+    // Written past any shaping wrapper, which may not have run for this request.
+    res.status(status).type('application/json').end(JSON.stringify(errorBody(requestIdOf(req, res), status, { error })));
+  }
+
   /** Browsers reading Agent API responses need the request id too. */
   get exposedHeaders(): string[] {
     return [...super.exposedHeaders, 'X-Request-Id'];
@@ -182,6 +195,8 @@ export class UAGServer extends Server {
     await super.extendRouter(router);
     const uagProject = this.uagProject;
     if (uagProject) {
+      // First: the Agent API's request id and one error shape, for every refusal after it.
+      router.use(agentErrorShape());
       router.use(uagProject.agentRouter());
       // An agent operation of a form the project does not have is answered here, not passed to Form.io.
       router.use(agentNotFound(uagProject));
