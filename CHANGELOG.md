@@ -78,7 +78,7 @@ The first release of the Agent API and of the "Agent: Run task" action (1.14.0 w
 - Remote MCP clients need `MCP_OAUTH=true` and the UAG's database. `/auth/token` (`client_credentials`) and API keys are always on, and need none of `BASE_URL`, `MONGO` or `MCP_OAUTH`.
 - `BASE_URL` is optional: the UAG derives its public URL from each request (`Host`, or the forwarded headers with `TRUST_PROXY`), and `BASE_URL` overrides it.
 - The Claude Desktop sample (`demo/samples/custom-module`) uses `MCP_OAUTH` with `MONGO` (on the `formio.local` and `mongo.local` aliases, development hosts, so no license is needed) and `TRUST_PROXY`, with no `BASE_URL`.
-- Requires `@formio/appserver` 2.25.1, the UAG's only Form.io server dependency: it brings `@formio/appserver-core`, which provides Agentic Formflow as the `Formflow` export and proxy mode, and marks `save`, `login` and `role` as platform actions. The UAG reaches core only through `@formio/appserver`, so the two always share one copy, and refuses to start, saying why, when that copy is older than 2.25.1.
+- Requires `@formio/appserver` 2.25.2, the UAG's only Form.io server dependency: it brings `@formio/appserver-core`, which provides Agentic Formflow as the `Formflow` export and proxy mode, and marks `save`, `login` and `role` as platform actions. The UAG reaches core only through `@formio/appserver`, so the two always share one copy, and refuses to start, saying why, when that copy is older than 2.25.2.
 - The Agent API claims only `/agent/capabilities` at the UAG's root, so a project form at the path `agent` is still served.
 - An engine's own error message (which can carry provider details) is no longer returned to API callers: they get "the engine failed" with the request id, and the full error is logged. The UAG's own timeout, rate-limit and license messages, and errors an engine marks `expose: true`, are shown as before.
 - Admin credentials (`x-token`, `x-admin-key`) on a form's agent operations and `/agent/capabilities` are refused on any request a browser makes, including same-origin requests that carry no `Origin` header.
@@ -109,6 +109,7 @@ The first release of the Agent API and of the "Agent: Run task" action (1.14.0 w
 
 ### Fixed
 
+- The OAuth discovery document lists every grant `/auth/token` accepts (`authorization_code`, `refresh_token`, `client_credentials`), so a client knows it may refresh (with `@formio/appserver-core` 2.25.2). It listed only `authorization_code`.
 - An action whose conditions name an operator Form.io does not know is skipped, and the UAG logs why once (with `@formio/appserver-core` 2.25.1). Form.io's condition check counts an unknown operator as a condition that holds, so a typo ran a Run task on every save, and on update in a loop.
 - Instances starting together no longer fail on the module template: when another instance installed it first, Form.io refused the second import and the instance exited, and refused its actions as duplicates, which was logged as an error (with `@formio/appserver-core` 2.25.1).
 - The `uag*` switches (`uagAuthoritative`, `uagAgentDecides`, `uagScale`, `uagOrderCheck`, `uagAnonymous`, `uagChat`) accept JSON booleans and any letter case. `uagAuthoritative: true` written as a boolean was ignored, so clients could set a field a task owns.

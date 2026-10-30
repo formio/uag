@@ -67,20 +67,21 @@ describe('UAGServer license', () => {
 });
 
 describe('assertSingleCore', () => {
-  it('accepts the core @formio/appserver loads at 2.25.1 or later', () => {
+  it('accepts the core @formio/appserver loads at 2.25.2 or later', () => {
     assertSingleCore();
-    assertSingleCore('2.25.1');
+    assertSingleCore('2.25.2');
     assertSingleCore('2.25.3');
     assertSingleCore('2.26.0');
     assertSingleCore('3.0.0');
   });
 
   it('refuses an older core, naming the version and the package to upgrade', () => {
-    assert.throws(() => assertSingleCore('2.22.0'), /2\.25\.1 or later, through @formio\/appserver; 2\.22\.0 is installed\. Upgrade @formio\/appserver\./);
+    assert.throws(() => assertSingleCore('2.22.0'), /2\.25\.2 or later, through @formio\/appserver; 2\.22\.0 is installed\. Upgrade @formio\/appserver\./);
     assert.throws(() => assertSingleCore('2.23.1'), /2\.23\.1 is installed/);
     assert.throws(() => assertSingleCore('2.24.0'), /2\.24\.0 is installed/);
     assert.throws(() => assertSingleCore('2.24.3'), /2\.24\.3 is installed/);
     assert.throws(() => assertSingleCore('2.25.0'), /2\.25\.0 is installed/);
+    assert.throws(() => assertSingleCore('2.25.1'), /2\.25\.1 is installed/);
   });
 
   it('holds because the UAG reaches core only through @formio/appserver', () => {
