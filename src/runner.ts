@@ -55,6 +55,8 @@ export type TaskRunOutcome = {
     engines: { kind: string; engine: string | null; model: string | null }[];
     /** Whether the results were saved (nothing is saved when nothing changed). */
     saved: boolean;
+    /** Answers the form's validation refused, left out: path to the form's message. */
+    refused?: Record<string, string>;
     error?: string;
 };
 
@@ -333,7 +335,8 @@ export class TaskRunner {
         const service = formflow(this.project);
         const load = async () => {
             const stored = await form.loadSubmission(job.submission, await act());
-            if (!stored) throw new FormflowError(404, `Submission "${job.submission}" was not found.`);
+            // Form.io answers a submission the caller may not read as missing, so say both.
+            if (!stored) throw new FormflowError(404, `Submission "${job.submission}" was not found, or the user the run acts as may not read it (give submitters Read Own access, or the action an agent role).`);
             return stored as any;
         };
         let stored = await load();
@@ -342,8 +345,14 @@ export class TaskRunner {
             const engines = run.results.map((result) => ({ kind: result.kind, engine: result.engine ?? null, model: result.model ?? null }));
             const failed = run.failed.map((group) => group.error || 'no engine could answer').join('; ');
             const changed = Object.keys(run.written).length > 0 || run.cleared.length > 0;
+            const refused = run.refused || {};
+            if (Object.keys(refused).length) {
+                console.warn(`[formio-uag] Run task "${job.task}" left out answers the form refused for submission ${job.submission} of "${job.form}": ` +
+                    Object.entries(refused).map(([path, message]) => `${path} (${message})`).join('; '));
+            }
+            const left = Object.keys(refused).length ? { refused } : {};
             if (!changed) {
-                return { status: failed ? 'failed' : 'done', written: {}, cleared: [], engines, saved: false, ...(failed && { error: failed }) };
+                return { status: failed ? 'failed' : 'done', written: {}, cleared: [], engines, saved: false, ...left, ...(failed && { error: failed }) };
             }
             try {
                 // Only the task's fields changed; `modified` refuses the save if a person saved in the meantime.
@@ -355,7 +364,7 @@ export class TaskRunner {
                     ...(job.caller ? { [RUN_TASK_CALLER]: job.caller, [RUN_TASK_IDENTITY]: job.identity } : { [RUN_TASK_AS_USER]: true }),
                     [RUN_TASK_CHAIN]: (job.chain || 0) + 1
                 });
-                return { status: failed ? 'failed' : 'done', written: run.written, cleared: run.cleared, engines, saved: true, ...(failed && { error: failed }) };
+                return { status: failed ? 'failed' : 'done', written: run.written, cleared: run.cleared, engines, saved: true, ...left, ...(failed && { error: failed }) };
             }
             catch (err: any) {
                 if (err?.name !== 'ConflictError' || attempt >= 2) {
@@ -377,6 +386,7 @@ function resultOf(outcome: TaskRunOutcome) {
         engines: outcome.engines,
         written: Object.keys(outcome.written),
         cleared: outcome.cleared,
+        ...(outcome.refused && { refused: Object.keys(outcome.refused) }),
         saved: outcome.saved,
         ...(outcome.error && { error: outcome.error })
     };

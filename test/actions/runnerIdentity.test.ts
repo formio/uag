@@ -67,10 +67,12 @@ describe('Run task identity', function () {
     const applicant = { _id: '5f0000000000000000000001', roles: ['applicant'], data: { email: 'ann@example.com' } };
     let token = '';
 
-    async function start(settings: any, userUpdates = false, finance: any = settings) {
+    async function start(settings: any, userUpdates = false, finance: any = settings, customize: (form: any) => void = () => {}) {
+        const form = application(userUpdates);
+        customize(form);
         formio = new FakeFormio({
             roles,
-            forms: { application: application(userUpdates) },
+            forms: { application: form },
             actions: {
                 'application:admissions': runTask('admissions', 'create', settings),
                 // The stub decision engine decides "no".
@@ -255,6 +257,49 @@ describe('Run task identity', function () {
                 expect(req.headers['x-jwt-token'], `${req.method} ${req.url}`).to.equal(token);
             }
             expect(seen.every((entry) => entry.id === applicant._id)).to.equal(true);
+        });
+    });
+
+    describe('with an answer the form refuses', () => {
+        // The stub decision engine decides "no", which this form's validation refuses.
+        beforeEach(() => start({ agentRole: 'agent' }, false, {}, (form) => {
+            form.components.find((c: any) => c.key === 'admitted').validate = { custom: 'valid = input === "no" ? "No is not accepted here." : true;' };
+        }));
+
+        it('saves nothing for it, and logs what it left out and why', async () => {
+            const warnings: string[] = [];
+            const original = console.warn;
+            console.warn = (...args: any[]) => { warnings.push(args.join(' ')); };
+            try {
+                expect((await submit()).status).to.equal(201);
+                await taskRunner(server.uagProject!).idle();
+            }
+            finally {
+                console.warn = original;
+            }
+            expect(warnings.join('\n')).to.contain('left out answers the form refused').and.contain('admitted (No is not accepted here.)');
+            const saved = formio.forwarded('PUT').map((req: any) => req.body?.data || {});
+            for (const data of saved) expect(data.admitted).to.equal(undefined);
+        });
+    });
+
+    describe('without an agent role, for a user who may not read the submission', () => {
+        beforeEach(() => start({}, true));
+
+        it('fails the run saying the user may not be able to read it, not only that it is missing', async () => {
+            formio.refuseReads = true;
+            const errors: string[] = [];
+            const original = console.error;
+            console.error = (...args: any[]) => { errors.push(args.join(' ')); };
+            try {
+                expect((await submit()).status).to.equal(201);
+                await taskRunner(server.uagProject!).idle();
+            }
+            finally {
+                console.error = original;
+            }
+            expect(errors.join('\n'), errors.join('\n')).to.contain('may not read it');
+            expect(formio.forwarded('PUT')).to.deep.equal([]);
         });
     });
 });

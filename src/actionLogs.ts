@@ -37,12 +37,14 @@ export function actionItem(record: TaskRunRecord) {
     if (record.finished) {
         const written = record.written || [];
         const cleared = record.cleared || [];
-        const info = record.status === 'failed'
+        const refused = record.refused || [];
+        const left = refused.length ? ` Left out answers the form refused: ${refused.join(', ')}.` : '';
+        const info = (record.status === 'failed'
             ? `Failed: ${record.error || 'unknown error'}`
             : record.saved
                 ? `Saved ${written.length} field(s)${written.length ? `: ${written.join(', ')}` : ''}${cleared.length ? `; cleared ${cleared.join(', ')}` : ''}.`
-                : 'Nothing changed, so nothing was saved.';
-        messages.push({ datetime: record.finished.toISOString(), info, data: { engines: record.engines || [], written, cleared } });
+                : 'Nothing changed, so nothing was saved.') + left;
+        messages.push({ datetime: record.finished.toISOString(), info, data: { engines: record.engines || [], written, cleared, ...(refused.length && { refused }) } });
     }
     return {
         _id: String(record._id),

@@ -40,6 +40,8 @@ export type TaskRunRecord = {
     engines?: { kind: string; engine: string | null; model: string | null }[];
     written?: string[];
     cleared?: string[];
+    /** Paths whose answers the form's validation refused, left out of the save. */
+    refused?: string[];
     saved?: boolean;
     error?: string;
     created: Date;
@@ -111,7 +113,7 @@ export class TaskRunStore {
     }
 
     /** Record how a run ended. Only the replica holding a durable run can. */
-    async finish(id: ObjectId, result: Pick<TaskRunRecord, 'engines' | 'written' | 'cleared' | 'saved' | 'error'> & { status: 'done' | 'failed' }): Promise<void> {
+    async finish(id: ObjectId, result: Pick<TaskRunRecord, 'engines' | 'written' | 'cleared' | 'refused' | 'saved' | 'error'> & { status: 'done' | 'failed' }): Promise<void> {
         const now = new Date();
         await this.collection.updateOne(
             { _id: id, $or: [{ durable: false }, { owner: this.owner }] },

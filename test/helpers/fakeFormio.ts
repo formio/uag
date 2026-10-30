@@ -19,6 +19,8 @@ export class FakeFormio {
      * with it (as Form.io Enterprise does) and refuses other external tokens.
      */
     public secret = '';
+    /** Refuse every submission read, as Form.io does for a caller without read access. */
+    public refuseReads = false;
     /** Form.io Enterprise's action items (Action Logs), for `/action`. */
     public actionItems: any[] = [];
     private server?: http.Server;
@@ -110,6 +112,7 @@ export class FakeFormio {
             res.status(201).json(saved);
         };
         const read = (req: express.Request, res: express.Response) => {
+            if (this.refuseReads) return res.status(401).send('Unauthorized');
             const found = this.submissions[req.params.id as string];
             if (!found) return res.status(404).send('Not found');
             res.json(found);
