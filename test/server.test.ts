@@ -2,6 +2,7 @@ import { assert } from 'chai';
 import fs from 'fs';
 import path from 'path';
 import { assertNodeSnapshotDisabled, assertSingleCore, UAGServer } from '../src/index';
+import { UAGProjectInterface } from '../src/UAGProjectInterface';
 
 describe('UAGServer.router', () => {
   // Running the image with no PROJECT — or with an unreachable one — used to
@@ -63,6 +64,24 @@ describe('UAGServer license', () => {
     const server = new UAGServer();
     assert.equal((server as any).config.licenseType, 'uagServer');
     assert.equal((server as any).config.licenseFeature, 'uag');
+  });
+});
+
+describe('UAG version', () => {
+  const version = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')).version;
+
+  it('is reported by GET /status, beside the Form.io packages it runs on', () => {
+    const status = (new UAGServer() as any).config.status;
+    assert.equal(status['@formio/uag'], version);
+    assert.property(status, '@formio/appserver');
+    assert.property(status, '@formio/appserver-core');
+  });
+
+  it('is the version the MCP server reports to clients', async () => {
+    const project = Object.create(UAGProjectInterface.prototype);
+    project.forms = {};
+    const server = await project.buildMcpServer();
+    assert.deepEqual((server.server as any)._serverInfo, { name: 'formio-uag', version });
   });
 });
 

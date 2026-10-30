@@ -14,6 +14,7 @@ import { TaskRunStore } from './runs';
 import { ActionLogRouter } from './actionLogs';
 import { taskRunner } from './runner';
 import { RunTaskAction, runTaskHooks } from './actions/runTask';
+import { UAG_VERSION } from './version';
 const debug = require('debug')('formio:uag');
 export type UAGModule = ServerModule & {
   config?: UAGConfig;
@@ -121,6 +122,8 @@ export class UAGServer extends Server {
       retryDelay: parseInt(get(process.env, 'PROJECT_RETRY_DELAY', 5000).toString(), 10),
       submissionProxy: true,
       processAsClient: true,
+      // GET /status names the UAG's version beside the Form.io packages it runs on.
+      status: { '@formio/uag': UAG_VERSION },
       // Bodies are parsed before authentication, so keep them to what Form.io accepts.
       maxBodySize: get(process.env, 'MAX_BODY_SIZE', '16mb').toString(),
       auth: { pkce: true, mcpOAuth: get(process.env, 'MCP_OAUTH', '').toString() === 'true' },

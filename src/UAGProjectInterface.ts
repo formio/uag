@@ -9,6 +9,7 @@ import { UAGRouter } from "./router";
 import { UAGFormInterface } from "./UAGFormInterface";
 import { ResponseTemplate, UAGTemplate } from "./template";
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { UAG_VERSION } from './version';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { AgentRouter } from "./agent/router";
 import { allTools, formflowTool } from "./agent/tools";
@@ -22,7 +23,7 @@ export class UAGProjectInterface extends ProjectInterface implements FormflowHos
     public uagTemplate: UAGTemplate | null = null;
     /** Engines enabled at startup; empty until UAGServer.router() resolves them. */
     public engines: EngineRegistry = new EngineRegistry();
-    public mcpServer = new McpServer({ name: 'formio-uag', version: '1.0.0' });
+    public mcpServer = new McpServer({ name: 'formio-uag', version: UAG_VERSION });
     get config(): UAGConfig { return ProjectInterface.module?.config || {}; }
     constructor(endpoint?: string) {
         super(endpoint);
@@ -39,7 +40,7 @@ export class UAGProjectInterface extends ProjectInterface implements FormflowHos
     // A scoped token narrows the tools to its own list, and only ever to tools
     // annotated read-only: no model may write through /mcp with one.
     async buildMcpServer(scope?: Pick<ScopedTokenClaims, 'tools'>): Promise<McpServer> {
-        const server = new McpServer({ name: 'formio-uag', version: '1.0.0' });
+        const server = new McpServer({ name: 'formio-uag', version: UAG_VERSION });
 
         // The standard UAG tools, plus the custom tools from config.
         let tools = await allTools(this);

@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { collectData } from '../../src/tools/collectData';
 import { ResponseTemplate } from '../../src/template';
+import { CallToolResultSchema } from '@modelcontextprotocol/sdk/types.js';
 import { MockProjectInterface } from './mock';
 
 describe('collectData Tool', () => {
@@ -164,8 +165,13 @@ describe('collectData Tool', () => {
 
         expect(result.content).to.be.an('array');
         const parsed = JSON.parse(result.content[0].text);
-        expect(parsed).to.be.an('array');
-        expect(parsed[0].path).to.equal('email');
+        expect(parsed.errors).to.be.an('array');
+        expect(parsed.errors[0].path).to.equal('email');
+        expect(result.structuredContent).to.deep.equal(parsed);
+        expect(result.isError).to.equal(true);
+        // An MCP client parses the result with the SDK's schema, which refuses
+        // anything but an object as structuredContent.
+        expect(CallToolResultSchema.safeParse(result).success).to.equal(true);
     });
 
     it('respects tool overrides from config', async () => {

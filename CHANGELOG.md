@@ -109,6 +109,8 @@ The first release of the Agent API and of the "Agent: Run task" action (1.14.0 w
 
 ### Fixed
 
+- `collect_field_data` with `as_json` reports validation errors as `{ "errors": [...] }` with `isError: true`. It returned a bare array as `structuredContent`, which MCP clients built on the official SDK refuse, so `callTool()` threw instead of showing the errors.
+- `GET /status` reports the UAG's own version (`@formio/uag`) beside the Form.io packages it runs on, and the MCP server reports it to clients; it said `1.0.0`.
 - The OAuth discovery document lists every grant `/auth/token` accepts (`authorization_code`, `refresh_token`, `client_credentials`), so a client knows it may refresh (with `@formio/appserver-core` 2.25.2). It listed only `authorization_code`.
 - An action whose conditions name an operator Form.io does not know is skipped, and the UAG logs why once (with `@formio/appserver-core` 2.25.1). Form.io's condition check counts an unknown operator as a condition that holds, so a typo ran a Run task on every save, and on update in a loop.
 - Instances starting together no longer fail on the module template: when another instance installed it first, Form.io refused the second import and the instance exited, and refused its actions as duplicates, which was logged as an error (with `@formio/appserver-core` 2.25.1).

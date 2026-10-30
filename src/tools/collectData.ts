@@ -45,7 +45,8 @@ export const collectData = async (project: UAGProjectInterface): Promise<ToolInf
             const fields = await form.getFields(submission, extra.authInfo, parent?.data_path);
             if (fields.errors.length > 0) {
                 if (as_json) {
-                    return project.mcpJSONResponse(fields.errors);
+                    // structuredContent must be an object: an MCP client refuses a bare array.
+                    return project.mcpJSONResponse({ errors: fields.errors }, true);
                 }
                 return project.mcpResponse(ResponseTemplate.fieldValidationErrors, { invalidFields: fields.errors });
             }
