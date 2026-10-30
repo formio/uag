@@ -1,6 +1,6 @@
 {
   "name": "@formio/uag-claude",
-  "version": "2.0.0-rc.3",
+  "version": "2.0.0-rc.4",
   "description": "Claude agent engine for the Form.io Universal Agent Gateway (UAG): structured extraction, with research over read-only tools, for the Agent API.",
   "keywords": [
     "formio",
@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",
-    "@formio/uag-sdk": "^2.0.0-rc.3"
+    "@formio/uag-sdk": "^2.0.0-rc.4"
   },
   "devDependencies": {
     "chai": "^6.3.0",

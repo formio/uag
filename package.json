@@ -1,6 +1,6 @@
 {
   "name": "@formio/uag",
-  "version": "2.0.0-rc.3",
+  "version": "2.0.0-rc.4",
   "mcpName": "io.form/formio-uag",
   "description": "The Form.io Universal Agent Gateway (UAG).",
   "main": "lib/index.js",
@@ -45,7 +45,7 @@
   "dependencies": {
     "@formio/appserver": "^2.25.1",
     "@formio/core": "2.9.0",
-    "@formio/uag-sdk": "^2.0.0-rc.3",
+    "@formio/uag-sdk": "^2.0.0-rc.4",
     "@modelcontextprotocol/sdk": "1.32.2",
     "cors": "^2.8.6",
     "debug": "^4.4.3",
