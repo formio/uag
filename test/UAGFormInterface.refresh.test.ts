@@ -55,3 +55,30 @@ describe('UAGFormInterface when its form is set again', () => {
         expect(project.formNames).to.deep.equal([]);
     });
 });
+
+// A task's fields are every input inside the component flagged with `uag`,
+// whatever kind of layout holds them.
+describe('UAGFormInterface task fields inside a flagged layout', () => {
+    const form = (layout: any) => ({ _id: 'f', name: 'f', path: 'f', title: 'F', tags: ['uag'], components: [layout] });
+    const a = { type: 'textfield', key: 'a', label: 'A', input: true };
+    const b = { type: 'number', key: 'b', label: 'B', input: true };
+    const fieldsOf = (layout: any) => Object.keys(new UAGFormInterface(makeProject({}), form(layout) as any).uagFields.t?.components || {});
+
+    for (const [name, layout] of Object.entries({
+        panel: { type: 'panel', key: 'p', input: false, components: [a, b], properties: { uag: 't' } },
+        columns: { type: 'columns', key: 'cols', input: false, columns: [{ components: [a] }, { components: [b] }], properties: { uag: 't' } },
+        table: { type: 'table', key: 'tbl', input: false, rows: [[{ components: [a] }, { components: [b] }]], properties: { uag: 't' } },
+        tabs: { type: 'tabs', key: 'tabs', input: false, components: [{ key: 'tab1', components: [a, b] }], properties: { uag: 't' } }
+    })) {
+        it(`flags each input inside a ${name}`, () => {
+            expect(fieldsOf(layout)).to.deep.equal(['a', 'b']);
+        });
+    }
+
+    it('flags the inputs of columns nested inside a container under the container\'s path', () => {
+        const container = { type: 'container', key: 'c', input: true, tree: true, components: [
+            { type: 'columns', key: 'cols', input: false, columns: [{ components: [a] }, { components: [b] }], properties: { uag: 't' } }
+        ] };
+        expect(fieldsOf(container)).to.deep.equal(['c.a', 'c.b']);
+    });
+});

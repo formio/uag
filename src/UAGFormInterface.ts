@@ -101,6 +101,20 @@ export type UAGFields = {
     settings?: Record<string, string>;
 }
 
+/**
+ * The components inside a layout or container flagged with `uag`, which makes
+ * each input inside it one of the task's fields. Panels, fieldsets, wells, tabs
+ * and containers hold theirs in `components`; columns in each column's
+ * `components`; tables in each cell's. Null for a component that holds none.
+ */
+function layoutChildren(component: Component): Component[] | null {
+    const comp: any = component;
+    if (Array.isArray(comp.components)) return comp.components;
+    if (Array.isArray(comp.columns)) return comp.columns.flatMap((column: any) => column?.components || []);
+    if (Array.isArray(comp.rows)) return comp.rows.flat().flatMap((cell: any) => cell?.components || []);
+    return null;
+}
+
 export class UAGFormInterface extends FormInterface implements FormflowForm {
     // Declared rather than initialized: FormInterface's constructor calls setForm(), which sets
     // these, and an initializer would run after it and reset them.
@@ -171,8 +185,9 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
                 }
             }
             else {
-                if ((component as HasChildComponents).components) {
-                    Utils.eachComponent((component as HasChildComponents).components, (subComp, subPath) => {
+                const children = layoutChildren(component);
+                if (children) {
+                    Utils.eachComponent(children, (subComp, subPath) => {
                         subPath = paths?.dataPath ? `${paths.dataPath}.${subPath}` : subPath;
                         const compInfo = this.getComponentInfo(subComp, subPath);
                         compInfo.rule = this.getComponentValueRule(subComp);
