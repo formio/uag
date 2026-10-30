@@ -47,11 +47,11 @@ What it must show: the form is the whole script, a person talks in plain languag
 
 ### Agentic workflow (`demo-workflow.gif`, about 45 s)
 
-What it must show: the rubric lives in the form, an "Agent: Run task" action starts the agent after the save, the UAG saves its results as an update, and that update starts the second agent. No person reviews anything.
+What it must show: the criteria live in the form, an "Agent: Run task" action starts the agent after the save, the UAG saves its results as an update, and that update starts the second agent. No person reviews anything.
 
 | # | Screen | Action | Caption |
 |---|---|---|---|
-| 1 | Enterprise portal, the **UAG Gateway** stage (connected to the UAG), College Application builder | (Sign-in is cut.) Open the **Admissions Review (Agent)** page of the wizard: the criteria content component. | 1 · The admissions rubric is a content component in the form. |
+| 1 | Enterprise portal, the **UAG Gateway** stage (connected to the UAG), College Application builder | (Sign-in is cut.) Open the **Admissions Review (Agent)** page of the wizard: the criteria content component. | 1 · The admissions criteria are a content component in the form. |
 | 2 | Its settings, **API** tab | Open the criteria's settings: the custom properties `uag: admissions` and `uagField: criteria`. | 2 · Its custom properties make it the criteria of the `admissions` task. |
 | 3 | **Actions → Agent: Run task (admissions)** | Open the action: its **Task** is `admissions`, and it runs **After the save, in the background**, on **Create**. The portal opens it because these screens use the stage connected to the UAG. | 3 · An "Agent: Run task" action runs the `admissions` task after each application is saved. |
 | 4 | Agentic Workflow example | Choose the sample applicant Amara Okonkwo; step through her application to the essay; **Submit Form**. | 4 · An applicant submits. Nobody reviews it by hand. |

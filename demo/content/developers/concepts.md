@@ -73,7 +73,7 @@ Write it as you would brief a new employee: what the submission is, what each fi
 
 The criteria component also carries the task's settings. Any custom property on it other than `uag` and `uagField` becomes a task setting; the UAG reads `uagContext`, `uagTools` and `uagEngine` from there.
 
-In a production form, hide the criteria and the agent fields from the rendered form (`hidden: true`) if users should not see the rubric. The agent still reads it. Hiding only affects rendering: anyone who can read the form definition can read the criteria.
+In a production form, hide the criteria and the agent fields from the rendered form (`hidden: true`) if users should not see them. The agent still reads them. Hiding only affects rendering: anyone who can read the form definition can read the criteria.
 
 ### Agent fields
 

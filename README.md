@@ -55,7 +55,7 @@ A person talks to Claude, ChatGPT or your own chat app, and the agent fills in a
 
 An application saves a submission through the UAG; an **Agent: Run task** action runs the form's task after the save and saves the result, which can start the next task. [Try it](https://ai.form.io/examples/workflow) · [source](./demo/server/workflow.mjs) · build it with [Workflows](https://ai.form.io/developers/workflows) · [prompt for your coding agent](https://github.com/formio/ai/blob/main/examples/agents/admissions-workflow.md).
 
-![The admissions rubric and the Run task actions in the portal; an applicant submits; the admissions agent scores the application and its save starts the finance agent, which picks the award.](./demo/public/images/demo-workflow.gif)
+![The admissions criteria and the Run task actions in the portal; an applicant submits; the admissions agent scores the application and its save starts the finance agent, which picks the award.](./demo/public/images/demo-workflow.gif)
 
 ### Agentic Formflow
 

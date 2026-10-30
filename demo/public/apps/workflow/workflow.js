@@ -181,7 +181,7 @@
     stage('admissions', 'done');
     $('[data-results]').hidden = false;
     var scores = $('[data-scores]');
-    scores.innerHTML = '<h2>Rubric scores</h2>';
+    scores.innerHTML = '<h2>Admissions scores</h2>';
     SCORES.concat([['overallScore', 'Overall']]).forEach(function (score) {
       var value = result[score[0]];
       if (value === undefined || value === null) return;

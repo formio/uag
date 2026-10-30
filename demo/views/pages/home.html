@@ -119,7 +119,7 @@
           <ul class="checks">
             <li>Change a field or an instruction in the form builder, and agents pick it up on the UAG's next refresh.</li>
             <li>People and agents are checked by the same validation rules.</li>
-            <li>Agents find the forms you tag, so you write no per-form agent code.</li>
+            <li>Agents automatically find the forms you tag, so you write no per-form agent code.</li>
           </ul>
         </div>
         <figure class="figure diagram" aria-label="One form JSON feeds the Form.io renderer for people and the UAG for agents.">
@@ -146,8 +146,8 @@
             <text x="100" y="330" text-anchor="middle" font-size="13" font-weight="700" fill="#0c141d">Form JSON</text>
             <text x="100" y="348" text-anchor="middle" font-size="11.5" fill="#566073">one source of truth</text>
 
-            <path d="M196 170 C 240 170, 240 92, 282 92" fill="none" stroke="#69b342" stroke-width="2.5" marker-end="url(#r-arrow)"/>
-            <path d="M196 230 C 240 230, 240 306, 282 306" fill="none" stroke="#69b342" stroke-width="2.5" marker-end="url(#r-arrow)"/>
+            <path d="M196 170 C 229 170, 229 92, 262 92 H282" fill="none" stroke="#69b342" stroke-width="2.5" marker-end="url(#r-arrow)"/>
+            <path d="M196 230 C 229 230, 229 306, 262 306 H282" fill="none" stroke="#69b342" stroke-width="2.5" marker-end="url(#r-arrow)"/>
 
             <g filter="url(#r-shadow)">
               <rect x="290" y="56" width="110" height="72" rx="12" fill="#fff" stroke="#e0e5ec"/>
@@ -190,7 +190,6 @@
       <div class="container">
         <div class="section-head center">
           <h2>Try it yourself!</h2>
-          <p>Try a demo, open its flow viewer to see every call the agents made, then build the same thing in your project with one prompt to your coding agent.</p>
         </div>
         <div class="grid grid-3">
           <a class="card card-link" href="/examples/conversation">
@@ -204,7 +203,7 @@
             <div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#workflow"/></svg></div>
             <span class="num">02 · AGENTIC WORKFLOW</span>
             <h3>Hand off the review</h3>
-            <p>A submission triggers an agent that scores it against a rubric written in the form, and chains a second agent when it should.</p>
+            <p>An agent reviews each submission against criteria you define in the form and records its findings. When needed, it hands off to a second agent.</p>
             <p class="link-arrow" style="margin-top:16px">Try it</p>
           </a>
           <a class="card card-link" href="/examples/formflow">
@@ -288,7 +287,7 @@
             <g stroke="#566073" stroke-width="2" fill="none" marker-end="url(#s-arrow)">
               <path d="M115 134 V 174"/><path d="M311 176 V 136"/><path d="M115 272 V 312"/><path d="M311 272 V 312"/>
             </g>
-            <path d="M400 224 C 440 224, 470 230, 496 198" stroke="#a7a7b8" stroke-width="2" fill="none" stroke-dasharray="5 5" marker-end="url(#s-arrow)"/>
+            <path d="M400 224 C 440 224, 466 234, 487 209 L496 198" stroke="#a7a7b8" stroke-width="2" fill="none" stroke-dasharray="5 5" marker-end="url(#s-arrow)"/>
             <g filter="url(#s-shadow)">
               <rect x="440" y="130" width="112" height="62" rx="12" fill="#fff" stroke="#e0e5ec"/>
               <text x="496" y="158" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0c141d">Model APIs</text>
@@ -324,10 +323,10 @@
               <text x="24" y="252" font-size="11" fill="#566073">tagged in the form builder</text>
             </g>
             <g stroke="#69b342" stroke-width="2.5" fill="none" marker-end="url(#e-arrow)">
-              <path d="M256 115 C 330 115, 330 88, 400 88"/>
-              <path d="M256 195 C 330 195, 330 212, 400 212"/>
-              <path d="M710 88 C 780 88, 780 150, 846 150"/>
-              <path d="M710 212 C 780 212, 780 150, 846 150"/>
+              <path d="M256 115 C 318 115, 318 88, 380 88 H400"/>
+              <path d="M256 195 C 318 195, 318 212, 380 212 H400"/>
+              <path d="M710 88 C 768 88, 768 150, 826 150 H846"/>
+              <path d="M710 212 C 768 212, 768 150, 826 150 H846"/>
             </g>
             <g filter="url(#e-shadow)">
               <rect x="406" y="30" width="300" height="116" rx="16" fill="#3a4756"/>
@@ -406,8 +405,7 @@ npx skills add formio/ai
 /plugin marketplace add https://github.com/formio/ai.git
 /plugin install formio-ai@formio</code></pre></div>
           <div class="code"><div class="code-bar"><span>Then ask your coding agent</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code>Put a chat on our public support page where customers describe
-their problem and it fills in our "serviceRequest" form for them,
-then submits it once they confirm.</code></pre></div>
+their problem to an AI agent. The agent then interviews the user for the necessary information and submits our "serviceRequest" form for them.</code></pre></div>
         </div>
       </div>
     </section>

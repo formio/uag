@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 560" role="img" aria-labelledby="t d">
   <title id="t">An agentic workflow, as a process</title>
-  <desc id="d">A process in four lanes: the applicant, Form.io, the UAG and the engines. The applicant submits the application to the UAG, which forwards the create to Form.io, and Form.io saves it; the applicant gets the response at once. After the save, an Agent: Run task action on create starts the admissions task in the background: the UAG asks the engines to score the application against the rubric and saves their answers as an update through the UAG, which Form.io saves. The update runs the form's update actions. A gateway, the finance action's condition, checks whether status is scholarshipEvaluation and awardLevel is empty. If not, the process ends with the decision on file. If so, the finance Run task action, on update, asks the engines to choose the award, and the UAG saves it as an update, which ends the process with the award on file. No webhooks are involved.</desc>
+  <desc id="d">A process in four lanes: the applicant, Form.io, the UAG and the engines. The applicant submits the application to the UAG, which forwards the create to Form.io, and Form.io saves it; the applicant gets the response at once. After the save, an Agent: Run task action on create starts the admissions task in the background: the UAG asks the engines to review the application against the criteria and saves their answers as an update through the UAG, which Form.io saves. The update runs the form's update actions. A gateway, the finance action's condition, checks whether status is scholarshipEvaluation and awardLevel is empty. If not, the process ends with the decision on file. If so, the finance Run task action, on update, asks the engines to choose the award, and the UAG saves it as an update, which ends the process with the award on file. No webhooks are involved.</desc>
   <defs>
     <style>
       text { font-family: Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; fill: #0c141d; }
@@ -70,12 +70,12 @@
   <text x="560" y="323" text-anchor="middle" class="t">admissions task</text>
   <path d="M545 337 V399" class="call" marker-end="url(#c)"/>
   <path d="M575 401 V341" class="back" marker-end="url(#b)"/>
-  <text x="538" y="390" text-anchor="end" class="g">fields + rubric</text>
+  <text x="538" y="390" text-anchor="end" class="g">fields + criteria</text>
   <text x="582" y="390" class="g">answers</text>
 
   <rect x="500" y="403" width="120" height="54" rx="10" class="task"/>
-  <text x="560" y="426" text-anchor="middle" class="t">Score against</text>
-  <text x="560" y="443" text-anchor="middle" class="t">the rubric</text>
+  <text x="560" y="426" text-anchor="middle" class="t">Review against</text>
+  <text x="560" y="443" text-anchor="middle" class="t">the criteria</text>
 
   <!-- UAG: save as an update -->
   <path d="M620 310 H646" class="flow" marker-end="url(#f)"/>
@@ -91,7 +91,7 @@
   <text x="710" y="203" text-anchor="middle" class="sub">scores, decision, status</text>
 
   <!-- Gateway: the finance action's condition, in the UAG -->
-  <path d="M770 190 H790 V310 H802" class="back" marker-end="url(#b)"/>
+  <path d="M770 190 H786 V310 H802" class="back" marker-end="url(#b)"/>
   <path d="M830 286 L854 310 L830 334 L806 310 Z" fill="#fff" stroke="#3a4756" stroke-width="1.8"/>
   <text x="830" y="352" text-anchor="middle" class="g">on update: status ==</text>
   <text x="830" y="365" text-anchor="middle" class="g mono" style="font-size:10.5px">scholarshipEvaluation</text>

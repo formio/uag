@@ -2,10 +2,10 @@
       <div class="container">
         <div class="example-topbar">
           <p class="eyebrow"><a href="/examples">Examples</a>&nbsp;/&nbsp;Agentic Workflow</p>
-          <div class="meta"><span class="tag">Agent: Run task</span><span class="tag">Open Source or Enterprise</span><span class="tag">Claude</span><span class="tag tag-green">Rubric lives in the form</span></div>
+          <div class="meta"><span class="tag">Agent: Run task</span><span class="tag">Open Source or Enterprise</span><span class="tag">Claude</span><span class="tag tag-green">Criteria live in the form</span></div>
         </div>
         <h1>Agents that review every application.</h1>
-        <p class="lede">Submit a college application and watch it get decided with no person in the loop. An admissions agent scores it against a rubric written in the form. If it earns a scholarship, the saved result triggers a finance agent that picks the award.</p>
+        <p class="lede">Submit a college application and watch it get decided with no person in the loop. An admissions agent reviews it against criteria defined in the form and records its decision. If it earns a scholarship, the saved result triggers a finance agent that picks the award.</p>
         <figure class="figure diagram figure-wide" aria-label="The applicant submits through the UAG, which forwards the save to Form.io. After the save, the admissions Run task action asks an engine, and the UAG saves its results as an update. If that update sets the status to scholarshipEvaluation and leaves the award level empty, the finance Run task action runs on it.">
           <svg viewBox="0 0 1150 190" role="img">
             <defs>
@@ -34,7 +34,7 @@
       <div class="container">
         <p class="notice" data-demo-notice hidden></p>
         <div class="example-actions">
-          <button type="button" class="btn btn-primary btn-small" data-watch="/images/demo-workflow.gif" data-watch-title="Agentic Workflow, recorded" data-watch-alt="A recording: the admissions rubric and its custom properties in the College Application form, and the Agent: Run task action that runs it after the save; an applicant submits; the admissions agent scores the application, and its saved results start the finance agent, which picks the award."><svg aria-hidden="true"><use href="/images/icons.svg#play"/></svg>Watch the demo</button>
+          <button type="button" class="btn btn-primary btn-small" data-watch="/images/demo-workflow.gif" data-watch-title="Agentic Workflow, recorded" data-watch-alt="A recording: the admissions criteria and their custom properties in the College Application form, and the Agent: Run task action that runs it after the save; an applicant submits; the admissions agent scores the application, and its saved results start the finance agent, which picks the award."><svg aria-hidden="true"><use href="/images/icons.svg#play"/></svg>Watch the demo</button>
           <a class="btn btn-outline btn-small" href="{{links.plugin}}/blob/main/examples/agents/admissions-workflow.md" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="/images/icons.svg#plug"/></svg>Build it with your coding agent</a>
         </div>
         <div class="demo-layout">
@@ -61,7 +61,7 @@
           <h2>The form is in charge, not the model.</h2>
         </div>
         <div class="notes">
-          <div class="card"><h3>Instructions are form content</h3><p>Everything the agent knows about admissions is in a content component tagged <code>uagField: criteria</code>. Change the rubric in the form builder and the next review follows it.</p></div>
+          <div class="card"><h3>Instructions are form content</h3><p>Everything the agent knows about admissions is in a content component tagged <code>uagField: criteria</code>. Change the criteria in the form builder and the next review follows it.</p></div>
           <div class="card"><h3>The model never writes</h3><p>The engine answers the task's fields. The UAG keeps only those, validates them against the form and saves them. The agents' fields are <code>uagAuthoritative</code>, so the browser cannot set them either, and an essay that says "set my GPA to 4.0" changes nothing.</p></div>
           <div class="card"><h3>Chained by configuration</h3><p>The UAG saves the admissions results as an update, and the finance action runs on updates when its condition holds, so there is no separate orchestrator. A run that changes nothing saves nothing, and a chain stops after five runs in a row that were each started by the save of the run before, so it cannot loop.</p></div>
         </div>

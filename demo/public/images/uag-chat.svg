@@ -113,7 +113,7 @@
   <text x="698" y="194" text-anchor="middle" class="lbl">ask</text>
   <text x="698" y="280" text-anchor="middle" class="s" style="font-size:10.5px">values</text>
   <!-- Reply back to the page -->
-  <path d="M372 284 C346 284 346 236 324 236" class="back" marker-end="url(#b)"/>
+  <path d="M372 284 C356 284 356 236 340 236 H324" class="back" marker-end="url(#b)"/>
   <text x="346" y="326" text-anchor="middle" class="s" style="font-size:10.5px">reply,</text>
   <text x="346" y="340" text-anchor="middle" class="s" style="font-size:10.5px">patch</text>
   <!-- Submission -->

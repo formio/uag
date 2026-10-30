@@ -326,7 +326,7 @@ function review(state) {
     };
 }
 
-/** How much substance a written answer has, scored 1-10 as the example's rubric asks. */
+/** How much substance a written answer has, scored 1-10 as the example's criteria ask. */
 function substance(text) {
     const length = String(text || '').trim().replace(/^none\.?$/i, '').length;
     if (!length) return 2;
@@ -372,7 +372,7 @@ function agenticWorkflow(request) {
             overallScore: Math.round(average * 10) / 10,
             decision,
             status,
-            agentRationale: `Scored ${Math.round(average * 10) / 10} on the rubric.`,
+            agentRationale: `Scored ${Math.round(average * 10) / 10} against the criteria.`,
         });
     }
     if (asked.has('awardLevel') || asked.has('financeRationale')) {

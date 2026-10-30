@@ -5,7 +5,7 @@
  * The visitor submits an application. That is all this code does: it saves the
  * submission through the UAG and reads it back. Everything after that is form
  * configuration. An "Agent: Run task" action on the form runs the admissions
- * task after the save: an engine scores the application against the rubric in
+ * task after the save: an engine scores the application against the criteria in
  * the form's criteria component, and the UAG saves the result as an update.
  * When the admissions task puts an applicant on the scholarship track, that
  * update runs the second action, and the finance task picks an award. The

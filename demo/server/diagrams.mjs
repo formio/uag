@@ -120,6 +120,9 @@ export function pipeline(source) {
     const perRow = Math.min(4, steps.length);
     const width = 760;
     const gap = 30;
+    // Room between rows for the arrow back to the next row's start to end in a
+    // straight drop, so it meets its arrowhead square.
+    const rowGap = 42;
     const boxWidth = (width - gap * (perRow - 1)) / perRow;
     const rows = [];
     for (let i = 0; i < steps.length; i += perRow) rows.push(steps.slice(i, i + perRow));
@@ -140,12 +143,12 @@ export function pipeline(source) {
             }
             else if (!last) {
                 // Down and back to the start of the next row.
-                body.push(`<path d="M${bx + boxWidth / 2} ${y + h + 2} v10 H${boxWidth / 2} v${12}" fill="none" stroke="#69b342" stroke-width="2" marker-end="url(#pipe-arrow)"/>`);
+                body.push(`<path d="M${bx + boxWidth / 2} ${y + h + 2} v10 H${boxWidth / 2} v${rowGap - 18}" fill="none" stroke="#69b342" stroke-width="2" marker-end="url(#pipe-arrow)"/>`);
             }
         });
-        y += h + 30;
+        y += h + rowGap;
     });
-    const height = y - 26;
+    const height = y - rowGap + 4;
     return `<figure class="figure diagram doc-diagram"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(steps.map((s) => s.name).join(', then '))}" ${FONT}>`
         + '<defs><marker id="pipe-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#69b342"/></marker></defs>'
         + body.join('') + '</svg></figure>\n';

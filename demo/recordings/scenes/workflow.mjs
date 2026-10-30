@@ -7,7 +7,7 @@ export default async function workflow(d, env) {
     const { site } = env;
     const page = d.page;
 
-    // 1. The rubric lives in the form, in the Enterprise form builder.
+    // 1. The criteria live in the form, in the Enterprise form builder.
     // The portal stage connected to the UAG, so the UAG's own Run task action opens.
     await d.cut(async () => {
         await enterpriseLogin(d, env);
@@ -15,7 +15,7 @@ export default async function workflow(d, env) {
         await page.getByText('College Application', { exact: true }).click();
         await page.getByText('Admissions Review (Agent)', { exact: true }).first().waitFor();
     });
-    await d.caption(1, 'The admissions rubric is a content component in the form.');
+    await d.caption(1, 'The admissions criteria are a content component in the form.');
     await d.hold(700);
     await d.click(page.getByText('Admissions Review (Agent)', { exact: true }).first(), { after: 1000 });
     const criteria = page.locator('text=Admissions Assessment Criteria').first();

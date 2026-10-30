@@ -10,7 +10,7 @@ import { PROFILES, SCORE_FIELDS, settled } from '../../demo/module/applicants.mj
  * sum forms, their criteria and their "Agent: Run task" actions). Applications
  * are submitted through the site, as a visitor does, which saves them through
  * the UAG; both engines run on the real engine server package. The scripted
- * agent follows the rubric, so the weak, average and strong applicants always
+ * agent follows the criteria, so the weak, average and strong applicants always
  * land in the same bands. This checks the admissions task run after the save,
  * the finance task chained on its update, that the chain stops, that the
  * agents' fields are theirs alone, and that the flow viewer shows a visitor

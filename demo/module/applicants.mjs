@@ -18,7 +18,7 @@ export const settled = (data) => ['declined', 'accepted'].includes(data.status)
     || (data.status === 'scholarshipEvaluation' && !!data.awardLevel);
 
 /**
- * Applicant profiles calibrated to land in each band of the rubric that is
+ * Applicant profiles calibrated to land in each band of the criteria that are
  * embedded in the form's criteria component.
  */
 export const PROFILES = {

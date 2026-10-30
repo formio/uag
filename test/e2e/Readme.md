@@ -188,7 +188,7 @@ applications and claims through the UAG, whose "Agent: Run task" actions run
 the agents, so the workflow needs no webhooks and runs on Open Source.
 
 - *Agentic workflow* (`layer1.demo-workflow.e2e.mjs`): applications submitted
-  through the site. The scripted agent follows the rubric, so the sample
+  through the site. The scripted agent follows the criteria, so the sample
   applicants (`demo/module/applicants.mjs`) always land the same way: weak
   declined, average accepted, strong accepted with a scholarship and then
   awarded a full ride by the finance task, which the admissions task's update

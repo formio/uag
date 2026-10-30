@@ -13,7 +13,7 @@ This page builds the college application workflow from the [demo site's project]
 
 ![The college application as a process: the applicant submits to the UAG, Form.io saves it, the admissions task runs after the save and its results are saved as an update, and on the scholarship track that update runs the finance task.](/images/uag-workflow-process.svg)
 
-![The workflow demo, recorded: the rubric and the Run task actions in the portal, an applicant submitting, and both agents deciding.](/images/demo-workflow.gif)
+![The workflow demo, recorded: the criteria and the Run task actions in the portal, an applicant submitting, and both agents deciding.](/images/demo-workflow.gif)
 
 ## What you need
 
@@ -58,7 +58,7 @@ Tag the form `uag`, add a criteria content component, and flag the fields the ta
 { "type": "select", "key": "decision", "properties": { "uag": "admissions", "uagAgentDecides": "true", "uagAuthoritative": "true" } }
 ```
 
-The criteria is the agent's whole briefing: who it acts as, what each field means, the rubric, the allowed values, and the exact option values for closed-set fields. A vague criteria is the most common reason an agent writes values the form rejects. The sample's admissions criteria tells the agent to set `status` to `scholarshipEvaluation` for the strongest applicants, and the finance task is keyed on that value.
+The criteria is the agent's whole briefing: who it acts as, what each field means, how to judge each answer, the allowed values, and the exact option values for closed-set fields. A vague criteria is the most common reason an agent writes values the form rejects. The sample's admissions criteria tells the agent to set `status` to `scholarshipEvaluation` for the strongest applicants, and the finance task is keyed on that value.
 
 ### Closed-set fields with only an agent engine
 
@@ -268,7 +268,7 @@ To see what the engines answer for some data without saving anything, call the s
 
 ## Taking a workflow to production
 
-- **Hide the agent sections.** Set `hidden: true` on the criteria and agent panels so the rubric is not rendered. The agent still reads them. Hiding only affects rendering: anyone who can read the form definition can read the criteria.
+- **Hide the agent sections.** Set `hidden: true` on the criteria and agent panels so the criteria are not rendered. The agent still reads them. Hiding only affects rendering: anyone who can read the form definition can read the criteria.
 - **Fix the permissions.** A project reachable only with the API key is right for a demo and wrong for real users. Add a user resource with a login form, scope submission access to owners, and on self-hosted Enterprise give the agent a role of its own; see [Project setup for agents](/developers/project-setup).
 - **Send every submission to the UAG.** A submission that reaches Form.io directly runs no task.
 - **Add the database** for run records, Action Logs and runs that survive a restart, and to run more than one instance.
