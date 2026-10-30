@@ -28,6 +28,8 @@ export const {
     toolsForScope,
     EngineError,
     formatReport,
+    flagOn,
+    flagOff,
 } = Formflow;
 
 export type AgentEngine = Formflow.AgentEngine;

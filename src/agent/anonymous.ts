@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import type { SubmissionRequest } from '@formio/appserver';
 import type { UAGProjectInterface } from '../UAGProjectInterface';
+import { flagOn } from '../formflow';
 const debug = require('debug')('formio:uag:agent');
 
 const WINDOW_MS = 60000;
@@ -73,7 +74,7 @@ export function anonymousGate(project: UAGProjectInterface) {
         const request = req as SubmissionRequest;
         const form: any = request.form;
         const limits = anonymousLimits(project);
-        if (limits.perAddress === 0 || limits.total === 0 || String(form?.form?.properties?.uagAnonymous) !== 'true') {
+        if (limits.perAddress === 0 || limits.total === 0 || !flagOn(form?.form?.properties?.uagAnonymous)) {
             return res.status(401).json({ detail: 'Sign in to use this form\'s agent operations.' });
         }
         const taken = limiterFor(project).take(String(req.ip || req.socket?.remoteAddress || ''), limits);

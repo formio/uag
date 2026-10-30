@@ -135,6 +135,14 @@ describe('Chat: the fields a person may enter', function () {
         expect(fields.unsupported).to.deep.equal([{ path: 'devices', label: 'Devices', required: true, empty: true }]);
     });
 
+    it('leaves out a field marked uagAuthoritative with a JSON boolean, as with the string', async () => {
+        const def: any = serviceRequest();
+        def.components.find((c: any) => c.key === 'ticket').properties.uagAuthoritative = true;
+        const project: any = makeProject({ servicerequest: def });
+        const fields = await (project.forms.servicerequest as UAGFormInterface).chatFields({ data: {} } as any, fullAuth);
+        expect(fields.fields.map((field) => field.path)).to.not.include('ticket');
+    });
+
     it('shows a conditional field once the data reveals it', async () => {
         const { form } = setup([]);
         const fields = await form.chatFields({ data: { issueType: 'outage' } } as any, fullAuth);
@@ -434,6 +442,9 @@ describe('Chat: the route', function () {
         const turnedOff = await request(mount(off.project, fullAuth, open)).post('/servicerequest/agent/chat').send(say('hi'));
         expect(turnedOff.status).to.equal(403);
         expect(turnedOff.body.error).to.contain('turned off');
+        const offBoolean = setup([fake.engine], {}, { uagChat: ' False ' } as any);
+        const turnedOffBoolean = await request(mount(offBoolean.project, fullAuth, open)).post('/servicerequest/agent/chat').send(say('hi'));
+        expect(turnedOffBoolean.status).to.equal(403);
         expect(fake.calls).to.have.length(0);
     });
 
@@ -447,6 +458,9 @@ describe('Chat: the route', function () {
         const allowed = await request(mount(opened.project, anonymous, agentCredentials(opened.project))).post('/servicerequest/agent/chat').send(say('hi'));
         expect(allowed.status, allowed.text).to.equal(200);
         expect(fake.calls).to.have.length(1);
+        const openedBoolean = setup([fake.engine], {}, { uagAnonymous: 'TRUE' } as any);
+        const allowedBoolean = await request(mount(openedBoolean.project, anonymous, agentCredentials(openedBoolean.project))).post('/servicerequest/agent/chat').send(say('hi'));
+        expect(allowedBoolean.status, allowedBoolean.text).to.equal(200);
     });
 
     it('counts turns against the caller\'s chat limit', async () => {

@@ -3,7 +3,7 @@ import { escapeRegExp } from "lodash";
 import express, { NextFunction, Request, RequestHandler, Response, Router } from "express";
 import { SubmissionRequest } from "@formio/appserver";
 import { safeRequestId } from "@formio/uag-sdk/protocol";
-import { bearerOf, formflow, FormflowError, FormflowService, callerIdentity, isScopedToken, OperationContext, OperationResult, RateLimitError, resultEvent } from "../formflow";
+import { bearerOf, flagOff, formflow, FormflowError, FormflowService, callerIdentity, isScopedToken, OperationContext, OperationResult, RateLimitError, resultEvent } from "../formflow";
 import type { UAGProjectInterface } from "../UAGProjectInterface";
 import { withRequestId } from "./requestId";
 import { anonymousGate } from "./anonymous";
@@ -280,7 +280,7 @@ export function FormAgentRouter(project: UAGProjectInterface, credentials: Reque
         if (!form) {
             throw new FormflowError(404, `The form "${formOf(req)}" does not exist or is not tagged "uag".`);
         }
-        if (String(form.form?.properties?.uagChat) === 'false') {
+        if (flagOff(form.form?.properties?.uagChat)) {
             throw new FormflowError(403, `Chat is turned off for the form "${form.formflowName}".`);
         }
         service.requireAccess(req.auth, form, ['create']);

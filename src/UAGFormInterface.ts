@@ -1,4 +1,5 @@
 import { AppServerForm, AuthRequest, FormInterface, InterpolatedError } from "@formio/appserver";
+import { flagOn } from "./formflow";
 import type { FormflowForm, FormflowTask } from "./formflow";
 import {
     Component,
@@ -642,7 +643,7 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
                     }
                     if (component.disabled || component.persistent === false || (component.persistent as any) === 'client-only') return;
                     if (component.calculateValue && !component.allowCalculateOverride) return;
-                    if (owned.has(path) || component.properties?.uagAuthoritative === 'true') return;
+                    if (owned.has(path) || flagOn(component.properties?.uagAuthoritative)) return;
                     result.fields.push({
                         ...this.getComponentInfo(component, path),
                         rule: this.getComponentValueRule(component, path),
