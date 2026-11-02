@@ -182,7 +182,8 @@ export function createApp(config = readConfig(), overrides = {}) {
     });
 
     app.use((req, res) => {
-        const page = { route: req.path, view: '404', nav: '', title: 'Page not found', description: '' };
+        // The visitor's path is not echoed into the page.
+        const page = { route: '/404', view: '404', nav: '', title: 'Page not found', description: '' };
         res.status(404).type('html').send(views.page('404', siteValues(config, page)));
     });
     app.use((err, req, res, next) => {

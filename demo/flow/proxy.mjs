@@ -183,6 +183,7 @@ function serveStream(req, res, flowKey) {
     }
     res.writeHead(200, {
         'Content-Type': 'text/event-stream',
+        'X-Content-Type-Options': 'nosniff',
         'Cache-Control': 'no-cache',
         Connection: 'keep-alive',
     });
@@ -201,6 +202,12 @@ function serveStream(req, res, flowKey) {
 
 function proxy(req, res, { uag, engines }) {
     const url = req.url || '/';
+    // Only a path is forwarded: an absolute or scheme-relative target names a host.
+    if (!url.startsWith('/') || url.startsWith('//')) {
+        res.writeHead(400);
+        res.end();
+        return;
+    }
     const target = url.startsWith('/v1/engines') ? engines : uag;
     const reqId = `r${nextLeg++}`;
     const started = Date.now();

@@ -197,6 +197,22 @@ describe('Demo site app', function () {
         }
     });
 
+    describe('a page that does not exist', function () {
+        it('answers 404 without echoing the visitor\'s path into the page', async function () {
+            const demo = await site({ PROJECT_KEY, DEMO_REQUIRE_TURNSTILE: 'false' });
+            try {
+                const response = await fetch(`${demo.url}/nothing-here-x7q`);
+                expect(response.status).to.equal(404);
+                const page = await response.text();
+                expect(page).to.include('Page not found');
+                expect(page).not.to.include('nothing-here-x7q');
+            }
+            finally {
+                await demo.close();
+            }
+        });
+    });
+
     describe('caching', function () {
         it('has a release\'s pages ask for their scripts by version, caches those for good, and revalidates everything else', async function () {
             const demo = await site({ PROJECT_KEY, NODE_ENV: 'production', DEMO_REQUIRE_TURNSTILE: 'false', DEMO_ASSET_VERSION: '9.9.9-rc.9' });

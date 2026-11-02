@@ -9,6 +9,7 @@ import { FlowHub } from '../server/flow.mjs';
 import { tokensOf } from '../server/conversation.mjs';
 import { render } from '../server/pages.mjs';
 import http from 'node:http';
+import net from 'node:net';
 import { createServer as createFlowProxy, describeRequest, describeResponse } from '../flow/proxy.mjs';
 
 const config = (env = {}) => readConfig({ ADMIN_KEY: 'key', DEMO_SECRET: 'secret', ...env });
@@ -409,6 +410,37 @@ describe('Demo site', function () {
                 for (const request of requests) {
                     expect(events.find((event) => event.phase === 'response' && event.reqId === request.reqId)).to.include({ label: request.label });
                 }
+            });
+
+            it('forwards only a path, refusing a target that names a host', async function () {
+                const seen = [];
+                upstream.on('request', (req) => seen.push(req.url));
+                // Written by hand: an HTTP client always sends a path.
+                const raw = (target) => new Promise((resolve, reject) => {
+                    const socket = net.connect(Number(url.port), url.hostname, () => {
+                        socket.write(`GET ${target} HTTP/1.1\r\nHost: ${url.host}\r\nConnection: close\r\n\r\n`);
+                    });
+                    let answer = '';
+                    socket.setEncoding('utf8');
+                    socket.on('data', (text) => { answer += text; });
+                    socket.on('end', () => resolve(answer.split('\r\n')[0]));
+                    socket.on('error', reject);
+                });
+                expect(await raw('http://169.254.169.254/latest/meta-data/')).to.equal('HTTP/1.1 400 Bad Request');
+                expect(await raw('//169.254.169.254/latest/meta-data/')).to.equal('HTTP/1.1 400 Bad Request');
+                expect(await raw('/agent/capabilities')).to.equal('HTTP/1.1 200 OK');
+                expect(seen).to.deep.equal(['/agent/capabilities']);
+            });
+
+            it('serves the flow stream as an event stream a browser never sniffs as a page', async function () {
+                const headers = await new Promise((resolve, reject) => {
+                    http.get(new URL('/flow/events', url), (res) => {
+                        resolve(res.headers);
+                        res.destroy();
+                    }).on('error', reject);
+                });
+                expect(headers['content-type']).to.equal('text/event-stream');
+                expect(headers['x-content-type-options']).to.equal('nosniff');
             });
 
             it('reads a character split across two pieces of a stream whole', async function () {
