@@ -1,6 +1,6 @@
 import { AuthProvider, AuthProviderInterface, AuthRequest, ProjectInterface, SubmissionRequest } from "@formio/appserver";
 import jwt from "jsonwebtoken";
-import { bearerOf, EngineRegistry, FormflowConfig, FormflowForm, FormflowHost, FormflowTool, formflowAuthenticate, readScopedToken, ScopedTokenClaims, toolsForScope } from "./formflow";
+import { bearerOf, EngineRegistry, FormflowConfig, FormflowFileReader, FormflowForm, FormflowHost, FormflowTool, formflowAuthenticate, readScopedToken, ScopedTokenClaims, toolsForScope } from "./formflow";
 import { taskRunner } from './runner';
 import { UAGConfig } from "./config";
 import { Form } from "@formio/core";
@@ -132,6 +132,11 @@ export class UAGProjectInterface extends ProjectInterface implements FormflowHos
     async formflowForm(name: string): Promise<FormflowForm | null> {
         const form = await this.getForm(name) as UAGFormInterface | null;
         return form?.uag ? form : null;
+    }
+
+    /** Readers for uploaded documents, from configuration (`fileReaders`). */
+    formflowFileReaders(): FormflowFileReader[] {
+        return this.config?.fileReaders || [];
     }
 
     /** Every MCP tool, as Agentic Formflow tools. */

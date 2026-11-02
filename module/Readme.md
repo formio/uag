@@ -14,7 +14,7 @@ The complete guide, with a worked CRM module, is [Modules](https://ai.form.io/de
 | The `uag` command | `UAG_MODULE=./module npx uag` (a file or folder, resolved against the working directory). |
 | Your own server | `server.use(require('./module'))` before `await server.router()`. Several modules can be used; their `config` objects merge, later ones winning. |
 
-A module mounted into the image runs inside the UAG's own installation, so it can `require()` the UAG's dependencies (`zod`, `lodash`) but not `@formio/uag` itself.
+A module mounted into the image runs inside the UAG's own installation, so it can `require()` the UAG's dependencies (`zod`, `lodash`) and `@formio/uag` itself.
 
 ## The module object
 
@@ -24,6 +24,7 @@ module.exports = {
         template: require('./project.json'),   // forms, resources, roles and actions the project needs
         tools: [],                             // custom MCP tools (ToolInfo objects, or factories: project => ToolInfo)
         toolOverrides: {},                     // changes to built-in tools, by tool name
+        fileReaders: [],                       // readers that turn uploaded documents into text for tasks
         responseTemplates: {},                 // replaced or new response templates, by name
         auth: { authAppHtml: undefined },      // the HTML of the /auth/authorize login page
         engines: undefined,                    // Agent API engine instances; overrides UAG_ENGINES

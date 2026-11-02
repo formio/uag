@@ -29,6 +29,7 @@ type UAGModule = {
 | `config.template` | A Form.io project template: the forms, resources, roles and actions the module needs the project to have. | [The project template](#the-project-template) |
 | `config.tools` | Custom MCP tools. | [Custom MCP tools](#custom-mcp-tools) |
 | `config.toolOverrides` | Changes to the built-in tools. | [Overriding built-in tools](#overriding-built-in-tools) |
+| `config.fileReaders` | Readers that turn uploaded documents (PDF, Word, ...) into text for tasks. | [File readers](#file-readers) |
 | `config.responseTemplates` | Replacements for the built-in response templates, and new templates for your tools. | [Response templates](#response-templates) |
 | `config.auth.authAppHtml` | The HTML of the login page for remote MCP sign-in (`MCP_OAUTH`). | [The login page](#the-login-page) |
 | `actions` | Custom form actions, by name. | [Custom actions](#custom-actions) |
@@ -58,7 +59,7 @@ services:
 docker run -v "$PWD/module:/app/module" -e PROJECT=... formio/uag:rc
 ```
 
-A mounted module runs inside the UAG's own installation in `/app`, so `require()` finds the UAG's dependencies, such as `zod` and `lodash`, from `/app/node_modules`. It cannot `require('@formio/uag')` by name: the image is that package. The examples on this page therefore spell out annotations as plain objects rather than importing the `reads()` preset. A module that needs its own dependencies can bring them in its own `node_modules` folder.
+A mounted module runs inside the UAG's own installation in `/app`, so `require()` finds the UAG's dependencies, such as `zod` and `lodash`, from `/app/node_modules`, and `require('@formio/uag')` finds the UAG itself, as it does when the module is used from npm. A module that needs its own dependencies can bring them in its own `node_modules` folder, or in an image built `FROM formio/uag`.
 
 ### With the uag command
 
@@ -215,6 +216,39 @@ The UAG builds its tool list on every `/mcp` request and every research plan, so
 ### Tools in the Agent API
 
 The Agent API offers tools to agent engines for research when a task's criteria component lists them in `uagTools`. Custom tools qualify when they are annotated read-only. Each is converted for the engine: its Zod shape becomes a JSON schema, arguments the model sends are validated with the same schema, and the call runs in process with the caller's identity. A remote engine on an engine server calls the same tools back over `/mcp` with a scoped token that lists only them. See [Engine server](/developers/engine-server#research-and-scoped-tokens).
+
+## File readers
+
+A file component that is a task's input, or in its `uagContext`, is read for the engines (see [Documents as input](/developers/form-properties#documents-as-input)). The UAG reads plain text, Markdown and CSV. `config.fileReaders` adds formats: each reader says whether it accepts a file, and turns its bytes into text, or into HTML when the format has structure worth keeping. Readers are tried in order, before the built-in one.
+
+```ts
+type FileReader = {
+    name: string;
+    accepts(meta: { name: string; type: string; size: number; storage?: string }, head: Buffer): boolean;
+    read(buffer: Buffer, meta: { name: string; type: string; size: number }): Promise<{ text: string; html?: string }>;
+};
+```
+
+`head` is the file's first 16 bytes. Prefer them to `meta.type` and the file name, which the uploader's browser and the user choose:
+
+```js
+const { extractText } = require('unpdf');
+
+module.exports = {
+    config: {
+        fileReaders: [{
+            name: 'pdf',
+            accepts: (meta, head) => head.subarray(0, 4).toString('latin1') === '%PDF',
+            async read(buffer) {
+                const { text } = await extractText(new Uint8Array(buffer), { mergePages: true });
+                return { text };
+            }
+        }]
+    }
+};
+```
+
+A reader runs on the UAG for every task run and operation that reads a document, so load its libraries once, at module scope. A reader that throws is reported to the engine as "could not be read", with the message, and the task still runs.
 
 ## Overriding built-in tools
 

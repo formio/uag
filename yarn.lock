@@ -595,6 +595,7 @@ __metadata:
     mongodb-memory-server: "npm:^11.3.0"
     node-cache: "npm:^5.1.2"
     node-html-markdown: "npm:^2.0.0"
+    node-html-parser: "npm:^6.1.13"
     playwright: "npm:1.64.1"
     supertest: "npm:^7.3.1"
     terser: "npm:^5.51.2"

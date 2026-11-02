@@ -1,5 +1,5 @@
 import { ServerConfig } from '@formio/appserver';
-import type { FormflowAgentApiConfig, FormflowRateLimit, FormflowRoutingConfig } from './formflow';
+import type { FormflowAgentApiConfig, FormflowFileReader, FormflowRateLimit, FormflowRoutingConfig } from './formflow';
 import type { EngineInstanceSpec, EngineTypeDefinition } from '@formio/uag-sdk';
 import type { ToolEntry, ToolInfo } from './tools/utils';
 import type { UAGDatabaseOptions } from './database';
@@ -90,7 +90,12 @@ export interface UAGChatConfig {
   maxTranscriptChars?: number;
 }
 
-export type UAGAgentApiConfig = FormflowAgentApiConfig & { anonymous?: UAGAnonymousConfig; chat?: UAGChatConfig };
+export type UAGAgentApiConfig = FormflowAgentApiConfig & {
+  anonymous?: UAGAnonymousConfig;
+  chat?: UAGChatConfig;
+  /** The largest request body an agent operation takes, in bytes (AGENT_BODY_LIMIT). Default 5 MB. */
+  bodyLimit?: number;
+};
 
 /**
  * Express's `trust proxy` from TRUST_PROXY: `true` or `false`, a number of
@@ -115,6 +120,12 @@ export interface UAGConfig extends ServerConfig {
   toolOverrides?: UAGToolOverride,
   /** Custom MCP tools: each a tool, or a factory that builds one for the project (see ToolFactory). */
   tools?: ToolEntry[],
+  /**
+   * Readers for uploaded documents (PDF, Word, ...), tried in order before the built-in plain
+   * text reader. A file component that is a task's input, or in its `uagContext`, is read with
+   * them, so engines get the document's content. See FormflowFileReader.
+   */
+  fileReaders?: FormflowFileReader[],
   /**
    * The engine instances to enable, as in `UAG_ENGINES` (`"jev"`, `"fast:claude"`) or as
    * `{ name, type, options }`. When unset, `UAG_ENGINES` is used; when neither names any, no
