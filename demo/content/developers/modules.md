@@ -107,7 +107,7 @@ To apply a changed form or action from a new version of your module, change it i
 
 ## Custom MCP tools
 
-Each entry in `config.tools` is a tool object, `ToolInfo`:
+Each entry in `config.tools` is a tool object, `ToolInfo`, or a factory that builds one for the project (see [Tool factories](#tool-factories)):
 
 ```ts
 type ToolInfo = {
@@ -116,8 +116,16 @@ type ToolInfo = {
     description?: string;              // what the tool does, and when the model should call it
     inputSchema?: ZodRawShape;         // { argument: zod schema }
     annotations?: ToolAnnotations;     // whether it reads or writes
-    execute?: (args: any, extra: { authInfo: AuthRequest; [key: string]: any }) => Promise<CallToolResult>;
+    execute?: (args: any, extra: ToolExtra) => Promise<CallToolResult>;
 };
+
+type ToolExtra = {
+    authInfo: AuthRequest;             // the caller: who the work runs as
+    project: UAGProjectInterface;      // the project serving the request
+    [key: string]: any;                // on /mcp, the rest of the MCP request context
+};
+
+type ToolFactory = (project: UAGProjectInterface) => ToolInfo | Promise<ToolInfo>;
 
 interface ToolAnnotations {
     title: string;
@@ -163,11 +171,11 @@ annotations: { title: 'CRM pipeline summary', readOnlyHint: true, destructiveHin
 
 ### execute(args, extra)
 
-`execute` receives the validated arguments and `extra`, whose `authInfo` is the caller's `AuthRequest`. The same tool runs for MCP clients and for Agent API research, and in both cases `authInfo` is the identity the work runs as.
+`execute` receives the validated arguments (an empty object for a tool that takes none) and `extra`, a `ToolExtra`: `extra.project` is the project serving the request, and `extra.authInfo` is the caller's `AuthRequest`. The same tool runs for MCP clients and for Agent API research, with the same arguments, and in both cases `authInfo` is the identity the work runs as.
 
 | You need | Use |
 |---|---|
-| The project | `extra.authInfo.project` (a `UAGProjectInterface`). In your own server, `server.uagProject` is the same object. |
+| The project | `extra.project` (a `UAGProjectInterface`). A factory also receives it when it builds the tool. In your own server, `server.uagProject` is the same object. |
 | A form | `await project.getForm('contact')`, by machine name, name or id. `null` when it does not exist. |
 | The caller's permissions | `extra.authInfo.formPermissions(form)`: `{ create, read, update, delete }`. |
 | Submissions | `form.find(query, auth)`, `form.count(query, auth)`, `form.loadSubmission(id, auth)`. Pass `extra.authInfo` so Form.io applies the caller's permissions. |
@@ -177,6 +185,32 @@ annotations: { title: 'CRM pipeline summary', readOnlyHint: true, destructiveHin
 `execute` returns an MCP tool result, `{ content: [{ type: 'text', text }], isError? }`. Report failures the model can act on (a missing form, no permission, a bad argument) as a result with `isError: true` and a sentence that says what to do next. A thrown exception also reaches the client as an error result, with the exception's message as its text, so do not let messages that carry URLs, keys or internal details escape.
 
 The full methods of the project and form interfaces are in [Node.js API](/developers/node-api#the-project-uagprojectinterface).
+
+### Tool factories
+
+An entry of `config.tools` can be a function that takes the project and returns the tool, or a promise of it, as the built-in tools are built. Use one when the tool's definition depends on the project, for example an argument limited to the project's forms:
+
+```js
+const { z } = require('zod');
+
+/** read_contact: a contact by id, on any of the project's forms. */
+module.exports = (project) => ({
+    name: 'read_contact',
+    description: 'Read one contact by its submission id.',
+    annotations: { title: 'Read a contact', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    inputSchema: {
+        form_name: z.enum(project.formNames),
+        submission_id: z.string()
+    },
+    async execute({ form_name, submission_id }, { project, authInfo }) {
+        const form = await project.getForm(form_name);
+        const submission = await form?.loadSubmission(submission_id, authInfo);
+        return project.mcpJSONResponse(submission ? submission.data : { error: 'Not found.' }, !submission);
+    }
+});
+```
+
+The UAG builds its tool list on every `/mcp` request and every research plan, so a factory runs each time: keep it cheap, and load libraries or other slow state once, outside it. A factory that throws stops startup, as a duplicate name does.
 
 ### Tools in the Agent API
 
@@ -609,7 +643,7 @@ module.exports = {
     async execute({ company }, extra) {
         // The caller's identity. Its project is the UAG project serving the request.
         const auth = extra.authInfo;
-        const project = auth.project;
+        const project = extra.project;
         const form = await project.getForm('contact');
         if (!form) {
             return project.mcpResponse('formNotFound', { formName: 'contact' }, true);

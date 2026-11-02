@@ -1,6 +1,8 @@
 import { ZodRawShape } from "zod";
 import { escapeRegExp } from "lodash";
 import { ToolAnnotations } from "./annotations";
+import type { AuthRequest } from "@formio/appserver";
+import type { UAGProjectInterface } from "../UAGProjectInterface";
 
 /**
  * Escape a literal value so it can be carried in a `__regex` query parameter.
@@ -24,6 +26,19 @@ import { ToolAnnotations } from "./annotations";
 export const escapeSearchPattern = (value: string): string =>
     escapeRegExp(value).replace(/\//g, '\\x2f');
 
+/**
+ * What a tool's `execute` receives besides its arguments, on every path that
+ * runs it: MCP clients on `/mcp`, and Agent API research in process.
+ */
+export type ToolExtra = {
+    /** The caller's identity: who the work runs as. Pass it to form methods so Form.io applies its permissions. */
+    authInfo: AuthRequest;
+    /** The project serving the request. */
+    project: UAGProjectInterface;
+    /** On `/mcp`, the rest of the MCP SDK's request context (signal, request id, ...). */
+    [key: string]: any;
+};
+
 export type ToolInfo = {
     name?: string;
     title?: string;
@@ -32,8 +47,24 @@ export type ToolInfo = {
     // Whether calling this tool reads or writes. Not optional in practice: the
     // annotations test fails a tool that ships without them.
     annotations?: ToolAnnotations;
+    /**
+     * Runs the tool: always called with its arguments (an empty object when it
+     * takes none), then a `ToolExtra`. Typed loosely so existing tools and their
+     * callers keep compiling; annotate `extra` as `ToolExtra` in your own tools.
+     */
     execute?: any;
 }
+
+/**
+ * A tool built for a project, as the built-in tools are. It is called with the
+ * project whenever the tool list is built, which is on every `/mcp` request and
+ * every research plan, so keep it cheap: load libraries and other slow state
+ * once, outside the factory.
+ */
+export type ToolFactory = (project: UAGProjectInterface) => ToolInfo | Promise<ToolInfo>;
+
+/** An entry of `config.tools`: a tool, or a factory that builds one for the project. */
+export type ToolEntry = ToolInfo | ToolFactory;
 
 export type ParentInfo = {
     type: string;

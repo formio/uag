@@ -3,18 +3,40 @@ import { FormflowTool } from "../formflow";
 import type { AuthRequest } from "@formio/appserver";
 import type { UAGProjectInterface } from "../UAGProjectInterface";
 import { getTools } from "../tools";
-import { ToolInfo } from "../tools/utils";
+import { ToolEntry, ToolExtra, ToolInfo } from "../tools/utils";
 
-/** Every tool the UAG serves, including custom tools from configuration. */
+/** A `config.tools` entry as a tool: a factory is built for the project. */
+async function resolveTool(project: UAGProjectInterface, entry: ToolEntry): Promise<ToolInfo | undefined> {
+    return typeof entry === 'function' ? entry(project) : entry;
+}
+
+/**
+ * Every tool the UAG serves, including custom tools from configuration, each
+ * entry of which is a tool or a factory that builds one for the project.
+ */
 export async function allTools(project: UAGProjectInterface): Promise<ToolInfo[]> {
-    return [...await getTools(project), ...(project.config?.tools || [])].filter((tool) => !!tool?.name);
+    const custom = await Promise.all((project.config?.tools || []).map((entry) => resolveTool(project, entry)));
+    return [...await getTools(project), ...custom].filter((tool): tool is ToolInfo => !!tool?.name);
+}
+
+/**
+ * Run a tool with its arguments and the `ToolExtra` for the project: the same
+ * call on `/mcp` and for Agent API research. `context` is whatever else the
+ * caller has (on `/mcp`, the MCP SDK's request context, with `authInfo`).
+ */
+export function runTool(tool: ToolInfo, project: UAGProjectInterface, args: any, context: { authInfo: AuthRequest; [key: string]: any }) {
+    if (!tool.execute) {
+        return { content: [{ type: 'text' as const, text: `The tool "${tool.name}" has no implementation.` }], isError: true };
+    }
+    const extra: ToolExtra = { ...context, authInfo: context.authInfo, project };
+    return tool.execute(args ?? {}, extra);
 }
 
 /**
  * An MCP tool as an Agentic Formflow tool: its schema as JSON, its arguments
  * validated with its own schema, and read-only only when annotated so.
  */
-export function formflowTool(tool: ToolInfo): FormflowTool {
+export function formflowTool(tool: ToolInfo, project: UAGProjectInterface): FormflowTool {
     const schema = z.object(tool.inputSchema || {});
     const inputSchema = z.toJSONSchema(schema, { io: 'input', unrepresentable: 'any' }) as Record<string, any>;
     delete inputSchema.$schema;
@@ -27,6 +49,6 @@ export function formflowTool(tool: ToolInfo): FormflowTool {
             const parsed = schema.safeParse(args || {});
             return parsed.success ? { ok: true, value: parsed.data } : { ok: false, error: parsed.error.message };
         },
-        execute: async (args: any, auth: AuthRequest) => tool.execute(args, { authInfo: auth })
+        execute: async (args: any, auth: AuthRequest) => runTool(tool, project, args, { authInfo: auth })
     };
 }

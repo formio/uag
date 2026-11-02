@@ -174,7 +174,7 @@ The constructor checks that the `@formio/appserver-core` that `@formio/appserver
 | `database` | `{ url, name?, config?, retentionDays? }` | from `MONGO`, `UAG_DATABASE` (`uag`), `MONGO_CONFIG`, `TASK_RUN_RETENTION_DAYS` (`90`) | The UAG's own database. See [The UAG database](#the-uag-database). |
 | `responseTemplates` | `UAGTemplateConfig` | `{}` | Lodash templates by name: replacements for built-in response templates, and new ones for your tools. See [Modules](/developers/modules#response-templates). |
 | `toolOverrides` | `UAGToolOverride` | `{}` | Per built-in tool, fields merged over its definition (description, title, schema, `execute`). See [Modules](/developers/modules#overriding-built-in-tools). |
-| `tools` | `ToolInfo[]` | `[]` | Custom MCP tools, served next to the built-in ones. |
+| `tools` | `(ToolInfo \| ToolFactory)[]` | `[]` | Custom MCP tools, served next to the built-in ones: tools, or factories that build one for the project. |
 | `engines` | `UAGEngineEntry[]` | `UAG_ENGINES` | Engine instances to enable: `"<type>"`, `"<name>:<type>"`, or `{ name, type, options }`, where `type` may be an engine type definition. When this is an array (even empty), `UAG_ENGINES` is ignored. |
 | `engineTypes` | `Record<string, EngineTypeDefinition>` | none | Engine types your application provides, by type name. Resolved before the built-in types and installed packages. |
 | `routing` | `UAGRoutingConfig` | `{ decision: ['decision', 'agent'], value: ['agent'] }` | Engine preference lists and per-engine timeouts. See [Engines and routing](/developers/engines#routing). |
@@ -278,7 +278,7 @@ type ServerModule = {
 
 ## The project: UAGProjectInterface
 
-`server.uagProject` is the loaded project, an instance of `UAGProjectInterface`. Custom tools reach the same object through the caller's identity (`extra.authInfo.project`, see [Modules](/developers/modules#custom-mcp-tools)).
+`server.uagProject` is the loaded project, an instance of `UAGProjectInterface`. Custom tools receive the same object as `extra.project`, and a tool factory receives it when it builds the tool (see [Modules](/developers/modules#custom-mcp-tools)).
 
 ```ts
 class UAGProjectInterface extends ProjectInterface implements FormflowHost {
@@ -437,7 +437,7 @@ The service applies the same license check, permissions, routing, validation and
 | `trustProxySetting(value)` | function | Parses a `TRUST_PROXY` value into Express's `trust proxy` setting, or `undefined` when it is empty. See [Behind a reverse proxy](#behind-a-reverse-proxy). |
 | `UAGTemplate`, `ResponseTemplate` | class, enum | The response template renderer, and the built-in template names. |
 | `UAGRouter(project)` | function | The bare MCP handler, with no authentication: tools then get no `extra.authInfo`. Mount it behind `project.authorizeRequest`, or use `project.uagRouter()`, which does. |
-| `ToolInfo`, `ToolAnnotations`, `ParentInfo`, `DataUpdate`, `SearchQuery` | types | Tool definition types. |
+| `ToolInfo`, `ToolExtra`, `ToolFactory`, `ToolEntry`, `ToolAnnotations`, `ParentInfo`, `DataUpdate`, `SearchQuery` | types | Tool definition types. |
 | `reads(title)`, `creates(title)`, `overwrites(title)` | functions | Annotation presets for tools. |
 | `escapeSearchPattern(value)` | function | Escape a literal for a `__regex` query (handles `/`). |
 | `getTools(project)` and `getForms`, `getFormFields`, `getFieldInfo`, `collectData`, `confirmSubmission`, `submitCompletedForm`, `findSubmission`, `submissionUpdate`, `fetchExternalData`, `agentProvide`, `agentDecide` | functions | The built-in tool factories: each takes the project and returns a promise of its `ToolInfo` (`await getForms(project)`); `getTools` resolves to all of them. |

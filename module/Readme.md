@@ -22,7 +22,7 @@ A module mounted into the image runs inside the UAG's own installation, so it ca
 module.exports = {
     config: {
         template: require('./project.json'),   // forms, resources, roles and actions the project needs
-        tools: [],                             // custom MCP tools (ToolInfo objects)
+        tools: [],                             // custom MCP tools (ToolInfo objects, or factories: project => ToolInfo)
         toolOverrides: {},                     // changes to built-in tools, by tool name
         responseTemplates: {},                 // replaced or new response templates, by name
         auth: { authAppHtml: undefined },      // the HTML of the /auth/authorize login page
@@ -38,7 +38,7 @@ module.exports = {
 | Key | What to know |
 |---|---|
 | `config.template` | A Form.io project template (an Open Source `/export`, or an Enterprise **Export Template**). Only what the project is missing is installed, matched by key; nothing the project has is changed. `TEMPLATE_SYNC` sets when: `boot` (default), `refresh`, or `off`. Tag forms `uag` so agents see them. |
-| `config.tools` | Each entry is a `ToolInfo` object: `name` (snake_case, unique), `description`, `inputSchema` (a Zod raw shape), `annotations`, and `execute(args, extra)`. A tool without `annotations` is treated as one that writes; only read-only tools can be listed in a task's `uagTools`. Get the project from `extra.authInfo.project`. |
+| `config.tools` | Each entry is a `ToolInfo` object, or a factory `(project) => ToolInfo` (or a promise of one), built on every tool listing, so keep it cheap. A tool has `name` (snake_case, unique), `description`, `inputSchema` (a Zod raw shape), `annotations`, and `execute(args, extra)`. A tool without `annotations` is treated as one that writes; only read-only tools can be listed in a task's `uagTools`. `extra.project` is the project and `extra.authInfo` the caller. |
 | `config.toolOverrides` | Merged over the built-in tool with Lodash `defaultsDeep`, so the fields you set win and the rest stay. `{ name: '' }` removes a tool. |
 | `config.responseTemplates` | Lodash templates keyed by name. A built-in name (the files in [`src/templates`](../src/templates)) replaces that template; any other name adds one your tools render with `project.mcpResponse(name, data)`. See the [template example](../demo/samples/custom-module/module/templates/Readme.md). |
 | `config.auth.authAppHtml` | Replaces the login page with your own HTML (or set `AUTHORIZE_HTML`). `LOGIN_FORM` still names the Form.io login form the page renders. |
