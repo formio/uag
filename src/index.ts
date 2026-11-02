@@ -297,4 +297,5 @@ export * from './agent';
 export * from './tools';
 export * from './router';
 export * from './template';
+export { sanitizeRichText, isRichText, RICH_TEXT_TAGS, RICH_TEXT_RULE } from './richText';
 export { UAGProjectInterface, UAGFormInterface };
