@@ -16,6 +16,15 @@ const { defineEngine, EngineConfigError, EngineError, ENGINE_API_VERSION, requir
 
 const DEFAULT_MODEL = 'claude-opus-5-5';
 const MAX_TOKENS = 16000;
+/** The most output a request may ask for: Claude's largest output limit. */
+const MAX_TOKENS_CEILING = 128000;
+/**
+ * The Anthropic SDK refuses a non-streaming request whose max_tokens could take
+ * over ten minutes unless the request names its own timeout. The UAG's routing
+ * timeout aborts every call through its signal, so a request asking for more
+ * than the default output carries this ceiling instead.
+ */
+const LONG_REQUEST_TIMEOUT = 60 * 60 * 1000;
 const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
 const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
 
@@ -65,6 +74,11 @@ module.exports = defineEngine({
         effort: { env: 'CLAUDE_EFFORT', default: 'low', description: 'Effort for extraction.' },
         researchEffort: { env: 'CLAUDE_RESEARCH_EFFORT', default: 'medium', description: 'Effort for research with tools.' },
         fallbacks: { env: 'CLAUDE_FALLBACKS', default: 'default', description: '"default" re-runs a refused request on a fallback model server-side; "off" turns that off.' },
+        maxTokens: {
+            env: 'CLAUDE_MAX_TOKENS',
+            default: String(MAX_TOKENS),
+            description: `The most output tokens one request may produce (1 to ${MAX_TOKENS_CEILING}). Raise it for long values, such as a document transcribed into a rich text field, together with the engine's routing timeout.`
+        },
     },
     create({ name, settings, options }) {
         const { model } = settings;
@@ -74,6 +88,11 @@ module.exports = defineEngine({
             throw new EngineConfigError(`The "${name}" engine's fallbacks setting must be "default" or "off", not ${JSON.stringify(settings.fallbacks)}.`);
         }
         const fallbacks = settings.fallbacks === 'default';
+        const maxTokens = Number(settings.maxTokens);
+        if (!Number.isInteger(maxTokens) || maxTokens < 1 || maxTokens > MAX_TOKENS_CEILING) {
+            throw new EngineConfigError(`The "${name}" engine's maxTokens setting must be a whole number from 1 to ${MAX_TOKENS_CEILING}, not ${JSON.stringify(settings.maxTokens)}.`);
+        }
+        const requestOptions = maxTokens > MAX_TOKENS ? { timeout: LONG_REQUEST_TIMEOUT } : {};
 
         let client = options.client;
         if (!client) {
@@ -95,11 +114,11 @@ module.exports = defineEngine({
         /** One Messages call, with the server-side refusal fallback unless turned off. */
         function create(params, signal) {
             if (signal) signal.throwIfAborted();
-            const body = { model, max_tokens: MAX_TOKENS, ...params };
+            const body = { model, max_tokens: maxTokens, ...params };
             if (fallbacks) {
-                return client.beta.messages.create({ ...body, betas: [FALLBACK_BETA], fallbacks: 'default' }, { signal });
+                return client.beta.messages.create({ ...body, betas: [FALLBACK_BETA], fallbacks: 'default' }, { signal, ...requestOptions });
             }
-            return client.messages.create(body, { signal });
+            return client.messages.create(body, { signal, ...requestOptions });
         }
 
         /**

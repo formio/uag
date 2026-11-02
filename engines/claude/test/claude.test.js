@@ -68,6 +68,32 @@ describe('Claude engine', () => {
         }
     });
 
+    it('asks for 16000 output tokens by default, and for maxTokens when set, with a timeout of its own for a long request', async () => {
+        const reply = () => ({ model: 'm', stop_reason: 'end_turn', content: [{ type: 'text', text: '{}' }] });
+        let fake = fakeAnthropic(reply);
+        await (await create({ client: fake.client })).extract(request());
+        expect(fake.calls[0].body.max_tokens).to.equal(16000);
+        expect(fake.calls[0].opts).to.not.have.property('timeout');
+
+        fake = fakeAnthropic(reply);
+        await (await create({ client: fake.client }, { ...ENV, CLAUDE_MAX_TOKENS: '64000' })).extract(request());
+        expect(fake.calls[0].body.max_tokens).to.equal(64000);
+        // The SDK refuses a long non-streaming request that names no timeout; the UAG's signal still aborts it.
+        expect(fake.calls[0].opts.timeout).to.equal(60 * 60 * 1000);
+    });
+
+    it('refuses a maxTokens that is not a whole number from 1 to 128000 at startup', async () => {
+        for (const value of ['0', '128001', '1.5', 'lots']) {
+            try {
+                await create({ client: {} }, { ...ENV, CLAUDE_MAX_TOKENS: value });
+                expect.fail(`expected ${value} to be refused`);
+            }
+            catch (err) {
+                expect(err.message).to.include('maxTokens setting must be a whole number');
+            }
+        }
+    });
+
     it('extracts with one structured-output call and the refusal fallback', async () => {
         const { calls, client } = fakeAnthropic([{ model: 'claude-opus-5-5', stop_reason: 'end_turn', content: [{ type: 'text', text: '{"lossDate":"2026-10-19"}' }], usage: { input_tokens: 9, output_tokens: 4 } }]);
         const engine = await create({ client });

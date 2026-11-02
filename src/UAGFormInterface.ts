@@ -1,5 +1,6 @@
 import { AppServerForm, AuthRequest, FormInterface, InterpolatedError } from "@formio/appserver";
-import { flagOn } from "./formflow";
+import { describeBinary, flagOn, isBinaryComponent } from "./formflow";
+import { isRichText, RICH_TEXT_RULE, sanitizeRichText } from "./richText";
 import type { FormflowForm, FormflowTask } from "./formflow";
 import {
     Component,
@@ -338,8 +339,12 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
             case 'signature':
                 rule += 'Have the user draw their signature. The value will be a base64-encoded PNG image string of that signature.';
                 break;
-            case 'textfield':
             case 'textarea':
+                rule += isRichText(component)
+                    ? RICH_TEXT_RULE
+                    : 'The value can be any alphanumeric string, containing letters, numbers, white space characters, and common symbols.';
+                break;
+            case 'textfield':
             case 'hidden':
                 rule += 'The value can be any alphanumeric string, containing letters, numbers, white space characters, and common symbols.';
                 break;
@@ -748,7 +753,12 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
             }
             else if (this.inputComponent(component) && componentHasValue(component, value)) {
                 const modelType = Utils.getModelType(component);
-                if (isObjectLike(value)) {
+                if (isBinaryComponent(component)) {
+                    // Files and signatures are described, never inlined: a base64 upload would fill the context.
+                    const described = describeBinary(component, value);
+                    value = isObjectLike(described) ? JSON.stringify(described) : described;
+                }
+                else if (isObjectLike(value)) {
                     value = JSON.stringify(value);
                 }
                 else if (modelType === 'string' && isString(value)) {
@@ -800,6 +810,14 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
     /** The submission's values in form order with their labels, for Agentic Formflow. */
     formflowLabeledData(data: DataObject = {}): { path: string; label: string }[] {
         return this.formatData(data).map(({ path, label }) => ({ path, label }));
+    }
+
+    /**
+     * A value an agent engine generated, before it is checked and written: HTML
+     * for a rich text field is reduced to the markup its editor keeps.
+     */
+    formflowNormalizeValue(component: Component, value: any): any {
+        return isRichText(component) && typeof value === 'string' ? sanitizeRichText(value) : value;
     }
 
     htmlToMarkdown(html: string): string {

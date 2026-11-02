@@ -165,6 +165,17 @@ curl -s -X POST https://uag.example.com/supportrequest/agent/extract \
         "data": { "description": "My internet has been completely down since last night", "accountNumber": "12345678" } }'
 ```
 
+When the task's input is a file component, send the file's value as the form holds it, in `data`, and the UAG reads the document (see [Documents as input](/developers/form-properties#documents-as-input)). A file in S3 or Azure storage is a small reference that the UAG loads through Form.io with your credentials; a base64 file is the document itself, so it counts against `agentApi.bodyLimit`.
+
+```bash
+curl -s -X POST https://uag.example.com/esign/documentextract/agent/extract \
+  -H "x-jwt-token: $FORMIO_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{ "task": "transcriber",
+        "data": { "document": [{ "storage": "s3", "bucket": "esign-uploads", "key": "contract.pdf",
+                                  "name": "contract.pdf", "type": "application/pdf", "size": 182044 }] } }'
+```
+
 A task named without an input, and with no `text`, is refused with `400` (`The task "<task>" has no input, and the request gave no "text". Send "text", or flag the component(s) holding the source text with uag: "<task>" and uagField: "input".`).
 
 ### Streaming
@@ -479,3 +490,7 @@ The other MCP tools and conversation forms never need a license, and neither doe
 | `agentApi.anonymous.rateLimit` | `AGENT_ANONYMOUS_RATE_LIMIT`, else `10` | Anonymous requests a minute per client address. `0` turns anonymous use off. |
 | `agentApi.anonymous.totalRateLimit` | `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`, else `100` | Anonymous requests a minute in total. `0` turns anonymous use off. |
 | `agentApi.chat.*` | | A form's chat: its engines, timeout and bounds. See [Chat settings](#chat-settings). |
+| `agentApi.bodyLimit` | `AGENT_BODY_LIMIT`, else `5242880` (5 MB) | The largest request body an operation takes, in bytes. The server's `MAX_BODY_SIZE` (16 MB) still applies first. |
+| `agentApi.files.maxBytes` | `10485760` (10 MB) | The largest uploaded document read for a task. |
+| `agentApi.files.maxChars` | `200000` | The most characters of one document's content an engine gets; the rest is cut and marked `truncated`. |
+| `fileReaders` | none | Readers for document formats, from a module. See [Modules](/developers/modules#file-readers). |

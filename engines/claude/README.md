@@ -22,6 +22,9 @@ Its tasks are Agentic Formflow, so the UAG also needs a `LICENSE_KEY` that inclu
 | `effort` | `UAG_ENGINE_<NAME>_EFFORT`, `CLAUDE_EFFORT` | `low`, for extraction |
 | `researchEffort` | `UAG_ENGINE_<NAME>_RESEARCH_EFFORT`, `CLAUDE_RESEARCH_EFFORT` | `medium`, for research with tools |
 | `fallbacks` | `UAG_ENGINE_<NAME>_FALLBACKS`, `CLAUDE_FALLBACKS` | `default`; `off` disables |
+| `maxTokens` | `UAG_ENGINE_<NAME>_MAX_TOKENS`, `CLAUDE_MAX_TOKENS` | `16000`; 1 to 128000 |
+
+`maxTokens` bounds each request's output. A long value, such as a document transcribed into a rich text field, needs more than the default, and more time: raise the instance's routing timeout (`routing.timeouts`) with it, since the UAG abandons an engine at its timeout whatever it is producing.
 
 `<NAME>` is the instance name, upper-cased with `-` as `_`. An instance's own variable wins over the shared one. `effort` and `researchEffort` take `low`, `medium`, `high`, `xhigh` or `max`.
 

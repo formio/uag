@@ -31,6 +31,10 @@ export const {
     flagOn,
     flagOff,
     ruleWithConstraints,
+    describeBinary,
+    isBinaryComponent,
+    fileMeta,
+    plainTextReader,
 } = Formflow;
 
 export type AgentEngine = Formflow.AgentEngine;
@@ -53,6 +57,9 @@ export type FormflowRoutingConfig = Formflow.FormflowRoutingConfig;
 export type FormflowService = Formflow.FormflowService;
 export type FormflowTask = Formflow.FormflowTask;
 export type FormflowTool = Formflow.FormflowTool;
+export type FormflowFileReader = Formflow.FormflowFileReader;
+export type FormflowFileMeta = Formflow.FormflowFileMeta;
+export type FormflowFileContent = Formflow.FormflowFileContent;
 export type OperationContext = Formflow.OperationContext;
 export type OperationResult = Formflow.OperationResult;
 export type ScopedTokenClaims = Formflow.ScopedTokenClaims;
