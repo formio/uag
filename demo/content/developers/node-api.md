@@ -438,6 +438,7 @@ The service applies the same license check, permissions, routing, validation and
 | `UAGTemplate`, `ResponseTemplate` | class, enum | The response template renderer, and the built-in template names. |
 | `UAGRouter(project)` | function | The bare MCP handler, with no authentication: tools then get no `extra.authInfo`. Mount it behind `project.authorizeRequest`, or use `project.uagRouter()`, which does. |
 | `ToolInfo`, `ToolExtra`, `ToolEntry`, `ToolAnnotations`, `ParentInfo`, `DataUpdate`, `SearchQuery` | types | Tool definition types. |
+| `sanitizeRichText(html)`, `isRichText(component)`, `RICH_TEXT_TAGS`, `RICH_TEXT_RULE` | functions, constants | The HTML rich text fields keep, as the UAG sanitizes what engines write into them. Modules can use them for HTML they produce, such as a document reader's output. |
 | `reads(title)`, `creates(title)`, `overwrites(title)` | functions | Annotation presets for tools. |
 | `escapeSearchPattern(value)` | function | Escape a literal for a `__regex` query (handles `/`). |
 | `getTools(project)` and `getForms`, `getFormFields`, `getFieldInfo`, `collectData`, `confirmSubmission`, `submitCompletedForm`, `findSubmission`, `submissionUpdate`, `fetchExternalData`, `agentProvide`, `agentDecide` | functions | The built-in tool factories: each takes the project and returns a promise of its `ToolInfo` (`await getForms(project)`); `getTools` resolves to all of them. |
