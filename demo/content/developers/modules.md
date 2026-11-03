@@ -29,7 +29,7 @@ type UAGModule = {
 | `config.template` | A Form.io project template: the forms, resources, roles and actions the module needs the project to have. | [The project template](#the-project-template) |
 | `config.tools` | Custom MCP tools. | [Custom MCP tools](#custom-mcp-tools) |
 | `config.toolOverrides` | Changes to the built-in tools. | [Overriding built-in tools](#overriding-built-in-tools) |
-| `config.fileReaders` | Readers that turn uploaded documents (PDF, Word, ...) into text for tasks. | [File readers](#file-readers) |
+| `plugins` | Plugins this module brings: converters that read more file types, document plugins, and the like. | [Plugins](#plugins) |
 | `config.responseTemplates` | Replacements for the built-in response templates, and new templates for your tools. | [Response templates](#response-templates) |
 | `config.auth.authAppHtml` | The HTML of the login page for remote MCP sign-in (`MCP_OAUTH`). | [The login page](#the-login-page) |
 | `actions` | Custom form actions, by name. | [Custom actions](#custom-actions) |
@@ -221,38 +221,20 @@ The UAG builds its tool list on every `/mcp` request and every research plan, so
 
 The Agent API offers tools to agent engines for research when a task's criteria component lists them in `uagTools`. Custom tools qualify when they are annotated read-only. Each is converted for the engine: its Zod shape becomes a JSON schema, arguments the model sends are validated with the same schema, and the call runs in process with the caller's identity. A remote engine on an engine server calls the same tools back over `/mcp` with a scoped token that lists only them. See [Engine server](/developers/engine-server#research-and-scoped-tokens).
 
-## File readers
+## Plugins
 
-A file component that is a task's input, or in its `uagContext`, is read for the engines (see [Documents as input](/developers/form-properties#documents-as-input)). The UAG reads plain text, Markdown and CSV. `config.fileReaders` adds formats: each reader says whether it accepts a file, and turns its bytes into text, or into HTML when the format has structure worth keeping. Readers are tried in order, before the built-in one.
-
-```ts
-type FileReader = {
-    name: string;
-    accepts(meta: { name: string; type: string; size: number; storage?: string }, head: Buffer): boolean;
-    read(buffer: Buffer, meta: { name: string; type: string; size: number }): Promise<{ text: string; html?: string }>;
-};
-```
-
-`head` is the file's first 16 bytes. Prefer them to `meta.type` and the file name, which the uploader's browser and the user choose:
+A module can bring plugins, beside its configuration: `plugins` lists them, and `pluginTypes` any plugin types it defines. They are added to the UAG's one plugin registry in the order modules are used, and never merged with each other. A plugins file (`UAG_PLUGINS`, or `/app/plugins/index.mjs` in the image) adds more the same way. See [Plugins](/developers/plugins).
 
 ```js
-const { extractText } = require('unpdf');
-
 module.exports = {
-    config: {
-        fileReaders: [{
-            name: 'pdf',
-            accepts: (meta, head) => head.subarray(0, 4).toString('latin1') === '%PDF',
-            async read(buffer) {
-                const { text } = await extractText(new Uint8Array(buffer), { mergePages: true });
-                return { text };
-            }
-        }]
-    }
+    config: { /* ... */ },
+    plugins: [require('./my-converter')]
 };
 ```
 
-A reader runs on the UAG for every task run and operation that reads a document, so load its libraries once, at module scope. A reader that throws is reported to the engine as "could not be read", with the message, and the task still runs.
+### Documents as task inputs
+
+A file component that is a task's input, or in its `uagContext`, is read for the engines (see [Documents as input](/developers/form-properties#documents-as-input)) through the installed converters: every file type with a route to text is read, the built-in converters giving PDF (its text layer), text, Markdown, CSV, JSON, HTML and XML, and converters from plugins the rest. To read another format, add a converter plugin; there are no file readers in the module configuration.
 
 ## Overriding built-in tools
 

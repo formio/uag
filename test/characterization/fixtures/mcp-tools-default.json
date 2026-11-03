@@ -556,6 +556,44 @@
       "execution": {
         "taskSupport": "forbidden"
       }
+    },
+    {
+      "name": "read_document",
+      "title": "Read Uploaded Document",
+      "description": "Read the text of a document uploaded to a submission: a file in a file field, or in an AI Document field. Give the form, the submission id (from `find_submissions`) and the data path of the field (such as \"contract\" or \"rows[0].attachment\"; add an index, such as \"contract[1]\", for another file than the first). Returns the file name, its type, its page count when known, and its text.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "form_name": {
+            "type": "string",
+            "description": "The name of the form, as `get_forms` lists it."
+          },
+          "submission_id": {
+            "type": "string",
+            "description": "The full ID of the submission, as `find_submissions` gives it."
+          },
+          "data_path": {
+            "type": "string",
+            "description": "The data path of the file field or AI Document field."
+          }
+        },
+        "required": [
+          "form_name",
+          "submission_id",
+          "data_path"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "title": "Read an uploaded document",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
     }
   ],
   "anonymous": {

@@ -155,14 +155,14 @@ The `agent_provide` MCP tool refuses a task without a criteria component. The Ag
 
 #### Documents as input
 
-A **file** component can be a task's input (or be listed in its `uagContext`). Engines then get the uploaded document's content, read by a file reader, instead of the file:
+A **file** component can be a task's input (or be listed in its `uagContext`). Engines then get the uploaded document's content, read through the installed converters, instead of the file:
 
 ```json
 { "type": "file", "key": "document", "label": "Source Document", "storage": "s3",
   "properties": { "uag": "transcriber", "uagField": "input" } }
 ```
 
-The engine reads `{ "name": "contract.pdf", "type": "application/pdf", "content": "<p>…</p>", "format": "html" }`. The UAG reads plain text, Markdown and CSV itself; other formats need a reader from a module (`config.fileReaders`, see [Modules](/developers/modules#file-readers)). The file is loaded wherever Form.io keeps it: base64 from the submission, S3 and Azure through Form.io's storage endpoints with the caller's credentials, and `url` storage only from the project's own origin or the component's upload URL. A file that cannot be read reaches the engine as its name and the reason, never as its bytes. `agentApi.files.maxBytes` (10 MB) and `agentApi.files.maxChars` (200000) bound what is read.
+The engine reads `{ "name": "contract.pdf", "type": "application/pdf", "content": "Section 1. …", "format": "text" }`. The file's type is identified from its bytes, and it is read through the converters that have a route to text: the built-in ones read PDF (its text layer), text, Markdown, CSV, JSON, HTML and XML; converter plugins add other formats (see [Plugins](/developers/plugins)). The file is loaded wherever Form.io keeps it: base64 from the submission, S3 and Azure through Form.io's storage endpoints with the caller's credentials, and `url` storage only from the project's own origin or the component's upload URL. A file that cannot be read reaches the engine as its name and the reason, never as its bytes. `agentApi.files.maxBytes` (10 MB) and `agentApi.files.maxChars` (200000) bound what is read.
 
 Files that are not a task's input or context are never sent to engines: they are described by name, type and size. Signatures are described as `(signed)`.
 

@@ -266,6 +266,7 @@ export class UAGServer extends Server {
     // The document feature: the converter and document types, and the built-in converters.
     registerDocuments(this.plugins);
     const project = this.uagProject;
+    if (project instanceof UAGProjectInterface) project.plugins = this.plugins;
     if (project instanceof UAGProjectInterface) {
       // Decide which engines are on before serving anything, so a misconfigured
       // engine stops startup with its name in the error instead of failing the

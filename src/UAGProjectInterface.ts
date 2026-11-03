@@ -12,6 +12,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { UAG_VERSION } from './version';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { AgentRouter } from "./agent/router";
+import type { PluginRegistry } from "@formio/appserver";
+import { converterFileReader } from "./documents/readers";
 import { allTools, formflowTool, runTool } from "./agent/tools";
 const debug = require('debug')('formio:uag:UAGProjectInterface');
 export class UAGProjectInterface extends ProjectInterface implements FormflowHost {
@@ -134,9 +136,15 @@ export class UAGProjectInterface extends ProjectInterface implements FormflowHos
         return form?.uag ? form : null;
     }
 
-    /** Readers for uploaded documents, from configuration (`fileReaders`). */
+    /** The server's plugin registry, once its plugins are listed. */
+    public plugins?: PluginRegistry;
+
+    /**
+     * Readers for uploaded documents: one built from the installed converters,
+     * which reads every type with a route to text.
+     */
     formflowFileReaders(): FormflowFileReader[] {
-        return this.config?.fileReaders || [];
+        return this.plugins ? [converterFileReader(this.plugins)] : [];
     }
 
     /** Every MCP tool, as Agentic Formflow tools. */

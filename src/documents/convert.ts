@@ -109,3 +109,24 @@ function checkOutput(converter: Converter, name: string, to: Representation, out
     }
     return output;
 }
+
+/**
+ * Run a route: each step's output feeds the next (an intermediate step always
+ * makes a PDF), with each converter's operator settings.
+ */
+export async function runRoute(
+    steps: Converter[],
+    input: { buffer: Buffer; type: string; name: string },
+    to: Representation,
+    options: Omit<ConvertOptions, 'to' | 'settings'> & { settingsOf?: (converter: Converter) => Record<string, any> | undefined }
+): Promise<ConverterOutput> {
+    let current = input;
+    let output: ConverterOutput | undefined;
+    for (let i = 0; i < steps.length; i++) {
+        const target: Representation = i === steps.length - 1 ? to : 'pdf';
+        output = await runConverter(steps[i], current, { ...options, to: target, settings: options.settingsOf?.(steps[i]) });
+        if (target === 'pdf') current = { buffer: (output as any).pdf, type: 'application/pdf', name: input.name };
+    }
+    if (!output) throw new ConversionError(`No converter step for "${input.name}".`);
+    return output;
+}

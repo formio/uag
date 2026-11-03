@@ -493,4 +493,3 @@ The other MCP tools and conversation forms never need a license, and neither doe
 | `agentApi.bodyLimit` | `AGENT_BODY_LIMIT`, else `5242880` (5 MB) | The largest request body an operation takes, in bytes. The server's `MAX_BODY_SIZE` (16 MB) still applies first. |
 | `agentApi.files.maxBytes` | `10485760` (10 MB) | The largest uploaded document read for a task. |
 | `agentApi.files.maxChars` | `200000` | The most characters of one document's content an engine gets; the rest is cut and marked `truncated`. |
-| `fileReaders` | none | Readers for document formats, from a module. See [Modules](/developers/modules#file-readers). |

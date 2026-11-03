@@ -8,12 +8,13 @@ import { UAGServer } from '../../src';
 import { taskRunner } from '../../src/runner';
 import { FakeFormio } from '../helpers/fakeFormio';
 import { requireTestLicense, TEST_LICENSE } from './fixtures';
+import { docx, pdf } from '../helpers/documents';
 
 http.globalAgent = new http.Agent({ keepAlive: false });
 
 /**
  * Documents as a task's input, through the stateless Agent API: the UAG reads
- * the uploaded file with a module's file reader, the engine gets its content
+ * the uploaded file through the installed converters, the engine gets its content
  * (never the base64 it was stored as), and HTML the engine writes into a rich
  * text field is sanitized before it is returned.
  */
@@ -33,15 +34,9 @@ describe('Documents in the Agent API', function () {
         submissionAccess: []
     };
 
-    const pdfBytes = Buffer.from('%PDF-1.7 Section 1. The parties agree.');
+    const pdfBytes = pdf(['Section 1. The parties agree.']);
     const upload = [{ storage: 'base64', name: 'contract.pdf', originalName: 'contract.pdf', type: 'application/pdf', size: pdfBytes.length, url: `data:application/pdf;base64,${pdfBytes.toString('base64')}` }];
 
-    /** A PDF reader as a module would provide one: it knows a PDF by its first bytes. */
-    const pdfReader = {
-        name: 'pdf',
-        accepts: (_meta: any, head: Buffer) => head.subarray(0, 4).toString('latin1') === '%PDF',
-        read: async (buffer: Buffer) => ({ text: '', html: `<p>${buffer.subarray(9).toString()}</p>` })
-    };
 
     let requests: any[];
     let answer: Record<string, any>;
@@ -69,7 +64,7 @@ describe('Documents in the Agent API', function () {
     after((done) => { shared.close(() => done()); });
     const request = () => { current = app; return supertest(shared); };
 
-    async function start(config: any = {}) {
+    async function start(config: any = {}, modules: any[] = []) {
         requests = [];
         answer = { extractedContent: '<h2 onclick="steal()">Agreement</h2><p>The parties agree.</p><script>steal()</script><a href="javascript:steal()">link</a>' };
         formio = new FakeFormio({ roles, forms: { documentExtract: documentForm } });
@@ -78,9 +73,9 @@ describe('Documents in the Agent API', function () {
             project: formio.endpoint.replace('127.0.0.1', 'localhost'), ttl: 0, retries: 1, license: TEST_LICENSE,
             auth: { adminKey: 'admin-key' },
             engines: [{ name: 'recorder', type: recorder }],
-            fileReaders: [pdfReader],
             ...config
         } as any);
+        for (const module of modules) server.use(module);
         await server.initialize();
         app = express();
         app.use(await server.router());
@@ -101,8 +96,33 @@ describe('Documents in the Agent API', function () {
         expect(res.status, res.text).to.equal(200);
         expect(requests).to.have.length(1);
         const state = requests[0].state;
-        expect(state.input['Source Document']).to.deep.equal({ name: 'contract.pdf', type: 'application/pdf', content: '<p>Section 1. The parties agree.</p>', format: 'html' });
+        expect(state.input['Source Document']).to.deep.equal({ name: 'contract.pdf', type: 'application/pdf', content: 'Section 1. The parties agree.', format: 'text' });
         expect(JSON.stringify(requests[0])).to.not.contain(pdfBytes.toString('base64'));
+    });
+
+    it('reads a task\'s file input through a module\'s converter, for a format only it knows', async () => {
+        const fixtureConverter = {
+            type: 'converter', name: 'fixture-text', title: 'Fixture', version: '1.0.0', apiVersion: 1,
+            accepts: [{ type: 'application/x-fixture', ext: ['.fixture'] }], produces: ['text'],
+            detect: (head: Buffer) => head.subarray(0, 8).toString() === 'FIXTURE\n' ? 'application/x-fixture' : null,
+            convert: async ({ buffer }: any) => ({ text: buffer.subarray(8).toString().toUpperCase(), textFormat: 'plain' })
+        };
+        await start({}, [{ plugins: [fixtureConverter] }]);
+        const bytes = Buffer.from('FIXTURE\nthe parties agree.');
+        const file = [{ storage: 'base64', name: 'notes.fixture', originalName: 'notes.fixture', type: '', size: bytes.length, url: `data:application/octet-stream;base64,${bytes.toString('base64')}` }];
+        const res = await request().post('/documentextract/agent/extract').set('x-admin-key', 'admin-key').send({ data: { document: file } });
+        expect(res.status, res.text).to.equal(200);
+        expect(requests[0].state.input['Source Document'].content).to.equal('THE PARTIES AGREE.');
+    });
+
+    it('reads a Word file as text only when a converter reads Word files', async () => {
+        await start();
+        const bytes = docx([[{ text: 'Hello' }]]);
+        const file = [{ storage: 'base64', name: 'letter.docx', originalName: 'letter.docx', type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: bytes.length, url: `data:application/octet-stream;base64,${bytes.toString('base64')}` }];
+        const res = await request().post('/documentextract/agent/extract').set('x-admin-key', 'admin-key').send({ data: { document: file } });
+        // No converter reads Word files here: the engine gets no document content.
+        expect(JSON.stringify(requests[0]?.state || {})).to.not.contain('Hello');
+        expect(res.status).to.be.oneOf([200, 400, 422]);
     });
 
     it('tells the engine the rich text field takes HTML, and sanitizes the HTML it writes', async () => {

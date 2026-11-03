@@ -24,7 +24,6 @@ module.exports = {
         template: require('./project.json'),   // forms, resources, roles and actions the project needs
         tools: [],                             // custom MCP tools (ToolInfo objects; bind(project) for project-specific parts)
         toolOverrides: {},                     // changes to built-in tools, by tool name
-        fileReaders: [],                       // readers that turn uploaded documents into text for tasks
         responseTemplates: {},                 // replaced or new response templates, by name
         auth: { authAppHtml: undefined },      // the HTML of the /auth/authorize login page
         engines: undefined,                    // Agent API engine instances; overrides UAG_ENGINES

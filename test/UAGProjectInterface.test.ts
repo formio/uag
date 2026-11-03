@@ -1,9 +1,15 @@
 import { expect } from 'chai';
+import { ProjectInterface } from '@formio/appserver';
 import { UAGProjectInterface } from '../src/UAGProjectInterface';
+import { UAGFormInterface } from '../src/UAGFormInterface';
 import { ResponseTemplate } from '../src/template';
 
 describe('UAGProjectInterface', () => {
     let project: UAGProjectInterface;
+    // Forms are created with the module's FormInterface: the UAG's, as UAGServer sets it.
+    let savedModule: any;
+    before(() => { savedModule = ProjectInterface.module; ProjectInterface.module = { ...(savedModule || {}), FormInterface: UAGFormInterface } as any; });
+    after(() => { ProjectInterface.module = savedModule; });
 
     beforeEach(() => {
         // Create a mock project instance
