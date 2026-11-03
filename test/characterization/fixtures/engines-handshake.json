@@ -1,0 +1,28 @@
+{
+  "status": 200,
+  "body": {
+    "protocol": 1,
+    "engines": [
+      {
+        "name": "jev",
+        "kind": "decision",
+        "model": "jev-1.13.0",
+        "maxOptions": 255
+      },
+      {
+        "name": "claude",
+        "kind": "agent",
+        "model": "claude-opus-5-5",
+        "toolUse": true
+      }
+    ]
+  },
+  "withoutKey": {
+    "status": 401,
+    "body": {
+      "protocol": 1,
+      "error": "Unauthorized.",
+      "expose": true
+    }
+  }
+}
