@@ -103,7 +103,7 @@ export function agentBodyLimit(project: UAGProjectInterface): number {
 type Handler = (req: AgentRequest, res: Response, service: FormflowService) => Promise<void>;
 
 /** The parts every Agent API endpoint shares: the request id, and errors answered as JSON (or as an event mid-stream). */
-function agentEndpoints(project: UAGProjectInterface) {
+export function agentEndpoints(project: UAGProjectInterface) {
     const limit = agentBodyLimit(project);
     const parse = express.json({ limit });
     // The server parses JSON bodies first, with its own larger limit, so the

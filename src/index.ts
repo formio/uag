@@ -18,6 +18,7 @@ import { UAG_VERSION } from './version';
 import { assertToolEntries } from './tools/utils';
 import { listEngines, listTools } from './plugins';
 import { registerDocuments } from './documents/plugins';
+import { documentLimitWarnings, documentsSettings } from './documents/settings';
 
 /** Projects whose engines were loaded while the plugins were listed. */
 const enginesLoaded = new WeakSet<object>();
@@ -265,6 +266,10 @@ export class UAGServer extends Server {
     await super.listPlugins();
     // The document feature: the converter and document types, and the built-in converters.
     registerDocuments(this.plugins);
+    // Limits beyond what an engine provider takes would fail at the provider: say so now.
+    for (const warning of documentLimitWarnings(documentsSettings(this.config.documents))) {
+      console.warn(`[formio-uag] ${warning}`);
+    }
     const project = this.uagProject;
     if (project instanceof UAGProjectInterface) project.plugins = this.plugins;
     if (project instanceof UAGProjectInterface) {
@@ -326,6 +331,7 @@ export * from './config';
 export * from './agent';
 export * from './tools';
 export * from './documents';
+export { sanitizeMarkdown } from './markdown';
 export { usePluginFiles, pluginsFile, DEFAULT_PLUGINS_FILE } from './pluginFiles';
 export * from './router';
 export * from './template';
