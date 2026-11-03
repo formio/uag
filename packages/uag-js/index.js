@@ -1424,6 +1424,698 @@
         return wrapper.setForm(src);
     }
 
+
+    // ---------------------------------------------------------------------
+    // AI Document: the `uagdocument` component.
+    // ---------------------------------------------------------------------
+
+    /** The installed document and converter plugins, as the UAG's manifest describes them. */
+    var manifestState = { manifest: null, resolve: null, promise: null };
+    manifestState.promise = new Promise(function (resolve) { manifestState.resolve = resolve; });
+
+    function setManifest(manifest) {
+        manifestState.manifest = Array.isArray(manifest) ? manifest : [];
+        manifestState.resolve();
+    }
+
+    function documentPlugins() {
+        return (manifestState.manifest || []).filter(function (plugin) { return plugin && plugin.type === 'document'; });
+    }
+
+    function documentPlugin(name) {
+        return documentPlugins().filter(function (plugin) { return plugin.name === name; })[0] || null;
+    }
+
+    /** Fetch the manifest from the UAG, with the user's token. Resolves with [] when it cannot. */
+    function fetchManifest(uagUrl, sdk) {
+        var fetchImpl = (registered.options && registered.options.fetch) || (typeof fetch === 'function' ? fetch : null);
+        if (!fetchImpl) return Promise.resolve([]);
+        var headers = { Accept: 'application/json' };
+        try {
+            var token = sdk && typeof sdk.getToken === 'function' ? sdk.getToken() : null;
+            if (token) headers['x-jwt-token'] = token;
+        }
+        catch (err) { /* no token */ }
+        return Promise.resolve().then(function () {
+            return fetchImpl(trimSlash(uagUrl) + '/plugins', { headers: headers });
+        }).then(function (response) {
+            return response && response.ok ? response.json() : [];
+        }).catch(function () { return []; });
+    }
+
+    // --- Markdown, as sanitizeMarkdown keeps it, rendered with every text escaped ---
+
+    function safeHref(href) {
+        return /^(https?:|mailto:)/i.test(String(href || '').trim()) ? String(href).trim() : '';
+    }
+
+    /** Inline Markdown: code, links (safe targets only), strong, emphasis. Everything else is escaped text. */
+    function inlineMarkdown(text) {
+        var out = '';
+        var rest = String(text || '');
+        var pattern = /(`+)([^`]*?)\1|\[([^\]]*)\]\(\s*<?([^)\s>]*)>?(?:\s+"[^"]*")?\s*\)|<((?:https?:|mailto:)[^>\s]+)>|\*\*([^*]+)\*\*|__([^_]+)__|\*([^*\s][^*]*?)\*|_([^_\s][^_]*?)_/;
+        var match;
+        while ((match = pattern.exec(rest))) {
+            out += escapeHtml(rest.slice(0, match.index));
+            if (match[1]) out += '<code>' + escapeHtml(match[2]) + '</code>';
+            else if (match[3] !== undefined) {
+                var href = safeHref(match[4]);
+                out += href ? '<a href="' + escapeHtml(href) + '" target="_blank" rel="noopener noreferrer">' + inlineMarkdown(match[3]) + '</a>' : inlineMarkdown(match[3]);
+            }
+            else if (match[5]) out += '<a href="' + escapeHtml(match[5]) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(match[5]) + '</a>';
+            else if (match[6] || match[7]) out += '<strong>' + inlineMarkdown(match[6] || match[7]) + '</strong>';
+            else out += '<em>' + inlineMarkdown(match[8] || match[9]) + '</em>';
+            rest = rest.slice(match.index + match[0].length);
+        }
+        return out + escapeHtml(rest);
+    }
+
+    function tableRow(line) {
+        return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(function (cell) { return cell.trim(); });
+    }
+
+    /**
+     * Render Markdown to HTML: headings, paragraphs, lists, tables, emphasis,
+     * code and http/https/mailto links, nothing else. All text is escaped.
+     */
+    function renderMarkdown(markdown) {
+        var lines = String(markdown || '').replace(/\r\n?/g, '\n').split('\n');
+        var html = [];
+        var i = 0;
+        while (i < lines.length) {
+            var line = lines[i];
+            var fence = /^\s{0,3}(`{3,}|~{3,})/.exec(line);
+            if (fence) {
+                var code = [];
+                i++;
+                while (i < lines.length && !(new RegExp('^\\s{0,3}' + fence[1][0] + '{' + fence[1].length + ',}\\s*$')).test(lines[i])) code.push(lines[i++]);
+                i++;
+                html.push('<pre><code>' + escapeHtml(code.join('\n')) + '</code></pre>');
+                continue;
+            }
+            if (!line.trim()) { i++; continue; }
+            var heading = /^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$/.exec(line);
+            if (heading) {
+                html.push('<h' + heading[1].length + '>' + inlineMarkdown(heading[2]) + '</h' + heading[1].length + '>');
+                i++;
+                continue;
+            }
+            if (/^\s*\|/.test(line) && i + 1 < lines.length && /^\s*\|?\s*:?-{1,}:?\s*(\|\s*:?-{1,}:?\s*)*\|?\s*$/.test(lines[i + 1])) {
+                var head = tableRow(line);
+                i += 2;
+                var rows = [];
+                while (i < lines.length && /^\s*\|/.test(lines[i])) rows.push(tableRow(lines[i++]));
+                html.push('<table class="table table-sm"><thead><tr>' + head.map(function (cell) { return '<th>' + inlineMarkdown(cell) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+                    rows.map(function (row) { return '<tr>' + row.map(function (cell) { return '<td>' + inlineMarkdown(cell) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>');
+                continue;
+            }
+            var item = /^\s*([-*+]|\d+[.)])\s+(.*)$/.exec(line);
+            if (item) {
+                var ordered = /\d/.test(item[1]);
+                var items = [];
+                while (i < lines.length) {
+                    var next = /^\s*([-*+]|\d+[.)])\s+(.*)$/.exec(lines[i]);
+                    if (!next || /\d/.test(next[1]) !== ordered) break;
+                    items.push('<li>' + inlineMarkdown(next[2]) + '</li>');
+                    i++;
+                }
+                html.push((ordered ? '<ol>' : '<ul>') + items.join('') + (ordered ? '</ol>' : '</ul>'));
+                continue;
+            }
+            var paragraph = [];
+            while (i < lines.length && lines[i].trim() && !/^\s{0,3}(#{1,6}\s|`{3,}|~{3,})/.test(lines[i]) && !/^\s*([-*+]|\d+[.)])\s+/.test(lines[i]) && !/^\s*\|/.test(lines[i])) {
+                paragraph.push(lines[i++].trim());
+            }
+            if (!paragraph.length) { html.push('<p>' + inlineMarkdown(lines[i++]) + '</p>'); continue; }
+            html.push('<p>' + paragraph.map(inlineMarkdown).join('<br>') + '</p>');
+        }
+        return html.join('');
+    }
+
+    // --- The stored definition ---
+
+    var FILE_SETTINGS = ['storage', 'url', 'options', 'dir', 'fileNameTemplate', 'multiple', 'fileMinSize', 'fileMaxSize', 'webcam'];
+
+    function documentChildren() {
+        return [
+            { type: 'file', key: 'files', label: 'Files', input: true, storage: 'base64', multiple: false, hideLabel: true },
+            { type: 'hidden', key: 'result', input: true }
+        ];
+    }
+
+    function documentSchema() {
+        return {
+            type: 'uagdocument',
+            label: 'AI Document',
+            key: 'aiDocument',
+            input: true,
+            tree: true,
+            uag: { plugin: '', settings: {}, instructions: '', instructionsComponent: '', accept: [], converters: {}, engine: '', auto: true, target: '' },
+            components: documentChildren()
+        };
+    }
+
+    /**
+     * Bring the settings form's working keys into the stored shape, in place:
+     * the chosen plugin's settings become `uag.settings` (the other plugins'
+     * are dropped), its accepted types `uag.accept`, one source of
+     * instructions is kept, and the File tab's settings move onto the files
+     * component. The builder keeps the definition it built the component
+     * from, so the form is saved in this shape.
+     */
+    function normalizeDefinition(component) {
+        if (!component || typeof component !== 'object') return component;
+        var uag = component.uag = Object.assign({ settings: {}, accept: [], converters: {}, auto: true, target: '', instructions: '', instructionsComponent: '', engine: '' }, component.uag || {});
+        if (uag.pluginSettings) {
+            uag.settings = (uag.plugin && uag.pluginSettings[uag.plugin]) || {};
+            delete uag.pluginSettings;
+        }
+        if (uag.pluginAccept) {
+            var accepted = uag.plugin && uag.pluginAccept[uag.plugin];
+            if (Array.isArray(accepted)) uag.accept = accepted;
+            delete uag.pluginAccept;
+        }
+        if (uag.instructionsSource) {
+            if (uag.instructionsSource === 'component') uag.instructions = '';
+            else uag.instructionsComponent = '';
+            delete uag.instructionsSource;
+        }
+        if (!Array.isArray(component.components) || !component.components.length) component.components = documentChildren();
+        var files = component.components.filter(function (child) { return child.key === 'files'; })[0];
+        if (component.filesSettings && files) {
+            FILE_SETTINGS.forEach(function (key) {
+                if (component.filesSettings[key] !== undefined) files[key] = component.filesSettings[key];
+            });
+            delete component.filesSettings;
+        }
+        // The file picker shows what the process accepts.
+        if (files && Array.isArray(uag.accept) && uag.accept.length) {
+            var plugin = documentPlugin(uag.plugin);
+            var ext = [];
+            ((plugin && plugin.accept) || []).forEach(function (entry) {
+                if (uag.accept.indexOf(entry.type) !== -1) (entry.ext || []).forEach(function (e) { if (ext.indexOf(e) === -1) ext.push(e); });
+            });
+            if (ext.length) files.filePattern = ext.join(',');
+        }
+        return component;
+    }
+
+    // --- The settings form ---
+
+    function prefixKeys(components, prefix) {
+        return (components || []).map(function (component) {
+            var copy = JSON.parse(JSON.stringify(component));
+            if (copy.key) copy.key = prefix + copy.key;
+            if (copy.components) copy.components = prefixKeys(copy.components, prefix);
+            return copy;
+        });
+    }
+
+    /** Components of the form being edited, by type, with their paths and grids. */
+    function formComponents(instance, types) {
+        var edited = instance && instance.options && instance.options.editForm;
+        var found = [];
+        function walk(components, grid) {
+            (components || []).forEach(function (component) {
+                if (types.indexOf(component.type) !== -1) found.push({ component: component, grid: grid });
+                var inner = component.type === 'datagrid' || component.type === 'editgrid' ? component.key : grid;
+                if (component.components) walk(component.components, inner);
+                if (component.columns) component.columns.forEach(function (column) { walk(column.components, inner); });
+                if (component.rows && Array.isArray(component.rows)) component.rows.forEach(function (row) { (row || []).forEach(function (cell) { walk(cell && cell.components, inner); }); });
+            });
+        }
+        walk(edited && edited.components, null);
+        return found;
+    }
+
+    /** The grid the edited AI Document is in, if any. */
+    function gridOf(instance, key) {
+        var match = formComponents(instance, ['uagdocument']).filter(function (entry) { return entry.component.key === key; })[0];
+        return match ? match.grid : null;
+    }
+
+    function aiTab() {
+        var plugins = documentPlugins();
+        if (!manifestState.manifest) {
+            return [{ type: 'htmlelement', key: 'uagLoading', tag: 'p', content: 'Loading plugins…', input: false }];
+        }
+        var tab = [{
+            type: 'select', key: 'uag.plugin', label: 'Process', input: true, weight: 0, validate: { required: true },
+            tooltip: 'What the AI does with the files: one of the document plugins installed on the UAG.',
+            dataSrc: 'values', data: { values: plugins.map(function (plugin) { return { label: plugin.title || plugin.name, value: plugin.name }; }) }
+        }];
+        plugins.forEach(function (plugin) {
+            var accept = plugin.accept || [];
+            tab.push({
+                type: 'panel', key: 'uagPlugin-' + plugin.name, title: (plugin.title || plugin.name) + ' settings', input: false,
+                conditional: { json: { '===': [{ var: 'data.uag.plugin' }, plugin.name] } },
+                components: prefixKeys(plugin.editForm || [], 'uag.pluginSettings.' + plugin.name + '.').map(function (component) {
+                    var key = component.key.slice(('uag.pluginSettings.' + plugin.name + '.').length);
+                    component.customDefaultValue = function (context) {
+                        var uag = (context.data && context.data.uag) || {};
+                        var stored = uag.plugin === plugin.name ? uag.settings || {} : (plugin.defaults || {});
+                        return stored[key] !== undefined ? stored[key] : (plugin.defaults || {})[key];
+                    };
+                    return component;
+                }).concat([{
+                    type: 'select', key: 'uag.pluginAccept.' + plugin.name, label: 'Accepted files', input: true, multiple: true,
+                    tooltip: 'The file types the installed converters can bring to this process. The file picker shows only these.',
+                    dataSrc: 'values', data: { values: accept.map(function (entry) { return { label: entry.type + (entry.ext && entry.ext.length ? ' (' + entry.ext.join(', ') + ')' : ''), value: entry.type }; }) },
+                    customDefaultValue: function (context) {
+                        var uag = (context.data && context.data.uag) || {};
+                        if (uag.plugin === plugin.name && Array.isArray(uag.accept) && uag.accept.length) return uag.accept;
+                        return accept.map(function (entry) { return entry.type; });
+                    }
+                }])
+            });
+        });
+        tab.push(
+            {
+                type: 'radio', key: 'uag.instructionsSource', label: 'Instructions', input: true, inline: true,
+                values: [{ label: 'Write instructions', value: 'write' }, { label: 'Use a content component', value: 'component' }],
+                customDefaultValue: function (context) { return context.data && context.data.uag && context.data.uag.instructionsComponent ? 'component' : 'write'; }
+            },
+            {
+                type: 'textarea', key: 'uag.instructions', label: 'Instructions', input: true, wysiwyg: true, editor: 'ckeditor', rows: 6,
+                tooltip: 'What to produce from the files. Part of the form: anyone who can load the form can read it.',
+                conditional: { json: { '!==': [{ var: 'data.uag.instructionsSource' }, 'component'] } }
+            },
+            {
+                type: 'select', key: 'uag.instructionsComponent', label: 'Instructions component', input: true,
+                conditional: { json: { '===': [{ var: 'data.uag.instructionsSource' }, 'component'] } },
+                dataSrc: 'custom', data: { custom: function (context) {
+                    return formComponents(context.instance, ['content']).map(function (entry) { return { label: entry.component.label || entry.component.key, value: entry.component.key }; });
+                } }, valueProperty: 'value', template: '<span>{{ item.label }}</span>'
+            },
+            {
+                type: 'select', key: 'uag.target', label: 'Target field', input: true,
+                tooltip: 'A textarea or text field that receives the result in its own format. In a Data Grid, the field of the same row.',
+                dataSrc: 'custom', data: { custom: function (context) {
+                    var grid = gridOf(context.instance, context.data && context.data.key);
+                    return [{ label: 'None', value: '' }].concat(formComponents(context.instance, ['textarea', 'textfield'])
+                        .filter(function (entry) { return entry.grid === grid; })
+                        .map(function (entry) { return { label: entry.component.label || entry.component.key, value: entry.component.key }; }));
+                } }, valueProperty: 'value', template: '<span>{{ item.label }}</span>'
+            },
+            {
+                type: 'panel', key: 'uagAdvanced', title: 'Advanced', collapsible: true, collapsed: true, input: false,
+                components: [
+                    { type: 'checkbox', key: 'uag.auto', label: 'Process on upload', input: true, defaultValue: true },
+                    { type: 'textfield', key: 'uag.engine', label: 'Engine', input: true, tooltip: 'An engine instance name. Empty: the UAG chooses.' },
+                    {
+                        type: 'datamap', key: 'uag.converters', label: 'Converter for a file type', input: true, keyLabel: 'File type', valueComponent: { type: 'textfield', key: 'value', label: 'Converter' },
+                        customConditional: function (context) {
+                            var plugin = documentPlugin(context.data && context.data.uag && context.data.uag.plugin);
+                            return !!plugin && (plugin.accept || []).some(function (entry) { return (entry.converters || []).length > 1; });
+                        }
+                    }
+                ]
+            }
+        );
+        return tab;
+    }
+
+    function fileTab() {
+        var files = function (context) {
+            var children = (context.data && context.data.components) || [];
+            return children.filter(function (child) { return child.key === 'files'; })[0] || {};
+        };
+        var proxied = function (component, key) {
+            component.key = 'filesSettings.' + key;
+            component.input = true;
+            component.customDefaultValue = function (context) { return files(context)[key]; };
+            return component;
+        };
+        return [
+            proxied({ type: 'select', label: 'Storage', dataSrc: 'values', data: { values: [{ label: 'Base64', value: 'base64' }, { label: 'S3', value: 's3' }, { label: 'Azure', value: 'azure' }, { label: 'URL', value: 'url' }] } }, 'storage'),
+            proxied({ type: 'textfield', label: 'Url', conditional: { json: { '===': [{ var: 'data.filesSettings.storage' }, 'url'] } } }, 'url'),
+            proxied({ type: 'textarea', label: 'Custom request options', as: 'json', editor: 'ace' }, 'options'),
+            proxied({ type: 'textfield', label: 'Directory' }, 'dir'),
+            proxied({ type: 'textfield', label: 'File name template' }, 'fileNameTemplate'),
+            proxied({ type: 'checkbox', label: 'Multiple values' }, 'multiple'),
+            proxied({ type: 'textfield', label: 'File minimum size' }, 'fileMinSize'),
+            proxied({ type: 'textfield', label: 'File maximum size' }, 'fileMaxSize'),
+            proxied({ type: 'checkbox', label: 'Enable web camera' }, 'webcam')
+        ];
+    }
+
+    // --- The component ---
+
+    var documentClass = null;
+
+    /** The AI Document component class, built on the formio.js it is registered with. */
+    function documentComponentFor(Formio) {
+        if (documentClass) return documentClass;
+        var Components = Formio && Formio.Components;
+        var Container = Components && Components.components && Components.components.container;
+        var Base = Components && Components.components && Components.components.component;
+        if (!Container || !Base) return null;
+
+        class UAGDocumentComponent extends Container {
+            static schema() {
+                var extend = Array.prototype.slice.call(arguments);
+                return Container.schema.apply(Container, [documentSchema()].concat(extend));
+            }
+
+            static get builderInfo() {
+                return { title: 'AI Document', group: 'premium', icon: 'file-text', weight: 101, documentation: '', schema: UAGDocumentComponent.schema() };
+            }
+
+            static editForm() {
+                var extend = Array.prototype.slice.call(arguments);
+                var base = Components.baseEditForm;
+                return base.apply(null, [[
+                    { key: 'display', components: [{ key: 'tableView', ignore: true }] },
+                    { key: 'data', ignore: true },
+                    { label: 'AI', key: 'ai', weight: 5, components: aiTab() },
+                    { label: 'File', key: 'file', weight: 6, components: fileTab() }
+                ]].concat(extend));
+            }
+
+            init() {
+                normalizeDefinition(this.component);
+                if (!this.builderMode && !this.options.preview) {
+                    this.component.validate = Object.assign({}, this.component.validate, { custom: 'valid = instance.uagDocumentValidity ? instance.uagDocumentValidity() : true;' });
+                }
+                this.uagState = { status: 'idle', progress: 0, message: '', error: '', confirm: null, editing: false, filesKey: null };
+                return super.init();
+            }
+
+            get defaultSchema() {
+                return UAGDocumentComponent.schema();
+            }
+
+            get emptyValue() {
+                return { files: [], result: {} };
+            }
+
+            get filesComponent() {
+                return this.getComponent('files');
+            }
+
+            get documentResult() {
+                var value = this.dataValue || {};
+                return value.result && typeof value.result === 'object' && value.result.content !== undefined ? value.result : null;
+            }
+
+            get documentFiles() {
+                var value = this.dataValue || {};
+                return Array.isArray(value.files) ? value.files.filter(Boolean) : [];
+            }
+
+            get documentPlugin() {
+                return documentPlugin(this.component.uag && this.component.uag.plugin);
+            }
+
+            /** The target field's component, in the same row inside a Data Grid. */
+            get targetComponent() {
+                var target = this.component.uag && this.component.uag.target;
+                if (!target || !this.root) return null;
+                var path = String(this.path || this.key || '');
+                var rowPath = /\]\.?[^.\[\]]*$/.test(path) ? path.replace(/[^.\[\]]+$/, target) : target;
+                return (this.root.getComponent && (this.root.getComponent(rowPath) || this.root.getComponent(target))) || null;
+            }
+
+            render() {
+                if (this.builderMode) {
+                    var plugin = this.documentPlugin;
+                    var preview = '<div class="uag-document uag-document-preview">' +
+                        '<div class="uag-document-drop">' + escapeHtml(this.t('Drop files here, or browse')) + '</div>' +
+                        '<div class="uag-document-process">' + escapeHtml(plugin ? (plugin.title || plugin.name) : (this.component.uag && this.component.uag.plugin) || this.t('No process chosen')) + '</div>' +
+                        '</div>';
+                    return Base.prototype.render.call(this, preview);
+                }
+                var inner = this.renderTemplate('container', { children: this.renderComponents(), nestedKey: this.nestedKey, collapsed: false }) +
+                    '<div ref="uagDocument" class="uag-document">' + this.documentHtml() + '</div>';
+                return super.render(inner);
+            }
+
+            attach(element) {
+                if (this.builderMode) return Base.prototype.attach.call(this, element);
+                var promise = super.attach(element);
+                this.loadRefs(element, { uagDocument: 'single' });
+                this.attachDocument();
+                if (!this.uagListening) {
+                    this.uagListening = true;
+                    var self = this;
+                    this.on('componentChange', function (changed) {
+                        var files = self.filesComponent;
+                        if (files && changed && changed.instance === files && !files.isSyncing) self.filesChanged();
+                    });
+                }
+                return promise;
+            }
+
+            detach() {
+                if (this.uagController) this.uagController.abort();
+                return super.detach();
+            }
+
+            /** What the panel below the files shows, for the component's state. */
+            documentHtml() {
+                var state = this.uagState || {};
+                var result = this.documentResult;
+                var parts = [];
+                if (state.status === 'running') {
+                    parts.push('<div class="uag-document-progress" role="status"><div class="progress"><div class="progress-bar" style="width:' + Math.round((state.progress || 0) * 100) + '%"></div></div>' +
+                        '<span>' + escapeHtml(state.message || this.t('Processing') + '…') + '</span></div>');
+                }
+                if (state.status === 'failed') {
+                    parts.push('<div class="uag-document-error alert alert-danger" role="alert">' + escapeHtml(state.error) +
+                        ' <button type="button" class="btn btn-sm btn-outline-danger" ref="uagRetry">' + escapeHtml(this.t('Try again')) + '</button></div>');
+                }
+                if (state.status !== 'running' && !result && this.documentFiles.length && this.component.uag && this.component.uag.auto === false && !this.options.readOnly) {
+                    parts.push('<button type="button" class="btn btn-primary uag-document-run" ref="uagRun">' + escapeHtml(this.t('Process')) + '</button>');
+                }
+                if (state.confirm) {
+                    parts.push('<div class="uag-document-confirm alert alert-warning">' + escapeHtml(this.t('Replace the current value of {{label}}?', { label: state.confirm.label })) +
+                        ' <button type="button" class="btn btn-sm btn-warning" ref="uagReplace">' + escapeHtml(this.t('Replace')) + '</button>' +
+                        ' <button type="button" class="btn btn-sm btn-secondary" ref="uagKeep">' + escapeHtml(this.t('Keep current')) + '</button></div>');
+                }
+                if (result) {
+                    if (result.status === 'flagged') {
+                        var issues = (result.issues || []).map(function (issue) {
+                            return '<li>' + escapeHtml(issue.message || issue.kind) + (issue.page ? ' <small>(p. ' + escapeHtml(issue.page) + ')</small>' : '') + '</li>';
+                        }).join('');
+                        parts.push('<div class="uag-document-flagged alert alert-warning"><strong>' + escapeHtml(this.t('Review this result')) + '</strong>' +
+                            (result.summary ? '<p>' + escapeHtml(result.summary) + '</p>' : '') +
+                            (issues ? '<details><summary>' + escapeHtml(this.t('{{count}} issue(s)', { count: (result.issues || []).length })) + '</summary><ul>' + issues + '</ul></details>' : '') + '</div>');
+                    }
+                    var hasTarget = !!(this.component.uag && this.component.uag.target);
+                    if (!hasTarget) {
+                        var plugin = this.documentPlugin;
+                        var editable = plugin && plugin.editable && !this.options.readOnly;
+                        if (state.editing && editable) {
+                            parts.push('<textarea class="form-control uag-document-editor" ref="uagEditor" rows="12">' + escapeHtml(result.content) + '</textarea>');
+                        }
+                        else {
+                            parts.push('<div class="uag-document-content">' + (result.format === 'text' ? '<pre>' + escapeHtml(result.content) + '</pre>' : renderMarkdown(result.content)) + '</div>');
+                        }
+                        if (editable) {
+                            parts.push('<button type="button" class="btn btn-sm btn-link uag-document-edit" ref="uagEdit">' + escapeHtml(state.editing ? this.t('Done') : this.t('Edit')) + '</button>');
+                        }
+                    }
+                    else if (result.status !== 'flagged') {
+                        parts.push('<div class="uag-document-status">' + escapeHtml(this.t('Written into {{label}}.', { label: this.targetLabel() })) + '</div>');
+                    }
+                }
+                return parts.join('');
+            }
+
+            targetLabel() {
+                var target = this.targetComponent;
+                return (target && (target.component.label || target.key)) || (this.component.uag && this.component.uag.target) || '';
+            }
+
+            /** Redraw the panel and bind its controls. */
+            attachDocument() {
+                var panel = this.refs && this.refs.uagDocument;
+                if (!panel) return;
+                panel.innerHTML = this.documentHtml();
+                var self = this;
+                var bind = function (ref, handler, event) {
+                    var node = panel.querySelector('[ref="' + ref + '"]');
+                    if (node) node.addEventListener(event || 'click', handler);
+                };
+                bind('uagRetry', function () { self.processDocument(); });
+                bind('uagRun', function () { self.processDocument(); });
+                bind('uagReplace', function () { self.writeTarget(true); });
+                bind('uagKeep', function () { self.uagState.confirm = null; self.attachDocument(); });
+                bind('uagEdit', function () { self.uagState.editing = !self.uagState.editing; self.attachDocument(); });
+                bind('uagEditor', function (event) { self.editContent(event.target.value); }, 'input');
+            }
+
+            /** Files changed: process them (or wait for the Process button), or clear the result. */
+            filesChanged() {
+                if (this.builderMode || this.options.readOnly || this.options.preview) return;
+                var files = (this.filesComponent && this.filesComponent.dataValue) || [];
+                files = Array.isArray(files) ? files.filter(Boolean) : [];
+                var key = JSON.stringify(files.map(function (file) { return [file.storage, file.key || file.url || '', file.name, file.size]; }));
+                if (key === this.uagState.filesKey) return;
+                this.uagState.filesKey = key;
+                if (this.uagController) this.uagController.abort();
+                if (!files.length) {
+                    this.uagState = Object.assign(this.uagState, { status: 'idle', error: '', confirm: null, editing: false });
+                    this.setDocumentResult(null);
+                    return;
+                }
+                if (this.component.uag && this.component.uag.auto === false) {
+                    this.uagState.status = 'idle';
+                    this.setDocumentResult(null);
+                    return;
+                }
+                this.processDocument();
+            }
+
+            setDocumentResult(result) {
+                var value = Object.assign({}, this.dataValue || {}, { result: result || {} });
+                this.dataValue = value;
+                var hidden = this.getComponent('result');
+                if (hidden) hidden.dataValue = result || {};
+                this.triggerChange({ modified: true });
+                this.attachDocument();
+            }
+
+            uagEmit(name, detail) {
+                var payload = Object.assign({ component: this.component, path: this.path || this.key }, detail || {});
+                if (this.root && typeof this.root.emit === 'function') this.root.emit(name, payload);
+            }
+
+            /** POST the files to the UAG's process route, reading the streamed answer. */
+            processDocument() {
+                var self = this;
+                var files = (this.filesComponent && this.filesComponent.dataValue) || [];
+                files = Array.isArray(files) ? files.filter(Boolean) : [];
+                if (!files.length) return Promise.resolve();
+                if (this.uagController) this.uagController.abort();
+                var controller = typeof AbortController === 'function' ? new AbortController() : null;
+                this.uagController = controller;
+                var formUrl = uagFormUrl(registered.uagUrl, this.root && this.root.form);
+                var fetchImpl = (registered.options && registered.options.fetch) || (typeof fetch === 'function' ? fetch : null);
+                this.uagState = Object.assign(this.uagState, { status: 'running', progress: 0, message: '', error: '', confirm: null, editing: false });
+                this.attachDocument();
+                this.triggerChange();
+                this.uagEmit('uagDocumentStart', { files: files });
+                var headers = { 'Content-Type': 'application/json', Accept: 'text/event-stream' };
+                var token = formioToken(this.root);
+                if (token) headers['x-jwt-token'] = token;
+                try {
+                    var sdk = registered.Formio;
+                    var remote = sdk && typeof sdk.getRemoteToken === 'function' ? sdk.getRemoteToken() : null;
+                    if (remote) headers['x-remote-token'] = remote;
+                }
+                catch (err) { /* no remote token */ }
+                var result = null;
+                var failure = null;
+                var finished = Promise.resolve().then(function () {
+                    if (!fetchImpl) throw new Error(self.t('Processing is unavailable: fetch is not available.'));
+                    if (!formUrl) throw new Error(self.t('Processing is unavailable: the UAG does not know this form.'));
+                    return fetchImpl(formUrl + '/document/process', {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({ path: self.path || self.key, files: files, data: (self.root && self.root.submission && self.root.submission.data) || {} }),
+                        signal: controller ? controller.signal : undefined
+                    });
+                }).then(function (response) {
+                    var type = (response.headers && response.headers.get && response.headers.get('content-type')) || '';
+                    if (!response.ok || type.indexOf('text/event-stream') === -1) {
+                        return response.json().catch(function () { return {}; }).then(function (body) {
+                            if (!response.ok) throw new Error((body && body.error) || self.t('Processing failed ({{status}}).', { status: response.status }));
+                            result = body && body.result;
+                        });
+                    }
+                    var parser = new SSEParser(function (name, data) {
+                        if (name === 'progress') {
+                            self.uagState.progress = data.progress || 0;
+                            if (data.message) self.uagState.message = data.message;
+                            self.attachDocument();
+                            self.uagEmit('uagDocumentProgress', data);
+                        }
+                        else if (name === 'done') result = data.result;
+                        else if (name === 'failed') failure = new Error(data.error || self.t('Processing failed.'));
+                    });
+                    if (response.body && response.body.getReader) {
+                        var reader = response.body.getReader();
+                        var decoder = new TextDecoder();
+                        var pump = function () {
+                            return reader.read().then(function (chunk) {
+                                if (chunk.done) return;
+                                parser.push(decoder.decode(chunk.value, { stream: true }));
+                                return pump();
+                            });
+                        };
+                        return pump();
+                    }
+                    return response.text().then(function (text) { parser.push(text + '\n\n'); });
+                }).then(function () {
+                    if (failure) throw failure;
+                    if (!result) throw new Error(self.t('Processing ended without a result.'));
+                }).then(function () {
+                    if (self.uagController !== controller) return;
+                    self.uagController = null;
+                    self.uagState.status = 'done';
+                    self.setDocumentResult(result);
+                    self.writeTarget(false);
+                    self.uagEmit('uagDocumentResult', { result: result });
+                }, function (err) {
+                    if (err && err.name === 'AbortError') return;
+                    if (self.uagController !== controller) return;
+                    self.uagController = null;
+                    self.uagState = Object.assign(self.uagState, { status: 'failed', error: (err && err.message) || self.t('Processing failed.') });
+                    self.attachDocument();
+                    self.triggerChange();
+                    self.uagEmit('uagDocumentError', { error: self.uagState.error });
+                });
+                return finished;
+            }
+
+            /** Write the result into the target field, in its format; ask first when it holds a value. */
+            writeTarget(confirmed) {
+                var result = this.documentResult;
+                var target = this.targetComponent;
+                if (!result || !target) return false;
+                var current = target.dataValue;
+                // An empty rich-text editor still holds markup (<p><br></p>): that is no value to keep.
+                var blank = current === undefined || current === null || String(current).replace(/<[^>]*>/g, '').replace(/&nbsp;|\u00a0/g, ' ').trim() === '';
+                if (!confirmed && !blank) {
+                    this.uagState.confirm = { label: target.component.label || target.key };
+                    this.attachDocument();
+                    return false;
+                }
+                this.uagState.confirm = null;
+                var rich = target.component.type === 'textarea' && !!(target.component.editor || target.component.wysiwyg);
+                var value = rich ? renderMarkdown(result.content) : String(result.content || '');
+                target.setValue(value, { modified: true });
+                if (typeof target.triggerChange === 'function') target.triggerChange({ modified: true });
+                this.attachDocument();
+                return true;
+            }
+
+            editContent(content) {
+                var result = this.documentResult;
+                if (!result) return;
+                this.setDocumentResult(Object.assign({}, result, { content: content, edited: true }));
+                var editor = this.refs.uagDocument && this.refs.uagDocument.querySelector('[ref="uagEditor"]');
+                if (editor) {
+                    editor.focus();
+                    editor.setSelectionRange(content.length, content.length);
+                }
+            }
+
+            /** true, or why the component is invalid: processing, or required files without a result. */
+            uagDocumentValidity() {
+                var label = this.component.label || this.key;
+                if (this.uagState && this.uagState.status === 'running') return this.t('Processing {{label}}…', { label: label });
+                var required = this.component.validate && this.component.validate.required;
+                if (required && (!this.documentFiles.length || !this.documentResult)) return this.t('{{label}} needs files with a result.', { label: label });
+                return true;
+            }
+        }
+
+        documentClass = UAGDocumentComponent;
+        return documentClass;
+    }
+
     /**
      * The formio.js module: `Formio.use(UAG('https://uag.example.com', options))`.
      * Options: `agentInput` (`false` turns Agent Input off), and Agent Input's
@@ -1432,9 +2124,20 @@
      */
     function UAG(uagUrl, options) {
         if (!uagUrl) throw new Error('UAG(): give the UAG\'s URL, e.g. UAG(\'https://uag.example.com\').');
+        options = options || {};
         return function (Formio) {
-            registered = { uagUrl: trimSlash(uagUrl), Formio: Formio || null, options: options || {} };
+            registered = { uagUrl: trimSlash(uagUrl), Formio: Formio || null, options: options };
+            // The AI Document component, and the manifest its settings and runtime use.
+            var Document = documentComponentFor(Formio);
+            if (options.manifest) setManifest(options.manifest);
+            else if (!manifestState.manifest) fetchManifest(registered.uagUrl, Formio).then(setManifest);
+            if (Document) UAG.UAGDocument = Document;
+            // Portal mode: only the component and the manifest; saves and Agent Input are left alone.
+            if (options.portal) {
+                return Document ? { components: { uagdocument: Document } } : {};
+            }
             var mod = { fetch: { uag: routingPlugin(registered.uagUrl) } };
+            if (Document) mod.components = { uagdocument: Document };
             var displays = (Formio && Formio.Displays && Formio.Displays.displays) || {};
             mod.displays = {};
             // The chat builds on the original webform display, never on Agent Input's.
@@ -1452,6 +2155,9 @@
     }
     UAG.attach = attach;
     UAG.createChat = createChat;
+    /** Resolves once the installed document plugins are known (embedded, or fetched at registration). */
+    UAG.ready = manifestState.promise;
+    UAG.renderMarkdown = renderMarkdown;
 
     return {
         UAG: UAG,
@@ -1462,6 +2168,10 @@
         ExtractionState: ExtractionState,
         SSEParser: SSEParser,
         isEmpty: isEmpty,
-        CHAT_TEMPLATES: CHAT_TEMPLATES
+        CHAT_TEMPLATES: CHAT_TEMPLATES,
+        renderMarkdown: renderMarkdown,
+        normalizeDefinition: normalizeDefinition,
+        documentComponentFor: documentComponentFor,
+        get UAGDocument() { return documentClass; }
     };
 }));
