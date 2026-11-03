@@ -3,18 +3,25 @@ import { FormflowTool } from "../formflow";
 import type { AuthRequest } from "@formio/appserver";
 import type { UAGProjectInterface } from "../UAGProjectInterface";
 import { getTools } from "../tools";
-import { ToolEntry, ToolExtra, ToolInfo } from "../tools/utils";
+import { ToolEntry, ToolExtra, ToolInfo, assertToolEntries } from "../tools/utils";
 
-/** A `config.tools` entry as a tool: a factory is built for the project. */
-async function resolveTool(project: UAGProjectInterface, entry: ToolEntry): Promise<ToolInfo | undefined> {
-    return typeof entry === 'function' ? entry(project) : entry;
+/**
+ * A `config.tools` entry as a tool for the project: a bound tool's static
+ * fields, overlaid with what its `bind(project)` returns. A tool without
+ * `bind` (the 1.x shape) is used as it is.
+ */
+export async function resolveTool(project: UAGProjectInterface, entry: ToolEntry): Promise<ToolInfo | undefined> {
+    if (!entry || typeof entry.bind !== 'function') return entry;
+    const { bind, ...fixed } = entry;
+    return { ...fixed, ...((await bind(project)) || {}) };
 }
 
 /**
  * Every tool the UAG serves, including custom tools from configuration, each
- * entry of which is a tool or a factory that builds one for the project.
+ * entry of which is a tool, optionally bound to the project.
  */
 export async function allTools(project: UAGProjectInterface): Promise<ToolInfo[]> {
+    assertToolEntries(project.config?.tools);
     const custom = await Promise.all((project.config?.tools || []).map((entry) => resolveTool(project, entry)));
     return [...await getTools(project), ...custom].filter((tool): tool is ToolInfo => !!tool?.name);
 }

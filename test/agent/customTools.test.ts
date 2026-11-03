@@ -3,15 +3,19 @@ import z from 'zod';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { allTools } from '../../src/agent/tools';
+import { assertToolEntries } from '../../src/tools/utils';
+import { Router } from 'express';
+import { UAGServer } from '../../src';
 import { claimForm, makeProject } from './fixtures';
-import type { ToolExtra, ToolFactory, ToolInfo } from '../../src/tools/utils';
+import type { ToolExtra, ToolInfo } from '../../src/tools/utils';
 
 const READS = { title: 'Reads', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true };
 const WRITES = { title: 'Writes', readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true };
 
 /**
- * Custom tools in `config.tools`: plain tools or factories that build one for
- * the project, and the `ToolExtra` (`authInfo` and `project`) every call gets.
+ * Custom tools in `config.tools`: plain tools, or bound tools whose
+ * `bind(project)` builds their project-specific part, and the `ToolExtra`
+ * (`authInfo` and `project`) every call gets.
  */
 describe('Custom tools', () => {
     function project(tools: any[]) {
@@ -37,41 +41,81 @@ describe('Custom tools', () => {
 
     const registered = (server: any): string[] => Object.keys(server._registeredTools || {});
 
-    describe('factories', () => {
-        it('builds a factory\'s tool with the project, next to plain tools', async () => {
+    describe('bound tools', () => {
+        it('binds a tool to the project, next to plain tools', async () => {
             const seen: any[] = [];
-            const factory: ToolFactory = (p) => {
-                seen.push(p);
-                return { name: 'list_form_names', annotations: READS, inputSchema: { form_name: z.enum(p.formNames as [string, ...string[]]) } };
+            const bound: ToolInfo = {
+                name: 'list_form_names',
+                title: 'List form names',
+                description: 'Lists the forms.',
+                bind: (p) => {
+                    seen.push(p);
+                    return { annotations: READS, inputSchema: { form_name: z.enum(p.formNames as [string, ...string[]]) } };
+                }
             };
-            const p = project([factory, { name: 'plain_tool', annotations: READS }]);
-            const names = (await allTools(p)).map((tool) => tool.name);
-            expect(names).to.include.members(['list_form_names', 'plain_tool', 'get_forms']);
+            const p = project([bound, { name: 'plain_tool', annotations: READS }]);
+            const tools = await allTools(p);
+            expect(tools.map((tool) => tool.name)).to.include.members(['list_form_names', 'plain_tool', 'get_forms']);
+            const tool = tools.find((t) => t.name === 'list_form_names')!;
+            expect(tool).to.include({ title: 'List form names', description: 'Lists the forms.' });
+            expect(tool.inputSchema).to.have.keys(['form_name']);
+            expect(tool).to.not.have.property('bind');
             expect(seen[0]).to.equal(p);
         });
 
-        it('awaits an async factory', async () => {
-            const p = project([async () => ({ name: 'async_tool', annotations: READS })]);
+        it('keeps the static name, title and description unless bind returns its own', async () => {
+            const p = project([{ name: 'fixed', title: 'Fixed', description: 'Static', bind: () => ({ description: 'From the project', annotations: READS }) }]);
+            const tool = (await allTools(p)).find((t) => t.name === 'fixed')!;
+            expect(tool).to.include({ title: 'Fixed', description: 'From the project' });
+        });
+
+        it('awaits an async bind', async () => {
+            const p = project([{ name: 'async_tool', bind: async () => ({ annotations: READS }) }]);
             expect((await allTools(p)).map((tool) => tool.name)).to.include('async_tool');
         });
 
-        it('skips a factory whose tool has no name, as it skips a plain tool without one', async () => {
-            const p = project([() => ({ name: '' }), () => undefined as any, { description: 'nameless' }]);
+        it('skips a tool with no name, bound or not', async () => {
+            const p = project([{ bind: () => ({ annotations: READS }) }, { name: '', bind: () => ({}) }, { description: 'nameless' }]);
             const custom = (await allTools(p)).filter((tool) => ['', undefined].includes(tool.name) || tool.description === 'nameless');
             expect(custom).to.deep.equal([]);
         });
 
-        it('registers a factory\'s tool on /mcp, and a scoped token still gets only read-only tools', async () => {
-            const p = project([() => ({ name: 'reads_docs', annotations: READS }), () => ({ name: 'writes_docs', annotations: WRITES })]);
+        it('registers a bound tool on /mcp, and a scoped token still gets only read-only tools', async () => {
+            const p = project([{ name: 'reads_docs', bind: () => ({ annotations: READS }) }, { name: 'writes_docs', bind: () => ({ annotations: WRITES }) }]);
             expect(registered(await p.buildMcpServer())).to.include.members(['reads_docs', 'writes_docs']);
             expect(registered(await p.buildMcpServer({ tools: ['reads_docs', 'writes_docs'] }))).to.deep.equal(['reads_docs']);
         });
 
-        it('offers a factory\'s read-only tool for research', async () => {
-            const p = project([() => ({ name: 'reads_docs', annotations: READS, inputSchema: { id: z.string() } })]);
+        it('offers a bound read-only tool for research', async () => {
+            const p = project([{ name: 'reads_docs', bind: () => ({ annotations: READS, inputSchema: { id: z.string() } }) }]);
             const tool = (await p.formflowTools()).find((t: any) => t.name === 'reads_docs');
             expect(tool.readOnly).to.equal(true);
             expect(tool.inputSchema.properties).to.have.keys(['id']);
+        });
+
+        it('refuses a bare function in config.tools, showing the bound-tool shape', async () => {
+            const factory: any = () => ({ name: 'read_document' });
+            expect(() => assertToolEntries([{ name: 'ok' }, factory])).to.throw(/config\.tools\[1\] is a function.*bind\(project\) \{ return \{ inputSchema, annotations, execute \}; \}/);
+            let message = '';
+            try {
+                await allTools(project([factory]));
+            }
+            catch (err: any) {
+                message = err.message;
+            }
+            expect(message).to.include('config.tools[0] is a function');
+        });
+
+        it('stops startup when config.tools holds a bare function', async () => {
+            const server: any = new UAGServer({ project: 'http://localhost:3001', tools: [() => ({ name: 'read_document' })] } as any);
+            let message = '';
+            try {
+                await server.extendRouter(Router());
+            }
+            catch (err: any) {
+                message = err.message;
+            }
+            expect(message).to.include('config.tools[0] is a function');
         });
     });
 

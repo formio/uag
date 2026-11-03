@@ -113,7 +113,7 @@ export interface UAGConfig extends ServerConfig {
   loginForm?: string;
   responseTemplates?: UAGTemplateConfig,
   toolOverrides?: UAGToolOverride,
-  /** Custom MCP tools: each a tool, or a factory that builds one for the project (see ToolFactory). */
+  /** Custom MCP tools: each a tool, optionally bound to the project with `bind(project)` (see ToolInfo.bind). */
   tools?: ToolEntry[],
   /**
    * The engine instances to enable, as in `UAG_ENGINES` (`"jev"`, `"fast:claude"`) or as

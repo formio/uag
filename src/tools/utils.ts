@@ -53,18 +53,35 @@ export type ToolInfo = {
      * callers keep compiling; annotate `extra` as `ToolExtra` in your own tools.
      */
     execute?: any;
+    /**
+     * Builds the project-specific part of the tool (`inputSchema`, `annotations`,
+     * `execute`, ...) for a project, as the built-in tools are built. The static
+     * `name`, `title` and `description` are used unless `bind` returns its own,
+     * so the tool's name is known without a project. Called whenever the tool
+     * list is built (every `/mcp` request and every research plan): keep it
+     * cheap, and load libraries and other slow state once, outside it.
+     */
+    bind?: (project: UAGProjectInterface) => Partial<ToolInfo> | Promise<Partial<ToolInfo>>;
 }
 
-/**
- * A tool built for a project, as the built-in tools are. It is called with the
- * project whenever the tool list is built, which is on every `/mcp` request and
- * every research plan, so keep it cheap: load libraries and other slow state
- * once, outside the factory.
- */
-export type ToolFactory = (project: UAGProjectInterface) => ToolInfo | Promise<ToolInfo>;
+/** An entry of `config.tools`: a tool, optionally bound to the project with `bind`. */
+export type ToolEntry = ToolInfo;
 
-/** An entry of `config.tools`: a tool, or a factory that builds one for the project. */
-export type ToolEntry = ToolInfo | ToolFactory;
+/** The shape a `config.tools` entry takes, shown when one is a bare function. */
+export const BOUND_TOOL_SHAPE = "{ name: 'my_tool', title: 'My Tool', description: '...', bind(project) { return { inputSchema, annotations, execute }; } }";
+
+/**
+ * Refuse `config.tools` entries that are bare functions (the unreleased factory
+ * form): a tool is an object, whose `bind(project)` builds its project-specific
+ * part. Throws naming the entry and showing the shape.
+ */
+export function assertToolEntries(entries: unknown[] | undefined): void {
+    (entries || []).forEach((entry, index) => {
+        if (typeof entry === 'function') {
+            throw new Error(`config.tools[${index}] is a function. A custom tool is an object; build its project-specific part with bind(project): ${BOUND_TOOL_SHAPE}`);
+        }
+    });
+}
 
 export type ParentInfo = {
     type: string;

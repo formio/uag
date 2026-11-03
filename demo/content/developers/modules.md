@@ -107,7 +107,7 @@ To apply a changed form or action from a new version of your module, change it i
 
 ## Custom MCP tools
 
-Each entry in `config.tools` is a tool object, `ToolInfo`, or a factory that builds one for the project (see [Tool factories](#tool-factories)):
+Each entry in `config.tools` is a tool object, `ToolInfo`. A tool whose definition depends on the project builds that part with `bind(project)` (see [Bound tools](#bound-tools)):
 
 ```ts
 type ToolInfo = {
@@ -117,6 +117,7 @@ type ToolInfo = {
     inputSchema?: ZodRawShape;         // { argument: zod schema }
     annotations?: ToolAnnotations;     // whether it reads or writes
     execute?: (args: any, extra: ToolExtra) => Promise<CallToolResult>;
+    bind?: (project: UAGProjectInterface) => Partial<ToolInfo> | Promise<Partial<ToolInfo>>;
 };
 
 type ToolExtra = {
@@ -124,8 +125,6 @@ type ToolExtra = {
     project: UAGProjectInterface;      // the project serving the request
     [key: string]: any;                // on /mcp, the rest of the MCP request context
 };
-
-type ToolFactory = (project: UAGProjectInterface) => ToolInfo | Promise<ToolInfo>;
 
 interface ToolAnnotations {
     title: string;
@@ -175,7 +174,7 @@ annotations: { title: 'CRM pipeline summary', readOnlyHint: true, destructiveHin
 
 | You need | Use |
 |---|---|
-| The project | `extra.project` (a `UAGProjectInterface`). A factory also receives it when it builds the tool. In your own server, `server.uagProject` is the same object. |
+| The project | `extra.project` (a `UAGProjectInterface`). A bound tool's `bind` also receives it. In your own server, `server.uagProject` is the same object. |
 | A form | `await project.getForm('contact')`, by machine name, name or id. `null` when it does not exist. |
 | The caller's permissions | `extra.authInfo.formPermissions(form)`: `{ create, read, update, delete }`. |
 | Submissions | `form.find(query, auth)`, `form.count(query, auth)`, `form.loadSubmission(id, auth)`. Pass `extra.authInfo` so Form.io applies the caller's permissions. |
@@ -186,31 +185,36 @@ annotations: { title: 'CRM pipeline summary', readOnlyHint: true, destructiveHin
 
 The full methods of the project and form interfaces are in [Node.js API](/developers/node-api#the-project-uagprojectinterface).
 
-### Tool factories
+### Bound tools
 
-An entry of `config.tools` can be a function that takes the project and returns the tool, or a promise of it, as the built-in tools are built. Use one when the tool's definition depends on the project, for example an argument limited to the project's forms:
+A tool's `bind(project)` builds the part of the tool that depends on the project (`inputSchema`, `annotations`, `execute`, ...), as the built-in tools are built. Its static `name`, `title` and `description` are used unless `bind` returns its own, so the tool's name is known without a project. Use one when, for example, an argument is limited to the project's forms:
 
 ```js
 const { z } = require('zod');
 
 /** read_contact: a contact by id, on any of the project's forms. */
-module.exports = (project) => ({
+module.exports = {
     name: 'read_contact',
+    title: 'Read a contact',
     description: 'Read one contact by its submission id.',
-    annotations: { title: 'Read a contact', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
-    inputSchema: {
-        form_name: z.enum(project.formNames),
-        submission_id: z.string()
-    },
-    async execute({ form_name, submission_id }, { project, authInfo }) {
-        const form = await project.getForm(form_name);
-        const submission = await form?.loadSubmission(submission_id, authInfo);
-        return project.mcpJSONResponse(submission ? submission.data : { error: 'Not found.' }, !submission);
+    bind(project) {
+        return {
+            annotations: { title: 'Read a contact', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+            inputSchema: {
+                form_name: z.enum(project.formNames),
+                submission_id: z.string()
+            },
+            async execute({ form_name, submission_id }, { project, authInfo }) {
+                const form = await project.getForm(form_name);
+                const submission = await form?.loadSubmission(submission_id, authInfo);
+                return project.mcpJSONResponse(submission ? submission.data : { error: 'Not found.' }, !submission);
+            }
+        };
     }
-});
+};
 ```
 
-The UAG builds its tool list on every `/mcp` request and every research plan, so a factory runs each time: keep it cheap, and load libraries or other slow state once, outside it. A factory that throws stops startup, as a duplicate name does.
+The UAG builds its tool list on every `/mcp` request and every research plan, so `bind` runs each time: keep it cheap, and load libraries or other slow state once, outside it. A `bind` that throws stops startup, as a duplicate name does. A bare function in `config.tools` stops startup with a message showing this shape.
 
 ### Tools in the Agent API
 
