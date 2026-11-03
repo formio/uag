@@ -19,6 +19,7 @@ import { assertToolEntries } from './tools/utils';
 import { listEngines, listTools } from './plugins';
 import { registerDocuments } from './documents/plugins';
 import { documentLimitWarnings, documentsSettings } from './documents/settings';
+import { uagJsRouter } from './documents/uagJs';
 
 /** Projects whose engines were loaded while the plugins were listed. */
 const enginesLoaded = new WeakSet<object>();
@@ -246,6 +247,8 @@ export class UAGServer extends Server {
     // A bare function in config.tools (the unreleased factory form) stops startup.
     assertToolEntries(this.config.tools);
     await super.extendRouter(router);
+    // @formio/uag-js, the portal script and stylesheet: public, ahead of the project routes.
+    router.use(uagJsRouter(() => this.plugins));
     const uagProject = this.uagProject;
     if (uagProject) {
       // First: the Agent API's request id and one error shape, for every refusal after it.

@@ -368,6 +368,33 @@ Engines are tried in the order of `agentApi.chat.engines` (default `['agent']`: 
 
 A form can turn chat off with [`uagChat: "false"`](/developers/form-properties#uagchat) (its turns answer `403`).
 
+## Process an AI Document
+
+`POST {form}/document/process` processes the files of an AI Document component with its document plugin (see [AI Document](/developers/ai-document)). The plugin, its settings and the instructions come from the stored form, never from the request.
+
+```json
+{ "path": "rows[2].contract", "files": [{ "storage": "s3", "key": "uploads/contract.pdf", "name": "contract.pdf", "originalName": "contract.pdf", "size": 482113, "type": "application/pdf" }], "data": { } }
+```
+
+`path` is the component's data path, with row indices; `files` the value of its files component; `data` the form's data, given to the plugin as context only. The caller needs create or update access to the form, and Agentic Formflow must be licensed (`403` otherwise, as for the other operations). The body counts against `agentApi.bodyLimit`, the rate limits apply, and one caller may run `documents.perUser` (3) requests at once (`429` beyond).
+
+With `Accept: text/event-stream` the answer is `200` and server-sent events on the same response: `progress` events (`{ "progress": 0.3, "message": "Processing" }`), then exactly one `done` (`{ "result": { ... } }`) or `failed` event (the error shape below), then the response ends. A comment line is written every `documents.heartbeatMs`. Browsers read it with `fetch` and a stream reader, since `EventSource` cannot send a POST. With any other `Accept`, the answer is `200 { "result": { ... } }` when done, or the error shape.
+
+Problems found before processing starts answer with their status code, never inside a stream: `404` (no AI Document at `path`), `422` (`document_misconfigured`, or a file stored where the UAG cannot read it), `413` (`maxFiles`, `maxTotalBytes`, a file over `maxFileBytes`), `415` (a file type the component does not accept, or that no installed converter brings to its plugin), `503` (`no_engine`: "no enabled engine can read pdf documents"). Limits checked after conversion (`maxPages`, `maxTextChars`), the plugin's own failures and `documents.timeoutMs` fail the request afterwards, naming the limit.
+
+Closing the connection cancels the work: the UAG aborts the plugin and any running conversion. Nothing outlives the response.
+
+The `result`:
+
+```json
+{
+  "content": "# Agreement\n…", "format": "markdown", "status": "ok", "issues": [], "summary": "", "edited": false,
+  "meta": { "plugin": "extract@1.0.0", "engine": "claude", "model": "…", "files": [{ "name": "contract.pdf", "route": ["pdf-text@2.0.0"], "pages": 12 }] }
+}
+```
+
+Nothing signs or re-checks results in this release: a submission's `result` is whatever the client sends.
+
 ## Capabilities
 
 `GET /agent/capabilities`
