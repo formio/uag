@@ -15,7 +15,7 @@ An engine package depends on this package only. It never needs `@formio/uag`.
 
 ## An engine package
 
-Name the package `@formio/uag-<type>` (official engines) or `uag-engine-<type>` (anyone's). Export one engine type definition:
+Name the package `@formio/uag-<type>` (official engines) or `uag-engine-<type>` (anyone's). Export one engine type definition. It is a plugin of type `"engine"`: `name` is the type name used in `UAG_ENGINES`, `title` (default: `name`) is shown to people, and `version` defaults to your package's own version:
 
 ```js
 const { defineEngine, EngineError, ENGINE_API_VERSION, requiredSchema } = require('@formio/uag-sdk');
@@ -23,6 +23,7 @@ const { defineEngine, EngineError, ENGINE_API_VERSION, requiredSchema } = requir
 module.exports = defineEngine({
     type: 'engine',
     name: 'acme',
+    title: 'Acme',
     kinds: ['agent'],
     apiVersion: ENGINE_API_VERSION,
     settings: {
@@ -50,6 +51,23 @@ module.exports = defineEngine({
 ```
 
 The engine must use the instance `name` it is given, and one of the `kinds` it declares. A decision engine has `decide` and `maxOptions`; an agent engine has `extract`, and sets `toolUse: true` when `extract` accepts read-only research tools. See `contract.d.ts` for every request and response.
+
+A definition in the shape of the 2.0 release candidates, with the engine's name in `type` (`{ type: 'acme', kinds, ... }`), is refused with a message showing the shape above.
+
+### Generating text over documents
+
+An agent engine may also implement `generate(request)`, which document plugins call to write free text over uploaded documents, and declare `accepts`, the document kinds it reads natively (default `['text']`; list `'pdf'` only when your model reads PDFs as documents):
+
+```js
+accepts: ['text', 'pdf'],
+async generate({ instructions, system, attachments, format, maxTokens, signal, onProgress }) {
+    // attachments: { kind: 'pdf', data: Buffer, label, pages? } or { kind: 'text', text, label, textFormat? }
+    // Put the documents before the instructions; report progress as the answer streams.
+    return { text, model, stopReason: 'end' /* or 'max_tokens' when cut off */, usage };
+},
+```
+
+`generate` must honour `signal`, never log the documents, and report a truncated answer as `stopReason: 'max_tokens'` rather than failing.
 
 `create` receives `{ name, settings, options, config, requireSetting }`:
 

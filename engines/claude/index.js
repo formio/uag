@@ -5,12 +5,19 @@
  *   UAG_ENGINES=fast:claude,deep:claude
  *     UAG_ENGINE_FAST_MODEL=claude-haiku-5-5   UAG_ENGINE_DEEP_MODEL=claude-opus-5-5
  *
+ * Every call streams, so long answers need no request timeout of their own.
+ *
  * extract() makes one call with structured outputs (`output_config.format`),
  * so the answer is valid JSON for the requested fields. When the UAG passes
  * read-only tools (a task that enables research), it first runs a tool-use
  * loop over them - calls go through the UAG's `callTool`, which enforces the
  * task's tool list and the caller's permissions - and then asks for the same
  * structured answer with tools turned off.
+ *
+ * generate() writes free text over attached documents (PDFs as document
+ * blocks, text as text documents), before the instructions, with the last
+ * document marked for the prompt cache so a retry with the same documents
+ * reads them from the cache. It reports progress as the answer streams.
  */
 const { defineEngine, EngineConfigError, EngineError, ENGINE_API_VERSION, requiredSchema, toolResultText } = require('@formio/uag-sdk');
 
@@ -18,13 +25,6 @@ const DEFAULT_MODEL = 'claude-opus-5-5';
 const MAX_TOKENS = 16000;
 /** The most output a request may ask for: Claude's largest output limit. */
 const MAX_TOKENS_CEILING = 128000;
-/**
- * The Anthropic SDK refuses a non-streaming request whose max_tokens could take
- * over ten minutes unless the request names its own timeout. The UAG's routing
- * timeout aborts every call through its signal, so a request asking for more
- * than the default output carries this ceiling instead.
- */
-const LONG_REQUEST_TIMEOUT = 60 * 60 * 1000;
 const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
 const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
 
@@ -94,7 +94,6 @@ module.exports = defineEngine({
         if (!Number.isInteger(maxTokens) || maxTokens < 1 || maxTokens > MAX_TOKENS_CEILING) {
             throw new EngineConfigError(`The "${name}" engine's maxTokens setting must be a whole number from 1 to ${MAX_TOKENS_CEILING}, not ${JSON.stringify(settings.maxTokens)}.`);
         }
-        const requestOptions = maxTokens > MAX_TOKENS ? { timeout: LONG_REQUEST_TIMEOUT } : {};
 
         let client = options.client;
         if (!client) {
@@ -113,14 +112,26 @@ module.exports = defineEngine({
             });
         }
 
-        /** One Messages call, with the server-side refusal fallback unless turned off. */
-        function create(params, signal) {
+        /**
+         * One Messages call, streamed, with the server-side refusal fallback
+         * unless turned off. `onText` receives each piece of text as it arrives.
+         */
+        function create(params, signal, onText) {
             if (signal) signal.throwIfAborted();
             const body = { model, max_tokens: maxTokens, ...params };
-            if (fallbacks) {
-                return client.beta.messages.create({ ...body, betas: [FALLBACK_BETA], fallbacks: 'default' }, { signal, ...requestOptions });
+            const stream = fallbacks
+                ? client.beta.messages.stream({ ...body, betas: [FALLBACK_BETA], fallbacks: 'default' }, { signal })
+                : client.messages.stream(body, { signal });
+            if (onText) stream.on('text', onText);
+            return stream.finalMessage();
+        }
+
+        /** A document block for one attachment: PDF bytes, or text. */
+        function documentBlock(attachment) {
+            if (attachment.kind === 'pdf') {
+                return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: Buffer.from(attachment.data).toString('base64') }, title: attachment.label };
             }
-            return client.messages.create(body, { signal, ...requestOptions });
+            return { type: 'document', source: { type: 'text', media_type: 'text/plain', data: attachment.text }, title: attachment.label };
         }
 
         /**
@@ -172,6 +183,32 @@ module.exports = defineEngine({
             apiVersion: ENGINE_API_VERSION,
             model,
             toolUse: true,
+            accepts: ['text', 'pdf'],
+
+            async generate(request) {
+                const content = (request.attachments || []).map(documentBlock);
+                // A retry with the same documents reads them from the prompt cache.
+                if (content.length) content[content.length - 1].cache_control = { type: 'ephemeral' };
+                content.push({ type: 'text', text: request.instructions });
+                const system = [request.system, request.format === 'text' ? 'Answer in plain text, without Markdown.' : ''].filter(Boolean).join('\n\n');
+                const limit = Math.min(request.maxTokens || maxTokens, MAX_TOKENS_CEILING);
+                let chars = 0;
+                const message = await create({
+                    ...(system && { system }),
+                    max_tokens: limit,
+                    messages: [{ role: 'user', content }]
+                }, request.signal, request.onProgress && ((delta) => {
+                    chars += String(delta || '').length;
+                    request.onProgress(chars);
+                }));
+                assertNotRefused(message);
+                return {
+                    text: textOf(message),
+                    model: message.model || model,
+                    stopReason: message.stop_reason === 'max_tokens' ? 'max_tokens' : 'end',
+                    ...(message.usage && { usage: { inputTokens: message.usage.input_tokens ?? null, outputTokens: message.usage.output_tokens ?? null } })
+                };
+            },
 
             async extract(request) {
                 const { schema, decode } = requiredSchema(request.schema);

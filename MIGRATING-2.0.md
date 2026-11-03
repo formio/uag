@@ -101,7 +101,7 @@ Engines are npm packages, enabled as named instances of a type. The `formio/uag`
 | `server.use(JevEngine({ ... }))` in an embedding application | `new UAGServer({ engines: ['jev'] })`, or `{ name, type, options }` entries. The type may be a package name or an engine type definition; types can also be registered by name in `engineTypes`. |
 | `UAG_ENGINES=remote` with `UAG_REMOTE_AGENT_URL` (the integration) | A `formio/uag-engines` container (`UAG_ENGINES=claude`, `CLAUDE_API_KEY`, `UAG_ENGINE_SERVER_KEY`, `UAG_SERVER`), and on the UAG `UAG_ENGINES=claude:remote`, `UAG_ENGINE_CLAUDE_URL` and `UAG_ENGINE_CLAUDE_KEY`. The UAG sends the engine server only its key, never a Form.io credential. |
 
-A third-party engine is a package named `uag-engine-<type>`: install it in a derived image, or mount it and list the directory in `UAG_ENGINE_PATH`.
+A third-party engine is a package named `uag-engine-<type>`: install it in a derived image, or mount it and list the directory in `UAG_ENGINE_PATH`. Its definition is a plugin of type `"engine"`: `{ type: 'engine', name: '<type>', title, version, kinds, apiVersion, settings, create }`, where `name` is the type name and `version` defaults to the package's own. A definition in the shape of the 2.0 release candidates (`{ type: '<type>', kinds, ... }`) is refused at startup with a message showing the new shape; `UAG_ENGINES`, package names and instance names do not change.
 
 ## Modules
 

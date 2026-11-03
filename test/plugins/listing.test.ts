@@ -30,7 +30,7 @@ describe('Plugin registry: engines, tools and actions listed', function () {
             expect(engines[0]).to.include({ type: 'engine', title: 'Stub decision engine', stability: 'stable', generate: false });
             expect(engines[0].kinds).to.deep.equal(['decision']);
             expect(engines[0].instances).to.deep.equal(['triage', 'check']);
-            expect(engines[1]).to.include({ name: 'stub-agent', generate: false });
+            expect(engines[1]).to.include({ name: 'stub-agent', generate: true });
             expect(engines[1].accepts).to.deep.equal(['text']);
             expect(engines[0]).to.not.have.property('settings');
             expect(JSON.stringify(engines)).to.not.include('listing-secret-value');

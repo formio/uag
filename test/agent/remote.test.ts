@@ -245,3 +245,49 @@ describe('Remote engine type', () => {
         });
     });
 });
+
+describe('Remote engine type: generate', () => {
+    const WRITER = { protocol: 1, engines: [{ name: 'writer', kind: 'agent', model: 'writer-1', toolUse: false, accepts: ['text', 'pdf'], generate: true }, { name: 'plain', kind: 'agent', model: 'plain-1' }] };
+    const writerEnv = (url: string) => ({ UAG_ENGINES: 'writer:remote,plain:remote', UAG_ENGINE_WRITER_URL: url, UAG_ENGINE_WRITER_KEY: KEY, UAG_ENGINE_PLAIN_URL: url, UAG_ENGINE_PLAIN_KEY: KEY });
+    const pdf = Buffer.from('%PDF-1.7\n% remote test\n');
+
+    it('takes accepts and generate from the engine server\'s description', async () => {
+        const { url } = await engineServer(undefined, (_seen, res) => json(res, 200, WRITER));
+        const registry = await loadUAGEngines(config, writerEnv(url));
+        const writer: any = registry.get('writer');
+        const plain: any = registry.get('plain');
+        expect(writer.accepts).to.deep.equal(['text', 'pdf']);
+        expect(writer.generate).to.be.a('function');
+        expect(plain.accepts).to.deep.equal(['text']);
+        expect(plain.generate).to.equal(undefined);
+    });
+
+    it('sends generate with PDFs as base64, and returns text, model and stopReason', async () => {
+        const { url, seen } = await engineServer(
+            (_seen, res) => json(res, 200, { protocol: 1, text: '# Done', model: 'writer-1', stopReason: 'max_tokens', usage: { inputTokens: 3, outputTokens: 2 } }),
+            (_seen, res) => json(res, 200, WRITER)
+        );
+        const writer: any = (await loadUAGEngines(config, writerEnv(url))).get('writer');
+        let progress = 0;
+        const response = await writer.generate({
+            instructions: 'Summarize.',
+            format: 'markdown',
+            maxTokens: 100,
+            attachments: [{ kind: 'pdf', data: pdf, label: 'Document 1: a.pdf', pages: 1 }, { kind: 'text', text: 'Notes', label: 'Document 2: b.txt' }],
+            onProgress: (chars: number) => { progress = chars; }
+        });
+        expect(response).to.deep.equal({ text: '# Done', model: 'writer-1', stopReason: 'max_tokens', usage: { inputTokens: 3, outputTokens: 2 } });
+        expect(progress).to.equal(6);
+        const sent = seen.find((entry) => entry.url === '/v1/engines/writer/generate')!;
+        expect(sent.body.attachments[0]).to.deep.equal({ kind: 'pdf', data: pdf.toString('base64'), label: 'Document 1: a.pdf', pages: 1 });
+        expect(sent.body).to.include({ protocol: 1, instructions: 'Summarize.', format: 'markdown', maxTokens: 100 });
+    });
+
+    it('refuses PDFs over documents.maxTotalBytes before sending anything', async () => {
+        const { url, seen } = await engineServer(undefined, (_seen, res) => json(res, 200, WRITER));
+        const writer: any = (await loadUAGEngines({ ...config, documents: { maxTotalBytes: 10 } }, writerEnv(url))).get('writer');
+        const err = await refusal(writer.generate({ instructions: 'x', format: 'text', attachments: [{ kind: 'pdf', data: pdf, label: 'a.pdf' }] }));
+        expect(err.message).to.include('exceed 10 bytes');
+        expect(seen.some((entry) => entry.url.endsWith('/generate'))).to.equal(false);
+    });
+});

@@ -13,7 +13,12 @@
         "name": "claude",
         "kind": "agent",
         "model": "claude-opus-5-5",
-        "toolUse": true
+        "toolUse": true,
+        "accepts": [
+          "text",
+          "pdf"
+        ],
+        "generate": true
       }
     ]
   },
