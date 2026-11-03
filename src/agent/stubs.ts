@@ -9,7 +9,9 @@ import { stubAgentEngine, stubDecisionEngine } from "../formflow";
  * any instance name.
  */
 export const StubDecisionEngine = defineEngine({
-    type: 'stub-decision',
+    type: 'engine',
+    name: 'stub-decision',
+    title: 'Stub decision engine',
     kinds: ['decision'],
     apiVersion: ENGINE_API_VERSION,
     description: 'Answers every decision with a fixed, predictable value. For tests and local development.',
@@ -17,7 +19,9 @@ export const StubDecisionEngine = defineEngine({
 });
 
 export const StubAgentEngine = defineEngine({
-    type: 'stub-agent',
+    type: 'engine',
+    name: 'stub-agent',
+    title: 'Stub agent engine',
     kinds: ['agent'],
     apiVersion: ENGINE_API_VERSION,
     description: 'Extracts nothing. For tests and local development.',

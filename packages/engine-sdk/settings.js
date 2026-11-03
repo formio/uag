@@ -81,7 +81,7 @@ function resolveSettings(definition, name, options = {}, env = process.env) {
 function missingSetting(definition, name, key) {
     const spec = (definition.settings || {})[key] || {};
     return new EngineConfigError(
-        `The "${name}" engine (type "${definition.type}") needs its ${key} setting: set ${listNames(settingVariables(name, key, spec))}.`
+        `The "${name}" engine (type "${definition.name}") needs its ${key} setting: set ${listNames(settingVariables(name, key, spec))}.`
     );
 }
 

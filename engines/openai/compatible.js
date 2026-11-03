@@ -456,7 +456,9 @@ function openAICompatible(provider) {
         if (spec.env === undefined) delete spec.env;
     }
     return defineEngine({
-        type: provider.type,
+        type: 'engine',
+        name: provider.type,
+        title: provider.title || provider.type,
         kinds: ['agent'],
         apiVersion: ENGINE_API_VERSION,
         description: provider.description,

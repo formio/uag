@@ -15,7 +15,8 @@ const seen = [];
 let script = async () => ({});
 
 const scripted = defineEngine({
-    type: 'scripted',
+    type: 'engine',
+    name: 'scripted',
     kinds: ['agent'],
     apiVersion: 1,
     create: ({ name }) => ({
@@ -31,14 +32,16 @@ const scripted = defineEngine({
 });
 
 const plain = defineEngine({
-    type: 'plain',
+    type: 'engine',
+    name: 'plain',
     kinds: ['agent'],
     apiVersion: 1,
     create: ({ name }) => ({ name, kind: 'agent', model: 'plain-1', extract: async () => ({ model: 'plain-1', values: {} }) }),
 });
 
 const fixed = defineEngine({
-    type: 'fixed',
+    type: 'engine',
+    name: 'fixed',
     kinds: ['decision'],
     apiVersion: 1,
     create: ({ name }) => ({

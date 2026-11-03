@@ -6,7 +6,8 @@ const { checkEngine } = require('../conformance');
 /** A well-behaved scripted agent: researches until told to stop, honours its signal and its limits. */
 function agentType(overrides = {}) {
     return defineEngine({
-        type: 'scripted',
+        type: 'engine',
+        name: 'scripted',
         kinds: ['agent'],
         apiVersion: 1,
         settings: { model: { default: 'scripted-1' } },
@@ -37,7 +38,8 @@ function agentType(overrides = {}) {
 }
 
 const decisionType = (overrides = {}) => defineEngine({
-    type: 'fixed',
+    type: 'engine',
+    name: 'fixed',
     kinds: ['decision'],
     apiVersion: 1,
     create: ({ name }) => ({
@@ -61,7 +63,8 @@ const decisionType = (overrides = {}) => defineEngine({
 describe('conformance check', () => {
     it('checks a definition made without defineEngine that has no settings', async () => {
         const plain = {
-            type: 'plain',
+            type: 'engine',
+            name: 'plain',
             kinds: ['decision'],
             apiVersion: 1,
             create: (context) => decisionType().create(context),

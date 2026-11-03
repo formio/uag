@@ -46,7 +46,8 @@ describe('Documents in the Agent API', function () {
     let requests: any[];
     let answer: Record<string, any>;
     const recorder = defineEngine({
-        type: 'recorder',
+        type: 'engine',
+        name: 'recorder',
         kinds: ['agent'],
         apiVersion: 1,
         settings: { model: { default: 'recorder-1' } },

@@ -18,6 +18,7 @@ const { openAICompatible } = require('@formio/uag-openai/compatible');
 
 module.exports = openAICompatible({
     type: 'mai',
+    title: 'MAI',
     description: 'Microsoft\'s MAI models on Microsoft Foundry: structured extraction, with research over read-only tools.',
     settings: {
         endpoint: { env: 'MAI_ENDPOINT', description: 'The Foundry resource endpoint, such as https://<resource>.services.ai.azure.com.' },

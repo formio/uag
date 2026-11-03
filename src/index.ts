@@ -16,6 +16,10 @@ import { taskRunner } from './runner';
 import { RunTaskAction, runTaskHooks } from './actions/runTask';
 import { UAG_VERSION } from './version';
 import { assertToolEntries } from './tools/utils';
+import { listEngines, listTools } from './plugins';
+
+/** Projects whose engines were loaded while the plugins were listed. */
+const enginesLoaded = new WeakSet<object>();
 const debug = require('debug')('formio:uag');
 export type UAGModule = ServerModule & {
   config?: UAGConfig;
@@ -252,6 +256,24 @@ export class UAGServer extends Server {
     }
   }
 
+  /**
+   * List the UAG's engines and MCP tools in the plugin registry, beside
+   * appserver-core's form actions. They keep loading their own way.
+   */
+  protected async listPlugins(): Promise<void> {
+    await super.listPlugins();
+    const project = this.uagProject;
+    if (project instanceof UAGProjectInterface) {
+      // Decide which engines are on before serving anything, so a misconfigured
+      // engine stops startup with its name in the error instead of failing the
+      // first request.
+      project.engines = await loadUAGEngines(project.config || {}, process.env);
+      enginesLoaded.add(project);
+      listEngines(this.plugins, project);
+      await listTools(this.plugins, project);
+    }
+  }
+
   async router() {
     await this.connectDatabase();
     const router = await super.router();
@@ -271,10 +293,11 @@ export class UAGServer extends Server {
     }
     // A database of the UAG's own needs the license, on every edition.
     await this.enableDatabase(uagProject);
-    // Decide which engines are on before serving anything, so a misconfigured
-    // engine stops startup with its name in the error instead of failing the
-    // first request.
-    uagProject.engines = await loadUAGEngines(uagProject.config || {}, process.env);
+    // The engines are loaded while the plugins are listed (listPlugins); a
+    // project interface that is not the UAG's own loads them here.
+    if (!enginesLoaded.has(uagProject)) {
+      uagProject.engines = await loadUAGEngines(uagProject.config || {}, process.env);
+    }
     // Say which edition this is, and whether Agentic Formflow will run, so an
     // operator knows before the first request is refused.
     // A failure here only loses the message; it never stops the UAG starting.

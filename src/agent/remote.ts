@@ -214,7 +214,9 @@ export function remoteEngine(connection: Connection, remoteName: string, describ
 }
 
 export const RemoteEngine = defineEngine({
-    type: 'remote',
+    type: 'engine',
+    name: 'remote',
+    title: 'Remote engine (engine server)',
     kinds: ['decision', 'agent'],
     apiVersion: ENGINE_API_VERSION,
     description: 'An engine hosted by an engine server, over the remote engine protocol.',

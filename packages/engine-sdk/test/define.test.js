@@ -3,7 +3,8 @@ const { expect } = require('chai');
 const { ENGINE_API_VERSION, defineEngine, isEngineType, EngineError } = require('..');
 
 const valid = () => ({
-    type: 'acme',
+    type: 'engine',
+    name: 'acme',
     kinds: ['agent'],
     apiVersion: ENGINE_API_VERSION,
     settings: {
@@ -23,12 +24,33 @@ describe('defineEngine', () => {
     });
 
     it('names every problem in a definition', () => {
-        const bad = { ...valid(), type: 'Acme', kinds: ['oracle'], apiVersion: 0, create: undefined, settings: { 'api-key': {}, model: { env: 'lower', default: 3, secret: 'yes', colour: 'red' } } };
+        const bad = { ...valid(), type: 'engine', name: 'Acme', kinds: ['oracle'], apiVersion: 0, create: undefined, settings: { 'api-key': {}, model: { env: 'lower', default: 3, secret: 'yes', colour: 'red' } } };
         expect(() => defineEngine(bad)).to.throw(TypeError)
             .with.property('message')
-            .that.includes('"type"').and.includes('"kinds"').and.includes('"apiVersion"').and.includes('"create"')
+            .that.includes('"name"').and.includes('"kinds"').and.includes('"apiVersion"').and.includes('"create"')
             .and.includes('setting "api-key"').and.includes('unknown keys: colour').and.includes('"env"')
             .and.includes('"secret"').and.includes('"default" must be a string');
+    });
+
+    it('defaults the title to the name, and keeps a given title and version', () => {
+        expect(defineEngine(valid()).title).to.equal('acme');
+        const titled = defineEngine({ ...valid(), title: 'Acme', version: '2.0.0' });
+        expect(titled).to.include({ type: 'engine', name: 'acme', title: 'Acme', version: '2.0.0' });
+    });
+
+    it('refuses a definition in the 2.0 release-candidate shape, showing the new one', () => {
+        const { name, ...rest } = valid();
+        const old = { ...rest, type: 'claude' };
+        expect(() => defineEngine(old)).to.throw(TypeError)
+            .with.property('message')
+            .that.includes('the shape of the 2.0 release candidates, { type: "claude", kinds, ... }')
+            .and.includes("{ type: 'engine', name: 'claude', title: 'Claude', version: '1.0.0', kinds, apiVersion, settings, create }");
+        expect(isEngineType(old)).to.equal(false);
+    });
+
+    it('refuses a definition whose type is not "engine" or whose version is not semver', () => {
+        expect(() => defineEngine({ ...valid(), type: 'tool' })).to.throw('"type" must be "engine"');
+        expect(() => defineEngine({ ...valid(), version: 'latest' })).to.throw('"version" must be a semver string');
     });
 
     it('accepts a plain object as an engine type, so packages need not use this copy of the SDK', () => {

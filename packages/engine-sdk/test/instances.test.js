@@ -3,7 +3,8 @@ const { expect } = require('chai');
 const { parseInstances, engineInstances, settingVariable, resolveSettings, defineEngine, EngineConfigError } = require('..');
 
 const claude = defineEngine({
-    type: 'claude',
+    type: 'engine',
+    name: 'claude',
     kinds: ['agent'],
     apiVersion: 1,
     settings: {
@@ -108,7 +109,7 @@ describe('settings', () => {
     });
 
     it('reads a single variable from a definition not made with defineEngine', () => {
-        const plain = { type: 'plain', kinds: ['agent'], apiVersion: 1, settings: { delayMs: { env: 'PLAIN_DELAY_MS', type: 'number', default: 5 } }, create: () => ({}) };
+        const plain = { type: 'engine', name: 'plain', kinds: ['agent'], apiVersion: 1, settings: { delayMs: { env: 'PLAIN_DELAY_MS', type: 'number', default: 5 } }, create: () => ({}) };
         expect(resolveSettings(plain, 'plain', {}, { PLAIN_DELAY_MS: '20', _: '/usr/bin/mocha', P: 'x' })).to.deep.equal({ delayMs: 20 });
         expect(resolveSettings(plain, 'plain', {}, { _: '/usr/bin/mocha' })).to.deep.equal({ delayMs: 5 });
     });
@@ -125,7 +126,7 @@ describe('settings', () => {
     });
 
     it('never quotes a secret value it refuses', () => {
-        const secret = defineEngine({ type: 'x', kinds: ['agent'], apiVersion: 1, settings: { pin: { type: 'number', secret: true } }, create: () => ({}) });
+        const secret = defineEngine({ type: 'engine', name: 'x', kinds: ['agent'], apiVersion: 1, settings: { pin: { type: 'number', secret: true } }, create: () => ({}) });
         expect(refusal(() => resolveSettings(secret, 'x', {}, { UAG_ENGINE_X_PIN: 'sk-not-a-number' }))).to.not.include('sk-not-a-number');
     });
 });

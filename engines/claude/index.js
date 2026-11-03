@@ -64,7 +64,9 @@ function checkEffort(name, key, value) {
 }
 
 module.exports = defineEngine({
-    type: 'claude',
+    type: 'engine',
+    name: 'claude',
+    title: 'Claude',
     kinds: ['agent'],
     apiVersion: ENGINE_API_VERSION,
     description: 'Claude: structured extraction, with research over read-only tools.',

@@ -481,7 +481,7 @@ function slowDecisionEngine(name, ms) {
 }
 
 /** A scripted engine type: named in UAG_ENGINES like any other, created under the instance's name. */
-const scripted = (type, kind, create, settings = {}) => ({ type, kinds: [kind], apiVersion: 1, settings, create });
+const scripted = (type, kind, create, settings = {}) => ({ type: 'engine', name: type, kinds: [kind], apiVersion: 1, settings, create });
 
 const engineTypes = Object.fromEntries([
     scripted('e2e-decision', 'decision', ({ name }) => keywordDecisionEngine(name)),

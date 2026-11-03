@@ -82,7 +82,7 @@ describe('Agent: Run task', function () {
     });
     const as = (instance: any, kind: 'decision' | 'agent') => ({
         name: instance.name,
-        type: defineEngine({ type: `test-${kind}`, kinds: [kind], apiVersion: 1, settings: {}, create: () => instance } as any)
+        type: defineEngine({ type: 'engine', name: `test-${kind}`, kinds: [kind], apiVersion: 1, settings: {}, create: () => instance } as any)
     });
 
     let formio: FakeFormio;
