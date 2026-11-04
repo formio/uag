@@ -100,7 +100,7 @@ describe('Documents: the processing pipeline', function () {
             expect((await refusal({ path: 'contract', files: [contract(), contract(), contract()] })).status).to.equal(413);
             expect((await refusal({ path: 'contract', files: [upload(Buffer.alloc(200000, 0x41), 'big.txt', 'text/plain')] })).error).to.include('documents.maxTotalBytes');
             expect(await refusal({ path: 'pdfOnly', files: [upload(Buffer.from('notes'), 'n.txt', 'text/plain')] })).to.deep.include({ status: 415, code: 'unsupported_file' });
-            expect((await refusal({ path: 'contract', files: [upload(docx([[{ text: 'Hi' }]]), 'a.docx', 'application/msword')] })).error).to.include('no installed converter brings to the "echo" process');
+            expect((await refusal({ path: 'contract', files: [upload(docx([[{ text: 'Hi' }]]), 'a.docx', 'application/msword')] })).error).to.equal('"a.docx" is application/vnd.openxmlformats-officedocument.wordprocessingml.document, which no installed converter brings to the "echo" process.');
             expect((await refusal({ path: 'contract', files: [{ storage: 'dropbox', name: 'x.pdf', originalName: 'x.pdf', type: 'application/pdf', size: 10 }] })).error).to.equal('"x.pdf" is stored as dropbox, which cannot be read here.');
             const disguised = upload(Buffer.concat([Buffer.from('MZ'), Buffer.alloc(40)]), 'report.pdf', 'application/pdf');
             expect((await refusal({ path: 'contract', files: [disguised] })).error).to.include('is named .pdf');

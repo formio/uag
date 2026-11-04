@@ -182,11 +182,11 @@ export async function prepareDocument(request: {
             throw err;
         }
         if (accept.length && !accept.includes(type)) {
-            throw new FormflowError(415, `"${name}" is a ${type} file, which "${label}" does not accept.`, 'unsupported_file');
+            throw new FormflowError(415, `"${name}" is ${type}, which "${label}" does not accept.`, 'unsupported_file');
         }
         const route = routes.route(type, plugin.inputs, uag.converters || {});
         if (!route) {
-            throw new FormflowError(415, `"${name}" is a ${type} file, which no installed converter brings to the "${plugin.name}" process.`, 'unsupported_file');
+            throw new FormflowError(415, `"${name}" is ${type}, which no installed converter brings to the "${plugin.name}" process.`, 'unsupported_file');
         }
         loaded.push({ name, type, buffer: read.buffer, route, sha256: createHash('sha256').update(read.buffer).digest('hex') });
     }
