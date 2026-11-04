@@ -161,21 +161,22 @@ export async function prepareDocument(request: {
     let total = 0;
     for (const file of files) {
         const name = String(file.originalName || file.name || 'file');
-        let read;
+        let buffer: Buffer | null;
         try {
-            read = await form.readFile(file, auth, { maxBytes: settings.maxFileBytes, component: filesComponent });
+            buffer = await form.readFile(file, auth, { maxBytes: settings.maxFileBytes, component: filesComponent });
         }
         catch (err: any) {
             throw new FormflowError(413, `"${name}" could not be read: ${err?.message || 'it was refused'}`, 'file_unreadable');
         }
-        if (!read) throw new FormflowError(422, `"${name}" is stored as ${file.storage || 'unknown'}, which cannot be read here.`, 'file_unreadable');
-        total += read.buffer.length;
+        if (!buffer) throw new FormflowError(422, `"${name}" is stored as ${file.storage || 'unknown'}, which cannot be read here.`, 'file_unreadable');
+        total += buffer.length;
         if (total > settings.maxTotalBytes) {
             throw new FormflowError(413, `The files of "${label}" are larger than ${settings.maxTotalBytes} bytes together (documents.maxTotalBytes).`, 'payload_too_large');
         }
         let type: string;
         try {
-            type = identify(read.buffer, { name, type: read.type }, converters);
+            // The bytes decide the type; the file's declared type only breaks ties.
+            type = identify(buffer, { name, type: typeof file.type === 'string' ? file.type : undefined }, converters);
         }
         catch (err) {
             if (err instanceof DetectionError) throw new FormflowError(415, err.message, 'unsupported_file');
@@ -188,7 +189,7 @@ export async function prepareDocument(request: {
         if (!route) {
             throw new FormflowError(415, `"${name}" is ${type}, which no installed converter brings to the "${plugin.name}" process.`, 'unsupported_file');
         }
-        loaded.push({ name, type, buffer: read.buffer, route, sha256: createHash('sha256').update(read.buffer).digest('hex') });
+        loaded.push({ name, type, buffer, route, sha256: createHash('sha256').update(buffer).digest('hex') });
     }
 
     // The engine: the component's, then documents.engine, then the first agent engine that generates and reads what the routes produced.

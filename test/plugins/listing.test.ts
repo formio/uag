@@ -53,7 +53,7 @@ describe('Plugin registry: engines, tools and actions listed', function () {
         expect(tools.find((t: any) => t.name === 'get_forms').description).to.equal('List the CRM forms the user can use.');
     });
 
-    it('lists form actions, and a module action replacing a built-in one is a warning, not a refusal', async () => {
+    it('lists the form actions this server runs, and a module action replacing a built-in one is a warning, not a refusal', async () => {
         const warned: string[] = [];
         console.warn = (...args: any[]) => { warned.push(String(args[0])); };
         const webhook = {
@@ -63,8 +63,9 @@ describe('Plugin registry: engines, tools and actions listed', function () {
         };
         started = await start({ modules: [{ actions: { webhook } }] });
         const actions = await manifest('action');
-        expect(actions.map((a: any) => a.name)).to.include.members(['webhook', 'agentRunTask']);
-        expect(actions.find((a: any) => a.name === 'webhook')).to.include({ title: 'Module webhook' });
+        // A proxy-mode project: Form.io runs every action named like one of its own,
+        // a module's version included, so the listing leaves "webhook" out.
+        expect(actions.map((a: any) => a.name)).to.include('agentRunTask').and.not.include('webhook');
         expect(actions.find((a: any) => a.name === 'agentRunTask')).to.include({ platform: false });
         expect(warned).to.include('[plugins] action:webhook from a module replaces the built-in action of the same name');
     });

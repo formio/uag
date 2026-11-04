@@ -62,12 +62,13 @@ export const readDocument = async (project: UAGProjectInterface): Promise<ToolIn
                 return project.mcpJSONResponse({ error: 'Documents cannot be read until the server has started.' }, true);
             }
             try {
-                const loaded = await form.readFile(file, extra.authInfo, { maxBytes: project.config?.documents?.maxFileBytes || DEFAULT_MAX_FILE_BYTES, component });
-                if (!loaded) {
+                const buffer = await form.readFile(file, extra.authInfo, { maxBytes: project.config?.documents?.maxFileBytes || DEFAULT_MAX_FILE_BYTES, component });
+                if (!buffer) {
                     return project.mcpJSONResponse({ error: `The file is stored as ${file.storage || 'unknown'}, which cannot be read here.` }, true);
                 }
-                const read = await readAsText(project.plugins, loaded.buffer, { name: loaded.name, type: loaded.type });
-                return project.mcpJSONResponse({ file_name: loaded.name, type: read.type, pages: read.pages ?? null, text: read.text });
+                const name = String(file.originalName || file.name || 'file');
+                const read = await readAsText(project.plugins, buffer, { name, type: typeof file.type === 'string' ? file.type : undefined });
+                return project.mcpJSONResponse({ file_name: name, type: read.type, pages: read.pages ?? null, text: read.text });
             }
             catch (err: any) {
                 // The message names the file and the reason, never its content.
