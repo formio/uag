@@ -18,7 +18,8 @@ describe('read_document', function () {
                 type: 'uagdocument', key: 'contract', label: 'Contract', input: true, tree: true, uag: { plugin: 'extract' },
                 components: [{ type: 'file', key: 'files', input: true, storage: 'base64' }, { type: 'hidden', key: 'result', input: true }]
             },
-            { type: 'textfield', key: 'name', label: 'Name', input: true }
+            { type: 'textfield', key: 'name', label: 'Name', input: true },
+            { type: 'panel', key: 'section', title: 'Section', input: false, components: [{ type: 'file', key: 'scan', label: 'Scan', input: true, storage: 'base64' }] }
         ],
         access: [{ type: 'read_all', roles: ['anonymous'] }],
         submissionAccess: [{ type: 'read_all', roles: ['anonymous'] }]
@@ -55,7 +56,8 @@ describe('read_document', function () {
             _id: 'sub1', form: started.formio.formIds.contracts,
             data: {
                 attachment: [upload(Buffer.from('First note'), 'a.txt', 'text/plain'), upload(Buffer.from('Second note'), 'b.txt', 'text/plain')],
-                contract: { files: [upload(pdf([['Section 1. The parties agree.'], ['Section 2. Payment.']]), 'contract.pdf', 'application/pdf')], result: {} }
+                contract: { files: [upload(pdf([['Section 1. The parties agree.'], ['Section 2. Payment.']]), 'contract.pdf', 'application/pdf')], result: {} },
+                scan: [upload(Buffer.from('In a panel'), 'scan.txt', 'text/plain')]
             }
         };
         expect(saved).to.exist;
@@ -65,6 +67,7 @@ describe('read_document', function () {
         });
         expect((await call({ form_name: 'contracts', submission_id: 'sub1', data_path: 'attachment' })).body).to.deep.equal({ file_name: 'a.txt', type: 'text/plain', pages: null, text: 'First note' });
         expect((await call({ form_name: 'contracts', submission_id: 'sub1', data_path: 'attachment[1]' })).body.text).to.equal('Second note');
+        expect((await call({ form_name: 'contracts', submission_id: 'sub1', data_path: 'scan' })).body.text).to.equal('In a panel');
     });
 
     it('answers an error for a path that holds no file, and for a file no converter reads', async () => {

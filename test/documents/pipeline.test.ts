@@ -51,6 +51,13 @@ describe('Documents: the processing pipeline', function () {
         expect(res.body.result.meta.files[0].route[0]).to.match(/^text@/);
     });
 
+    it('finds a component inside a layout component by its data path', async () => {
+        started = await startDocuments();
+        const res = await process({ path: 'inPanel', files: [contract()] });
+        expect(res.status, res.text).to.equal(200);
+        expect(seen.contexts[0].component).to.deep.equal({ key: 'inPanel', path: 'inPanel', label: 'InPanel' });
+    });
+
     it('routes other types: text, and an image through a PDF', async () => {
         started = await startDocuments();
         const res = await process({ path: 'contract', files: [upload(Buffer.from('a,b\n1,2'), 'data.csv', 'text/csv'), upload(png(), 'scan.png', 'image/png')] });

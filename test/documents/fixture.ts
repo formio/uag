@@ -98,6 +98,7 @@ export const contractsForm = {
         doc('pdfOnly', { accept: ['application/pdf'] }),
         doc('textEngine', { engine: 'stub-agent' }),
         { type: 'textfield', key: 'name', label: 'Name', input: true },
+        { type: 'panel', key: 'section', title: 'Section', input: false, components: [doc('inPanel')] },
         { type: 'datagrid', key: 'rows', label: 'Rows', input: true, tree: true, components: [doc('row', { instructions: '', instructionsComponent: 'howTo' })] }
     ],
     access: [{ type: 'read_all', roles: ['anonymous', 'authenticated'] }],

@@ -13,8 +13,9 @@ const DEFAULT_MAX_FILE_BYTES = 25 * 1024 * 1024;
 function componentAt(components: any[], dataPath: string): any {
     const path = dataPath.replace(/\[\d+\]/g, '');
     let found: any;
-    Utils.eachComponent(components, (component: any, componentPath: string) => {
-        if (!found && componentPath === path) found = component;
+    // The data path: with every component included, the second argument also names layout components (panels, columns).
+    Utils.eachComponent(components, (component: any, componentPath: string, _components: any, _parent: any, paths: any) => {
+        if (!found && (paths?.path ?? componentPath) === path) found = component;
     }, true);
     return found;
 }
