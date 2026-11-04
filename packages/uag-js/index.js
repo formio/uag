@@ -1786,7 +1786,7 @@
             }
 
             static get builderInfo() {
-                return { title: 'AI Document', group: 'premium', icon: 'file-text', weight: 101, documentation: '', schema: UAGDocumentComponent.schema() };
+                return { title: 'AI Document', group: 'premium', icon: 'magic', weight: 101, documentation: '', schema: UAGDocumentComponent.schema() };
             }
 
             static editForm() {

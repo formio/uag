@@ -141,7 +141,7 @@ describe('uag-js: the AI Document component', function () {
             registerWith();
             const Document = Formio.Components.components.uagdocument;
             expect(Document).to.equal(uag.UAGDocument);
-            expect(Document.builderInfo).to.include({ title: 'AI Document', group: 'premium', icon: 'file-text', weight: 101 });
+            expect(Document.builderInfo).to.include({ title: 'AI Document', group: 'premium', icon: 'magic', weight: 101 });
             const schema = Document.schema();
             expect(schema).to.include({ type: 'uagdocument', input: true, tree: true });
             expect(schema.components.map((c: any) => `${c.type}:${c.key}`)).to.deep.equal(['file:files', 'hidden:result']);
