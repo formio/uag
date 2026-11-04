@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import type { FormInterface, FormRoute, Plugin, PluginRegistry, PluginType } from '@formio/appserver';
+import type { RequestHandler } from 'express';
+import type { Plugin, PluginRegistry, PluginType } from '@formio/appserver';
 import type { UAGProjectInterface } from '../UAGProjectInterface';
 import { UAG_VERSION } from '../version';
 import { createFeatureApi } from './api';
@@ -119,15 +120,25 @@ export class Features {
         return api;
     }
 
-    /** The appserver form route (a `{ router }` entry) that mounts a feature's routes on every form. */
-    formRoute(definition: FeatureDefinition): FormRoute {
-        return { router: (form: FormInterface) => {
+    /**
+     * The router appserver mounts on every form for a feature's routes: it
+     * finds the form's project on each request, and keeps one router per
+     * project, built with the feature's API for that project.
+     */
+    formRoutes(definition: FeatureDefinition): RequestHandler {
+        const routers = new WeakMap<object, RequestHandler>();
+        return (req, res, next) => {
             const feature = this.list.find((candidate) => candidate.definition === definition);
             const routes = definition.routes?.form;
-            if (!feature || !routes || !Object.keys(routes).length) return undefined;
-            const project = projectOf(form);
-            return featureFormRouter(project, this.apiFor(feature, project), routes);
-        } };
+            const project = (req as any).form && projectOf((req as any).form);
+            if (!feature || !routes || !Object.keys(routes).length || !project) return next();
+            let router = routers.get(project);
+            if (!router) {
+                router = featureFormRouter(project, this.apiFor(feature, project), routes);
+                routers.set(project, router);
+            }
+            router(req, res, next);
+        };
     }
 
     /**

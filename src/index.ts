@@ -126,7 +126,7 @@ export class UAGServer extends Server {
         throw new Error(`${label} brings features of which some are already in use (${definitions.filter((d) => !fresh.includes(d)).map((d) => d.name).join(', ')}): use each feature once`);
       }
       for (const definition of definitions) this.features.add(definition, label);
-      module = { ...module, formRoutes: [...(module.formRoutes || []), ...definitions.map((definition) => this.features.formRoute(definition))] };
+      module = { ...module, formRoutes: [...([] as any[]).concat(module.formRoutes ?? []), ...definitions.map((definition) => this.features.formRoutes(definition))] };
     }
     return super.use(module, source);
   }
