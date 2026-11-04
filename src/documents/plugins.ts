@@ -49,6 +49,11 @@ export const converterPluginType: PluginType = {
         }
         return problems;
     },
+    /** Once every converter is set up: the routes between file types, with `documents.prefer`. */
+    initialize(registry, context) {
+        const prefer = (context.server?.config as any)?.documents?.prefer || {};
+        states.set(registry, { routes: new ConverterRoutes(registry.list<Converter>('converter'), prefer), accept: new Map() });
+    },
     manifest: (plugin: Plugin) => ({ accepts: plugin.accepts, produces: plugin.produces })
 };
 
@@ -80,9 +85,8 @@ export const createDocumentPluginType = (): PluginType => {
         return problems;
     },
     /** Once every converter is set up: the routes, and the types each document plugin can take. */
-    initialize(registry, context) {
-        const prefer = (context.server?.config as any)?.documents?.prefer || {};
-        const state: DocumentsState = { routes: new ConverterRoutes(registry.list<Converter>('converter'), prefer), accept: new Map() };
+    initialize(registry) {
+        const state = documentsOf(registry);
         for (const plugin of registry.list<DocumentPlugin>('document')) {
             state.accept.set(plugin.name, state.routes.accept(plugin.inputs));
         }

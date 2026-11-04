@@ -20,6 +20,7 @@ import { listEngines, listTools } from './plugins';
 import { registerDocuments } from './documents/plugins';
 import { documentLimitWarnings, documentsSettings } from './documents/settings';
 import { uagJsRouter } from './documents/uagJs';
+import { Features } from './features';
 
 /** Projects whose engines were loaded while the plugins were listed. */
 const enginesLoaded = new WeakSet<object>();
@@ -102,6 +103,27 @@ export class UAGServer extends Server {
   public database?: UAGDatabase;
   /** The database between connecting and the license check. */
   private pendingDatabase?: UAGDatabase;
+
+  /** The features of the modules used (their `uag` key). */
+  declare private featureList?: Features;
+  get features(): Features {
+    if (!this.featureList) this.featureList = new Features();
+    return this.featureList;
+  }
+
+  /**
+   * Use a module. A module with a `uag` key brings a feature: one used twice
+   * (by name) is set up once, so its plugin types and routes are not added
+   * again; its form routes are mounted on every form.
+   */
+  use(module: ServerModule & { uag?: any; extra?: string }, source?: string) {
+    if (module && module.uag !== undefined) {
+      const label = source || (typeof module.extra === 'string' && module.extra) || 'a module';
+      if (!this.features.add(module.uag, label)) return;
+      module = { ...module, formRoutes: [...(module.formRoutes || []), this.features.formRoute(module.uag)] };
+    }
+    return super.use(module, source);
+  }
 
   constructor(config?: UAGConfig) {
     assertNodeSnapshotDisabled();
@@ -248,7 +270,7 @@ export class UAGServer extends Server {
     assertToolEntries(this.config.tools);
     await super.extendRouter(router);
     // @formio/uag-js, the portal script and stylesheet: public, ahead of the project routes.
-    router.use(uagJsRouter(() => this.plugins));
+    router.use(uagJsRouter(() => this.plugins, () => this.features.components()));
     const uagProject = this.uagProject;
     if (uagProject) {
       // First: the Agent API's request id and one error shape, for every refusal after it.
@@ -275,6 +297,8 @@ export class UAGServer extends Server {
     }
     const project = this.uagProject;
     if (project instanceof UAGProjectInterface) project.plugins = this.plugins;
+    // The features: their settings checked, listed, and initialized before any request.
+    if (project instanceof UAGProjectInterface) await this.features.start(project, this.plugins, this.config as any);
     if (project instanceof UAGProjectInterface) {
       // Decide which engines are on before serving anything, so a misconfigured
       // engine stops startup with its name in the error instead of failing the
@@ -334,6 +358,7 @@ export * from './config';
 export * from './agent';
 export * from './tools';
 export * from './documents';
+export * from './features';
 export { sanitizeMarkdown } from './markdown';
 export { usePluginFiles, pluginsFile, DEFAULT_PLUGINS_FILE } from './pluginFiles';
 export * from './router';

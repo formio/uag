@@ -34,6 +34,24 @@ In the developer portal, set the project's custom JavaScript and CSS to the UAG'
 
 The component needs formio.js 5 (the developer portal loads `@formio/js` 5.2.2; the tests run 5.7.0).
 
+## For components: `client`
+
+Once `Formio.use(UAG(url))` has run, `client` (also `FormioUAG.client` and `UAG.client`) is the API that components of UAG features build on, stable within a major version:
+
+| Member | What it gives |
+|---|---|
+| `url()`, `token(form?)`, `headers(form?)` | The UAG's URL, the user's Form.io token, and the headers that identify the user to the UAG. |
+| `formUrl(definition)` | A form's URL on the UAG, from its definition or a rendered form. |
+| `ready`, `plugins(type?)`, `plugin(type, name)` | The installed plugins (`document`, `converter`, `feature`), embedded by the UAG's scripts or fetched with the user's token. |
+| `stream(url, body, { onEvent, signal, form })` | POST JSON, accepting server-sent events: every event goes to `onEvent`; it resolves with the `done` event's data (or the JSON answer), and rejects with the UAG's message, `status` and `code`. |
+| `renderMarkdown(text)`, `escapeHtml(text)` | Markdown as the UAG sanitizes it, rendered with every text escaped. |
+
+```js
+import { client } from '@formio/uag-js';
+await client.ready;
+const done = await client.stream(client.formUrl(form) + '/document/process', { path, files }, { onEvent: (name, data) => {} });
+```
+
 ## Chat
 
 Any form tagged `uag` can also be rendered as a chat, the way `Formio.createForm` renders it as a form. A person describes what they need; the chat asks for what is still missing and fills the form behind it, which validates and submits through the UAG once they confirm. Each turn is the form's `{form}/agent/chat` on the UAG, so there is no model code and no server of your own, and it needs no Agentic Formflow license (the UAG needs an agent engine).

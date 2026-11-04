@@ -1552,6 +1552,103 @@
         return html.join('');
     }
 
+    // ---------------------------------------------------------------------
+    // client: the public browser API that components of UAG features build on.
+    // ---------------------------------------------------------------------
+
+    /** The headers that identify the user to the UAG: their Form.io token, and a portal team member's remote token. */
+    function authHeaders(form) {
+        var headers = {};
+        var token = formioToken(form);
+        if (token) headers['x-jwt-token'] = token;
+        try {
+            var sdk = registered.Formio;
+            var remote = sdk && typeof sdk.getRemoteToken === 'function' ? sdk.getRemoteToken() : null;
+            if (remote) headers['x-remote-token'] = remote;
+        }
+        catch (err) { /* no remote token */ }
+        return headers;
+    }
+
+    /** An Error with the UAG's status and code. */
+    function uagError(message, status, code) {
+        var err = new Error(message);
+        if (status) err.status = status;
+        if (code) err.code = code;
+        return err;
+    }
+
+    /**
+     * POST JSON to the UAG, accepting server-sent events. Resolves with the
+     * `done` event's data, or with the JSON answer; rejects with the UAG's
+     * message (and `status`, `code`) for an error answer or a `failed` event.
+     * Every event is passed to `options.onEvent(name, data)`.
+     */
+    function stream(url, body, options) {
+        options = options || {};
+        var fetchImpl = options.fetch || (registered.options && registered.options.fetch) || (typeof fetch === 'function' ? fetch : null);
+        if (!fetchImpl) return Promise.reject(uagError('fetch is not available.'));
+        var headers = Object.assign({ 'Content-Type': 'application/json', Accept: 'text/event-stream' }, authHeaders(options.form), options.headers || {});
+        var done = null;
+        var failure = null;
+        return Promise.resolve().then(function () {
+            return fetchImpl(url, { method: 'POST', headers: headers, body: JSON.stringify(body || {}), signal: options.signal });
+        }).then(function (response) {
+            var type = (response.headers && response.headers.get && response.headers.get('content-type')) || '';
+            if (!response.ok || type.indexOf('text/event-stream') === -1) {
+                return response.json().catch(function () { return {}; }).then(function (answer) {
+                    if (!response.ok) throw uagError((answer && answer.error) || ('The request failed (' + response.status + ').'), response.status, answer && answer.code);
+                    done = answer;
+                });
+            }
+            var parser = new SSEParser(function (name, data) {
+                if (typeof options.onEvent === 'function') options.onEvent(name, data);
+                if (name === 'done') done = data;
+                else if (name === 'failed' || name === 'error') failure = uagError((data && data.error) || 'The request failed.', 0, data && data.code);
+            });
+            if (response.body && response.body.getReader) {
+                var reader = response.body.getReader();
+                var decoder = new TextDecoder();
+                var pump = function () {
+                    return reader.read().then(function (chunk) {
+                        if (chunk.done) return;
+                        parser.push(decoder.decode(chunk.value, { stream: true }));
+                        return pump();
+                    });
+                };
+                return pump();
+            }
+            return response.text().then(function (text) { parser.push(text + '\n\n'); });
+        }).then(function () {
+            if (failure) throw failure;
+            if (done === null) throw uagError('The request ended without an answer.');
+            return done;
+        });
+    }
+
+    /**
+     * The public browser API for components: the UAG's URL, the user's token,
+     * a form's URL on the UAG, the installed plugins, streamed requests, and
+     * Markdown rendering. Stable within a major version of @formio/uag-js.
+     */
+    var client = {
+        url: function () { return registered.uagUrl; },
+        token: function (form) { return formioToken(form); },
+        headers: function (form) { return authHeaders(form); },
+        formUrl: function (definition) { return uagFormUrl(registered.uagUrl, definition && definition.form && definition.form._id ? definition.form : definition); },
+        ready: manifestState.promise,
+        plugins: function (type) {
+            return (manifestState.manifest || []).filter(function (plugin) { return plugin && (!type || plugin.type === type); });
+        },
+        plugin: function (type, name) {
+            return client.plugins(type).filter(function (plugin) { return plugin.name === name; })[0] || null;
+        },
+        stream: stream,
+        renderMarkdown: function (markdown) { return renderMarkdown(markdown); },
+        escapeHtml: function (value) { return escapeHtml(value); },
+        get Formio() { return registered.Formio; }
+    };
+
     // --- The stored definition ---
 
     var FILE_SETTINGS = ['storage', 'url', 'options', 'dir', 'fileNameTemplate', 'multiple', 'fileMinSize', 'fileMaxSize', 'webcam'];
@@ -2008,64 +2105,34 @@
                 var controller = typeof AbortController === 'function' ? new AbortController() : null;
                 this.uagController = controller;
                 var formUrl = uagFormUrl(registered.uagUrl, this.root && this.root.form);
-                var fetchImpl = (registered.options && registered.options.fetch) || (typeof fetch === 'function' ? fetch : null);
                 this.uagState = Object.assign(this.uagState, { status: 'running', progress: 0, message: '', error: '', confirm: null, kept: false, editing: false });
                 this.attachDocument();
                 this.triggerChange();
                 this.uagEmit('uagDocumentStart', { files: files });
-                var headers = { 'Content-Type': 'application/json', Accept: 'text/event-stream' };
-                var token = formioToken(this.root);
-                if (token) headers['x-jwt-token'] = token;
-                try {
-                    var sdk = registered.Formio;
-                    var remote = sdk && typeof sdk.getRemoteToken === 'function' ? sdk.getRemoteToken() : null;
-                    if (remote) headers['x-remote-token'] = remote;
-                }
-                catch (err) { /* no remote token */ }
                 var result = null;
-                var failure = null;
                 var finished = Promise.resolve().then(function () {
-                    if (!fetchImpl) throw new Error(self.t('Processing is unavailable: fetch is not available.'));
                     if (!formUrl) throw new Error(self.t('Processing is unavailable: the UAG does not know this form.'));
-                    return fetchImpl(formUrl + '/document/process', {
-                        method: 'POST',
-                        headers: headers,
-                        body: JSON.stringify({ path: self.path || self.key, files: files, data: (self.root && self.root.submission && self.root.submission.data) || {} }),
-                        signal: controller ? controller.signal : undefined
-                    });
-                }).then(function (response) {
-                    var type = (response.headers && response.headers.get && response.headers.get('content-type')) || '';
-                    if (!response.ok || type.indexOf('text/event-stream') === -1) {
-                        return response.json().catch(function () { return {}; }).then(function (body) {
-                            if (!response.ok) throw new Error((body && body.error) || self.t('Processing failed ({{status}}).', { status: response.status }));
-                            result = body && body.result;
-                        });
-                    }
-                    var parser = new SSEParser(function (name, data) {
-                        if (name === 'progress') {
+                    return stream(formUrl + '/document/process', { path: self.path || self.key, files: files, data: (self.root && self.root.submission && self.root.submission.data) || {} }, {
+                        form: self.root,
+                        signal: controller ? controller.signal : undefined,
+                        onEvent: function (name, data) {
+                            if (name !== 'progress') return;
                             self.uagState.progress = data.progress || 0;
                             if (data.message) self.uagState.message = data.message;
                             self.attachDocument();
                             self.uagEmit('uagDocumentProgress', data);
                         }
-                        else if (name === 'done') result = data.result;
-                        else if (name === 'failed') failure = new Error(data.error || self.t('Processing failed.'));
+                    }).then(function (answer) {
+                        result = answer && answer.result;
+                    }, function (err) {
+                        if (err && err.name === 'AbortError') throw err;
+                        if (err && err.status && !err.code && /^The request failed \(/.test(err.message)) throw new Error(self.t('Processing failed ({{status}}).', { status: err.status }));
+                        if (err && err.message === 'fetch is not available.') throw new Error(self.t('Processing is unavailable: fetch is not available.'));
+                        if (err && err.message === 'The request ended without an answer.') throw new Error(self.t('Processing ended without a result.'));
+                        if (err && err.message === 'The request failed.') throw new Error(self.t('Processing failed.'));
+                        throw err;
                     });
-                    if (response.body && response.body.getReader) {
-                        var reader = response.body.getReader();
-                        var decoder = new TextDecoder();
-                        var pump = function () {
-                            return reader.read().then(function (chunk) {
-                                if (chunk.done) return;
-                                parser.push(decoder.decode(chunk.value, { stream: true }));
-                                return pump();
-                            });
-                        };
-                        return pump();
-                    }
-                    return response.text().then(function (text) { parser.push(text + '\n\n'); });
                 }).then(function () {
-                    if (failure) throw failure;
                     if (!result) throw new Error(self.t('Processing ended without a result.'));
                 }).then(function () {
                     if (self.uagController !== controller) return;
@@ -2176,6 +2243,7 @@
     /** Resolves once the installed document plugins are known (embedded, or fetched at registration). */
     UAG.ready = manifestState.promise;
     UAG.renderMarkdown = renderMarkdown;
+    UAG.client = client;
 
     return {
         UAG: UAG,
@@ -2190,6 +2258,7 @@
         renderMarkdown: renderMarkdown,
         normalizeDefinition: normalizeDefinition,
         documentComponentFor: documentComponentFor,
+        client: client,
         get UAGDocument() { return documentClass; }
     };
 }));

@@ -239,6 +239,51 @@ export type AIDocumentEvent = 'uagDocumentStart' | 'uagDocumentProgress' | 'uagD
 /** Render Markdown as the AI Document does: headings, paragraphs, lists, tables, emphasis, code and safe links, all text escaped. */
 export declare function renderMarkdown(markdown: string): string;
 
+/** Options for `client.stream`. */
+export interface ClientStreamOptions {
+    /** Called with every server-sent event, by name. */
+    onEvent?(name: string, data: any): void;
+    signal?: AbortSignal;
+    /** The rendered form, whose Form.io token identifies the user. */
+    form?: any;
+    headers?: Record<string, string>;
+    fetch?: typeof fetch;
+}
+
+/** An error the UAG answered with. */
+export interface UAGClientError extends Error {
+    status?: number;
+    code?: string;
+}
+
+/**
+ * The public browser API that components of UAG features build on, once
+ * `Formio.use(UAG(url))` has run. Stable within a major version.
+ */
+export interface UAGClient {
+    /** The UAG's URL. */
+    url(): string;
+    /** The user's Form.io token, from the form's own formio or the SDK. */
+    token(form?: any): string | null;
+    /** The headers that identify the user to the UAG. */
+    headers(form?: any): Record<string, string>;
+    /** A form's URL on the UAG, from its definition (or a rendered form). */
+    formUrl(definition: any): string;
+    /** Resolves once the installed plugins are known. */
+    ready: Promise<void>;
+    /** The installed plugins, of one type or all. */
+    plugins(type?: string): PluginManifestEntry[];
+    plugin(type: string, name: string): PluginManifestEntry | null;
+    /** POST JSON, accepting server-sent events: resolves with the `done` event's data, or the JSON answer. */
+    stream(url: string, body: any, options?: ClientStreamOptions): Promise<any>;
+    renderMarkdown(markdown: string): string;
+    escapeHtml(value: unknown): string;
+    /** The formio.js the UAG was registered with. */
+    readonly Formio: any;
+}
+
+export declare const client: UAGClient;
+
 /** The formio.js module: `Formio.use(UAG('https://uag.example.com'))`. It also registers the `chat` display and `Formio.createChat`. */
 export declare function UAG(uagUrl: string, options?: UAGOptions): (Formio: any) => { fetch: Record<string, any>; displays?: Record<string, any> };
 export declare namespace UAG {
@@ -248,6 +293,8 @@ export declare namespace UAG {
     let UAGDocument: any;
     /** The same as `renderMarkdown`. */
     function renderMarkdown(markdown: string): string;
+    /** The same as `client`. */
+    const client: UAGClient;
     /** The same as `attach`. */
     function attach(form: any, options?: AttachOptions): AgentInput;
     /** The same as `createChat`. */

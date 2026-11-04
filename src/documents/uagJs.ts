@@ -4,6 +4,9 @@ import { createHash } from 'crypto';
 import { Request, Response, Router } from 'express';
 import type { PluginRegistry } from '@formio/appserver';
 
+/** A feature's component, as the UAG serves it. */
+export type ServedComponent = { type: string; feature: string; scriptPath: string; stylePath?: string };
+
 /** Where @formio/uag-js is installed: as a package, or the UAG's own workspace copy. */
 function uagJsDirectory(): string | undefined {
     try {
@@ -76,30 +79,45 @@ function serve(req: Request, res: Response, type: string, body: string) {
  * - `/uag-js/portal.js`: the same in portal mode (the component only), then `?chain=` (https only);
  * - `/uag-js/portal.css`: the stylesheet, after `@import url(<chain>)` when `?chain=` is given;
  * - `/uag-js/uag-js.css`: the stylesheet.
+ *
+ * The features' components come after: each script after the registration in
+ * `uag.use.js` and `portal.js`, each stylesheet after `uag-js.css` (and in
+ * `portal.css`), and each on its own at `/uag-js/components/<type>.js|css`.
+ * They are read on every request, as the bundle is, so the ETag follows them.
  */
-export function uagJsRouter(registry: () => PluginRegistry | undefined): Router {
+export function uagJsRouter(registry: () => PluginRegistry | undefined, components: () => ServedComponent[] = () => []): Router {
     const router = Router();
     const manifest = () => {
         const plugins = registry();
-        return plugins ? plugins.manifest().filter((plugin) => plugin.type === 'document' || plugin.type === 'converter') : [];
+        return plugins ? plugins.manifest().filter((plugin) => ['document', 'converter', 'feature'].includes(plugin.type)) : [];
     };
+    const scripts = () => components().map((component) => `\n;/* ${component.feature}: ${component.type} */\n${fs.readFileSync(component.scriptPath, 'utf8')}`).join('');
+    const styles = () => components().filter((component) => component.stylePath).map((component) => `\n/* ${component.feature}: ${component.type} */\n${fs.readFileSync(component.stylePath as string, 'utf8')}`).join('');
+    const component = (type: string) => components().find((candidate) => candidate.type === type);
+    router.get('/uag-js/components/:file', (req, res) => {
+        const match = /^([a-z][a-z0-9]*)\.(js|css)$/.exec(String(req.params.file));
+        const found = match ? component(match[1]) : undefined;
+        const file = found && (match![2] === 'js' ? found.scriptPath : found.stylePath);
+        if (!file) return res.status(404).type('text/plain').send('No feature of this UAG has that component.');
+        serve(req, res, match![2] === 'js' ? 'application/javascript' : 'text/css', fs.readFileSync(file, 'utf8'));
+    });
     const missing = (res: Response) => res.status(404).type('text/plain').send('@formio/uag-js is not installed with this UAG.');
     router.get('/uag-js/uag.use.js', (req, res) => {
         if (!uagJsDirectory()) return missing(res);
-        serve(req, res, 'application/javascript', read('index.js') + registration(manifest(), { portal: false }));
+        serve(req, res, 'application/javascript', read('index.js') + registration(manifest(), { portal: false }) + scripts());
     });
     router.get('/uag-js/portal.js', (req, res) => {
         if (!uagJsDirectory()) return missing(res);
-        serve(req, res, 'application/javascript', read('index.js') + registration(manifest(), { portal: true, chain: chainOf(req, ['https:']) }));
+        serve(req, res, 'application/javascript', read('index.js') + registration(manifest(), { portal: true, chain: chainOf(req, ['https:']) }) + scripts());
     });
     router.get('/uag-js/portal.css', (req, res) => {
         if (!uagJsDirectory()) return missing(res);
         const chain = chainOf(req, ['https:', 'http:']);
-        serve(req, res, 'text/css', (chain ? `@import url(${JSON.stringify(chain)});\n` : '') + read('uag-js.css'));
+        serve(req, res, 'text/css', (chain ? `@import url(${JSON.stringify(chain)});\n` : '') + read('uag-js.css') + styles());
     });
     router.get('/uag-js/uag-js.css', (req, res) => {
         if (!uagJsDirectory()) return missing(res);
-        serve(req, res, 'text/css', read('uag-js.css'));
+        serve(req, res, 'text/css', read('uag-js.css') + styles());
     });
     return router;
 }
