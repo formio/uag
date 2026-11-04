@@ -438,6 +438,12 @@ describe('Demo site app', function () {
                 async plugins() {
                     return [{ type: 'document', name: 'extract' }, { type: 'converter', name: 'office-text' }, { type: 'engine', name: 'claude' }, { type: 'tool', name: 'read_document' }];
                 },
+                async uagJs(file) {
+                    calls.push({ uagJs: file });
+                    return file.endsWith('.js')
+                        ? { status: 200, type: 'application/javascript; charset=utf-8', body: '/* uagdocument */' }
+                        : { status: 200, type: 'text/css; charset=utf-8', body: '.uag-document {}' };
+                },
             };
             const flow = { own: () => {} };
             const web = await routes((router) => documentRoutes(router, { config, formio, uag, sessions, flow, guard: { protect: () => (req, res, next) => next() } }), session);
@@ -483,6 +489,22 @@ describe('Demo site app', function () {
                 expect((await demo.post(FORM_ID, { path: 'leaseClauses', files: [] })).status).to.equal(400);
                 expect((await demo.post(FORM_ID, { path: 'leaseClauses', files: [lease], data: { reviewer: 'R'.repeat(9000) } })).status).to.equal(400);
                 expect(demo.calls).to.deep.equal([]);
+            }
+            finally {
+                await demo.close();
+            }
+        });
+
+        it('relays the AI Document component from the UAG\'s feature, and nothing else from /uag-js', async function () {
+            const demo = await documentSite();
+            try {
+                const script = await fetch(`${demo.web.url}/api/documents/uag/components/uagdocument.js`);
+                expect(script.status).to.equal(200);
+                expect(script.headers.get('content-type')).to.include('application/javascript');
+                expect(await script.text()).to.equal('/* uagdocument */');
+                expect((await fetch(`${demo.web.url}/api/documents/uag/components/uagdocument.css`)).headers.get('content-type')).to.include('text/css');
+                expect((await fetch(`${demo.web.url}/api/documents/uag/components/other.js`)).status).to.equal(404);
+                expect(demo.calls.map((call) => call.uagJs)).to.deep.equal(['components/uagdocument.js', 'components/uagdocument.css']);
             }
             finally {
                 await demo.close();

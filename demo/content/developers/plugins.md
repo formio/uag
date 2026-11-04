@@ -20,16 +20,18 @@ module.exports = {
 };
 ```
 
-From a plugins file: `UAG_PLUGINS` names an ES module (`.mjs`) or CommonJS file whose default export (or `plugins` export) is a plugin, a list of plugins, or nested lists. In the `formio/uag-documents` image, `/app/plugins/index.mjs` is loaded when it exists; `UAG_PLUGINS=off` loads none. Relative imports in the file resolve from the file, and bare imports from the folder's own `node_modules`, then upward.
+From a plugins file: `UAG_PLUGINS` names an ES module (`.mjs`) or CommonJS file whose default export (or `plugins` export) is a plugin, a list of plugins, or nested lists; or a module with a [feature](/developers/features), as `compose()` makes it, which is used as that module. Document plugins need the AI Document feature, which defines their type. In the `formio/uag-documents` image, `/app/plugins/index.mjs` is loaded when it exists; `UAG_PLUGINS=off` loads none. Relative imports in the file resolve from the file, and bare imports from the folder's own `node_modules`, then upward.
 
 ```js
-// /app/plugins/index.mjs: the image's plugins, plus your own
-import { extract } from '@formio/uag-extras/documents/extract';
-import { analyze } from '@formio/uag-extras/documents/analyze';
-import { translate } from '@formio/uag-extras/documents/translate';
-import { officeText } from '@formio/uag-extras/converters/office-text';
+// /app/plugins/index.mjs: the image's feature and plugins, plus your own
+import { compose } from '@formio/uag-extras';
+import { UAGDocument } from '@formio/uag-extras/features/ai-document';
+import Extract from '@formio/uag-extras/documents/extract';
+import Analyze from '@formio/uag-extras/documents/analyze';
+import Translate from '@formio/uag-extras/documents/translate';
+import OfficeText from '@formio/uag-extras/converters/office-text';
 import myConverter from './my-converter.mjs';
-export default [extract, analyze, translate, officeText, myConverter];
+export default compose(UAGDocument, Extract, Analyze, Translate, OfficeText, { plugins: [myConverter] });
 ```
 
 The image's plugins come from `@formio/uag-extras`, the package of UAG extras (modules, actions, MCP tools, engine types, document plugins and converters) from Form.io and the community; it is installed in the image. Each extra is its own import, `@formio/uag-extras/<kind>/<name>`: its default export is a module for `server.use()`, and its plugin is a named export, for plugins files. A plugin that needs system binaries or npm packages the image does not have is added by building an image `FROM formio/uag-documents`.
@@ -137,9 +139,11 @@ Your code decides what to ask the engine and when a result is `ok` or `flagged`.
 ### 2. List it in a plugins file
 
 ```js
-// my-plugins/index.mjs
+// my-plugins/index.mjs: the AI Document feature, which defines the document type, and your plugin
+import { compose } from '@formio/uag-extras';
+import { UAGDocument } from '@formio/uag-extras/features/ai-document';
 import translate from './translate.mjs';
-export default [translate];
+export default compose(UAGDocument, { plugins: [translate] });
 ```
 
 ### 3. Test it without a server
@@ -177,15 +181,17 @@ Name the plugins file with `UAG_PLUGINS`:
 UAG_PLUGINS=./my-plugins/index.mjs npx uag start
 ```
 
-Or, with the image, mount the folder at `/app/plugins`. Your `index.mjs` replaces the image's default list, so list the official plugins you want too (they stay installed in the image, so the imports resolve):
+Or, with the image, mount the folder at `/app/plugins`. Your `index.mjs` replaces the image's default, so compose the feature and the official plugins you want too (they stay installed in the image, so the imports resolve):
 
 ```js
 // my-plugins/index.mjs, mounted at /app/plugins
-import { extract } from '@formio/uag-extras/documents/extract';
-import { analyze } from '@formio/uag-extras/documents/analyze';
-import { officeText } from '@formio/uag-extras/converters/office-text';
+import { compose } from '@formio/uag-extras';
+import { UAGDocument } from '@formio/uag-extras/features/ai-document';
+import Extract from '@formio/uag-extras/documents/extract';
+import Analyze from '@formio/uag-extras/documents/analyze';
+import OfficeText from '@formio/uag-extras/converters/office-text';
 import translate from './translate.mjs';
-export default [extract, analyze, officeText, translate];
+export default compose(UAGDocument, Extract, Analyze, OfficeText, { plugins: [translate] });
 ```
 
 ```bash
@@ -195,7 +201,7 @@ docker run -p 3200:3200 --env-file .env -v "$PWD/my-plugins:/app/plugins:ro" for
 At startup the UAG logs where it loaded the plugins from, and a notice that `document` plugins are experimental:
 
 ```
-[formio-uag] Plugins loaded from /app/plugins/index.mjs.
+[formio-uag] Plugins and features loaded from /app/plugins/index.mjs.
 [plugins] document:translate (from /app/plugins/index.mjs) uses the experimental "document" plugin type: …
 ```
 
@@ -211,6 +217,7 @@ The UAG reads its plugins once, at startup: restart it after you change one.
 
 | What you see | Why |
 |---|---|
+| Startup stops: `no plugin type "document"` | The AI Document feature is not in use: compose `UAGDocument` from `@formio/uag-extras/features/ai-document` into your plugins file or module. |
 | Startup stops: `Plugin document:translate is registered twice` | Your plugin and `@formio/uag-extras/documents/translate` share a name: rename yours, or leave the official one out. |
 | `The AI Document "…" is misconfigured: its process "translate" is not installed or not available.` | The UAG serving the form did not load your plugins file: check `UAG_PLUGINS` or the mount, and the startup log. |
 | `The AI Document "…" is misconfigured: pick a language to translate into` | Your `validateSettings` refused the component's settings. |

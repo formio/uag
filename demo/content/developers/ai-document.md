@@ -5,9 +5,18 @@ section: Build
 order: 48
 ---
 
-The **AI Document** component (`uagdocument`, in `@formio/uag-js`) lets the people filling a form drop files and get AI-generated content from them: an exact extraction, a summary, an assessment. The form designer picks a **process** (a document plugin) and writes the instructions; converters bring each file to what the AI engine reads (PDF or text). Files upload to the form's own storage; the submission holds the file references and the result, never file bytes from the UAG.
+The **AI Document** component (`uagdocument`) lets the people filling a form drop files and get AI-generated content from them: an exact extraction, a summary, an assessment. The form designer picks a **process** (a document plugin) and writes the instructions; converters bring each file to what the AI engine reads (PDF or text). Files upload to the form's own storage; the submission holds the file references and the result, never file bytes from the UAG.
 
-The plugins it runs come from the `formio/uag-documents` image (the document extras of `@formio/uag-extras`) or your own plugins folder: see [Plugins](/developers/plugins).
+AI Document is a [feature](/developers/features): it comes with `@formio/uag-extras/features/ai-document`, which brings the component, the process route and the `document` plugin type, and the plugins it runs come from the document extras of `@formio/uag-extras` or your own (see [Plugins](/developers/plugins)). The `formio/uag-documents` image has all of them. In your own server:
+
+```js
+import { compose } from '@formio/uag-extras';
+import { UAGDocument } from '@formio/uag-extras/features/ai-document';
+import Extract from '@formio/uag-extras/documents/extract';
+import Analyze from '@formio/uag-extras/documents/analyze';
+
+server.use(compose(UAGDocument, Extract, Analyze));
+```
 
 ## For the form builder, in the developer portal
 
@@ -29,10 +38,12 @@ They drop one or more files, which formio.js uploads to the configured storage. 
 ```js
 import { Formio } from '@formio/js';
 import { UAG } from '@formio/uag-js';
+import aiDocument from '@formio/uag-extras/features/ai-document/client';
 Formio.use(UAG('https://uag.example.com'));
+Formio.use(aiDocument);
 ```
 
-Rendering a form that contains an AI Document needs nothing else. An application with its own form builder awaits the manifest first: `await UAG.ready`. A page without a bundler loads `https://uag.example.com/uag-js/uag.use.js`, which registers itself with that UAG.
+Rendering a form that contains an AI Document needs nothing else. An application with its own form builder awaits the manifest first: `await UAG.ready`. A page without a bundler loads `https://uag.example.com/uag-js/uag.use.js`, which registers itself with that UAG and carries the component of every feature the UAG uses; or it loads the feature's script from a CDN (`dist/features/ai-document.min.js` of `@formio/uag-extras`), after `uag.use.js`.
 
 ### The target field
 

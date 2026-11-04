@@ -2,7 +2,7 @@
       <div class="container">
         <div class="example-topbar">
           <p class="eyebrow"><a href="/examples">Examples</a>&nbsp;/&nbsp;AI Document</p>
-          <div class="meta"><span class="tag">AI Document</span><span class="tag">@formio/uag-js</span><span class="tag tag-blue">Document plugins</span><span class="tag">Claude</span><span class="tag tag-green">Checked against the file</span></div>
+          <div class="meta"><span class="tag">AI Document</span><span class="tag">@formio/uag-extras</span><span class="tag tag-blue">Document plugins</span><span class="tag">Claude</span><span class="tag tag-green">Checked against the file</span></div>
         </div>
         <h1>A form that reads the file you upload.</h1>
         <p class="lede">Review a lease by uploading it. One AI Document copies its key clauses into the form word for word, and checks every word of the copy against the lease. Another writes a summary for the property manager, and a third translates the lease into Spanish for the tenant. You check them before you save.</p>
@@ -58,7 +58,7 @@
       <div class="container split">
         <div>
           <h2>Add it to your app.</h2>
-          <p><code>@formio/uag-js</code> registers the <strong>AI Document</strong> component with formio.js. It uploads to the form's own storage, posts the file references to the UAG's <code>{form}/document/process</code>, shows the streamed progress and the result, and keeps both in the submission: never the file's bytes.</p>
+          <p>The <strong>AI Document</strong> is a UAG feature, <code>@formio/uag-extras/features/ai-document</code>: the UAG serves its component with <code>@formio/uag-js</code>. It uploads to the form's own storage, posts the file references to the UAG's <code>{form}/document/process</code>, shows the streamed progress and the result, and keeps both in the submission: never the file's bytes.</p>
           <ul class="checks">
             <li>It sends the signed-in user's own Form.io token, so the UAG reads the files with <strong>their</strong> permissions.</li>
             <li>In the developer portal, set the project's custom JavaScript and CSS to the UAG's <code>/uag-js/portal.js</code> and <code>/uag-js/portal.css</code> to build with it.</li>
@@ -67,8 +67,9 @@
           </ul>
           <p style="margin-top:24px"><a class="link-arrow" href="/developers/ai-document">AI Document</a> &nbsp; <a class="link-arrow" href="/developers/plugins">Plugins</a></p>
         </div>
-        <div class="code"><div class="code-bar"><span>js</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-js">// Once, when the application starts
-Formio.use(FormioUAG.UAG('https://uag.example.com'));
+        <div class="code"><div class="code-bar"><span>js</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-js">// Once, when the application starts: the UAG's uag.use.js
+// registers @formio/uag-js and the AI Document component.
+// &lt;script src="https://uag.example.com/uag-js/uag.use.js"&gt;&lt;/script&gt;
 
 // Render the form from its Form.io URL, as before. Its AI Document
 // components process each upload with the plugin the designer chose.

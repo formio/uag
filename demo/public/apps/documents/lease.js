@@ -10,8 +10,9 @@
 (async function () {
   const $ = (selector) => document.querySelector(selector);
 
-  // Formio.use(UAG(url)) registers the AI Document component; it reads the
-  // installed plugins from {url}/plugins and processes at {url}/.../document/process.
+  // The AI Document component comes from the UAG's ai-document feature (the page loads
+  // it, relayed); Formio.use(UAG(url)) gives it the client: the installed plugins from
+  // {url}/plugins, and processing at {url}/.../document/process.
   Formio.use(FormioUAG.UAG(location.origin + '/api/documents/uag', { agentInput: false, fetch: demoFetch }));
 
   const LABELS = { leaseClauses: 'Key clauses', leaseSummary: 'Summary', leaseTranslation: 'Translation' };

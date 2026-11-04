@@ -11,6 +11,7 @@
  *
  *   GET  /api/documents/form                 the lease review form definition
  *   GET  /api/documents/uag/plugins          the document plugins and converters the UAG has
+ *   GET  /api/documents/uag/components/<f>   the AI Document component (.js, .css), as the UAG's feature serves it
  *   POST /api/documents/uag/project/:project/form/:form/document/process
  *                                            process one AI Document's files, streamed back
  *   POST /api/documents/reviews              save the review through the UAG
@@ -51,6 +52,22 @@ export function documentRoutes(router, { config, uag, formio, flow, sessions, gu
         }
         catch {
             res.status(502).json({ error: 'The UAG could not be reached.' });
+        }
+    });
+
+    // The AI Document component comes with the UAG's ai-document feature: relayed, so the page
+    // always gets the component of the feature the UAG uses.
+    router.get(`${DOCUMENTS_UAG_PATH}components/:file`, async (req, res) => {
+        if (!/^uagdocument\.(js|css)$/.test(req.params.file)) {
+            res.status(404).type('text/plain').send('Not found.');
+            return;
+        }
+        try {
+            const file = await uag.uagJs(`components/${req.params.file}`);
+            res.status(file.status).type(file.type).set('Cache-Control', 'no-cache').send(file.body);
+        }
+        catch {
+            res.status(502).type('text/plain').send('The UAG could not be reached.');
         }
     });
 

@@ -111,6 +111,12 @@ export class UagClient {
         return response.json();
     }
 
+    /** One of the UAG's public /uag-js files, such as a feature's component (components/uagdocument.js). */
+    async uagJs(file) {
+        const response = await this.fetch(`${this.url}/uag-js/${file}`, { signal: AbortSignal.timeout(10_000) });
+        return { status: response.status, type: response.headers.get('content-type') || 'text/plain', body: await response.text() };
+    }
+
     async capabilities() {
         const response = await this.fetch(`${this.url}/agent/capabilities`, {
             headers: this.keyHeader,
