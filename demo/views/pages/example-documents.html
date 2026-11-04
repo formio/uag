@@ -5,12 +5,12 @@
           <div class="meta"><span class="tag">AI Document</span><span class="tag">@formio/uag-js</span><span class="tag tag-blue">Document plugins</span><span class="tag">Claude</span><span class="tag tag-green">Checked against the file</span></div>
         </div>
         <h1>A form that reads the file you upload.</h1>
-        <p class="lede">Review a lease by uploading it. One AI Document copies its key clauses into the form word for word, and checks every word of the copy against the lease. Another writes a summary for the property manager. You check both before you save.</p>
+        <p class="lede">Review a lease by uploading it. One AI Document copies its key clauses into the form word for word, and checks every word of the copy against the lease. Another writes a summary for the property manager, and a third translates the lease into Spanish for the tenant. You check them before you save.</p>
         <ol class="how">
           <li><strong>You upload a lease</strong>A PDF, a Word document or a text file. Download a sample lease from the form if you don't have one.</li>
           <li><strong>Converted</strong>The UAG identifies the file from its bytes and reads it as a PDF or as text, with converter plugins for Word and Excel.</li>
           <li><strong>Copied and checked</strong>The <code>extract</code> plugin asks the model for the clauses, then compares the copy with the lease's text. A copy that differs is retried, then flagged.</li>
-          <li><strong>Summarized</strong>The <code>analyze</code> plugin writes about the lease as the form's instructions ask. Every result streams its progress and is yours to edit.</li>
+          <li><strong>Summarized and translated</strong>The <code>analyze</code> plugin writes about the lease as the form's instructions ask; <code>translate</code> puts it into the language the form designer picked. Every result streams its progress and is yours to edit.</li>
         </ol>
       </div>
     </section>
@@ -62,7 +62,8 @@
           <ul class="checks">
             <li>It sends the signed-in user's own Form.io token, so the UAG reads the files with <strong>their</strong> permissions.</li>
             <li>In the developer portal, set the project's custom JavaScript and CSS to the UAG's <code>/uag-js/portal.js</code> and <code>/uag-js/portal.css</code> to build with it.</li>
-            <li>The <code>formio/uag-documents</code> image carries the <code>extract</code> and <code>analyze</code> plugins and the Word and Excel converter.</li>
+            <li>The <code>formio/uag-documents</code> image carries the <code>extract</code>, <code>analyze</code> and <code>translate</code> plugins and the Word and Excel converter.</li>
+            <li>A process of your own is one file: <a href="/developers/plugins#your-first-document-plugin">build Translate yourself</a>, step by step.</li>
           </ul>
           <p style="margin-top:24px"><a class="link-arrow" href="/developers/ai-document">AI Document</a> &nbsp; <a class="link-arrow" href="/developers/plugins">Plugins</a></p>
         </div>

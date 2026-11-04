@@ -14,7 +14,7 @@
   // installed plugins from {url}/plugins and processes at {url}/.../document/process.
   Formio.use(FormioUAG.UAG(location.origin + '/api/documents/uag', { agentInput: false, fetch: demoFetch }));
 
-  const LABELS = { leaseClauses: 'Key clauses', leaseSummary: 'Summary' };
+  const LABELS = { leaseClauses: 'Key clauses', leaseSummary: 'Summary', leaseTranslation: 'Translation' };
   const definitionLoaded = fetch('/api/documents/form').then((response) => response.json());
   let builder = null;
 
@@ -81,7 +81,8 @@
       line(event.path, 'Flagged: ' + (issues === 1 ? '1 difference' : issues + ' differences') + ' from the lease. Check it against the lease.', 'warn', took);
     }
     else {
-      line(event.path, (event.path === 'leaseClauses' ? 'Copied and checked against the lease: ' : 'Written: ') + words + ' words', 'ok', took);
+      const done = { leaseClauses: 'Copied and checked against the lease: ', leaseTranslation: 'Translated into Spanish: ' }[event.path] || 'Written: ';
+      line(event.path, done + words + ' words', 'ok', took);
     }
   });
 

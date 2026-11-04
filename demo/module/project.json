@@ -2310,6 +2310,56 @@
           ]
         },
         {
+          "type": "panel",
+          "key": "translationPanel",
+          "title": "Translation for the tenant",
+          "input": false,
+          "components": [
+            {
+              "type": "uagdocument",
+              "key": "leaseTranslation",
+              "label": "Upload the lease to translate it for the tenant",
+              "input": true,
+              "tree": true,
+              "tableView": false,
+              "description": "Translated by the AI into Spanish, in the lease\u2019s own order. Check it before you approve.",
+              "uag": {
+                "plugin": "translate",
+                "settings": {
+                  "language": "es"
+                },
+                "instructions": "Translate this lease into plain, accurate Spanish for the tenant. Keep the parties' names, the address and every amount exactly as written, and each clause's number and heading.",
+                "instructionsComponent": "",
+                "accept": [],
+                "converters": {},
+                "engine": "",
+                "auto": true,
+                "target": ""
+              },
+              "components": [
+                {
+                  "type": "file",
+                  "key": "files",
+                  "label": "Lease",
+                  "input": true,
+                  "storage": "base64",
+                  "multiple": false,
+                  "hideLabel": true,
+                  "filePattern": ".pdf,.docx,.txt,.md",
+                  "fileMaxSize": "3MB",
+                  "tableView": false
+                },
+                {
+                  "type": "hidden",
+                  "key": "result",
+                  "input": true
+                }
+              ],
+              "hideLabel": false
+            }
+          ]
+        },
+        {
           "type": "checkbox",
           "key": "checked",
           "label": "I have checked the clauses and the summary against the lease",

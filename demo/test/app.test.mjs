@@ -500,7 +500,7 @@ describe('Demo site app', function () {
             }
         });
 
-        it('ships a lease review form whose AI Documents use the extract and analyze plugins, and a target field of the form', function () {
+        it('ships a lease review form whose AI Documents use the extract, analyze and translate plugins, and a target field of the form', function () {
             const form = project.forms.leaseReview;
             expect(form).to.include({ name: 'leaseReview', path: 'lease-review' });
             expect(form.tags).to.include('uag');
@@ -508,7 +508,7 @@ describe('Demo site app', function () {
                 return [component, ...(component.components || []).flatMap(walk)];
             });
             const documents = all.filter((component) => component.type === 'uagdocument');
-            expect(documents.map((component) => [component.key, component.uag.plugin])).to.deep.equal([['leaseClauses', 'extract'], ['leaseSummary', 'analyze']]);
+            expect(documents.map((component) => [component.key, component.uag.plugin])).to.deep.equal([['leaseClauses', 'extract'], ['leaseSummary', 'analyze'], ['leaseTranslation', 'translate']]);
             for (const component of documents) {
                 expect(component.components.map((child) => child.key)).to.deep.equal(['files', 'result']);
                 expect(component.components[0]).to.include({ type: 'file', storage: 'base64' });

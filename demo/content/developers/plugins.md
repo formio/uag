@@ -26,9 +26,10 @@ From a plugins file: `UAG_PLUGINS` names an ES module (`.mjs`) or CommonJS file 
 // /app/plugins/index.mjs: the official plugins, plus your own
 import extract from '@formio/uag-extract';
 import analyze from '@formio/uag-analyze';
+import translate from '@formio/uag-translate';
 import office from '@formio/uag-convert-office';
 import myConverter from './my-converter.mjs';
-export default [extract, analyze, office, myConverter];
+export default [extract, analyze, translate, office, myConverter];
 ```
 
 A plugin that needs system binaries or npm packages the image does not have is added by building an image `FROM formio/uag-documents`.
@@ -75,6 +76,148 @@ The `converter` and `document` types are **experimental** in 2.0: their contract
 | `document` | Turns files and a form designer's instructions into content for the AI Document component. Chosen per component in the form builder. | Experimental |
 | `engine`, `tool`, `action` | Listed only: engines, MCP tools and form actions keep loading as before, and appear in `GET {project}/plugins`. | Stable |
 
+## Your first document plugin
+
+A document plugin is one JavaScript file: a plain object with a few fields and an async `process()`. The UAG does the rest: it turns each upload into a PDF or text (through the converters), chooses the engine, streams progress to the form, sanitizes what you return and shows it in the component. This walkthrough builds **Translate**: the form designer picks a language, and the person filling the form gets their upload back in it.
+
+The `formio/uag-documents` image ships this plugin as `@formio/uag-translate` (the same code, with more languages). Two plugins cannot share `document:translate`, so to run your own copy beside the image's, give yours another `name`, or leave the official one out of your plugins file.
+
+### 1. Write the plugin
+
+```js
+// my-plugins/translate.mjs
+const LANGUAGES = { es: 'Spanish', fr: 'French', de: 'German', pt: 'Portuguese' };
+
+export default {
+    type: 'document',
+    name: 'translate',
+    title: 'Translate',
+    description: 'Translates the uploaded documents into the language the form designer picks.',
+    version: '1.0.0',
+    apiVersion: 1,
+    inputs: [['pdf'], ['text']],   // a PDF when the engine reads one, else the text
+    editable: true,                // people may correct the translation
+    output: 'markdown',
+
+    // Shown on the component's AI tab once this plugin is picked.
+    editForm: [{
+        type: 'select', key: 'language', label: 'Translate into', input: true,
+        dataSrc: 'values',
+        data: { values: Object.entries(LANGUAGES).map(([value, label]) => ({ value, label })) },
+        validate: { required: true }
+    }],
+    defaults: { language: 'es' },
+
+    // Problems here stop processing with "The AI Document … is misconfigured: …".
+    validateSettings(settings) {
+        return LANGUAGES[settings.language] ? [] : ['pick a language to translate into'];
+    },
+
+    async process(ctx) {
+        const language = LANGUAGES[ctx.settings.language];
+        ctx.progress(0.1, `Translating into ${language}`);
+        const answer = await ctx.agent.generate({
+            system: `Translate the attached documents into ${language}. Keep their headings, lists and numbers. Translate only: add nothing.`,
+            instructions: ctx.instructions,
+            attachments: ctx.files.map((file, i) => file.document.pdf
+                ? { kind: 'pdf', data: file.document.pdf, label: `Document ${i + 1}: ${file.name}` }
+                : { kind: 'text', text: file.document.text ?? '', label: `Document ${i + 1}: ${file.name}` }),
+            format: 'markdown'
+        });
+        if (answer.stopReason === 'max_tokens') {
+            return { content: answer.text, status: 'flagged', issues: [{ kind: 'truncated', message: 'The translation was cut off.' }] };
+        }
+        return { content: answer.text, status: 'ok', issues: [] };
+    }
+};
+```
+
+Your code decides what to ask the engine and when a result is `ok` or `flagged`. Nothing else is needed: no base class, no build step, and no dependency (wrap it in `definePlugin` from `@formio/uag` if you want the shape checked as you write).
+
+### 2. List it in a plugins file
+
+```js
+// my-plugins/index.mjs
+import translate from './translate.mjs';
+export default [translate];
+```
+
+### 3. Test it without a server
+
+`process()` only uses what it is given, so a stand-in `ctx` with a fake `agent.generate` tests it with no UAG and no engine:
+
+```js
+// my-plugins/test/translate.test.mjs
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import translate from '../translate.mjs';
+
+test('asks the engine for the chosen language', async () => {
+    const calls = [];
+    const ctx = {
+        settings: { language: 'fr' }, instructions: 'Translate the notice for the tenant.',
+        files: [{ name: 'notice.txt', document: { text: 'Your rent changes on December 1.' } }],
+        progress: () => {},
+        agent: { generate: async (request) => { calls.push(request); return { text: '# Avis', stopReason: 'end_turn' }; } }
+    };
+    assert.equal((await translate.process(ctx)).status, 'ok');
+    assert.match(calls[0].system, /French/);
+});
+```
+
+```bash
+node --test test/*.test.mjs
+```
+
+### 4. Load it into the UAG
+
+Name the plugins file with `UAG_PLUGINS`:
+
+```bash
+UAG_PLUGINS=./my-plugins/index.mjs npx uag start
+```
+
+Or, with the image, mount the folder at `/app/plugins`. Your `index.mjs` replaces the image's default list, so list the official plugins you want too (they stay installed in the image, so the imports resolve):
+
+```js
+// my-plugins/index.mjs, mounted at /app/plugins
+import extract from '@formio/uag-extract';
+import analyze from '@formio/uag-analyze';
+import office from '@formio/uag-convert-office';
+import translate from './translate.mjs';
+export default [extract, analyze, office, translate];
+```
+
+```bash
+docker run -p 3200:3200 --env-file .env -v "$PWD/my-plugins:/app/plugins:ro" formio/uag-documents
+```
+
+At startup the UAG logs where it loaded the plugins from, and a notice that `document` plugins are experimental:
+
+```
+[formio-uag] Plugins loaded from /app/plugins/index.mjs.
+[plugins] document:translate (from /app/plugins/index.mjs) uses the experimental "document" plugin type: …
+```
+
+A plugin of the wrong shape stops startup, naming it and the problem (see [Startup](#startup)). `GET {project}/plugins` lists it once it is installed.
+
+### 5. Use it in the form builder
+
+Reload the builder (in the developer portal, reload the page: the portal script carries the plugin list it was loaded with). Add an **AI Document**, open its **AI** tab and pick **Translate** under *Process*: its *Translate into* setting appears. Write the instructions (every AI Document needs them: "Translate the notice for the tenant"), choose a target field if the translation should land in one, and save.
+
+The UAG reads its plugins once, at startup: restart it after you change one.
+
+### When it does not work
+
+| What you see | Why |
+|---|---|
+| Startup stops: `Plugin document:translate is registered twice` | Your plugin and `@formio/uag-translate` share a name: rename yours, or leave the official one out. |
+| `The AI Document "…" is misconfigured: its process "translate" is not installed or not available.` | The UAG serving the form did not load your plugins file: check `UAG_PLUGINS` or the mount, and the startup log. |
+| `The AI Document "…" is misconfigured: pick a language to translate into` | Your `validateSettings` refused the component's settings. |
+| `The AI Document "…" is misconfigured: it has no instructions.` | The component's instructions are empty. |
+| `"notice.docx" is application/vnd.openxmlformats-officedocument.wordprocessingml.document, which no installed converter brings to the "translate" process.` | No converter turns that file type into a PDF or text: add `@formio/uag-convert-office` for Word and Excel. |
+| The result is **flagged** with your issue | Your `process()` returned `status: 'flagged'`: people see the issues and decide. |
+
 ## Writing a converter
 
 A converter (`apiVersion: 1`) turns one file into a PDF or text:
@@ -110,7 +253,7 @@ The example converter, `examples/uag-convert-sample/` in the `uag-plugins` repos
 
 ## Writing a document plugin
 
-A document plugin (`apiVersion: 1`) turns the component's files and the form designer's instructions into content:
+A document plugin (`apiVersion: 1`) turns the component's files and the form designer's instructions into content (the walkthrough above builds one step by step):
 
 ```js
 export default {

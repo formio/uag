@@ -219,7 +219,7 @@ In `demo/.env.local` (git ignores it):
 
 Ctrl+C stops everything. If a port is taken, it says which one and which setting moves it.
 
-**What works.** The conversation, workflow and formflow demos work as soon as it is up: the Agentic Workflow's agents run in the local UAG, on the applications the site saves through it. The AI Document demo also needs the document plugins: set `UAG_PLUGINS` to a plugins file that lists them (the `extract` and `analyze` document plugins, and the `office-text` converter for Word files), in `demo/.env.local` or the shell. Without them, an upload answers that its process is not installed.
+**What works.** The conversation, workflow and formflow demos work as soon as it is up: the Agentic Workflow's agents run in the local UAG, on the applications the site saves through it. The AI Document demo also needs the document plugins: set `UAG_PLUGINS` to a plugins file that lists them (the `extract`, `analyze` and `translate` document plugins, and the `office-text` converter for Word files), in `demo/.env.local` or the shell. Without them, an upload answers that its process is not installed.
 
 ### Against a UAG you run
 

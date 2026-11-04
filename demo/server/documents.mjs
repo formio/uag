@@ -1,6 +1,7 @@
 /**
  * AI Document: a lease review form whose AI Document components turn an
- * uploaded lease into its key clauses, copied word for word, and a summary.
+ * uploaded lease into its key clauses, copied word for word, a summary, and a
+ * translation for the tenant.
  *
  * The page renders the form with formio.js and registers @formio/uag-js with
  * this site as its "UAG": the component asks these routes for the installed
@@ -19,7 +20,7 @@ import { Readable } from 'node:stream';
 
 const FORM = 'leaseReview';
 /** The form's AI Documents: the only components the browser may ask to process. */
-const DOCUMENTS = ['leaseClauses', 'leaseSummary'];
+const DOCUMENTS = ['leaseClauses', 'leaseSummary', 'leaseTranslation'];
 /** The text fields sent along with a document's files (the plugins may read the form's data). */
 const FIELDS = ['property', 'reviewer'];
 /** Where the component posts, under the "UAG" URL the page registers. */
