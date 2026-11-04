@@ -166,7 +166,12 @@ export async function prepareDocument(request: {
             buffer = await form.readFile(file, auth, { maxBytes: settings.maxFileBytes, component: filesComponent });
         }
         catch (err: any) {
-            throw new FormflowError(413, `"${name}" could not be read: ${err?.message || 'it was refused'}`, 'file_unreadable');
+            // appserver-core's message names the file and the reason. Only a file over
+            // maxBytes is too large; a value that does not match its component, or a
+            // download Form.io refuses, cannot be processed as sent.
+            const message = String(err?.message || `"${name}" could not be read.`);
+            if (/ is larger than the \d+ bytes /.test(message)) throw new FormflowError(413, message, 'payload_too_large');
+            throw new FormflowError(422, message, 'file_unreadable');
         }
         if (!buffer) throw new FormflowError(422, `"${name}" is stored as ${file.storage || 'unknown'}, which cannot be read here.`, 'file_unreadable');
         total += buffer.length;

@@ -99,9 +99,18 @@ describe('Documents: the processing pipeline', function () {
             started = await startDocuments({ documents: { maxFiles: 2, maxTotalBytes: 100000 } });
             expect((await refusal({ path: 'contract', files: [contract(), contract(), contract()] })).status).to.equal(413);
             expect((await refusal({ path: 'contract', files: [upload(Buffer.alloc(200000, 0x41), 'big.txt', 'text/plain')] })).error).to.include('documents.maxTotalBytes');
+            await started!.stop();
+            started = await startDocuments({ documents: { maxFileBytes: 1000 } });
+            expect(await refusal({ path: 'contract', files: [upload(Buffer.alloc(5000, 0x41), 'one.txt', 'text/plain')] })).to.deep.include({ status: 413, code: 'payload_too_large' });
+            await started!.stop();
+            started = await startDocuments({ documents: { maxFiles: 2, maxTotalBytes: 100000 } });
             expect(await refusal({ path: 'pdfOnly', files: [upload(Buffer.from('notes'), 'n.txt', 'text/plain')] })).to.deep.include({ status: 415, code: 'unsupported_file' });
             expect((await refusal({ path: 'contract', files: [upload(docx([[{ text: 'Hi' }]]), 'a.docx', 'application/msword')] })).error).to.equal('"a.docx" is application/vnd.openxmlformats-officedocument.wordprocessingml.document, which no installed converter brings to the "echo" process.');
             expect((await refusal({ path: 'contract', files: [{ storage: 'dropbox', name: 'x.pdf', originalName: 'x.pdf', type: 'application/pdf', size: 10 }] })).error).to.equal('"x.pdf" is stored as dropbox, which cannot be read here.');
+            // A value naming a file stored elsewhere than its component stores is refused before anything is fetched.
+            expect(await refusal({ path: 'contract', files: [{ storage: 's3', bucket: 'other', key: 'private/x.pdf', name: 'x.pdf', originalName: 'x.pdf', type: 'application/pdf', size: 10 }] })).to.deep.include({
+                status: 422, code: 'file_unreadable', error: 'The file "x.pdf" cannot be read: it says it is stored in "s3", but its component stores to "base64".'
+            });
             const disguised = upload(Buffer.concat([Buffer.from('MZ'), Buffer.alloc(40)]), 'report.pdf', 'application/pdf');
             expect((await refusal({ path: 'contract', files: [disguised] })).error).to.include('is named .pdf');
         });
