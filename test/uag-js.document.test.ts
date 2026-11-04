@@ -196,6 +196,22 @@ describe('uag-js: the AI Document component', function () {
             expect(choices('inRow')).to.deep.equal(['', 'rowText']);
         });
 
+        it('opens the settings with the files component\'s storage and limits on the File tab, and saves them back unchanged', () => {
+            registerWith();
+            const Document = Formio.Components.components.uagdocument;
+            const stored: any = docComponent('contract', {}, {});
+            Object.assign(stored.components[0], { storage: 'azure', fileMaxSize: '3MB', dir: 'contracts' });
+            // The builder edits a copy, made with `inFormBuilder`, and gives the settings form its definition.
+            const copy = new Document(JSON.parse(JSON.stringify(stored)), { inFormBuilder: true });
+            expect(copy.component.filesSettings).to.include({ storage: 'azure', fileMaxSize: '3MB', dir: 'contracts' });
+            // Rendered on a form, the definition carries no copy of them.
+            expect(new Document(JSON.parse(JSON.stringify(stored)), {}).component).to.not.have.property('filesSettings');
+            const saved: any = JSON.parse(JSON.stringify(copy.component));
+            uag.normalizeDefinition(saved);
+            expect(saved).to.not.have.property('filesSettings');
+            expect(saved.components[0]).to.include({ storage: 'azure', fileMaxSize: '3MB', dir: 'contracts' });
+        });
+
         it('stores the chosen plugin\'s settings, accepted types and file settings in the stored shape', () => {
             registerWith();
             const definition: any = docComponent('contract', {

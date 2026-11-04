@@ -1556,6 +1556,14 @@
 
     var FILE_SETTINGS = ['storage', 'url', 'options', 'dir', 'fileNameTemplate', 'multiple', 'fileMinSize', 'fileMaxSize', 'webcam'];
 
+    /** The File tab's settings, as the files component holds them. */
+    function filesSettingsOf(component) {
+        var files = ((component && component.components) || []).filter(function (child) { return child && child.key === 'files'; })[0] || {};
+        var settings = {};
+        FILE_SETTINGS.forEach(function (key) { if (files[key] !== undefined) settings[key] = files[key]; });
+        return settings;
+    }
+
     function documentChildren() {
         return [
             { type: 'file', key: 'files', label: 'Files', input: true, storage: 'base64', multiple: false, hideLabel: true },
@@ -1794,6 +1802,9 @@
 
             init() {
                 normalizeDefinition(this.component);
+                // The builder's settings form edits a copy made with `inFormBuilder`: give it the
+                // files component's settings, which its File tab shows and saves back.
+                if (this.options.inFormBuilder) this.component.filesSettings = filesSettingsOf(this.component);
                 if (!this.builderMode && !this.options.preview) {
                     this.component.validate = Object.assign({}, this.component.validate, { custom: 'valid = instance.uagDocumentValidity ? instance.uagDocumentValidity() : true;' });
                 }
