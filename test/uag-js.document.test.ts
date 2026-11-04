@@ -412,6 +412,21 @@ describe('uag-js: the AI Document component', function () {
             expect(document.refs.uagDocument.textContent).to.include('Written into');
         });
 
+        it('keeps the files it processed in the form data after a result was written, as the files change', async () => {
+            registerWith();
+            const form = await render([docComponent('contract', { target: 'notes' }), { type: 'textarea', key: 'notes', input: true }]);
+            form.getComponent('notes').setValue('My own notes');
+            const document = await upload(form, 'contract', [file('first.pdf')]);
+            await settle();
+            document.refs.uagDocument.querySelector('[ref="uagReplace"]').click();
+            for (const name of ['second.pdf', 'third.pdf']) {
+                await upload(form, 'contract', [file(name)]);
+                await settle();
+                expect(form.submission.data.contract.files.map((entry: any) => entry.name)).to.deep.equal([name]);
+                expect(form.submission.data.contract.result.content).to.include('Agreement');
+            }
+        });
+
         it('writes into the field of the same row inside a Data Grid', async () => {
             registerWith();
             const form = await render([{ type: 'datagrid', key: 'rows', input: true, tree: true, components: [docComponent('doc', { target: 'rowText' }), { type: 'textarea', key: 'rowText', input: true }] }]);

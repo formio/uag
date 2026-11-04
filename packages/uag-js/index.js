@@ -1982,8 +1982,11 @@
             }
 
             setDocumentResult(result) {
-                var value = Object.assign({}, this.dataValue || {}, { result: result || {} });
-                this.dataValue = value;
+                // Set the result on the object the children write to: a copy would leave the
+                // files component writing to the old one, and later files would not be saved.
+                var value = this.dataValue && typeof this.dataValue === 'object' ? this.dataValue : {};
+                value.result = result || {};
+                if (this.dataValue !== value) this.dataValue = value;
                 var hidden = this.getComponent('result');
                 if (hidden) hidden.dataValue = result || {};
                 this.triggerChange({ modified: true });
