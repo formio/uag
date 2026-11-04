@@ -23,16 +23,16 @@ module.exports = {
 From a plugins file: `UAG_PLUGINS` names an ES module (`.mjs`) or CommonJS file whose default export (or `plugins` export) is a plugin, a list of plugins, or nested lists. In the `formio/uag-documents` image, `/app/plugins/index.mjs` is loaded when it exists; `UAG_PLUGINS=off` loads none. Relative imports in the file resolve from the file, and bare imports from the folder's own `node_modules`, then upward.
 
 ```js
-// /app/plugins/index.mjs: the official plugins, plus your own
-import extract from '@formio/uag-extract';
-import analyze from '@formio/uag-analyze';
-import translate from '@formio/uag-translate';
-import office from '@formio/uag-convert-office';
+// /app/plugins/index.mjs: the image's plugins, plus your own
+import { extract } from '@formio/uag-extras/documents/extract';
+import { analyze } from '@formio/uag-extras/documents/analyze';
+import { translate } from '@formio/uag-extras/documents/translate';
+import { officeText } from '@formio/uag-extras/converters/office-text';
 import myConverter from './my-converter.mjs';
-export default [extract, analyze, translate, office, myConverter];
+export default [extract, analyze, translate, officeText, myConverter];
 ```
 
-A plugin that needs system binaries or npm packages the image does not have is added by building an image `FROM formio/uag-documents`.
+The image's plugins come from `@formio/uag-extras`, the package of UAG extras (modules, actions, MCP tools, engine types, document plugins and converters) from Form.io and the community; it is installed in the image. Each extra is its own import, `@formio/uag-extras/<kind>/<name>`: its default export is a module for `server.use()`, and its plugin is a named export, for plugins files. A plugin that needs system binaries or npm packages the image does not have is added by building an image `FROM formio/uag-documents`.
 
 ### Settings and switching plugins off
 
@@ -80,7 +80,7 @@ The `converter` and `document` types are **experimental** in 2.0: their contract
 
 A document plugin is one JavaScript file: a plain object with a few fields and an async `process()`. The UAG does the rest: it turns each upload into a PDF or text (through the converters), chooses the engine, streams progress to the form, sanitizes what you return and shows it in the component. This walkthrough builds **Translate**: the form designer picks a language, and the person filling the form gets their upload back in it.
 
-The `formio/uag-documents` image ships this plugin as `@formio/uag-translate` (the same code, with more languages). Two plugins cannot share `document:translate`, so to run your own copy beside the image's, give yours another `name`, or leave the official one out of your plugins file.
+The `formio/uag-documents` image ships this plugin as `@formio/uag-extras/documents/translate` (the same code, with more languages). Two plugins cannot share `document:translate`, so to run your own copy beside the image's, give yours another `name`, or leave the official one out of your plugins file.
 
 ### 1. Write the plugin
 
@@ -181,11 +181,11 @@ Or, with the image, mount the folder at `/app/plugins`. Your `index.mjs` replace
 
 ```js
 // my-plugins/index.mjs, mounted at /app/plugins
-import extract from '@formio/uag-extract';
-import analyze from '@formio/uag-analyze';
-import office from '@formio/uag-convert-office';
+import { extract } from '@formio/uag-extras/documents/extract';
+import { analyze } from '@formio/uag-extras/documents/analyze';
+import { officeText } from '@formio/uag-extras/converters/office-text';
 import translate from './translate.mjs';
-export default [extract, analyze, office, translate];
+export default [extract, analyze, officeText, translate];
 ```
 
 ```bash
@@ -211,11 +211,11 @@ The UAG reads its plugins once, at startup: restart it after you change one.
 
 | What you see | Why |
 |---|---|
-| Startup stops: `Plugin document:translate is registered twice` | Your plugin and `@formio/uag-translate` share a name: rename yours, or leave the official one out. |
+| Startup stops: `Plugin document:translate is registered twice` | Your plugin and `@formio/uag-extras/documents/translate` share a name: rename yours, or leave the official one out. |
 | `The AI Document "…" is misconfigured: its process "translate" is not installed or not available.` | The UAG serving the form did not load your plugins file: check `UAG_PLUGINS` or the mount, and the startup log. |
 | `The AI Document "…" is misconfigured: pick a language to translate into` | Your `validateSettings` refused the component's settings. |
 | `The AI Document "…" is misconfigured: it has no instructions.` | The component's instructions are empty. |
-| `"notice.docx" is application/vnd.openxmlformats-officedocument.wordprocessingml.document, which no installed converter brings to the "translate" process.` | No converter turns that file type into a PDF or text: add `@formio/uag-convert-office` for Word and Excel. |
+| `"notice.docx" is application/vnd.openxmlformats-officedocument.wordprocessingml.document, which no installed converter brings to the "translate" process.` | No converter turns that file type into a PDF or text: add `@formio/uag-extras/converters/office-text` for Word and Excel (with its peer dependencies, `mammoth`, `node-html-markdown` and `exceljs`). |
 | The result is **flagged** with your issue | Your `process()` returned `status: 'flagged'`: people see the issues and decide. |
 
 ## Writing a converter
@@ -249,7 +249,7 @@ export default definePlugin({
 
 Files are identified from their bytes (the name and the browser's type are hints only), so a converter's `detect` is how a new format gets its type. The built-in converters are `pdf-text` (a PDF's text layer, per page), `text` (text, Markdown, CSV, JSON, HTML as Markdown, XML) and `image-pdf` (PNG and JPEG as a one-page PDF).
 
-The example converter, `examples/uag-convert-sample/` in the `uag-plugins` repository, is the starting point: its own folder, an `index.mjs`, its own `node_modules`, and a contract test.
+The sample converter, `examples/converter-sample/` in the `uag-extras` repository, is the starting point, and that repository is where to share one: `npm run new -- converters <name>` starts a converter from the sample, with its manifest, README and a test, and a contract test loads the samples into a UAG build.
 
 ## Writing a document plugin
 

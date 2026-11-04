@@ -7,7 +7,7 @@ order: 48
 
 The **AI Document** component (`uagdocument`, in `@formio/uag-js`) lets the people filling a form drop files and get AI-generated content from them: an exact extraction, a summary, an assessment. The form designer picks a **process** (a document plugin) and writes the instructions; converters bring each file to what the AI engine reads (PDF or text). Files upload to the form's own storage; the submission holds the file references and the result, never file bytes from the UAG.
 
-The plugins it runs come from the `formio/uag-documents` image or your own plugins folder: see [Plugins](/developers/plugins).
+The plugins it runs come from the `formio/uag-documents` image (the document extras of `@formio/uag-extras`) or your own plugins folder: see [Plugins](/developers/plugins).
 
 ## For the form builder, in the developer portal
 
