@@ -1,12 +1,12 @@
 import type { Plugin, PluginRegistry, PluginType } from '@formio/appserver';
 import { BUILT_IN_CONVERTERS } from './converters';
 import { AcceptEntry, ConverterRoutes } from './routes';
-import type { Converter, DocumentPlugin } from './types';
+import type { Converter } from './types';
 
 const REPRESENTATIONS = ['pdf', 'text'];
 const isObject = (value: any) => !!value && typeof value === 'object' && !Array.isArray(value);
 
-/** Per registry: the converter routes, and each document plugin's reachable types. */
+/** Per registry: the converter routes (with `documents.prefer`), once the converters are set up. */
 type DocumentsState = { routes: ConverterRoutes; accept: Map<string, AcceptEntry[]> };
 const states = new WeakMap<PluginRegistry, DocumentsState>();
 
@@ -58,57 +58,11 @@ export const converterPluginType: PluginType = {
 };
 
 /**
- * Plugin type `document`: files plus instructions into content. Selected per
- * component. Experimental in 2.0. One per registry: its manifest carries the
- * types each plugin can take with that registry's converters.
- */
-export const createDocumentPluginType = (): PluginType => {
-    let accepts = new Map<string, AcceptEntry[]>();
-    return {
-    type: 'document',
-    title: 'Document process',
-    apiVersions: [1],
-    editForm: 'static',
-    unavailable: 'disable',
-    stability: 'experimental',
-    validate(plugin: Plugin) {
-        const problems: string[] = [];
-        if (!Array.isArray(plugin.inputs) || !plugin.inputs.length || !plugin.inputs.every((set: any) =>
-            Array.isArray(set) && set.length && set.every((kind: any) => REPRESENTATIONS.includes(kind)))) {
-            problems.push('"inputs" must list representation sets, each of "pdf" and/or "text", in order of preference');
-        }
-        if (typeof plugin.process !== 'function') problems.push('"process" must be a function');
-        if (plugin.defaults !== undefined && !isObject(plugin.defaults)) problems.push('"defaults" must be an object');
-        if (plugin.editable !== undefined && typeof plugin.editable !== 'boolean') problems.push('"editable" must be true or false');
-        if (plugin.output !== undefined && !['markdown', 'text'].includes(plugin.output)) problems.push('"output" must be "markdown" or "text"');
-        if (plugin.validateSettings !== undefined && typeof plugin.validateSettings !== 'function') problems.push('"validateSettings" must be a function');
-        return problems;
-    },
-    /** Once every converter is set up: the routes, and the types each document plugin can take. */
-    initialize(registry) {
-        const state = documentsOf(registry);
-        for (const plugin of registry.list<DocumentPlugin>('document')) {
-            state.accept.set(plugin.name, state.routes.accept(plugin.inputs));
-        }
-        states.set(registry, state);
-        accepts = state.accept;
-    },
-    manifest: (plugin: Plugin) => ({
-        inputs: plugin.inputs,
-        editable: plugin.editable === true,
-        output: plugin.output || 'markdown',
-        defaults: plugin.defaults || {},
-        accept: accepts.get(plugin.name) || []
-    })
-    };
-};
-
-/**
- * Register the document feature's plugin types and the built-in converters,
- * as the server's own. The UAG registers no document plugin.
+ * Register the converter type and the built-in converters, as the server's
+ * own. The `document` type comes with the AI Document feature
+ * (@formio/uag-extras/features/ai-document).
  */
 export function registerDocuments(registry: PluginRegistry) {
     registry.addType(converterPluginType, '@formio/uag');
-    registry.addType(createDocumentPluginType(), '@formio/uag');
     registry.add(BUILT_IN_CONVERTERS, '@formio/uag', { server: true });
 }

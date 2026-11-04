@@ -289,8 +289,6 @@ export declare function UAG(uagUrl: string, options?: UAGOptions): (Formio: any)
 export declare namespace UAG {
     /** Resolves once the installed document plugins are known (embedded by the UAG's scripts, or fetched at registration). */
     const ready: Promise<void>;
-    /** The AI Document component class (`uagdocument`), once registered. */
-    let UAGDocument: any;
     /** The same as `renderMarkdown`. */
     function renderMarkdown(markdown: string): string;
     /** The same as `client`. */

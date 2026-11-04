@@ -108,7 +108,8 @@ export const contractsForm = {
 export function startDocuments(config: any = {}): Promise<Started> {
     return start({
         forms: { contracts: contractsForm },
-        modules: [{ plugins: [echo, slowConverter] }],
+        // The document type comes with the AI Document feature (@formio/uag-extras): converters only here.
+        modules: [{ plugins: [slowConverter] }],
         config: { engines: ['reader', 'stub-agent'], engineTypes: { reader }, ...config }
     });
 }

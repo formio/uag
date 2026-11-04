@@ -27,8 +27,8 @@ describe('Documents: serving uag-js and the portal script', function () {
         expect(res.text.startsWith(bundle)).to.equal(true);
         expect(res.text).to.include("lib.UAG(uagUrl, { manifest: manifest })");
         const manifest = manifestOf(res.text);
-        expect(manifest.map((p: any) => `${p.type}:${p.name}`)).to.include.members(['document:echo', 'converter:pdf-text']);
-        expect(manifest.every((p: any) => p.type === 'document' || p.type === 'converter')).to.equal(true);
+        expect(manifest.map((p: any) => `${p.type}:${p.name}`)).to.include.members(['converter:slow-text', 'converter:pdf-text']);
+        expect(manifest.every((p: any) => ['document', 'converter', 'feature'].includes(p.type))).to.equal(true);
         const again = await started.request().get('/uag-js/uag.use.js').set('If-None-Match', res.headers.etag);
         expect(again.status).to.equal(304);
     });
@@ -37,7 +37,7 @@ describe('Documents: serving uag-js and the portal script', function () {
         started = await startDocuments();
         const plain = await started.request().get('/uag-js/portal.js');
         expect(plain.text).to.include('lib.UAG(uagUrl, { portal: true, manifest: manifest })');
-        expect(manifestOf(plain.text).find((p: any) => p.name === 'echo')).to.exist;
+        expect(manifestOf(plain.text).find((p: any) => p.name === 'slow-text')).to.exist;
         expect(plain.text).to.not.include('createElement(\'script\')');
         const chained = await started.request().get(`/uag-js/portal.js?chain=${encodeURIComponent('https://cdn.example.com/custom.js')}`);
         expect(chained.text).to.include('chain.src = "https://cdn.example.com/custom.js"');

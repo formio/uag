@@ -25,7 +25,6 @@ import { ParentInfo } from "./tools";
 import { NodeHtmlMarkdown } from 'node-html-markdown'
 import { Router } from "express";
 import { agentCredentials, FormAgentRouter } from "./agent/router";
-import { DocumentRouter } from "./documents/router";
 import type { UAGProjectInterface } from "./UAGProjectInterface";
 
 export type UAGComponentInfo = {
@@ -132,8 +131,6 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
         const router = await super.router();
         const project = this.project as unknown as UAGProjectInterface;
         router.use(FormAgentRouter(project, agentCredentials(project)));
-        // The AI Document's process route: POST {form}/document/process.
-        router.use(DocumentRouter(project, agentCredentials(project)));
         return router;
     }
 
