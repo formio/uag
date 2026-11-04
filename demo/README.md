@@ -9,6 +9,7 @@ The marketing and demo site for the Form.io Universal Agent Gateway, published a
   - **Conversation Forms** (`/examples/conversation`): a chat whose questions come entirely from a form.
   - **Agentic Workflow** (`/examples/workflow`): a college application reviewed by two chained agents, with no human in the loop.
   - **Agentic Formflow** (`/examples/formflow`): a claims wizard that chooses its own pages and fills itself in from a description.
+  - **AI Document** (`/examples/documents`): a lease review whose AI Document components copy an uploaded lease's key clauses word for word into a field, check the copy, and summarize the lease. It needs the document plugins in the UAG (the `formio/uag-documents` image, or `UAG_PLUGINS`).
 - **Developers** (`/developers`): the technical documentation, from how the UAG works to the engine SDK.
 - **Contact Us** (`/contact`): the hosted Form.io contact form.
 
@@ -45,7 +46,7 @@ cp .env.example .env        # fill in every value marked "required"
 docker compose up -d --build
 ```
 
-Then point your load balancer or reverse proxy at `DEMO_BIND:DEMO_PORT` (127.0.0.1:8080 by default; set `DEMO_BIND` to the private address the load balancer reaches) for `ai.form.io`, terminating TLS there. If your load balancer adds more than one `X-Forwarded-For` entry (some cloud load balancers and CDNs do), raise `TRUST_PROXY` to match, or every visitor shares one rate limit. The site sends `Strict-Transport-Security` when its public URL is `https`, reads visitor IPs from `X-Forwarded-For` through `TRUST_PROXY` hops, and serves its live streams (`/api/flow/stream`, `/api/formflow/agent/extract`) as server-sent events: turn off response buffering for those paths, and allow long-lived responses (a few minutes).
+Then point your load balancer or reverse proxy at `DEMO_BIND:DEMO_PORT` (127.0.0.1:8080 by default; set `DEMO_BIND` to the private address the load balancer reaches) for `ai.form.io`, terminating TLS there. If your load balancer adds more than one `X-Forwarded-For` entry (some cloud load balancers and CDNs do), raise `TRUST_PROXY` to match, or every visitor shares one rate limit. The site sends `Strict-Transport-Security` when its public URL is `https`, reads visitor IPs from `X-Forwarded-For` through `TRUST_PROXY` hops, and serves its live streams (`/api/flow/stream`, `/api/formflow/agent/extract`, `/api/documents/uag/.../document/process`) as server-sent events: turn off response buffering for those paths, and allow long-lived responses (a few minutes).
 
 The images build from this repository (`docker compose build`). To deploy released images instead, set `UAG_IMAGE`, `ENGINES_IMAGE` and `DEMO_IMAGE` in `.env` and run `docker compose pull`.
 
@@ -205,7 +206,7 @@ In `demo/.env.local` (git ignores it):
 
 `yarn demo:local` then:
 
-1. Imports the demo's forms and actions (`module/project.json`) into the project: `serviceRequest`, `application`, `sum` and `claim`. An empty project is fine; forms it already has are updated in place.
+1. Imports the demo's forms and actions (`module/project.json`) into the project: `serviceRequest`, `application`, `sum`, `claim` and `leaseReview`. An empty project is fine; forms it already has are updated in place.
 2. Starts the UAG from `lib/` on the project, with JEV and Claude in-process, on `UAG_PORT` (3200).
 3. Starts the flow proxy, for the flow viewer, on `FLOW_PORT` (3250).
 4. Starts the site on `DEMO_PORT` (8080), and prints what it found:
@@ -218,7 +219,7 @@ In `demo/.env.local` (git ignores it):
 
 Ctrl+C stops everything. If a port is taken, it says which one and which setting moves it.
 
-**What works.** All three demos work as soon as it is up: the Agentic Workflow's agents run in the local UAG, on the applications the site saves through it.
+**What works.** The conversation, workflow and formflow demos work as soon as it is up: the Agentic Workflow's agents run in the local UAG, on the applications the site saves through it. The AI Document demo also needs the document plugins: set `UAG_PLUGINS` to a plugins file that lists them (the `extract` and `analyze` document plugins, and the `office-text` converter for Word files), in `demo/.env.local` or the shell. Without them, an upload answers that its process is not installed.
 
 ### Against a UAG you run
 

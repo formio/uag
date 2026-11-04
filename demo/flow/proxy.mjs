@@ -114,6 +114,25 @@ export function describeRequest(url, body) {
             ].filter(Boolean).join(' · ') : '',
         };
     }
+    // An AI Document's files, `{form}/document/process`: the files' names, not their content.
+    const document = /^\/(.+)\/document\/process$/.exec(pathname);
+    if (document) {
+        const json = tryJson(body);
+        const files = Array.isArray(json?.files) ? json.files.map((file) => String(file?.originalName || file?.name || 'file')) : [];
+        return {
+            kind: 'agent',
+            operation: 'document',
+            form: document[1].split('/').pop(),
+            label: '/document/process',
+            summary: [
+                typeof json?.path === 'string' ? `component ${json.path}` : '',
+                files.length ? `${files.length} file${files.length === 1 ? '' : 's'}: ${files.join(', ')}` : '',
+            ].filter(Boolean).join(' · ').slice(0, 240),
+            // A base64 file is the request's bulk: shown by its type and size only.
+            detail: json ? JSON.stringify(json, (key, value) => (key === 'url' && typeof value === 'string' && value.startsWith('data:')
+                ? `${value.slice(0, value.indexOf(',') + 1)}… (${Math.round(value.length / 1024)} KB)` : value)) : undefined,
+        };
+    }
     if (pathname.endsWith('/mcp')) {
         const json = tryJson(body);
         if (json?.method === 'tools/call') {
@@ -146,9 +165,16 @@ export function describeResponse(body, contentType) {
         const engines = frames.map((frame) => answered(tryJson(frame))).filter(Boolean);
         if (engines.length) return engines.join(' · ');
         const last = tryJson(frames[frames.length - 1] || '');
-        if (last?.result?.content) {
+        // An AI Document's result: its status, and how long the content is.
+        if (typeof last?.result?.content === 'string') {
+            const issues = Array.isArray(last.result.issues) ? last.result.issues.length : 0;
+            const words = last.result.content.split(/\s+/).filter(Boolean).length;
+            return `${last.result.status || 'done'}: ${words} words${issues ? ` · ${issues} issue${issues === 1 ? '' : 's'}` : ''}`;
+        }
+        if (Array.isArray(last?.result?.content)) {
             return last.result.content.map((block) => block.text || '').join(' ').replace(/\s+/g, ' ').slice(0, 300);
         }
+        if (last?.error && last?.code) return String(last.error).slice(0, 300);
         if (last && Array.isArray(last.fields || last.data?.fields)) return 'done';
         return `${frames.length} event${frames.length === 1 ? '' : 's'}`;
     }
@@ -220,11 +246,11 @@ function proxy(req, res, { uag, engines }) {
         const body = Buffer.concat(chunks);
         const text = body.toString('utf8');
         const description = describeRequest(url, text);
-        const { redact, ...shown } = description;
+        const { redact, detail, ...shown } = description;
         // Health checks and the stream channel's keep-alive GETs are noise.
         const quiet = req.method === 'GET' && (shown.kind === 'mcp' || url === '/' || url.startsWith('/health'));
         if (!quiet) {
-            emit({ reqId, requestId, phase: 'request', method: req.method, path: url.split('?')[0].slice(0, 200), ...shown, detail: redact ? '[redacted]' : truncate(text) });
+            emit({ reqId, requestId, phase: 'request', method: req.method, path: url.split('?')[0].slice(0, 200), ...shown, detail: redact ? '[redacted]' : truncate(detail ?? text) });
         }
 
         // What every event after the request repeats, to tie it to its leg.

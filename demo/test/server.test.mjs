@@ -319,6 +319,16 @@ describe('Demo site', function () {
             expect(describeResponse('event: done\ndata: {"tasks":[]}', 'text/event-stream')).to.equal('1 event');
         });
 
+        it('names an AI Document\'s process call by its form, component and files, never their content', function () {
+            const url = `data:application/pdf;base64,${'A'.repeat(4096)}`;
+            const described = describeRequest('/myproject/lease-review/document/process', JSON.stringify({ path: 'leaseClauses', files: [{ storage: 'base64', originalName: 'lease.pdf', url }] }));
+            expect(described).to.include({ kind: 'agent', operation: 'document', form: 'lease-review', label: '/document/process', summary: 'component leaseClauses · 1 file: lease.pdf' });
+            expect(described.detail).to.include('data:application/pdf;base64,… (4 KB)').and.not.include('AAAA');
+            const done = 'event: progress\ndata: {"progress":0.5}\n\nevent: done\ndata: {"result":{"content":"## 4. RENT\\nThe Tenant shall pay rent.","status":"flagged","issues":[{"kind":"omitted"}]}}';
+            expect(describeResponse(done, 'text/event-stream')).to.equal('flagged: 8 words · 1 issue');
+            expect(describeResponse('event: failed\ndata: {"error":"Its process is not installed.","code":"misconfigured"}', 'text/event-stream')).to.equal('Its process is not installed.');
+        });
+
         it('marks token exchanges for redaction', function () {
             expect(describeRequest('/auth/token', '{"client_secret":"x"}')).to.include({ kind: 'auth', redact: true });
         });

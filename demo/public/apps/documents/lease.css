@@ -1,0 +1,210 @@
+/*
+ * Harbor Lane lease review. Teal is the landlord's; the AI Document's own
+ * progress, notices and results are styled by @formio/uag-js (uag-js.css).
+ */
+:root {
+  --ink: #14232b;
+  --muted: #56666f;
+  --mist: #f1f5f5;
+  --paper: #ffffff;
+  --line: #d5dfe0;
+  --teal: #0f6f6a;
+  --teal-deep: #0a4f4b;
+  --teal-soft: #e2f3f1;
+  --amber: #a15c00;
+  --amber-soft: #fdf1dc;
+  --rose: #b4334f;
+  --rose-soft: #fbe9ed;
+  --focus: #3d5bd9;
+  --radius: 8px;
+  font-size: 16px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--mist);
+  color: var(--ink);
+  font-family: 'Schibsted Grotesk', system-ui, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* ---------- Top bar ---------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 28px;
+  background: var(--teal-deep);
+  color: #fff;
+}
+
+.brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
+.brand:hover { color: #fff; }
+.brand-name { font-size: 1.0625rem; font-weight: 700; line-height: 1.1; }
+.brand-name small { display: block; font-size: 0.8125rem; font-weight: 400; color: #bfe3df; }
+
+.tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); }
+.tabs button {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 16px;
+  background: transparent;
+  color: #d9efec;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tabs button[aria-selected="true"] { background: #fff; color: var(--teal-deep); }
+
+/* ---------- Layout ---------- */
+
+.shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 28px;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 28px;
+}
+
+.page-title { margin: 0 0 6px; font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; }
+.page-title:focus { outline: none; }
+.page-lede { margin: 0 0 20px; max-width: 60ch; color: var(--muted); }
+
+.form-card {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.form-card .card { border-color: var(--line); }
+.form-card .card-header { background: var(--teal-soft); color: var(--teal-deep); font-weight: 700; }
+.form-card .btn-primary { background: var(--teal); border-color: var(--teal); }
+.form-card .btn-primary:hover, .form-card .btn-primary:focus { background: var(--teal-deep); border-color: var(--teal-deep); }
+
+.submit-error {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--rose-soft);
+  color: var(--rose);
+}
+
+.builder-card { padding: 16px; }
+.loading { margin: 0; color: var(--muted); }
+
+/* ---------- Side ---------- */
+
+.side { display: flex; flex-direction: column; gap: 20px; }
+.side h2 { margin: 0 0 6px; font-size: 1rem; font-weight: 700; }
+.side p { margin: 0 0 12px; color: var(--muted); font-size: 0.9375rem; }
+
+.samples, .activity {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.sample {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+.sample:hover { border-color: var(--teal); background: var(--teal-soft); color: var(--teal-deep); }
+.sample-type {
+  min-width: 44px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--teal);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.activity ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.activity li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; font-size: 0.9375rem; }
+.activity-text strong { display: block; }
+.activity-text span { color: var(--muted); }
+.activity-text small { display: block; color: var(--muted); font-variant-numeric: tabular-nums; }
+.activity-icon { width: 14px; height: 14px; margin-top: 4px; border-radius: 50%; background: var(--line); }
+.is-running .activity-icon { border: 2px solid var(--teal); border-right-color: transparent; background: none; animation: spin 0.9s linear infinite; }
+.is-ok .activity-icon { background: var(--teal); }
+.is-warn .activity-icon { background: var(--amber); }
+.is-warn .activity-text span { color: var(--amber); }
+.is-error .activity-icon { background: var(--rose); }
+.is-error .activity-text span { color: var(--rose); }
+
+.demo-note { font-size: 0.8125rem !important; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- Confirmation ---------- */
+
+.review-number {
+  display: inline-flex;
+  flex-direction: column;
+  margin: 4px 0 24px;
+  padding: 14px 18px;
+  border-radius: var(--radius);
+  background: var(--teal-soft);
+}
+.review-number span { color: var(--muted); font-size: 0.875rem; }
+.review-number strong { font-size: 1.5rem; letter-spacing: 0.04em; color: var(--teal-deep); }
+
+.saved-title { margin: 0 0 8px; font-size: 1rem; }
+.saved {
+  max-height: 420px;
+  margin: 0 0 24px;
+  padding: 16px;
+  overflow: auto;
+  border-radius: var(--radius);
+  background: #0f1d23;
+  color: #d6e6e4;
+  font-size: 0.8125rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.button {
+  display: inline-block;
+  padding: 10px 18px;
+  border-radius: var(--radius);
+  font-weight: 700;
+  text-decoration: none;
+}
+.button-primary { background: var(--teal); color: #fff; }
+.button-primary:hover { background: var(--teal-deep); color: #fff; }
+
+/* ---------- Narrow screens ---------- */
+
+@media (max-width: 960px) {
+  .shell { grid-template-columns: minmax(0, 1fr); padding: 16px; }
+  .topbar { padding: 10px 16px; }
+  .brand-name small { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-running .activity-icon { animation: none; }
+}

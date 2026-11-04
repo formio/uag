@@ -91,6 +91,26 @@ export class UagClient {
         });
     }
 
+    /** A form's AI Document process route (`{form}/document/process`), answered as a fetch Response so its stream can be relayed. */
+    document(formPath, body, { requestId, accept = 'application/json', signal } = {}) {
+        return this.fetch(`${this.url}${this.projectPath}/${formPath}/document/process`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: accept, ...this.keyHeader, 'X-Request-Id': requestId },
+            body: JSON.stringify(body),
+            signal,
+        });
+    }
+
+    /** The project's plugin manifest: the document plugins and converters this UAG has. */
+    async plugins() {
+        const response = await this.fetch(`${this.url}${this.projectPath}/plugins`, {
+            headers: { Accept: 'application/json', ...this.keyHeader },
+            signal: AbortSignal.timeout(10_000),
+        });
+        if (!response.ok) throw new Error(`The UAG answered ${response.status} for its plugins.`);
+        return response.json();
+    }
+
     async capabilities() {
         const response = await this.fetch(`${this.url}/agent/capabilities`, {
             headers: this.keyHeader,

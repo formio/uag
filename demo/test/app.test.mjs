@@ -8,6 +8,7 @@ import { Sessions } from '../server/sessions.mjs';
 import { Guard } from '../server/guard.mjs';
 import { conversationRoutes } from '../server/conversation.mjs';
 import { workflowRoutes } from '../server/workflow.mjs';
+import { documentRoutes } from '../server/documents.mjs';
 
 const project = createRequire(import.meta.url)('../module/project.json');
 
@@ -124,7 +125,7 @@ describe('Demo site app', function () {
     });
 
     describe('the license notice on the examples', function () {
-        const EXAMPLES = ['/examples', '/examples/conversation', '/examples/workflow', '/examples/formflow'];
+        const EXAMPLES = ['/examples', '/examples/conversation', '/examples/workflow', '/examples/formflow', '/examples/documents'];
 
         it('says a license is needed to run the demos locally, on every example page, when this UAG cannot run Agentic Formflow', async function () {
             const demo = await site({ ADMIN_KEY: 'admin-key' }, { formflow: { allowed: false, reason: 'unlicensed' } });
@@ -412,6 +413,108 @@ describe('Demo site app', function () {
             finally {
                 await chat.close();
             }
+        });
+    });
+
+    describe('the AI Document demo', function () {
+        const FORM_ID = '64b0000000000000000000d1';
+        const lease = { storage: 'base64', name: 'lease.pdf', originalName: 'lease.pdf', type: 'application/pdf', size: 4, url: 'data:application/pdf;base64,JVBERg==' };
+
+        /** The document relays, in front of a stand-in UAG and Form.io. */
+        async function documentSite() {
+            const config = readConfig({ ADMIN_KEY: 'key', DEMO_SECRET: 'secret' });
+            const sessions = new Sessions(config);
+            const session = sessions.create();
+            const calls = [];
+            const formio = {
+                pathOf: async () => 'lease-review',
+                form: async () => ({ ok: true, status: 200, body: { _id: FORM_ID, project: '64b0000000000000000000aa', path: 'lease-review' } }),
+            };
+            const uag = {
+                async document(formPath, body, options) {
+                    calls.push({ formPath, body, options });
+                    return new Response('event: done\ndata: {"result":{"content":"Rent","status":"ok"}}\n\n', { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
+                },
+                async plugins() {
+                    return [{ type: 'document', name: 'extract' }, { type: 'converter', name: 'office-text' }, { type: 'engine', name: 'claude' }, { type: 'tool', name: 'read_document' }];
+                },
+            };
+            const flow = { own: () => {} };
+            const web = await routes((router) => documentRoutes(router, { config, formio, uag, sessions, flow, guard: { protect: () => (req, res, next) => next() } }), session);
+            const post = (form, body) => fetch(`${web.url}/api/documents/uag/project/64b0000000000000000000aa/form/${form}/document/process`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+                body: JSON.stringify(body),
+            });
+            return {
+                web, calls, session, sessions, post,
+                async close() {
+                    sessions.close();
+                    web.server.closeAllConnections();
+                    await new Promise((resolve) => web.server.close(resolve));
+                },
+            };
+        }
+
+        it('relays one lease of the lease review form to the UAG, streamed, with only the text fields and the visitor\'s request id', async function () {
+            const demo = await documentSite();
+            try {
+                const response = await demo.post(FORM_ID, { path: 'leaseClauses', files: [lease], data: { property: 'Unit 4B', leaseSummary: { files: [lease] }, checked: true } });
+                expect(response.status).to.equal(200);
+                expect(response.headers.get('content-type')).to.include('text/event-stream');
+                expect(await response.text()).to.include('event: done');
+                expect(demo.calls).to.have.length(1);
+                expect(demo.calls[0].formPath).to.equal('lease-review');
+                expect(demo.calls[0].body).to.deep.equal({ path: 'leaseClauses', files: [lease], data: { property: 'Unit 4B' } });
+                expect(demo.calls[0].options.accept).to.equal('text/event-stream');
+                expect(demo.sessions.fromRequestId(demo.calls[0].options.requestId)).to.equal(demo.session);
+            }
+            finally {
+                await demo.close();
+            }
+        });
+
+        it('refuses another form, another component, and more than one file, before the UAG sees them', async function () {
+            const demo = await documentSite();
+            try {
+                expect((await demo.post('64b0000000000000000000ff', { path: 'leaseClauses', files: [lease] })).status).to.equal(404);
+                expect((await demo.post(FORM_ID, { path: 'property', files: [lease] })).status).to.equal(400);
+                expect((await demo.post(FORM_ID, { path: 'leaseClauses', files: [lease, lease] })).status).to.equal(400);
+                expect((await demo.post(FORM_ID, { path: 'leaseClauses', files: [] })).status).to.equal(400);
+                expect((await demo.post(FORM_ID, { path: 'leaseClauses', files: [lease], data: { reviewer: 'R'.repeat(9000) } })).status).to.equal(400);
+                expect(demo.calls).to.deep.equal([]);
+            }
+            finally {
+                await demo.close();
+            }
+        });
+
+        it('lists only the document plugins and converters the UAG has', async function () {
+            const demo = await documentSite();
+            try {
+                const plugins = await (await fetch(`${demo.web.url}/api/documents/uag/plugins`)).json();
+                expect(plugins.map((plugin) => plugin.name)).to.deep.equal(['extract', 'office-text']);
+            }
+            finally {
+                await demo.close();
+            }
+        });
+
+        it('ships a lease review form whose AI Documents use the extract and analyze plugins, and a target field of the form', function () {
+            const form = project.forms.leaseReview;
+            expect(form).to.include({ name: 'leaseReview', path: 'lease-review' });
+            expect(form.tags).to.include('uag');
+            const all = form.components.flatMap(function walk(component) {
+                return [component, ...(component.components || []).flatMap(walk)];
+            });
+            const documents = all.filter((component) => component.type === 'uagdocument');
+            expect(documents.map((component) => [component.key, component.uag.plugin])).to.deep.equal([['leaseClauses', 'extract'], ['leaseSummary', 'analyze']]);
+            for (const component of documents) {
+                expect(component.components.map((child) => child.key)).to.deep.equal(['files', 'result']);
+                expect(component.components[0]).to.include({ type: 'file', storage: 'base64' });
+            }
+            expect(all.find((component) => component.key === documents[0].uag.target)).to.include({ type: 'textarea', editor: 'quill' });
+            expect(project.actions['leaseReview:save']).to.include({ form: 'leaseReview', name: 'save' });
         });
     });
 
