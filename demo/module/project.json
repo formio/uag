@@ -2205,7 +2205,7 @@
               "input": true,
               "tree": true,
               "tableView": false,
-              "description": "PDF, Word or text, up to 3 MB. The clauses are copied into the field below, in the lease's exact words, and checked against it.",
+              "description": "PDF, Word, text, or a scan or photo (PNG or JPEG), up to 3 MB. The clauses are copied into the field below, in the lease's exact words, and checked against it.",
               "uag": {
                 "plugin": "extract",
                 "settings": {
@@ -2230,7 +2230,7 @@
                   "storage": "base64",
                   "multiple": false,
                   "hideLabel": true,
-                  "filePattern": ".pdf,.docx,.txt,.md",
+                  "filePattern": ".pdf,.docx,.txt,.md,.png,.jpg,.jpeg",
                   "fileMaxSize": "3MB",
                   "tableView": false
                 },
@@ -2295,7 +2295,7 @@
                   "storage": "base64",
                   "multiple": false,
                   "hideLabel": true,
-                  "filePattern": ".pdf,.docx,.txt,.md",
+                  "filePattern": ".pdf,.docx,.txt,.md,.png,.jpg,.jpeg",
                   "fileMaxSize": "3MB",
                   "tableView": false
                 },
@@ -2345,7 +2345,7 @@
                   "storage": "base64",
                   "multiple": false,
                   "hideLabel": true,
-                  "filePattern": ".pdf,.docx,.txt,.md",
+                  "filePattern": ".pdf,.docx,.txt,.md,.png,.jpg,.jpeg",
                   "fileMaxSize": "3MB",
                   "tableView": false
                 },
