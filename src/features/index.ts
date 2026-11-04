@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import type { FormInterface, Plugin, PluginRegistry, PluginType } from '@formio/appserver';
+import type { FormInterface, FormRoute, Plugin, PluginRegistry, PluginType } from '@formio/appserver';
 import type { UAGProjectInterface } from '../UAGProjectInterface';
 import { UAG_VERSION } from '../version';
 import { createFeatureApi } from './api';
@@ -119,15 +119,15 @@ export class Features {
         return api;
     }
 
-    /** The appserver form route that mounts a feature's routes on every form. */
-    formRoute(definition: FeatureDefinition) {
-        return (form: FormInterface) => {
+    /** The appserver form route (a `{ router }` entry) that mounts a feature's routes on every form. */
+    formRoute(definition: FeatureDefinition): FormRoute {
+        return { router: (form: FormInterface) => {
             const feature = this.list.find((candidate) => candidate.definition === definition);
             const routes = definition.routes?.form;
             if (!feature || !routes || !Object.keys(routes).length) return undefined;
             const project = projectOf(form);
             return featureFormRouter(project, this.apiFor(feature, project), routes);
-        };
+        } };
     }
 
     /**
