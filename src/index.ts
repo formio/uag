@@ -119,8 +119,15 @@ export class UAGServer extends Server {
   use(module: ServerModule & { uag?: any; extra?: string }, source?: string) {
     if (module && module.uag !== undefined) {
       const label = source || (typeof module.extra === 'string' && module.extra) || 'a module';
-      if (!this.features.add(module.uag, label)) return;
-      module = { ...module, formRoutes: [...(module.formRoutes || []), this.features.formRoute(module.uag)] };
+      // One feature, or several (as compose makes them).
+      const definitions = ([] as any[]).concat(module.uag);
+      const fresh = definitions.filter((definition) => !this.features.has(definition?.name));
+      if (!fresh.length) return;
+      if (fresh.length !== definitions.length) {
+        throw new Error(`${label} brings features of which some are already in use (${definitions.filter((d) => !fresh.includes(d)).map((d) => d.name).join(', ')}): use each feature once`);
+      }
+      for (const definition of definitions) this.features.add(definition, label);
+      module = { ...module, formRoutes: [...(module.formRoutes || []), ...definitions.map((definition) => this.features.formRoute(definition))] };
     }
     return super.use(module, source);
   }

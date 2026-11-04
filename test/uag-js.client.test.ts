@@ -32,8 +32,11 @@ describe('@formio/uag-js: client', () => {
 
     beforeEach(() => { requests = []; });
 
-    it('is exported, and is the same object as UAG.client', () => {
+    it('is exported, the same object as UAG.client, and set on the formio.js it was registered with', () => {
         const client = load({ manifest: [] });
+        const sdk: any = { Displays: { displays: {} } };
+        uag.UAG(UAG_URL, { agentInput: false, manifest: [] })(sdk);
+        expect(sdk.uagClient).to.equal(uag.client);
         expect(client).to.be.an('object');
         expect(uag.UAG.client).to.equal(client);
         expect(Object.keys(client)).to.include.members(['url', 'token', 'headers', 'formUrl', 'ready', 'plugins', 'plugin', 'stream', 'renderMarkdown', 'escapeHtml']);

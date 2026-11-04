@@ -153,6 +153,15 @@ describe('Features', function () {
             expect(seen.initialized).to.have.length(1);
         });
 
+        it('takes several features in one module, as compose makes them', async () => {
+            const sample = sampleFeature();
+            const other = { name: 'other', apiVersion: 1, routes: { form: { 'POST /other/ping': { name: 'other', handler: () => ({ pong: true }) } } } };
+            started = await launch([{ ...sample, uag: [sample.uag, other] }]);
+            const plugins = (await started.request().get('/plugins').set(admin)).body;
+            expect(plugins.filter((plugin: any) => plugin.type === 'feature').map((plugin: any) => plugin.name)).to.deep.equal(['sample', 'other']);
+            expect((await started.request().post('/notes/other/ping').set(admin).send({})).body).to.deep.equal({ pong: true });
+        });
+
         it('stops startup when two features claim one route, or one component type', async () => {
             const other = (uag: any) => ({ extra: 'features/other', uag: { name: 'other', apiVersion: 1, ...uag } });
             let message = '';

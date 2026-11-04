@@ -2212,6 +2212,11 @@
         options = options || {};
         return function (Formio) {
             registered = { uagUrl: trimSlash(uagUrl), Formio: Formio || null, options: options };
+            // Components of UAG features find the client on the formio.js they are given.
+            if (Formio && (typeof Formio === 'object' || typeof Formio === 'function')) {
+                try { Object.defineProperty(Formio, 'uagClient', { value: client, configurable: true }); }
+                catch (err) { /* a frozen Formio: components use FormioUAG.client */ }
+            }
             // The AI Document component, and the manifest its settings and runtime use.
             var Document = documentComponentFor(Formio);
             if (options.manifest) setManifest(options.manifest);
