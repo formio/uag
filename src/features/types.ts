@@ -6,17 +6,12 @@ import type { FileRoute, Pins, AcceptEntry } from '../documents/routes';
 /** The feature API versions this UAG provides. */
 export const FEATURE_API_VERSIONS = [1];
 
-/** A feature's settings: a configuration key, defaults, environment variables and a check. */
-export type FeatureSettings = {
-    /** The `config` key the settings are read from, such as "documents". */
-    key: string;
-    /** Every setting and its default; values from the environment take the default's type. */
-    defaults: Record<string, string | number | boolean>;
-    /** The environment variable of each setting that has one. */
-    env?: Record<string, string>;
-    /** Problems with the resolved settings, as messages naming the setting. */
-    validate?(settings: Record<string, any>): string[];
-};
+/**
+ * A feature's settings: a function of the server's configuration and the
+ * environment, returning the settings the feature reads as `api.settings`.
+ * It throws to stop startup, with a message naming the setting.
+ */
+export type FeatureSettings = (config: Record<string, any>, env: Record<string, string | undefined>) => Record<string, any>;
 
 /** Reports progress of a streamed endpoint: a fraction from 0 to 1, and an optional message. */
 export type FeatureProgress = (fraction: number, message?: string) => void;
@@ -25,19 +20,13 @@ export type FeatureProgress = (fraction: number, message?: string) => void;
 export type FeatureRunContext = { signal: AbortSignal; progress: FeatureProgress };
 
 /**
- * A form route of a feature. A plain endpoint's handler answers, or returns
- * the JSON to answer with. A streamed endpoint's handler checks the request
- * (any error it throws is answered with its status) and returns the run: the
- * UAG answers `{ result }` as JSON, or, to a client that accepts
- * text/event-stream, streams `progress` events and then `done` (`{ result }`)
- * or `failed` (the error shape).
+ * A form route of a feature. Its handler answers, or returns the JSON to
+ * answer with; it throws `api.errors.create(status, message, code)` to refuse.
+ * To stream progress, it returns `api.stream(req, res, run)`.
  */
 export type FeatureEndpoint = {
     /** The operation's name, for rate limits, such as "document". */
     name: string;
-    stream?: boolean;
-    /** For a streamed endpoint: the comment heartbeat interval, or a function of the settings. Default 15000 ms. */
-    heartbeatMs?: number | ((settings: Record<string, any>) => number);
     handler(req: FeatureRequest, res: Response, api: FeatureApi): any;
 };
 
@@ -124,4 +113,11 @@ export type FeatureApi = {
         create(status: number, message: string, code?: string): Error;
         is(err: unknown): boolean;
     };
+    /**
+     * Answer with what `run` returns: `{ result }` as JSON, or, to a client that
+     * accepts text/event-stream, `progress` events and then `done` (`{ result }`)
+     * or `failed` (the error shape). `run` gets `{ signal, progress }`; `signal`
+     * aborts when the client goes away.
+     */
+    stream(req: FeatureRequest, res: Response, run: (context: FeatureRunContext) => any, options?: { heartbeatMs?: number }): Promise<void>;
 };

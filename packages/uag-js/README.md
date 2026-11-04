@@ -27,7 +27,7 @@ Once `Formio.use(UAG(url))` has run, `client` (also `FormioUAG.client` and `UAG.
 |---|---|
 | `url()`, `token(form?)`, `headers(form?)` | The UAG's URL, the user's Form.io token, and the headers that identify the user to the UAG. |
 | `formUrl(definition)` | A form's URL on the UAG, from its definition or a rendered form. |
-| `ready`, `plugins(type?)`, `plugin(type, name)` | The installed plugins (`document`, `converter`, `feature`), embedded by the UAG's scripts or fetched with the user's token. |
+| `ready`, `loaded`, `plugins(type?)`, `plugin(type, name)` | The installed plugins (`document`, `converter`, `feature`), embedded by the UAG's scripts or fetched with the user's token. |
 | `stream(url, body, { onEvent, signal, form })` | POST JSON, accepting server-sent events: every event goes to `onEvent`; it resolves with the `done` event's data (or the JSON answer), and rejects with the UAG's message, `status` and `code`. |
 | `renderMarkdown(text)`, `escapeHtml(text)` | Markdown as the UAG sanitizes it, rendered with every text escaped. |
 

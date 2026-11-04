@@ -12,7 +12,7 @@ The complete guide, with a worked CRM module, is [Modules](https://ai.form.io/de
 |---|---|
 | Docker | Mount it over `/app/module`: `-v "$PWD/module:/app/module"`, or `volumes: ["./module:/app/module"]` in Compose. |
 | The `uag` command | `UAG_MODULE=./module npx uag` (a file or folder, resolved against the working directory). |
-| Your own server | `server.use(require('./module'))` before `await server.router()`. Several modules can be used; their `config` objects merge, later ones winning. |
+| Your own server | `server.use(require('./module'))` before `await server.router()`. Several modules can be used, one call each or as a list, `server.use([first, second])`; their `config` objects merge, later ones winning, and their `config.tools` add up (a tool name defined twice stops startup). A module file may also export a list of modules. |
 
 A module mounted into the image runs inside the UAG's own installation, so it can `require()` the UAG's dependencies (`zod`, `lodash`) and `@formio/uag` itself.
 

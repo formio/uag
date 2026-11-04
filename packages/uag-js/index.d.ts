@@ -271,6 +271,8 @@ export interface UAGClient {
     formUrl(definition: any): string;
     /** Resolves once the installed plugins are known. */
     ready: Promise<void>;
+    /** Whether the installed plugins are known yet. */
+    readonly loaded: boolean;
     /** The installed plugins, of one type or all. */
     plugins(type?: string): PluginManifestEntry[];
     plugin(type: string, name: string): PluginManifestEntry | null;

@@ -12,7 +12,7 @@ import { UAGDocument } from '@formio/uag-extras/features/ai-document';
 server.use(UAGDocument);
 ```
 
-Once used, a feature's component is in `/uag-js/uag.use.js` and the portal script, its routes answer on every form, and `GET {project}/plugins` lists it as `feature:<name>`.
+Several features and extras are used together as a list, `server.use([UAGDocument, Extract])`, in a plugins file or a module file too; one given twice is used once. Once used, a feature's component is in `/uag-js/uag.use.js` and the portal script, its routes answer on every form, and `GET {project}/plugins` lists it as `feature:<name>`.
 
 ## The `uag` key
 
@@ -24,11 +24,10 @@ module.exports = {
         title: 'Address check',
         version: '1.0.0',
         apiVersion: 1,                            // the feature API it is written against
-        settings: {
-            key: 'addressCheck',                  // read from config.addressCheck
-            defaults: { maxPerMinute: 10 },
-            env: { maxPerMinute: 'ADDRESS_CHECK_MAX_PER_MINUTE' },
-            validate: (settings) => settings.maxPerMinute > 0 ? [] : ['maxPerMinute: must be above 0']
+        settings(config, env) {                   // what the feature reads as api.settings; throw to stop startup
+            const maxPerMinute = Number(config.addressCheck?.maxPerMinute ?? env.ADDRESS_CHECK_MAX_PER_MINUTE ?? 10);
+            if (!(maxPerMinute > 0)) throw new Error('maxPerMinute: must be above 0');
+            return { maxPerMinute };
         },
         routes: {
             form: {
@@ -44,7 +43,7 @@ module.exports = {
 | Key | What the UAG does with it |
 |---|---|
 | `apiVersion` | Startup stops when this UAG does not provide that version of the feature API. |
-| `settings` | Each setting comes from `config[key]`, then its environment variable (as the default's type), then its default; `validate`'s problems stop startup, naming the feature and the setting. The feature reads them as `api.settings`. |
+| `settings` | Called once at startup with the server's configuration and the environment; what it returns is `api.settings`. An error it throws stops startup, naming the feature. |
 | `routes.form` | Each `"<METHOD> <path>"` answers on every form, by path and by id: behind the caller authentication of agent operations, the JSON body limit, a request id, the rate limits of its `name` (`agentApi.rateLimits.caller[name]`) and the error shape `{ requestId, error, code }`. Two features claiming one route stop startup. |
 | `components` | Each script is served at `/uag-js/components/<type>.js` and added to `uag.use.js` and `portal.js`; each style to `uag-js.css` and `portal.css`. Two features with one component type stop startup. |
 | `initialize` | Called once at startup, with the resolved settings, before any request. |
@@ -53,16 +52,16 @@ module.exports = {
 
 A plain route's handler answers, or returns the JSON to answer with. Throw `api.errors.create(status, message, code)` to refuse: the caller gets that status and code. Any other error is answered with 500 and no detail.
 
-A streamed route (`stream: true`) checks the request first and returns its run: anything thrown before is answered with its status; the run then gets `{ signal, progress }`, and the UAG answers `{ result }` as JSON, or, to a client that accepts `text/event-stream`, streams `progress` events and then `done` or `failed`.
+To stream progress, a route checks the request, then returns `api.stream(req, res, run)`: the run gets `{ signal, progress }` (`signal` aborts when the client goes away), and the UAG answers `{ result }` as JSON, or, to a client that accepts `text/event-stream`, streams `progress` events and then `done` or `failed`. Anything thrown before is answered with its status.
 
 ```js
 'POST /document/process': {
-    name: 'document', stream: true, heartbeatMs: (settings) => settings.heartbeatMs,
+    name: 'document',
     async handler(req, res, api) {
         api.requireAccess(req.auth, req.form, ['create', 'update']);
         await api.requireLicense();
         const prepared = await prepare(req, api);            // refuse with api.errors.create(...)
-        return ({ signal, progress }) => prepared.run(signal, progress);
+        return api.stream(req, res, ({ signal, progress }) => prepared.run(signal, progress), { heartbeatMs: 15000 });
     }
 }
 ```
@@ -80,13 +79,14 @@ Every feature gets an `api` of its own; version 1 has:
 | `files.read(form, value, auth, { maxBytes, component })` | A stored file value's bytes, read with the caller's credentials and the file component's storage check (a value pointing elsewhere is refused before any fetch). |
 | `converters.identify/route/accept/run/list` | File types from their bytes, the converter route to the representations a plugin reads, and running it. |
 | `engines.select({ name, needs })`, `engines.generate(engine, request)` | An agent engine that generates and reads what is needed (or 503 `no_engine`), and generation that checks the license first. |
+| `stream(req, res, run, { heartbeatMs })` | Answers with what `run` returns, as JSON or as server-sent progress events. |
 | `markdown.sanitize/fromHtml`, `pdf.pageCount`, `forms.componentAt/componentByKey`, `callerKey`, `errors.create/is` | Helpers. |
 
 Features never get the project object or an engine's credentials: what they may do goes through this API, which keeps the UAG's checks (access, license, file storage, rate limits) in one place.
 
 ## Components
 
-A feature's component is a script that registers a formio.js component once `Formio` and `FormioUAG` are on the page. It builds on [`client`](/developers/renderer), the public browser API of `@formio/uag-js`: the UAG's URL, the user's token, the installed plugins, `stream()` for routes, and Markdown rendering. It never bundles formio.js: it uses the one the page registered.
+A feature's component is a script that registers a formio.js component once `Formio` and `FormioUAG` are on the page. It builds on `Formio.uagClient`, the public browser API of `@formio/uag-js` (set when the UAG is registered): the UAG's URL, the user's token, the installed plugins, `stream()` for routes, and Markdown rendering. It never bundles formio.js: it uses the one the page registered.
 
 Components reach browsers three ways, always matching the installed feature: the UAG adds them to `uag.use.js` and the portal script; an application with a bundler imports the feature's client (`@formio/uag-extras/features/<name>/client`) and calls `Formio.use()` with it; a page without one loads the feature's script from a CDN, such as jsDelivr, after `uag.use.js`.
 

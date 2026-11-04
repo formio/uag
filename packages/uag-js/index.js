@@ -1629,6 +1629,8 @@
         headers: function (form) { return authHeaders(form); },
         formUrl: function (definition) { return uagFormUrl(registered.uagUrl, definition && definition.form && definition.form._id ? definition.form : definition); },
         ready: manifestState.promise,
+        /** Whether the installed plugins are known yet (`ready` has resolved). */
+        get loaded() { return manifestState.manifest !== null; },
         plugins: function (type) {
             return (manifestState.manifest || []).filter(function (plugin) { return plugin && (!type || plugin.type === type); });
         },

@@ -110,15 +110,31 @@ export class UAGServer extends Server {
     return this.featureList;
   }
 
+  /** The extras used (their `extra` name), and which module brought each MCP tool and engine type. */
+  declare private usedExtras?: Set<string>;
+  declare private usedNames?: Map<string, string>;
+
   /**
-   * Use a module. A module with a `uag` key brings a feature: one used twice
-   * (by name) is set up once, so its plugin types and routes are not added
-   * again; its form routes are mounted on every form.
+   * Use a module, or a list of modules (each in turn). An extra used twice (by
+   * its `extra` name) is used once. A module with a `uag` key brings a feature,
+   * or a list of them: a feature used twice (by name) is set up once, and its
+   * routes are mounted on every form. `config.tools` adds up across modules;
+   * an MCP tool or engine type that two modules define stops startup, naming
+   * both.
    */
-  use(module: ServerModule & { uag?: any; extra?: string }, source?: string) {
-    if (module && module.uag !== undefined) {
-      const label = source || (typeof module.extra === 'string' && module.extra) || 'a module';
-      // One feature, or several (as compose makes them).
+  use(module: any, source?: string): void {
+    if (Array.isArray(module)) {
+      for (const each of module) this.use(each, source);
+      return;
+    }
+    if (!module || typeof module !== 'object') return super.use(module, source);
+    const label = source || (typeof module.extra === 'string' && module.extra) || 'a module';
+    if (typeof module.extra === 'string' && module.extra) {
+      this.usedExtras ||= new Set();
+      if (this.usedExtras.has(module.extra)) return;
+      this.usedExtras.add(module.extra);
+    }
+    if (module.uag !== undefined) {
       const definitions = ([] as any[]).concat(module.uag);
       const fresh = definitions.filter((definition) => !this.features.has(definition?.name));
       if (!fresh.length) return;
@@ -128,7 +144,26 @@ export class UAGServer extends Server {
       for (const definition of definitions) this.features.add(definition, label);
       module = { ...module, formRoutes: [...([] as any[]).concat(module.formRoutes ?? []), ...definitions.map((definition) => this.features.formRoutes(definition))] };
     }
-    return super.use(module, source);
+    // MCP tools and engine types: each defined once.
+    this.usedNames ||= new Map();
+    const names = [
+      ...((module.config?.tools || []) as any[]).map((tool) => tool?.name && `MCP tool "${tool.name}"`),
+      ...Object.keys(module.config?.engineTypes || {}).map((name) => `engine type "${name}"`)
+    ].filter(Boolean);
+    for (const name of names) {
+      const other = this.usedNames.get(name);
+      if (other !== undefined) throw new Error(`The ${name} is defined by both ${other} and ${label}`);
+    }
+    for (const name of names) this.usedNames.set(name, label);
+    // lodash merges config arrays index by index, merging one module's tool into another's: keep
+    // the tools out of the merge, and add them up.
+    const tools = [...((this.config as any)?.tools || []), ...(module.config?.tools || [])];
+    if (module.config?.tools) {
+      const { tools: _tools, ...config } = module.config;
+      module = { ...module, config };
+    }
+    super.use(module, source);
+    if (tools.length) (this.config as any).tools = tools;
   }
 
   constructor(config?: UAGConfig) {

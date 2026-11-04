@@ -21,19 +21,25 @@ export function pluginsFile(env: Record<string, string | undefined> = process.en
 /** A real dynamic import(), kept one after compilation to CommonJS. */
 const dynamicImport: (specifier: string) => Promise<any> = new Function('specifier', 'return import(specifier)') as any;
 
+/** A module (a feature, an extra), rather than a plugin: an object without a `type`. */
+const isModule = (entry: any) => !!entry && typeof entry === 'object' && !Array.isArray(entry) && typeof entry.type !== 'string';
+
 /**
  * Load the plugins file, if any, and use it, named by its path in error
- * messages: its plugins; or, when its default export declares a feature (a
- * `uag` key, as `compose` of a feature and plugins makes), that module as it
- * is. Plugins are trusted code: they run in the UAG process.
+ * messages. Its default export is a plugin or a list of plugins; or a module
+ * (a feature with its plugins, an extra), or a list mixing modules and
+ * plugins, each module used in turn. Plugins are trusted code: they run in
+ * the UAG process.
  */
 export async function usePluginFiles(server: Pick<UAGServer, 'use'>, env: Record<string, string | undefined> = process.env, defaultFile = DEFAULT_PLUGINS_FILE): Promise<string | undefined> {
     const file = pluginsFile(env, defaultFile);
     if (!file) return undefined;
     const exported = (await dynamicImport(pathToFileURL(file).href))?.default;
-    if (exported && typeof exported === 'object' && !Array.isArray(exported) && exported.uag !== undefined) {
-        server.use(exported, file);
-        console.log(`[formio-uag] Plugins and features loaded from ${file}.`);
+    const entries = ([] as any[]).concat(exported ?? []);
+    if (entries.some(isModule)) {
+        const plugins = entries.filter((entry) => !isModule(entry));
+        server.use([...entries.filter(isModule), ...(plugins.length ? [{ plugins }] : [])], file);
+        console.log(`[formio-uag] Plugins and modules loaded from ${file}.`);
         return file;
     }
     const plugins = await loadPluginFile(file);

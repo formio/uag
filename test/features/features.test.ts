@@ -5,7 +5,6 @@ import { defineEngine } from '@formio/uag-sdk';
 import { requireTestLicense } from '../agent/fixtures';
 import { ADMIN_KEY, start, Started } from '../characterization/harness';
 import { events } from '../documents/fixture';
-import { resolveFeatureSettings } from '../../src/features';
 
 const SCRIPT = path.join(__dirname, 'fixtures', 'sample-component.js');
 const STYLE = path.join(__dirname, 'fixtures', 'sample-component.css');
@@ -24,6 +23,14 @@ const writer = defineEngine({
     })
 });
 
+/** The sample feature's settings: config.sample, then SAMPLE_* variables, then defaults. */
+function sampleSettings(config: any, env: any) {
+    const given = config.sample || {};
+    const limit = Number(given.limit ?? env.SAMPLE_LIMIT ?? 2);
+    if (!(limit >= 1)) throw new Error('limit: must be at least 1');
+    return { greeting: given.greeting ?? env.SAMPLE_GREETING ?? 'Hello', limit, loud: String(given.loud ?? env.SAMPLE_LOUD ?? false) === 'true' };
+}
+
 /** A feature module: settings, four form routes, a component, a plugin type of its own. */
 function sampleFeature(overrides: any = {}) {
     return {
@@ -31,12 +38,7 @@ function sampleFeature(overrides: any = {}) {
         pluginTypes: [{ type: 'samplething', title: 'Sample thing', apiVersions: [1], editForm: 'none', unavailable: 'disable', stability: 'experimental', validate: () => [] }],
         uag: {
             name: 'sample', title: 'Sample', version: '1.2.3', apiVersion: 1,
-            settings: {
-                key: 'sample',
-                defaults: { greeting: 'Hello', limit: 2, loud: false },
-                env: { greeting: 'SAMPLE_GREETING', limit: 'SAMPLE_LIMIT', loud: 'SAMPLE_LOUD' },
-                validate: (settings: any) => (settings.limit >= 1 ? [] : ['limit: must be at least 1'])
-            },
+            settings: sampleSettings,
             routes: {
                 form: {
                     'POST /sample/echo': {
@@ -49,14 +51,14 @@ function sampleFeature(overrides: any = {}) {
                         }
                     },
                     'POST /sample/stream': {
-                        name: 'sample', stream: true, heartbeatMs: 1000,
+                        name: 'sample',
                         handler: async (req: any, res: any, api: any) => {
                             if (req.body?.refuse) throw api.errors.create(400, 'Send something.', 'bad_request');
-                            return async ({ progress }: any) => {
+                            return api.stream(req, res, async ({ progress }: any) => {
                                 progress(0.5, 'Half way');
                                 if (req.body?.fail) throw api.errors.create(422, 'It did not work.', 'process_failed');
                                 return { done: true };
-                            };
+                            }, { heartbeatMs: 1000 });
                         }
                     },
                     'POST /sample/generate': {
@@ -115,13 +117,9 @@ describe('Features', function () {
     const admin = { 'x-admin-key': ADMIN_KEY };
 
     describe('settings', () => {
-        it('reads each setting from config, then its environment variable, then its default, as the default\'s type', () => {
-            const declared = sampleFeature().uag.settings;
-            expect(resolveFeatureSettings(declared, {}, {}).settings).to.deep.equal({ greeting: 'Hello', limit: 2, loud: false });
-            expect(resolveFeatureSettings(declared, {}, { SAMPLE_LIMIT: '5', SAMPLE_LOUD: 'true', SAMPLE_GREETING: 'Hi' }).settings).to.deep.equal({ greeting: 'Hi', limit: 5, loud: true });
-            expect(resolveFeatureSettings(declared, { sample: { limit: 9 } }, { SAMPLE_LIMIT: '5' }).settings.limit).to.equal(9);
-            expect(resolveFeatureSettings(declared, {}, { SAMPLE_LIMIT: 'many' }).problems).to.deep.equal(['limit: SAMPLE_LIMIT must be a number']);
-            expect(resolveFeatureSettings(declared, {}, { SAMPLE_LIMIT: '0' }).problems).to.deep.equal(['limit: must be at least 1']);
+        it('gives the feature what its settings function returns, from the configuration and the environment', () => {
+            expect(sampleSettings({}, {})).to.deep.equal({ greeting: 'Hello', limit: 2, loud: false });
+            expect(sampleSettings({ sample: { limit: 9 } }, { SAMPLE_LIMIT: '5', SAMPLE_GREETING: 'Hi' })).to.deep.equal({ greeting: 'Hi', limit: 9, loud: false });
         });
 
         it('initializes the feature with its resolved settings at startup', async () => {
@@ -135,6 +133,38 @@ describe('Features', function () {
             let message = '';
             await launch([sampleFeature()]).then((s) => { started = s; }, (err) => { message = err.message; });
             expect(message).to.include('Feature sample (features/sample) has invalid settings: limit: must be at least 1');
+        });
+    });
+
+    describe('using modules', () => {
+        const tool = (name: string) => ({ name, description: name, inputSchema: {}, annotations: { title: name, readOnlyHint: true }, execute: async () => ({ content: [] }) });
+        const plugin = { type: 'samplething', name: 'one', title: 'One', version: '1.0.0', apiVersion: 1 };
+
+        it('uses a list of modules in turn, and an extra given twice once', async () => {
+            const feature = sampleFeature();
+            const things = { extra: 'things/one', plugins: [plugin] };
+            started = await launch([[feature, things, things, feature]]);
+            const plugins = (await started.request().get('/plugins').set(admin)).body;
+            expect(plugins.filter((p: any) => p.type === 'samplething').map((p: any) => p.name)).to.deep.equal(['one']);
+            expect(plugins.filter((p: any) => p.type === 'feature')).to.have.length(1);
+        });
+
+        it('adds up MCP tools across separate use() calls', async () => {
+            started = await launch([{ extra: 'tools/a', config: { tools: [tool('tool_a')] } }, { extra: 'tools/b', config: { tools: [tool('tool_b')] } }]);
+            const names = (await started.request().get('/plugins').set(admin)).body.filter((p: any) => p.type === 'tool').map((p: any) => p.name);
+            expect(names).to.include.members(['tool_a', 'tool_b']);
+        });
+
+        it('stops startup when two modules define one MCP tool, or one engine type, naming both', async () => {
+            let message = '';
+            await launch([{ extra: 'tools/a', config: { tools: [tool('lookup')] } }, { extra: 'modules/crm', config: { tools: [tool('lookup')] } }])
+                .then((s) => { started = s; }, (err) => { message = err.message; });
+            expect(message).to.include('The MCP tool "lookup" is defined by both tools/a and modules/crm');
+            message = '';
+            const engine = { type: 'engine', name: 'echo', kinds: ['agent'], apiVersion: 1, create: () => ({}) };
+            await launch([{ extra: 'engines/a', config: { engineTypes: { echo: engine } } }, { extra: 'engines/b', config: { engineTypes: { echo: engine } } }])
+                .then((s) => { started = s; }, (err) => { message = err.message; });
+            expect(message).to.include('The engine type "echo" is defined by both engines/a and engines/b');
         });
     });
 

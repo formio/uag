@@ -25,9 +25,19 @@ describe('Plugin files', () => {
         expect(await usePluginFiles(server as any, { UAG_PLUGINS: file }, '/nonexistent/index.mjs')).to.equal(file);
         expect(server.used).to.have.length(1);
         expect(server.used[0].source).to.equal(file);
-        expect(server.used[0].module.uag).to.deep.equal({ name: 'notes', apiVersion: 1 });
-        expect(server.used[0].module.pluginTypes.map((t: any) => t.type)).to.deep.equal(['note']);
-        expect(server.used[0].module.plugins.map((p: any) => p.name)).to.deep.equal(['fixture-note']);
+        const [module] = server.used[0].module;
+        expect(module.uag).to.deep.equal({ name: 'notes', apiVersion: 1 });
+        expect(module.pluginTypes.map((t: any) => t.type)).to.deep.equal(['note']);
+        expect(module.plugins.map((p: any) => p.name)).to.deep.equal(['fixture-note']);
+    });
+
+    it('uses a list of modules and plugins: each module in turn, and the plugins together', async () => {
+        const server = fakeServer();
+        const file = path.join(__dirname, 'files', 'list.mjs');
+        expect(await usePluginFiles(server as any, { UAG_PLUGINS: file }, '/nonexistent/index.mjs')).to.equal(file);
+        const modules = server.used[0].module;
+        expect(modules.map((m: any) => m.extra || 'plugins')).to.deep.equal(['features/notes', 'documents/notes', 'plugins']);
+        expect(modules[2].plugins.map((p: any) => p.name)).to.deep.equal(['loose-converter']);
     });
 
     it('loads nothing when UAG_PLUGINS is off, even where the image keeps its default file', async () => {

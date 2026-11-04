@@ -5,14 +5,12 @@ import type { Plugin, PluginRegistry, PluginType } from '@formio/appserver';
 import type { UAGProjectInterface } from '../UAGProjectInterface';
 import { UAG_VERSION } from '../version';
 import { createFeatureApi } from './api';
-import { resolveFeatureSettings } from './settings';
 import { featureFormRouter, projectOf, ROUTE } from './routes';
 import { FEATURE_API_VERSIONS } from './types';
 import type { FeatureApi, FeatureComponent, FeatureDefinition } from './types';
 
 export * from './types';
 export { createFeatureApi } from './api';
-export { resolveFeatureSettings } from './settings';
 
 const NAME = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const COMPONENT_TYPE = /^[a-z][a-z0-9]*$/;
@@ -38,9 +36,8 @@ function problemsOf(definition: any, source: string): string[] {
     if (!FEATURE_API_VERSIONS.includes(definition.apiVersion)) {
         problems.push(`${label} needs feature API ${definition.apiVersion ?? '(none given)'}; this UAG provides ${FEATURE_API_VERSIONS.join(', ')}`);
     }
-    const settings = definition.settings;
-    if (settings !== undefined && (typeof settings !== 'object' || typeof settings.key !== 'string' || !settings.key || typeof settings.defaults !== 'object')) {
-        problems.push(`${label}: "settings" must give a "key" and "defaults"`);
+    if (definition.settings !== undefined && typeof definition.settings !== 'function') {
+        problems.push(`${label}: "settings" must be a function of the configuration and the environment`);
     }
     for (const [key, endpoint] of Object.entries<any>(definition.routes?.form || {})) {
         if (!ROUTE.test(key)) problems.push(`${label}: route "${key}" must be "<METHOD> /<path>"`);
@@ -148,9 +145,12 @@ export class Features {
      */
     async start(project: UAGProjectInterface, registry: PluginRegistry, config: Record<string, any>, env: Record<string, string | undefined> = process.env): Promise<void> {
         for (const feature of this.list) {
-            const { settings, problems } = resolveFeatureSettings(feature.definition.settings, config, env);
-            if (problems.length) {
-                throw new Error(`Feature ${feature.definition.name} (${feature.source}) has invalid settings: ${problems.join('; ')}`);
+            let settings: Record<string, any> = {};
+            try {
+                settings = feature.definition.settings?.(config || {}, env) || {};
+            }
+            catch (err: any) {
+                throw new Error(`Feature ${feature.definition.name} (${feature.source}) has invalid settings: ${err?.message || err}`);
             }
             Object.assign(feature.settings, settings);
         }

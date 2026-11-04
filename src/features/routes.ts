@@ -19,18 +19,17 @@ function errorShape(requestId: string, err: any) {
     };
 }
 
-/** Run a streamed endpoint: JSON `{ result }`, or server-sent progress, then done or failed. */
-async function stream(endpoint: FeatureEndpoint, api: FeatureApi, req: FeatureRequest, res: Response) {
-    // 1. Check the request: anything thrown here is answered with its status, as JSON.
-    const run = await endpoint.handler(req, res, api);
-    if (res.headersSent) return;
-    if (typeof run !== 'function') throw new Error(`The streamed endpoint "${endpoint.name}" of feature ${api.name} did not return its run`);
+/**
+ * Answer with what `run` returns: `{ result }` as JSON, or, to a client that
+ * accepts text/event-stream, progress events and then `done` or `failed`. The
+ * run's signal aborts when the client goes away. `api.stream` is this.
+ */
+export async function streamAnswer(feature: string, req: FeatureRequest, res: Response, run: (context: FeatureRunContext) => any, options: { heartbeatMs?: number } = {}): Promise<void> {
     const controller = new AbortController();
     res.on('close', () => {
         if (!res.writableFinished) controller.abort(new FormflowError(499, 'The client closed the connection.', 'client_closed'));
     });
     const context = (progress: FeatureRunContext['progress']): FeatureRunContext => ({ signal: controller.signal, progress });
-    // 2. Run.
     if (!wantsStream(req.get('accept'))) {
         const result = await run(context(() => undefined));
         res.json({ result });
@@ -39,8 +38,7 @@ async function stream(endpoint: FeatureEndpoint, api: FeatureApi, req: FeatureRe
     res.status(200).set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive', 'X-Accel-Buffering': 'no' });
     res.flushHeaders?.();
     const send = (event: string, value: any) => { if (!res.writableEnded) res.write(`event: ${event}\ndata: ${JSON.stringify(value)}\n\n`); };
-    const every = typeof endpoint.heartbeatMs === 'function' ? endpoint.heartbeatMs(api.settings) : endpoint.heartbeatMs;
-    const heartbeat = setInterval(() => { if (!res.writableEnded) res.write(': keep-alive\n\n'); }, Number(every) > 0 ? Number(every) : 15000);
+    const heartbeat = setInterval(() => { if (!res.writableEnded) res.write(': keep-alive\n\n'); }, Number(options.heartbeatMs) > 0 ? Number(options.heartbeatMs) : 15000);
     let last = -1;
     try {
         const result = await run(context((fraction, message) => {
@@ -52,7 +50,7 @@ async function stream(endpoint: FeatureEndpoint, api: FeatureApi, req: FeatureRe
         send('done', { result });
     }
     catch (err: any) {
-        if (!(err instanceof FormflowError)) debug(`[${req.requestId}] ${api.name} ${endpoint.name} failed: ${err?.message || err}`);
+        if (!(err instanceof FormflowError)) debug(`[${req.requestId}] ${feature} failed: ${err?.message || err}`);
         send('failed', errorShape(req.requestId, err));
     }
     finally {
@@ -62,10 +60,9 @@ async function stream(endpoint: FeatureEndpoint, api: FeatureApi, req: FeatureRe
 }
 
 /**
- * One feature's form routes for a project, as the router appserver mounts on
- * every form: each endpoint behind the UAG's caller authentication for agent
- * operations, its JSON body limit, a request id, the named operation's rate
- * limits and its error shape.
+ * One feature's form routes for a project: each endpoint behind the UAG's
+ * caller authentication for agent operations, its JSON body limit, a request
+ * id, the named operation's rate limits and its error shape.
  */
 export function featureFormRouter(project: UAGProjectInterface, api: FeatureApi, routes: Record<string, FeatureEndpoint>): Router {
     const router = Router();
@@ -74,7 +71,6 @@ export function featureFormRouter(project: UAGProjectInterface, api: FeatureApi,
     for (const [key, endpoint] of Object.entries(routes)) {
         const [, method, path] = ROUTE.exec(key) as RegExpExecArray;
         const run = handle(endpoint.name, async (req: any, res: Response) => {
-            if (endpoint.stream) return stream(endpoint, api, req as FeatureRequest, res);
             const answer = await endpoint.handler(req as FeatureRequest, res, api);
             if (!res.headersSent && answer !== undefined) res.json(answer);
         });

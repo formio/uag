@@ -55,6 +55,7 @@ describe('@formio/uag-js: client', () => {
         const manifest = [{ type: 'document', name: 'extract' }, { type: 'converter', name: 'office-text' }, { type: 'feature', name: 'ai-document' }];
         const client = load({ manifest });
         await client.ready;
+        expect(client.loaded).to.equal(true);
         expect(client.plugins('document').map((p: any) => p.name)).to.deep.equal(['extract']);
         expect(client.plugins().length).to.equal(3);
         expect(client.plugin('feature', 'ai-document')).to.include({ name: 'ai-document' });
@@ -62,8 +63,13 @@ describe('@formio/uag-js: client', () => {
     });
 
     it('fetches the manifest with the user\'s token when none is embedded', async () => {
-        const client = load({ fetch: async (url: string, init: any) => { requests.push({ url, init }); return { ok: true, json: async () => [{ type: 'document', name: 'analyze' }] }; } });
+        let answer: (value: any) => void = () => {};
+        const client = load({ fetch: async (url: string, init: any) => { requests.push({ url, init }); return { ok: true, json: () => new Promise((resolve) => { answer = resolve; }) }; } });
+        expect(client.loaded).to.equal(false);
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        answer([{ type: 'document', name: 'analyze' }]);
         await client.ready;
+        expect(client.loaded).to.equal(true);
         expect(requests[0].url).to.equal(`${UAG_URL}/plugins`);
         expect(requests[0].init.headers['x-jwt-token']).to.equal('user-token');
         expect(client.plugins('document').map((p: any) => p.name)).to.deep.equal(['analyze']);

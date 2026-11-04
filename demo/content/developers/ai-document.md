@@ -10,12 +10,11 @@ The **AI Document** component (`uagdocument`) lets the people filling a form dro
 AI Document is a [feature](/developers/features): it comes with `@formio/uag-extras/features/ai-document`, which brings the component, the process route and the `document` plugin type, and the plugins it runs come from the document extras of `@formio/uag-extras` or your own (see [Plugins](/developers/plugins)). The `formio/uag-documents` image has all of them. In your own server:
 
 ```js
-import { compose } from '@formio/uag-extras';
 import { UAGDocument } from '@formio/uag-extras/features/ai-document';
 import Extract from '@formio/uag-extras/documents/extract';
 import Analyze from '@formio/uag-extras/documents/analyze';
 
-server.use(compose(UAGDocument, Extract, Analyze));
+server.use([UAGDocument, Extract, Analyze]);
 ```
 
 ## For the form builder, in the developer portal

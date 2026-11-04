@@ -10,6 +10,7 @@ import { documentsOf } from '../documents/plugins';
 import { stepName } from '../documents/routes';
 import type { Converter, Representation } from '../documents/types';
 import type { FeatureApi, FeatureDefinition, GeneratingEngine } from './types';
+import { streamAnswer } from './routes';
 
 /** The component at a data path in a stored form, row indices removed (`rows[2].contract` is `rows.contract`). */
 function componentAt(components: any[], dataPath: string): any {
@@ -114,7 +115,8 @@ export function createFeatureApi(project: UAGProjectInterface, definition: Featu
         errors: {
             create: (status, message, code) => new FormflowError(status, message, code),
             is: (err) => err instanceof FormflowError
-        }
+        },
+        stream: (req, res, run, options) => streamAnswer(definition.name, req, res, run, options)
     };
     return api;
 }
