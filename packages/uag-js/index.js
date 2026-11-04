@@ -1808,7 +1808,7 @@
                 if (!this.builderMode && !this.options.preview) {
                     this.component.validate = Object.assign({}, this.component.validate, { custom: 'valid = instance.uagDocumentValidity ? instance.uagDocumentValidity() : true;' });
                 }
-                this.uagState = { status: 'idle', progress: 0, message: '', error: '', confirm: null, editing: false, filesKey: null };
+                this.uagState = { status: 'idle', progress: 0, message: '', error: '', confirm: null, kept: false, editing: false, filesKey: null };
                 return super.init();
             }
 
@@ -1926,7 +1926,10 @@
                             parts.push('<button type="button" class="btn btn-sm btn-link uag-document-edit" ref="uagEdit">' + escapeHtml(state.editing ? this.t('Done') : this.t('Edit')) + '</button>');
                         }
                     }
-                    else if (result.status !== 'flagged') {
+                    else if (state.kept) {
+                        parts.push('<div class="uag-document-status">' + escapeHtml(this.t('Not written: {{label}} keeps its current value.', { label: this.targetLabel() })) + '</div>');
+                    }
+                    else if (result.status !== 'flagged' && !state.confirm) {
                         parts.push('<div class="uag-document-status">' + escapeHtml(this.t('Written into {{label}}.', { label: this.targetLabel() })) + '</div>');
                     }
                 }
@@ -1951,7 +1954,7 @@
                 bind('uagRetry', function () { self.processDocument(); });
                 bind('uagRun', function () { self.processDocument(); });
                 bind('uagReplace', function () { self.writeTarget(true); });
-                bind('uagKeep', function () { self.uagState.confirm = null; self.attachDocument(); });
+                bind('uagKeep', function () { self.uagState.confirm = null; self.uagState.kept = true; self.attachDocument(); });
                 bind('uagEdit', function () { self.uagState.editing = !self.uagState.editing; self.attachDocument(); });
                 bind('uagEditor', function (event) { self.editContent(event.target.value); }, 'input');
             }
@@ -1966,7 +1969,7 @@
                 this.uagState.filesKey = key;
                 if (this.uagController) this.uagController.abort();
                 if (!files.length) {
-                    this.uagState = Object.assign(this.uagState, { status: 'idle', error: '', confirm: null, editing: false });
+                    this.uagState = Object.assign(this.uagState, { status: 'idle', error: '', confirm: null, kept: false, editing: false });
                     this.setDocumentResult(null);
                     return;
                 }
@@ -2003,7 +2006,7 @@
                 this.uagController = controller;
                 var formUrl = uagFormUrl(registered.uagUrl, this.root && this.root.form);
                 var fetchImpl = (registered.options && registered.options.fetch) || (typeof fetch === 'function' ? fetch : null);
-                this.uagState = Object.assign(this.uagState, { status: 'running', progress: 0, message: '', error: '', confirm: null, editing: false });
+                this.uagState = Object.assign(this.uagState, { status: 'running', progress: 0, message: '', error: '', confirm: null, kept: false, editing: false });
                 this.attachDocument();
                 this.triggerChange();
                 this.uagEmit('uagDocumentStart', { files: files });
@@ -2094,6 +2097,7 @@
                     return false;
                 }
                 this.uagState.confirm = null;
+                this.uagState.kept = false;
                 var rich = target.component.type === 'textarea' && !!(target.component.editor || target.component.wysiwyg);
                 var value = rich ? renderMarkdown(result.content) : String(result.content || '');
                 target.setValue(value, { modified: true });

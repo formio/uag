@@ -391,7 +391,7 @@ describe('uag-js: the AI Document component', function () {
             expect(form.getComponent('notes').dataValue).to.equal('# Agreement\n\nThe parties <b>agree</b>.');
         });
 
-        it('asks before replacing a value the field already has, and keeping it leaves the field alone', async () => {
+        it('asks before replacing a value the field already has, keeping it leaves the field alone, and says which happened', async () => {
             registerWith();
             const form = await render([docComponent('contract', { target: 'notes' }), { type: 'textarea', key: 'notes', input: true }]);
             form.getComponent('notes').setValue('My own notes');
@@ -399,13 +399,17 @@ describe('uag-js: the AI Document component', function () {
             await settle();
             expect(form.getComponent('notes').dataValue).to.equal('My own notes');
             expect(document.refs.uagDocument.innerHTML).to.include('Replace').and.include('Keep current');
+            expect(document.refs.uagDocument.textContent).to.not.include('Written into');
             document.refs.uagDocument.querySelector('[ref="uagKeep"]').click();
             expect(form.getComponent('notes').dataValue).to.equal('My own notes');
             expect(document.dataValue.result.content).to.include('Agreement');
+            expect(document.refs.uagDocument.textContent).to.include('Not written').and.not.include('Written into');
             await upload(form, 'contract', [file('other.pdf')]);
             await settle();
+            expect(document.refs.uagDocument.textContent).to.not.include('Not written').and.not.include('Written into');
             document.refs.uagDocument.querySelector('[ref="uagReplace"]').click();
             expect(form.getComponent('notes').dataValue).to.include('# Agreement');
+            expect(document.refs.uagDocument.textContent).to.include('Written into');
         });
 
         it('writes into the field of the same row inside a Data Grid', async () => {
