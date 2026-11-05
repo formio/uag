@@ -1,7 +1,7 @@
 import { escapeRegExp } from "lodash";
 import express, { NextFunction, Request, RequestHandler, Response, Router } from "express";
 import { SubmissionRequest } from "@formio/appserver";
-import { errorCode, INTERNAL_ERROR, requestIdOf } from "./errors";
+import { agentError, errorCode, INTERNAL_ERROR, requestIdOf } from "./errors";
 import { bearerOf, flagOff, formflow, FormflowError, FormflowService, callerIdentity, isScopedToken, OperationContext, OperationResult, RateLimitError, resultEvent } from "../formflow";
 import type { UAGProjectInterface } from "../UAGProjectInterface";
 import { withRequestId } from "./requestId";
@@ -135,19 +135,13 @@ export function agentEndpoints(project: UAGProjectInterface) {
                 await withRequestId(agentReq.requestId, () => fn(agentReq, res, service));
             }
             catch (err: any) {
-                const status = err instanceof FormflowError ? err.status : 500;
+                const { status, body } = agentError(agentReq.requestId, err);
                 if (status === 500) {
                     debug(`[${agentReq.requestId}] ${operation} failed:`, err);
                 }
                 if (err instanceof RateLimitError) {
                     res.set('Retry-After', String(Math.ceil(err.retryAfterMs / 1000)));
                 }
-                const body = {
-                    requestId: agentReq.requestId,
-                    error: status === 500 ? INTERNAL_ERROR : err.message,
-                    code: (err instanceof FormflowError && err.code) || errorCode(status),
-                    ...(err?.edition && { edition: err.edition })
-                };
                 if (res.headersSent) {
                     // Mid-stream: report the failure as an event and close.
                     res.write(`event: error\ndata: ${JSON.stringify(body)}\n\n`);

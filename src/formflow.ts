@@ -23,6 +23,7 @@ export const {
     readScopedToken,
     resultEvent,
     withoutOwnedValues,
+    callerKey,
     stubAgentEngine,
     stubDecisionEngine,
     toolsForScope,

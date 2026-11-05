@@ -42,6 +42,9 @@ RUN apk upgrade --no-cache && npm install -g npm@latest
 WORKDIR /app
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
+# A module mounted at /app/module can require('@formio/uag'), as it does when it is
+# used from npm: the image is that package, so the name points back at /app.
+RUN [ -e node_modules/@formio/uag ] || ln -s /app node_modules/@formio/uag
 COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/module ./module
 COPY --from=builder /app/bin ./bin

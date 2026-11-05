@@ -10,7 +10,9 @@
   },
   "files": [
     "lib",
-    "bin"
+    "bin",
+    "testing.js",
+    "testing.d.ts"
   ],
   "workspaces": [
     "engines/*",

@@ -35,6 +35,8 @@ export type ToolExtra = {
     authInfo: AuthRequest;
     /** The project serving the request. */
     project: UAGProjectInterface;
+    /** For a tool from a module with a name and an apiVersion: the module's API (its settings, engines, ...). */
+    module?: import('../modules').UAGModuleApi;
     /** On `/mcp`, the rest of the MCP SDK's request context (signal, request id, ...). */
     [key: string]: any;
 };

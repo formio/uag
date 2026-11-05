@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { NextFunction, Request, RequestHandler, Response } from "express";
 import { safeRequestId } from "@formio/uag-sdk/protocol";
+import { FormflowError } from "../formflow";
 
 /**
  * The Agent API's one error shape. Every error a form's agent operation or
@@ -40,6 +41,25 @@ export function errorCode(status: number): string {
 }
 
 export const INTERNAL_ERROR = 'The request failed. See the UAG logs for this request id.';
+
+/**
+ * An error as the Agent API answers it: its status, and the body. Errors with
+ * a status (FormflowError) keep their message and code; anything else is a 500
+ * with no detail. Agent operations and module routes share it.
+ */
+export function agentError(requestId: string, err: any): { status: number; body: Record<string, any> } {
+    const known = err instanceof FormflowError;
+    const status = known ? err.status : 500;
+    return {
+        status,
+        body: {
+            requestId,
+            error: status === 500 ? INTERNAL_ERROR : String(err?.message || INTERNAL_ERROR),
+            code: (known && err.code) || errorCode(status),
+            ...(err?.edition && { edition: err.edition })
+        }
+    };
+}
 
 /** The request's id, assigned once: the caller's, when it is a short token, or a new one. */
 export function requestIdOf(req: Request, res: Response): string {

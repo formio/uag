@@ -1,4 +1,5 @@
 import fs from 'fs';
+import vm from 'vm';
 import path from 'path';
 import { createHash } from 'crypto';
 import { Request, Response, Router } from 'express';
@@ -60,6 +61,26 @@ function registration(manifest: any[], options: { portal: boolean; chain?: strin
 `;
 }
 
+/** Whether each component script parses as a classic browser script, by its content (checked once per content). */
+const parsed = new Map<string, { hash: string; ok: boolean }>();
+
+function parsesAsScript(file: string, source: string): boolean {
+    const hash = createHash('sha256').update(source).digest('base64url');
+    const known = parsed.get(file);
+    if (known?.hash === hash) return known.ok;
+    let ok = true;
+    try {
+        // Compiled only, never run. Wrapped as the bundle wraps it, so the check matches what the browser parses.
+        new vm.Script(`try {\n${source}\n} catch (err) {}`, { filename: file });
+    }
+    catch {
+        ok = false;
+        console.warn(`[formio-uag] The component script ${file} is not a browser script (an ES module, or a syntax error); it is left out of uag.use.js and portal.js.`);
+    }
+    parsed.set(file, { hash, ok });
+    return ok;
+}
+
 /** Serve one file: public, revalidated every time (no-cache), with an ETag from its content and the manifest. */
 function serve(req: Request, res: Response, type: string, body: string) {
     const etag = `"${createHash('sha256').update(body).digest('base64url')}"`;
@@ -90,8 +111,16 @@ export function uagJsRouter(registry: () => PluginRegistry | undefined, componen
         // modules define): not the UAG's own engines, tools and actions, which /plugins lists.
         return plugins ? plugins.manifest().filter((plugin) => !['engine', 'tool', 'action'].includes(plugin.type)) : [];
     };
-    // Each component's script in its own try/catch, so one that fails does not stop the others.
-    const scripts = () => components().map((component) => `\n;/* ${component.module}: ${component.type} */\ntry {\n${fs.readFileSync(component.scriptPath, 'utf8')}\n} catch (err) { console.error(${JSON.stringify(`[uag-js] The ${component.type} component of the ${component.module} module could not load:`)}, err); }\n`).join('');
+    // Each component's script in its own try/catch, so one that fails when it runs does not stop the others.
+    // A script that does not parse would break the whole bundle, which try/catch cannot stop: it is left out.
+    const scripts = () => components().map((component) => {
+        const label = `The ${component.type} component of the ${component.module} module`;
+        const source = fs.readFileSync(component.scriptPath, 'utf8');
+        if (!parsesAsScript(component.scriptPath, source)) {
+            return `\n;/* ${component.module}: ${component.type} */\nconsole.error(${JSON.stringify(`[uag-js] ${label} is not a browser script (an ES module, or a syntax error), so it was left out.`)});\n`;
+        }
+        return `\n;/* ${component.module}: ${component.type} */\ntry {\n${source}\n} catch (err) { console.error(${JSON.stringify(`[uag-js] ${label} could not load:`)}, err); }\n`;
+    }).join('');
     const styles = () => components().filter((component) => component.stylePath).map((component) => `\n/* ${component.module}: ${component.type} */\n${fs.readFileSync(component.stylePath as string, 'utf8')}`).join('');
     const component = (type: string) => components().find((candidate) => candidate.type === type);
     router.get('/uag-js/components/:file', (req, res) => {

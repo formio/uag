@@ -5,6 +5,14 @@ import type { UAGProjectInterface } from "../UAGProjectInterface";
 import { getTools } from "../tools";
 import { ToolEntry, ToolExtra, ToolInfo, assertToolEntries } from "../tools/utils";
 
+/** The module API of the module each `config.tools` entry came from, for its `extra.module`. */
+const toolModules = new WeakMap<object, any>();
+
+/** Record the module a tool came from: its `execute` gets the module's API as `extra.module`. */
+export function setToolModule(entry: object, api: any): void {
+    if (entry && typeof entry === 'object') toolModules.set(entry, api);
+}
+
 /**
  * A `config.tools` entry as a tool for the project: a bound tool's static
  * fields, overlaid with what its `bind(project)` returns. A tool without
@@ -13,7 +21,9 @@ import { ToolEntry, ToolExtra, ToolInfo, assertToolEntries } from "../tools/util
 export async function resolveTool(project: UAGProjectInterface, entry: ToolEntry): Promise<ToolInfo | undefined> {
     if (!entry || typeof entry.bind !== 'function') return entry;
     const { bind, ...fixed } = entry;
-    return { ...fixed, ...((await bind(project)) || {}) };
+    const tool = { ...fixed, ...((await bind(project)) || {}) };
+    if (toolModules.has(entry)) toolModules.set(tool, toolModules.get(entry));
+    return tool;
 }
 
 /**
@@ -35,7 +45,8 @@ export function runTool(tool: ToolInfo, project: UAGProjectInterface, args: any,
     if (!tool.execute) {
         return { content: [{ type: 'text' as const, text: `The tool "${tool.name}" has no implementation.` }], isError: true };
     }
-    const extra: ToolExtra = { ...context, authInfo: context.authInfo, project };
+    const module = toolModules.get(tool);
+    const extra: ToolExtra = { ...context, authInfo: context.authInfo, project, ...(module && { module }) };
     return tool.execute(args ?? {}, extra);
 }
 

@@ -1,4 +1,5 @@
 import { Server, ServerModule } from '@formio/appserver';
+import type { LoadedModule, ModuleApi, ModuleRoute, ModuleRouteHandlers, ProjectInterface } from '@formio/appserver';
 import { formflow } from './formflow';
 import { Request, Response, Router } from 'express';
 import path from 'path';
@@ -19,11 +20,14 @@ import { assertToolEntries } from './tools/utils';
 import { listEngines, listTools } from './plugins';
 import { registerDocuments } from './documents/plugins';
 import { uagJsRouter } from './documents/uagJs';
+import { UAG_OPERATIONS, serverDeps, uagErrorBody, uagModuleApi, uagRouteHandlers } from './modules';
+import { setToolModule } from './agent/tools';
+import type { UAGModuleApi } from './modules';
 
 /** Projects whose engines were loaded while the plugins were listed. */
 const enginesLoaded = new WeakSet<object>();
 const debug = require('debug')('formio:uag');
-export type UAGModule = ServerModule & {
+export type UAGModule = ServerModule<UAGModuleApi> & {
   config?: UAGConfig;
 };
 
@@ -102,6 +106,53 @@ export class UAGServer extends Server {
   /** The database between connecting and the license check. */
   private pendingDatabase?: UAGDatabase;
 
+  /**
+   * Use a module, or a list of modules (each in turn). A module used twice (by
+   * its `name`) is used once. `config.tools` adds up across modules; an MCP
+   * tool or engine type that two modules define stops startup, naming both.
+   * A route's `rateLimit` is the default for its name, unless the operator set one.
+   */
+  use(module: any, source?: string): void {
+    module = Server.defaultExport(module);
+    if (module && typeof module === 'object' && !Array.isArray(module) && module.uag !== undefined) {
+      const label = source || (typeof module.name === 'string' && module.name) || 'a module';
+      throw new Error(`The module ${label} has a "uag" key, which UAG modules no longer use: move its keys (name, apiVersion, settings, routes, components, initialize) onto the module itself.`);
+    }
+    super.use(module, source);
+    if (typeof module?.name === 'string' && this.modules.get(module.name)?.definition === module) this.routeRateLimits(module);
+  }
+
+  /** MCP tools and engine types, which only one module may define. */
+  protected moduleClaims(definition: Record<string, any>): string[] {
+    return [
+      ...((definition.config?.tools || []) as any[]).filter((tool) => tool?.name).map((tool) => `MCP tool "${tool.name}"`),
+      ...Object.keys(definition.config?.engineTypes || {}).map((name) => `engine type "${name}"`)
+    ];
+  }
+
+  /**
+   * MCP tools add up across modules (lodash would merge them index by index),
+   * and a named module's tools get its API as `extra.module`. Its routes'
+   * `rateLimit`s become the defaults for their names.
+   */
+  protected mergeModuleConfig(config: any, module?: LoadedModule): void {
+    const { tools, ...rest } = config;
+    super.mergeModuleConfig(rest, module);
+    if (Array.isArray(tools) && tools.length) {
+      if (module) for (const tool of tools) setToolModule(tool, this.modules.apiFor(module));
+      (this.config as any).tools = [...((this.config as any).tools || []), ...tools];
+    }
+  }
+
+  /** Route rate-limit defaults, for the names the operator left unset. */
+  private routeRateLimits(module: any): void {
+    for (const route of Object.values<any>(module?.routes?.form || {})) {
+      const name = route?.name || module.name;
+      if (!route?.rateLimit || get(this.config, ['agentApi', 'rateLimits', 'caller', name])) continue;
+      set(this.config, ['agentApi', 'rateLimits', 'caller', name], route.rateLimit);
+    }
+  }
+
   constructor(config?: UAGConfig) {
     assertNodeSnapshotDisabled();
     assertSingleCore();
@@ -134,8 +185,13 @@ export class UAGServer extends Server {
       // Bodies are parsed before authentication, so keep them to what Form.io accepts.
       maxBodySize: get(process.env, 'MAX_BODY_SIZE', '16mb').toString(),
       auth: { pkce: true, mcpOAuth: get(process.env, 'MCP_OAUTH', '').toString() === 'true' },
-      database: databaseFromEnv()
+      database: databaseFromEnv(),
+      // Modules an operator turns off, such as one an image includes.
+      modules: { disabled: get(process.env, 'MODULES_DISABLED', '').toString().split(',').map((name: string) => name.trim()).filter(Boolean) }
     }));
+    // The server's own MCP tools and engine types: a module may not define them again.
+    for (const tool of ((this.config as any).tools || []) as any[]) if (tool?.name) this.modules.claim(`MCP tool "${tool.name}"`, "the server's configuration");
+    for (const name of Object.keys((this.config as any).engineTypes || {})) this.modules.claim(`engine type "${name}"`, "the server's configuration");
     // MONGO is the UAG's own database, not a database for the appserver to keep
     // submissions in: Form.io stores those.
     if (!configuredDb && this.module.db) {
@@ -220,10 +276,19 @@ export class UAGServer extends Server {
    * route keeps Form.io's plain-text answer.
    */
   protected sendError(req: Request, res: Response, status: number, message: string, err?: any): void {
-    if (!isAgentApiRequest(req)) return super.sendError(req, res, status, message, err);
+    if (!isAgentApiRequest(req) && !this.isModuleRouteRequest(req)) return super.sendError(req, res, status, message, err);
     const error = err?.type === 'entity.parse.failed' ? 'The request body is not valid JSON.' : message;
     // Written past any shaping wrapper, which may not have run for this request.
     res.status(status).type('application/json').end(JSON.stringify(errorBody(requestIdOf(req, res), status, { error })));
+  }
+
+  /** Whether a request is for a module's form route: its method, and a path ending in the route's. */
+  private isModuleRouteRequest(req: Request): boolean {
+    const path = String(req.path || '').toLowerCase().replace(/\/+$/, '');
+    return this.modules.list.some((module) => Object.keys(module.definition.routes?.form || {}).some((key) => {
+      const [method, route] = key.split(' ');
+      return req.method === method && path.endsWith(String(route).toLowerCase().replace(/\/+$/, ''));
+    }));
   }
 
   /** Browsers reading Agent API responses need the request id too. */
@@ -281,6 +346,38 @@ export class UAGServer extends Server {
     }
   }
 
+  /** A form's own route segments, which module routes may not use: appserver's, and the agent operations. */
+  protected get reservedFormPaths(): string[] {
+    return [...super.reservedFormPaths, 'agent'];
+  }
+
+  /** Module routes may not take the names of the UAG's own rate-limited operations. */
+  protected get reservedRouteNames(): string[] {
+    return UAG_OPERATIONS;
+  }
+
+  protected get hostName(): string {
+    return 'uag';
+  }
+
+  protected get hostVersion(): string {
+    return UAG_VERSION;
+  }
+
+  /** The module API: appserver's, with the UAG's license check, engines, converters and helpers. */
+  protected createModuleApi(module: LoadedModule): ModuleApi {
+    return uagModuleApi(super.createModuleApi(module), serverDeps(() => this.uagProject));
+  }
+
+  /** Module routes run behind what the agent operations run behind: the caller check, body limit, request id, rate limits and error shape. */
+  protected moduleRouteHandlers(project: ProjectInterface, route: ModuleRoute<any>, module: LoadedModule): ModuleRouteHandlers {
+    return uagRouteHandlers(project as UAGProjectInterface, route.name as string);
+  }
+
+  protected moduleErrorBody(req: Request, err: unknown): Record<string, any> & { status: number } {
+    return uagErrorBody(req, err);
+  }
+
   async router() {
     await this.connectDatabase();
     const router = await super.router();
@@ -329,6 +426,7 @@ export * from './config';
 export * from './agent';
 export * from './tools';
 export * from './documents';
+export * from './modules';
 export { sanitizeMarkdown } from './markdown';
 export * from './router';
 export * from './template';
