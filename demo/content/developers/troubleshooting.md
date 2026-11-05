@@ -17,7 +17,7 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 | Which engines are on, and is Agentic Formflow allowed? | `GET /agent/capabilities` with a bearer token, or with `x-token`/`x-admin-key` from a server. |
 | What did a request do? | Every Agent API response carries `X-Request-Id`. Search the UAG log for it. Set `DEBUG=formio:*` for detail. |
 | What did a task run do? | With the database, open Action Logs in a portal stage connected to the UAG (classic portal). Without it, search the UAG log for `Run task "<task>" failed`. To see each field's `reason`, send the submission's data to the form's `{form}/agent/decide` or `{form}/agent/generate` with the task and `overwrite: true`; nothing is saved. |
-| What is an agentic run doing right now? | Put the [flow viewer](https://github.com/formio/uag/tree/v2.0.0-rc.7/demo/flow) in front of the UAG and engine server. |
+| What is an agentic run doing right now? | Put the [flow viewer](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo/flow) in front of the UAG and engine server. |
 
 ## Startup
 
@@ -192,6 +192,6 @@ More on [Chat widget](/developers/chat#troubleshooting).
 Run one of the samples to confirm the environment itself is sound, then compare its configuration with yours:
 
 - [Quickstart](/developers/quickstart) for a minimal stack.
-- The [demo stack](https://github.com/formio/uag/tree/v2.0.0-rc.7/demo), with conversation forms and workflows, and the [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.7/demo/samples/custom-module).
+- The [demo stack](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo), with conversation forms and workflows, and the [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo/samples/custom-module).
 
 To report a bug, include the `@formio/uag` version from `/status`, the `X-Request-Id` of a failing request and the matching log lines. Report security issues privately; see [Security](/developers/security#reporting-a-vulnerability).

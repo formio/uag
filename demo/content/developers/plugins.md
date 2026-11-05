@@ -33,7 +33,7 @@ import myConverter from './my-converter.mjs';
 export default [UAGDocument, Extract, Analyze, Translate, OfficeText, myConverter];
 ```
 
-The image's plugins come from `@formio/uag-extras`, the package of UAG extras (modules, actions, MCP tools, engine types, document plugins and converters) from Form.io and the community; it is installed in the image, and elsewhere with `npm install @formio/uag-extras@rc`. Its source is the [uag-extras repository](https://github.com/formio/uag-extras). Each extra is its own import, `@formio/uag-extras/<kind>/<name>`: its default export is a module for `server.use()`, and its plugin is a named export, for plugins files. A plugin that needs system binaries or npm packages the image does not have is added by building an image `FROM formio/uag-documents:rc`.
+The image's plugins come from `@formio/uag-extras`, the package of UAG extras (modules, actions, MCP tools, engine types, document plugins and converters) from Form.io and the community; it is installed in the image, and elsewhere with `npm install @formio/uag-extras@^1`. Its source is the [uag-extras repository](https://github.com/formio/uag-extras). Each extra is its own import, `@formio/uag-extras/<kind>/<name>`: its default export is a module for `server.use()`, and its plugin is a named export, for plugins files. A plugin that needs system binaries or npm packages the image does not have is added by building an image `FROM formio/uag-documents:rc`.
 
 ### Settings and switching plugins off
 

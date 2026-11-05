@@ -7,7 +7,7 @@ order: 50
 
 Claude can use your forms directly. Connected to the UAG, it lists the `uag`-tagged forms a user may use, asks for what each one needs, validates the answers against the form, and saves the submission, all as the user who signed in. Nothing about your forms is written into Claude: the form is the rulebook, read at the moment of use.
 
-This page connects two Claude clients, and shows how Form.io roles decide what the agent may do. It follows the [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.7/demo/samples/custom-module), a Community Edition project with **Customer** and **Employee** resources where managers onboard employees and employees onboard customers. No license is needed.
+This page connects two Claude clients, and shows how Form.io roles decide what the agent may do. It follows the [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo/samples/custom-module), a Community Edition project with **Customer** and **Employee** resources where managers onboard employees and employees onboard customers. No license is needed.
 
 | Client | How it connects | What the UAG needs |
 |---|---|---|
@@ -23,7 +23,7 @@ Either way the user signs in through the UAG's OAuth (PKCE) flow, with the proje
 The sample runs Form.io Community Edition, MongoDB, the UAG, and nginx, which serves Form.io and the UAG on one port, `3000`. nginx sends `/mcp`, `/auth` and `/.well-known` to the UAG and everything else to Form.io, so one origin serves the forms, the login page and the MCP endpoint.
 
 ```bash
-git clone -b v2.0.0-rc.7 https://github.com/formio/uag.git
+git clone -b v2.0.0-rc.8 https://github.com/formio/uag.git
 cd uag/demo/samples/custom-module
 # In docker-compose.yml first: replace every CHANGEME (both ADMIN_KEY values must be the same).
 docker compose up -d

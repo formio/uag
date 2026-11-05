@@ -146,7 +146,7 @@ The id travels with the run:
 1. The UAG's `remote` engine sends it as `X-Request-Id` on each `decide`, `extract` and `generate` call it makes for that request.
 2. The engine server sends it on with its research requests to the UAG's `/mcp`, and puts it in each failure's log line: `[uag-engines] [<id>] POST /v1/engines/claude/extract failed: ...` (with `DEBUG=formio:uag:engine-server`, the stack follows under the same id).
 
-A logging proxy in front of both, such as the demo site's [flow proxy](https://github.com/formio/uag/blob/v2.0.0-rc.7/demo/flow/proxy.mjs), can then group the request, every engine call and every research call of one run.
+A logging proxy in front of both, such as the demo site's [flow proxy](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/flow/proxy.mjs), can then group the request, every engine call and every research call of one run.
 
 The header is optional on every leg, and the protocol version does not change with it. Only an id of 1 to 128 letters, digits, `.`, `_`, `:` or `-` is accepted or passed on; anything else is dropped (the UAG generates its own instead). An "Agent: Run task" run carries the `X-Request-Id` of the submission request that started it, when that request sent one, and so does every run its save chains to. Engine calls with no such request behind them, such as a Run task on a save made through an MCP tool, carry none.
 

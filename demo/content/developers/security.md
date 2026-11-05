@@ -251,4 +251,4 @@ Enabling an engine sends submission data to its provider: TypeSafe for `jev`, An
 
 ## Reporting a vulnerability
 
-Do not open a public issue. Report privately to [security@form.io](mailto:security@form.io), or through GitHub's [private vulnerability reporting](https://github.com/formio/uag/security/advisories/new) for the repository, with the affected package or image and its version. Receipt is acknowledged within five business days. See [SECURITY.md](https://github.com/formio/uag/blob/v2.0.0-rc.7/SECURITY.md).
+Do not open a public issue. Report privately to [security@form.io](mailto:security@form.io), or through GitHub's [private vulnerability reporting](https://github.com/formio/uag/security/advisories/new) for the repository, with the affected package or image and its version. Receipt is acknowledged within five business days. See [SECURITY.md](https://github.com/formio/uag/blob/v2.0.0-rc.8/SECURITY.md).

@@ -338,7 +338,7 @@ Why a key must stay on the server:
 - A key runs as administrator: any form tagged `uag`, any task, and model calls billed to you. The relay decides which form and task the browser may use.
 - Server-to-server requests from your backend carry no `Origin`, so the UAG accepts the key there. Do not forward the browser's `Origin`, cookies or other headers.
 
-The relay below serves the page and the form definition, and relays extraction for one form and task, streaming the UAG's response back as it arrives. It is adapted from the [Agentic Formflow demo's back end](https://github.com/formio/uag/blob/v2.0.0-rc.7/demo/server/formflow.mjs), and needs Node.js 20.11 or later.
+The relay below serves the page and the form definition, and relays extraction for one form and task, streaming the UAG's response back as it arrives. It is adapted from the [Agentic Formflow demo's back end](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/server/formflow.mjs), and needs Node.js 20.11 or later.
 
 ```js
 // server.mjs: node server.mjs

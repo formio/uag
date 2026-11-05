@@ -77,7 +77,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
 ```
 
-The project API key must exist before the UAG starts, which is why the [demo stack](https://github.com/formio/uag/tree/v2.0.0-rc.7/demo), self-hosted (`docker-compose.enterprise.yml`), starts Form.io, runs a setup job that creates the project and installs the key ([`server/setup.mjs`](https://github.com/formio/uag/blob/v2.0.0-rc.7/demo/server/setup.mjs)), and only then starts the UAG.
+The project API key must exist before the UAG starts, which is why the [demo stack](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo), self-hosted (`docker-compose.enterprise.yml`), starts Form.io, runs a setup job that creates the project and installs the key ([`server/setup.mjs`](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/server/setup.mjs)), and only then starts the UAG.
 
 To run engines in their own container, see [Engine server](/developers/engine-server).
 
@@ -293,7 +293,7 @@ On a fresh database it writes its schema marker first, then creates its collecti
 
 ### The database's license
 
-Using the database needs a license that includes the UAG, on Open Source, Enterprise and Form.io's hosted service alike, unless the project and the database are both on development hosts (`localhost`, `*.localhost`, `lvh.me`, `*.lvh.me`, `*.local`). The [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.7/demo/samples/custom-module) names its services `formio.local` and `mongo.local` for that reason.
+Using the database needs a license that includes the UAG, on Open Source, Enterprise and Form.io's hosted service alike, unless the project and the database are both on development hosts (`localhost`, `*.localhost`, `lvh.me`, `*.lvh.me`, `*.local`). The [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo/samples/custom-module) names its services `formio.local` and `mongo.local` for that reason.
 
 Without the license, the UAG still starts, with the database features off. It creates and changes nothing in the database, closes the connection, and says why:
 
@@ -365,7 +365,7 @@ For a reproducible deployment:
 - **Pin image tags.** The samples use the `rc` channel tag, which moves to each new release candidate. Production should pin `formio/uag:<version>` (and `formio/uag-engines:<version>`, `formio/uag-documents:<version>`, `formio/formio-enterprise:<version>`).
 - **Pin models.** Set `CLAUDE_MODEL`, `TYPESAFE_MODEL` and the other model variables to specific versions. A new UAG release may change an engine's default, and answers differ between models. Run [`uag-eval`](/developers/evaluation) before changing one.
 - **Keep `@formio/appserver` current.** When embedding the UAG, it reaches `@formio/appserver-core` only through `@formio/appserver`, so there is one copy of it, which must be 2.26.0 or later; the UAG refuses to start with an older one, and says what to upgrade.
-- **Roll back** by pinning the previous image. Stored submissions are unaffected; UAG 1.x ignores the `metadata.uag.generated` provenance that 2.0 adds. See [MIGRATING-2.0.md](https://github.com/formio/uag/blob/v2.0.0-rc.7/MIGRATING-2.0.md) when upgrading from 1.x.
+- **Roll back** by pinning the previous image. Stored submissions are unaffected; UAG 1.x ignores the `metadata.uag.generated` provenance that 2.0 adds. See [MIGRATING-2.0.md](https://github.com/formio/uag/blob/v2.0.0-rc.8/MIGRATING-2.0.md) when upgrading from 1.x.
 
 ### A smaller image
 

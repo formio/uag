@@ -242,7 +242,7 @@ The Agent API offers tools to agent engines for research when a task's criteria 
 A module that brings a whole capability uses more keys: `settings`, `routes`, `components`, `initialize` and `close`. A module with any of them needs a `name` and an `apiVersion`, the version of the [module API](#the-module-api) it is written against: version 1, from UAG 2.0.0-rc.7. A module that uses the UAG's own members of the API (licenses, engines, converters) also says `host: 'uag'`, so a server other than the UAG refuses it at startup instead of failing on the first request.
 
 ```js
-// npm install @formio/uag-extras@rc
+// npm install @formio/uag-extras@^1
 import { UAGDocument } from '@formio/uag-extras/modules/ai-document';
 server.use(UAGDocument);
 ```
@@ -360,7 +360,7 @@ export default function addressCheck(Formio) {
 Build it with the published build (it needs `esbuild`: install it as a dev dependency, or name it to `npx` as below), which writes `dist/address-check.mjs` (for bundlers), `dist/address-check.min.js` (the script `components` points at, also for CDNs) and `dist/address-check.css`, with their integrity values:
 
 ```bash
-npx -p @formio/uag-extras@rc -p esbuild uag-build-client client.js --name address-check --style style.css --out dist
+npx -p @formio/uag-extras@^1 -p esbuild uag-build-client client.js --name address-check --style style.css --out dist
 ```
 
 Components reach browsers three ways, always matching the installed module: the UAG adds them to `uag.use.js` and the portal script; an application with a bundler imports the module's client and calls `Formio.use()` with it; a page without one loads the module's script from a CDN, such as jsDelivr, after `uag.use.js`, or from the UAG itself, `{uag}/uag-js/components/<type>.js` (and `.css`), after registering `@formio/uag-js` with its own options (see [Or load it from the UAG](/developers/renderer#or-load-it-from-the-uag)).
@@ -473,7 +473,7 @@ toolOverrides: { fetch_external_data: { name: '' } }
 
 Every built-in tool answers the model with a rendered [Lodash template](https://lodash.com/docs/4.17.15#template). Templates are Markdown with `<%= value %>` (insert), `<%- value %>` (insert, HTML-escaped) and `<% code %>` (JavaScript, for loops and conditions); `_` is Lodash inside a template.
 
-`config.responseTemplates` maps template names to template source. A name that matches a built-in template replaces it; any other name adds a template your tools can render with `project.mcpResponse(name, data)`. The built-in templates are the `.md` files in [`src/templates`](https://github.com/formio/uag/tree/v2.0.0-rc.7/src/templates), one per name.
+`config.responseTemplates` maps template names to template source. A name that matches a built-in template replaces it; any other name adds a template your tools can render with `project.mcpResponse(name, data)`. The built-in templates are the `.md` files in [`src/templates`](https://github.com/formio/uag/tree/v2.0.0-rc.8/src/templates), one per name.
 
 ```js
 const fs = require('fs');
@@ -487,7 +487,7 @@ responseTemplates: {
 }
 ```
 
-To change a built-in template, copy its file from `src/templates` and edit it. The data it receives is whatever its tool passes; read the tool in [`src/tools`](https://github.com/formio/uag/tree/v2.0.0-rc.7/src/tools) for the exact shape. For example, `get_forms` renders `getAvailableForms` with:
+To change a built-in template, copy its file from `src/templates` and edit it. The data it receives is whatever its tool passes; read the tool in [`src/tools`](https://github.com/formio/uag/tree/v2.0.0-rc.8/src/tools) for the exact shape. For example, `get_forms` renders `getAvailableForms` with:
 
 ```js
 {
@@ -684,7 +684,7 @@ A replacement page must:
    ```
 4. Follow the `redirect` URL in the response: `{ "redirect": "<redirect_uri>?code=…&state=…" }`.
 
-The UAG answers `400` when `jwt` or `code_challenge` is missing or the `redirect_uri` is not allowed, and `401` when the Form.io project does not confirm the token. The [custom module example's `authorize.html`](https://github.com/formio/uag/blob/v2.0.0-rc.7/demo/samples/custom-module/module/authorize.html) is a complete page to start from: a Bootstrap layout around the same login flow.
+The UAG answers `400` when `jwt` or `code_challenge` is missing or the `redirect_uri` is not allowed, and `401` when the Form.io project does not confirm the token. The [custom module example's `authorize.html`](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/samples/custom-module/module/authorize.html) is a complete page to start from: a Bootstrap layout around the same login flow.
 
 The example module loads its `authorize.html` exactly this way, with `auth: { authAppHtml: fs.readFileSync(path.join(__dirname, 'authorize.html'), 'utf8') }`.
 

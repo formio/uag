@@ -1,6 +1,6 @@
 # @formio/uag-sdk
 
-<sub>[Form.io UAG](https://github.com/formio/uag/blob/v2.0.0-rc.7/README.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/v2.0.0-rc.7/README.md#engines-and-routing) &rsaquo; this page</sub>
+<sub>[Form.io UAG](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md#engines-and-routing) &rsaquo; this page</sub>
 
 Build engine packages for the Form.io Universal Agent Gateway (UAG). This package contains:
 
