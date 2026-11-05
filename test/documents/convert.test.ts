@@ -25,12 +25,15 @@ describe('Documents: running converters', () => {
         const slow = converter((_: any, options: any) => new Promise((resolve) => {
             dir = options.tmpdir;
             options.signal.addEventListener('abort', () => { signalled = true; });
-            setTimeout(() => resolve({ text: 'late', textFormat: 'plain' }), 500);
+            setTimeout(() => resolve({ text: 'late', textFormat: 'plain' }), 100);
         }), { timeoutMs: 30 });
         let message = '';
         try { await runConverter(slow, input, { to: 'text', log: recordingLog().log }); } catch (err: any) { message = err.message; }
         expect(message).to.include('took longer than 30 ms');
         expect(signalled).to.equal(true);
+        // The directory stays while the converter still runs, and goes once it stops.
+        expect(fs.existsSync(dir)).to.equal(true);
+        await new Promise((resolve) => setTimeout(resolve, 150));
         expect(fs.existsSync(dir)).to.equal(false);
     });
 
@@ -64,5 +67,26 @@ describe('Documents: running converters', () => {
         let message = '';
         try { await running; } catch (err: any) { message = err.message; }
         expect(message).to.equal('closed');
+    });
+
+    it('holds a slot until convert() settles, so a converter that ignores its signal never runs past its concurrency', async () => {
+        let running = 0;
+        let peak = 0;
+        const stubborn: any = {
+            type: 'converter', name: 'stubborn', version: '1', apiVersion: 1, accepts: [{ type: 'text/plain' }], produces: ['text'],
+            limits: { timeoutMs: 20, concurrency: 1 },
+            async convert() {
+                running++;
+                peak = Math.max(peak, running);
+                await new Promise((resolve) => setTimeout(resolve, 60));
+                running--;
+                return { text: 'x', textFormat: 'plain' };
+            }
+        };
+        const one = () => runConverter(stubborn, { buffer: Buffer.from('a'), type: 'text/plain', name: 'a.txt' }, { to: 'text', log: recordingLog().log }).catch((err) => err.name);
+        expect(await Promise.all([one(), one(), one()])).to.deep.equal(['ConversionError', 'ConversionError', 'ConversionError']);
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        expect(peak).to.equal(1);
+        expect(running).to.equal(0);
     });
 });

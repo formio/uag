@@ -41,11 +41,16 @@ export const pdfTextConverter: Converter = {
     }
 };
 
-/** Decode text: UTF-16 with a byte order mark, else UTF-8 (without its BOM). */
+/** Decode text: UTF-16 with a byte order mark, else UTF-8 (without its BOM), else Windows-1252 (a superset of Latin-1). */
 export function decodeText(buffer: Buffer): string {
     if (buffer[0] === 0xff && buffer[1] === 0xfe) return new TextDecoder('utf-16le').decode(buffer.subarray(2));
     if (buffer[0] === 0xfe && buffer[1] === 0xff) return new TextDecoder('utf-16be').decode(buffer.subarray(2));
-    return new TextDecoder('utf-8').decode(buffer).replace(/^﻿/, '');
+    try {
+        return new TextDecoder('utf-8', { fatal: true }).decode(buffer).replace(/^\uFEFF/, '');
+    }
+    catch {
+        return new TextDecoder('windows-1252').decode(buffer);
+    }
 }
 
 const TEXT_FORMATS: Record<string, TextFormat> = {

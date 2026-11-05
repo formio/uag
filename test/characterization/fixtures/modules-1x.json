@@ -133,6 +133,18 @@
       }
     },
     {
+      "name": "read_document",
+      "title": "Read Uploaded Document",
+      "description": "Read the text of a document uploaded to a submission: a file in a file field, or in an AI Document field. Give the form, the submission id (from `find_submissions`) and the data path of the field (such as \"contract\" or \"rows[0].attachment\"; add an index, such as \"contract[1]\", for another file than the first). Returns the file name, its type, its page count when known, and its text; a long text is cut, and `truncated` is true.",
+      "annotations": {
+        "title": "Read an uploaded document",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
       "name": "module_lookup",
       "title": "Module lookup",
       "description": "Look up a record in the module's directory by its id.",

@@ -6,3 +6,4 @@ export { BUILT_IN_CONVERTERS, pdfTextConverter, textConverter, imagePdfConverter
 export { ConverterRoutes, stepName } from './routes';
 export type { FileRoute, AcceptEntry, Pins } from './routes';
 export { converterPluginType, registerDocuments, documentsOf } from './plugins';
+export { converterFileReader, readAsText } from './readers';

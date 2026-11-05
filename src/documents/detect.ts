@@ -82,6 +82,18 @@ export function isText(buffer: Buffer): boolean {
     }
 }
 
+/**
+ * Whether a buffer is text in a legacy 8-bit encoding (Latin-1, Windows-1252):
+ * no NUL bytes and no control characters other than tab, line breaks, form feed
+ * and the DOS end-of-file mark. Spreadsheet and editor exports still write these.
+ */
+export function isLegacyText(buffer: Buffer): boolean {
+    for (const byte of buffer) {
+        if (byte < 0x20 && byte !== 0x09 && byte !== 0x0a && byte !== 0x0d && byte !== 0x0c && byte !== 0x1a) return false;
+    }
+    return true;
+}
+
 /** The type the shared detection gives the bytes, or undefined when it does not know them. */
 function signatureType(buffer: Buffer, ext: string): string | undefined {
     if (startsWith(buffer, '%PDF-')) return MIME.pdf;
@@ -115,7 +127,9 @@ export function identify(buffer: Buffer, hint: { name: string; type?: string }, 
         }
     }
     if (!type) {
-        type = isText(buffer) ? (TEXT_BY_EXTENSION[ext] || MIME.text) : MIME.binary;
+        // Text named as text may also be in a legacy 8-bit encoding; decodeText reads it as Windows-1252.
+        const text = isText(buffer) || (!!TEXT_BY_EXTENSION[ext] && isLegacyText(buffer));
+        type = text ? (TEXT_BY_EXTENSION[ext] || MIME.text) : MIME.binary;
     }
     const promised = FAMILY_BY_EXTENSION[ext];
     if (promised && promised !== familyOf(type)) {

@@ -14,14 +14,24 @@ export class ConversionError extends Error {
     }
 }
 
-/** A queue per converter, so at most `concurrency` of its conversions run at once. */
+/**
+ * A queue per converter, so at most `concurrency` of its conversions run at
+ * once. A slot is held until its conversion has actually stopped: a converter
+ * that ignores its signal still counts after its caller has given up on it.
+ */
 class Queue {
     private running = 0;
     private waiting: Array<() => void> = [];
     constructor(private readonly limit: number) {}
 
-    async run<T>(work: () => Promise<T>, signal?: AbortSignal): Promise<T> {
-        if (this.running >= this.limit) {
+    /** Wait for a slot; the returned function frees it (once). */
+    async acquire(signal?: AbortSignal): Promise<() => void> {
+        signal?.throwIfAborted();
+        if (this.running < this.limit) {
+            this.running++;
+        }
+        else {
+            // A freed slot passes straight to the next waiter, so no new caller can take it in between.
             await new Promise<void>((resolve, reject) => {
                 const go = () => { signal?.removeEventListener('abort', cancel); resolve(); };
                 const cancel = () => { this.waiting = this.waiting.filter((entry) => entry !== go); reject(signal!.reason ?? new Error('aborted')); };
@@ -29,14 +39,14 @@ class Queue {
                 signal?.addEventListener('abort', cancel, { once: true });
             });
         }
-        this.running++;
-        try {
-            return await work();
-        }
-        finally {
-            this.running--;
-            this.waiting.shift()?.();
-        }
+        let released = false;
+        return () => {
+            if (released) return;
+            released = true;
+            const next = this.waiting.shift();
+            if (next) next();
+            else this.running--;
+        };
     }
 }
 
@@ -64,39 +74,50 @@ export async function runConverter(converter: Converter, input: { buffer: Buffer
         queue = new Queue(Math.max(1, limits.concurrency));
         queues.set(converter, queue);
     }
-    return queue.run(async () => {
+    const release = await queue.acquire(options.signal);
+    let tmpdir: string;
+    try {
         options.signal?.throwIfAborted();
-        const controller = new AbortController();
-        const abort = () => controller.abort(options.signal?.reason);
-        options.signal?.addEventListener('abort', abort, { once: true });
-        const tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'uag-convert-'));
-        let timer: NodeJS.Timeout | undefined;
-        try {
-            const timeout = new Promise<never>((_, reject) => {
-                timer = setTimeout(() => {
-                    const error = new ConversionError(`Converting "${input.name}" with ${converter.name} took longer than ${limits.timeoutMs} ms.`);
-                    // Abort first: a converter running a process stops it on its signal.
-                    controller.abort(error);
-                    reject(error);
-                }, limits.timeoutMs);
-            });
-            const aborted = new Promise<never>((_, reject) => {
-                if (controller.signal.aborted) reject(controller.signal.reason);
-                controller.signal.addEventListener('abort', () => reject(controller.signal.reason), { once: true });
-            });
-            const output = await Promise.race([
-                converter.convert(input, { to: options.to, settings: options.settings || {}, signal: controller.signal, tmpdir, log: options.log }),
-                timeout,
-                aborted
-            ]);
-            return checkOutput(converter, input.name, options.to, output);
-        }
-        finally {
-            clearTimeout(timer);
-            options.signal?.removeEventListener('abort', abort);
-            await fs.promises.rm(tmpdir, { recursive: true, force: true });
-        }
-    }, options.signal);
+        tmpdir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'uag-convert-'));
+    }
+    catch (err) {
+        release();
+        throw err;
+    }
+    const controller = new AbortController();
+    const abort = () => controller.abort(options.signal?.reason);
+    options.signal?.addEventListener('abort', abort, { once: true });
+    if (options.signal?.aborted) abort();
+    const work = Promise.resolve().then(() => converter.convert(input, { to: options.to, settings: options.settings || {}, signal: controller.signal, tmpdir, log: options.log }));
+    // The slot and the temporary directory are kept until convert() settles, even after a timeout or an abort.
+    const stopped = work.then(() => undefined, () => undefined).then(async () => {
+        await fs.promises.rm(tmpdir, { recursive: true, force: true }).catch(() => undefined);
+        release();
+    });
+    let timer: NodeJS.Timeout | undefined;
+    let finished = false;
+    try {
+        const timeout = new Promise<never>((_, reject) => {
+            timer = setTimeout(() => {
+                const error = new ConversionError(`Converting "${input.name}" with ${converter.name} took longer than ${limits.timeoutMs} ms.`);
+                // Abort first: a converter running a process stops it on its signal.
+                controller.abort(error);
+                reject(error);
+            }, limits.timeoutMs);
+        });
+        const aborted = new Promise<never>((_, reject) => {
+            if (controller.signal.aborted) reject(controller.signal.reason);
+            controller.signal.addEventListener('abort', () => reject(controller.signal.reason), { once: true });
+        });
+        const output = await Promise.race([work.finally(() => { finished = true; }), timeout, aborted]);
+        return checkOutput(converter, input.name, options.to, output);
+    }
+    finally {
+        clearTimeout(timer);
+        options.signal?.removeEventListener('abort', abort);
+        // A conversion that completed has its directory removed before its result is used.
+        if (finished) await stopped;
+    }
 }
 
 function checkOutput(converter: Converter, name: string, to: Representation, output: any): ConverterOutput {
