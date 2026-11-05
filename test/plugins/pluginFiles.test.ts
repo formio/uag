@@ -37,7 +37,7 @@ describe('Plugin files', () => {
         expect(await usePluginFiles(server as any, { UAG_PLUGINS: file }, '/nonexistent/index.mjs')).to.equal(file);
         const modules = server.used[0].module;
         expect(modules.map((m: any) => m.extra || 'plugins')).to.deep.equal(['features/notes', 'documents/notes', 'plugins']);
-        expect(modules[2].plugins.map((p: any) => p.name)).to.deep.equal(['loose-converter']);
+        expect(modules[2].plugins.map((p: any) => p.name)).to.deep.equal(['loose-converter', 'typo']);
     });
 
     it('loads nothing when UAG_PLUGINS is off, even where the image keeps its default file', async () => {

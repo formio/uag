@@ -27,10 +27,17 @@ export type FeatureRunContext = { signal: AbortSignal; progress: FeatureProgress
 export type FeatureEndpoint = {
     /** The operation's name, for rate limits, such as "document". */
     name: string;
+    /**
+     * What the caller must be allowed to do with the form's submissions, checked
+     * before the handler runs: by default `['create', 'update']` (either one), as
+     * the Agent API requires. `false` checks nothing: the handler decides.
+     */
+    access?: Array<'create' | 'read' | 'update' | 'delete'> | false;
     handler(req: FeatureRequest, res: Response, api: FeatureApi): any;
 };
 
-export type FeatureRequest = Request & { form: FormInterface; auth: AuthRequest; requestId: string };
+/** A feature route's request: the form, the caller, a request id, and a signal that aborts when the client goes away. */
+export type FeatureRequest = Request & { form: FormInterface; auth: AuthRequest; requestId: string; signal: AbortSignal };
 
 /** A formio.js component a feature brings to browsers. */
 export type FeatureComponent = {
@@ -57,8 +64,8 @@ export type FeatureDefinition = {
 
 export type FeatureLog = { info(message: string): void; warn(message: string): void; error(message: string): void };
 
-/** An agent engine that can generate. */
-export type GeneratingEngine = { name: string; kind: 'agent'; model: string; accepts?: Representation[]; generate(request: any): Promise<any> };
+/** An agent engine a feature may use: its name and model, and generate, which checks the license first. */
+export type GeneratingEngine = { name: string; model: string; accepts: Representation[]; generate(request: any): Promise<any> };
 
 /**
  * The feature API, version 1: what the UAG gives a feature, behind stable
@@ -80,7 +87,7 @@ export type FeatureApi = {
     requireLicense(): Promise<void>;
     files: {
         /** A stored file value's bytes, read with the caller's credentials and the file component's storage check; null when it cannot be read here. */
-        read(form: FormInterface, value: any, auth: AuthRequest | undefined, options: { maxBytes?: number; component?: any }): Promise<Buffer | null>;
+        read(form: FormInterface, value: any, auth: AuthRequest | undefined, options: { maxBytes?: number; component?: any; signal?: AbortSignal }): Promise<Buffer | null>;
     };
     converters: {
         list(): Converter[];
@@ -91,10 +98,12 @@ export type FeatureApi = {
         stepName(converter: { name: string; version?: string }): string;
     };
     engines: {
-        /** The named engine, or the first agent engine that generates and reads every representation in `needs`; throws 503 no_engine. */
+        /**
+         * The named engine, or the first agent engine that generates and reads every
+         * representation in `needs`; throws 503 no_engine. Its `generate` checks the
+         * license first, so no feature calls a model outside it.
+         */
         select(options: { name?: string; needs?: Representation[] }): GeneratingEngine;
-        /** Checks the license, then calls the engine. */
-        generate(engine: GeneratingEngine, request: any): Promise<any>;
     };
     markdown: {
         sanitize(text: string): string;
@@ -107,7 +116,8 @@ export type FeatureApi = {
         /** A component anywhere in the stored form, by key, or undefined. */
         componentByKey(form: FormInterface, key: string): any;
     };
-    callerKey(auth: AuthRequest | undefined): string;
+    /** Who the request is from, for limits: the user or token, or, for an anonymous caller, its IP address. */
+    callerKey(req: Request): string;
     errors: {
         /** An error the UAG answers with this status and code, and this message. */
         create(status: number, message: string, code?: string): Error;

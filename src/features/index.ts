@@ -13,6 +13,12 @@ export * from './types';
 export { createFeatureApi } from './api';
 
 const NAME = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
+/** The first path segments of a form's own routes, which features may not claim. */
+const RESERVED = ['', 'submission', 'exists', 'agent', 'action', 'actions'];
+/** A route key's path, as Express matches it: case-insensitive, without a trailing slash. */
+const routePath = (key: string) => (ROUTE.exec(key)?.[2] || '').toLowerCase().replace(/\/+$/, '') || '/';
+/** A route key as Express matches it, for comparing two features' routes. */
+const routeKey = (key: string) => `${key.split(' ')[0]} ${routePath(key)}`;
 const COMPONENT_TYPE = /^[a-z][a-z0-9]*$/;
 
 /** A feature as the UAG holds it. */
@@ -41,6 +47,10 @@ function problemsOf(definition: any, source: string): string[] {
     }
     for (const [key, endpoint] of Object.entries<any>(definition.routes?.form || {})) {
         if (!ROUTE.test(key)) problems.push(`${label}: route "${key}" must be "<METHOD> /<path>"`);
+        else if (RESERVED.includes(routePath(key).split('/')[1])) problems.push(`${label}: route "${key}" is one of the form's own routes (${RESERVED.join(', ')})`);
+        if (endpoint && endpoint.access !== undefined && endpoint.access !== false && !(Array.isArray(endpoint.access) && endpoint.access.length && endpoint.access.every((method: any) => ['create', 'read', 'update', 'delete'].includes(method)))) {
+            problems.push(`${label}: route "${key}" must give "access" as a list of create, read, update and delete, or false`);
+        }
         if (!endpoint || typeof endpoint.handler !== 'function' || typeof endpoint.name !== 'string' || !endpoint.name) {
             problems.push(`${label}: route "${key}" must have a "name" and a "handler"`);
         }
@@ -94,9 +104,9 @@ export class Features {
         if (problems.length) throw new Error(problems.join('\n'));
         if (this.has(definition.name)) return false;
         for (const other of this.list) {
-            const otherRoutes = Object.keys(other.definition.routes?.form || {});
+            const otherRoutes = Object.keys(other.definition.routes?.form || {}).map(routeKey);
             for (const route of Object.keys(definition.routes?.form || {})) {
-                if (otherRoutes.includes(route)) throw new Error(`The form route "${route}" is claimed by two features: ${other.definition.name} (${other.source}) and ${definition.name} (${source})`);
+                if (otherRoutes.includes(routeKey(route))) throw new Error(`The form route "${route}" is claimed by two features: ${other.definition.name} (${other.source}) and ${definition.name} (${source})`);
             }
             const otherTypes = (other.definition.components || []).map((component) => component.type);
             for (const component of definition.components || []) {
@@ -143,7 +153,11 @@ export class Features {
      * list it, and call its initialize. A problem stops startup, naming the
      * feature.
      */
-    async start(project: UAGProjectInterface, registry: PluginRegistry, config: Record<string, any>, env: Record<string, string | undefined> = process.env): Promise<void> {
+    /**
+     * Before the plugins start: resolve every feature's settings (a problem stops
+     * startup at once, naming the feature) and list the features.
+     */
+    async prepare(registry: PluginRegistry, config: Record<string, any>, env: Record<string, string | undefined> = process.env): Promise<void> {
         for (const feature of this.list) {
             let settings: Record<string, any> = {};
             try {
@@ -164,6 +178,10 @@ export class Features {
             components: (feature.definition.components || []).map((component) => component.type),
             routes: Object.keys(feature.definition.routes?.form || {})
         })), 'features', { server: true });
+    }
+
+    /** Once the plugins have started and the engines are loaded: each feature's initialize, before any request. */
+    async initialize(project: UAGProjectInterface): Promise<void> {
         for (const feature of this.list) {
             await feature.definition.initialize?.(this.apiFor(feature, project));
         }

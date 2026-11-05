@@ -370,7 +370,7 @@ A form can turn chat off with [`uagChat: "false"`](/developers/form-properties#u
 
 ## Process an AI Document
 
-`POST {form}/document/process` processes the files of an AI Document component with its document plugin (see [AI Document](/developers/ai-document)). The plugin, its settings and the instructions come from the stored form, never from the request.
+With the AI Document feature in use, `POST {form}/document/process` processes the files of an AI Document component with its document plugin (see [AI Document](/developers/ai-document)). The plugin, its settings and the instructions come from the stored form, never from the request.
 
 ```json
 { "path": "rows[2].contract", "files": [{ "storage": "s3", "key": "uploads/contract.pdf", "name": "contract.pdf", "originalName": "contract.pdf", "size": 482113, "type": "application/pdf" }], "data": { } }

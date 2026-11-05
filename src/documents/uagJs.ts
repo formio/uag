@@ -89,9 +89,12 @@ export function uagJsRouter(registry: () => PluginRegistry | undefined, componen
     const router = Router();
     const manifest = () => {
         const plugins = registry();
-        return plugins ? plugins.manifest().filter((plugin) => ['document', 'converter', 'feature'].includes(plugin.type)) : [];
+        // Every plugin the features' components may read (document, converter, feature, and types
+        // features define): not the UAG's own engines, tools and actions, which /plugins lists.
+        return plugins ? plugins.manifest().filter((plugin) => !['engine', 'tool', 'action'].includes(plugin.type)) : [];
     };
-    const scripts = () => components().map((component) => `\n;/* ${component.feature}: ${component.type} */\n${fs.readFileSync(component.scriptPath, 'utf8')}`).join('');
+    // Each component's script in its own try/catch, so one that fails does not stop the others.
+    const scripts = () => components().map((component) => `\n;/* ${component.feature}: ${component.type} */\ntry {\n${fs.readFileSync(component.scriptPath, 'utf8')}\n} catch (err) { console.error(${JSON.stringify(`[uag-js] The ${component.type} component of the ${component.feature} feature could not load:`)}, err); }\n`).join('');
     const styles = () => components().filter((component) => component.stylePath).map((component) => `\n/* ${component.feature}: ${component.type} */\n${fs.readFileSync(component.stylePath as string, 'utf8')}`).join('');
     const component = (type: string) => components().find((candidate) => candidate.type === type);
     router.get('/uag-js/components/:file', (req, res) => {

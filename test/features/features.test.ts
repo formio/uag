@@ -11,7 +11,7 @@ const STYLE = path.join(__dirname, 'fixtures', 'sample-component.css');
 const OTHER = path.join(__dirname, 'fixtures', 'other-component.js');
 
 /** What the test feature and engine saw. */
-const seen: { initialized: any[]; generated: number } = { initialized: [], generated: 0 };
+const seen: { initialized: any[]; ready: any[]; generated: number } = { initialized: [], ready: [], generated: 0 };
 
 /** An engine type other than the built-in stubs: it runs under the license. */
 const writer = defineEngine({
@@ -65,7 +65,7 @@ function sampleFeature(overrides: any = {}) {
                         name: 'sample',
                         handler: async (req: any, res: any, api: any) => {
                             const engine = api.engines.select({ needs: ['text'] });
-                            const answer = await api.engines.generate(engine, { instructions: 'Write.', format: 'markdown', attachments: [] });
+                            const answer = await engine.generate({ instructions: 'Write.', format: 'markdown', attachments: [] });
                             return { text: answer.text, engine: engine.name };
                         }
                     },
@@ -84,7 +84,10 @@ function sampleFeature(overrides: any = {}) {
                 }
             },
             components: [{ type: 'uagsample', script: SCRIPT, style: STYLE }],
-            initialize: (api: any) => { seen.initialized.push({ ...api.settings }); },
+            initialize: (api: any) => {
+                seen.initialized.push({ ...api.settings });
+                seen.ready.push({ converters: api.converters.list().length > 0, engine: (() => { try { return api.engines.select({ needs: ['text'] }).name; } catch (err: any) { return err.message; } })() });
+            },
             ...overrides
         }
     };
@@ -104,7 +107,7 @@ describe('Features', function () {
     this.timeout(30000);
     let started: Started | undefined;
     const env = { ...process.env };
-    beforeEach(() => { seen.initialized.length = 0; seen.generated = 0; });
+    beforeEach(() => { seen.initialized.length = 0; seen.ready.length = 0; seen.generated = 0; });
     afterEach(async () => {
         await started?.stop();
         started = undefined;
@@ -124,8 +127,10 @@ describe('Features', function () {
 
         it('initializes the feature with its resolved settings at startup', async () => {
             process.env.SAMPLE_GREETING = 'Bonjour';
-            started = await launch([sampleFeature()], { sample: { limit: 3 } });
+            started = await launch([sampleFeature()], { sample: { limit: 3 }, engines: ['stub-agent'] });
             expect(seen.initialized).to.deep.equal([{ greeting: 'Bonjour', limit: 3, loud: false }]);
+            // initialize runs once the plugins (converters) and the engines are ready.
+            expect(seen.ready).to.deep.equal([{ converters: true, engine: 'stub-agent' }]);
         });
 
         it('stops startup for an invalid setting, naming the feature and the setting', async () => {
@@ -165,6 +170,70 @@ describe('Features', function () {
             await launch([{ extra: 'engines/a', config: { engineTypes: { echo: engine } } }, { extra: 'engines/b', config: { engineTypes: { echo: engine } } }])
                 .then((s) => { started = s; }, (err) => { message = err.message; });
             expect(message).to.include('The engine type "echo" is defined by both engines/a and engines/b');
+        });
+    });
+
+    describe('review fixes', () => {
+        const tool = (name: string) => ({ name, description: name, inputSchema: {}, annotations: { title: name, readOnlyHint: true }, execute: async () => ({ content: [] }) });
+
+        it('checks the caller\'s access to the form by default, and lets a route opt out', async () => {
+            const open: any = { name: 'open', apiVersion: 1, routes: { form: {
+                'POST /open/checked': { name: 'open', handler: () => ({ ok: true }) },
+                'POST /open/public': { name: 'open', access: false, handler: () => ({ ok: true }) }
+            } } };
+            started = await launch([{ extra: 'features/open', uag: open }]);
+            const token = started.tokenFor({ _id: 'reader1', roles: [] });
+            expect((await started.request().post('/notes/open/checked').set('x-jwt-token', token).send({})).status).to.be.oneOf([401, 403]);
+            const passed = await started.request().post('/notes/open/public').set('x-jwt-token', token).send({});
+            expect(passed.status, passed.text).to.equal(200);
+        });
+
+        it('keys anonymous callers by their address, and others by who they are', async () => {
+            const who: any = { name: 'who', apiVersion: 1 };
+            started = await launch([{ extra: 'features/who', uag: who }]);
+            const features = (started.server as any).features;
+            const api: any = features.apiFor(features.list.find((f: any) => f.definition.name === 'who'), started.server.uagProject);
+            expect(api.callerKey({ auth: {}, ip: '10.1.2.3' })).to.equal('anonymous:10.1.2.3');
+            expect(api.callerKey({ auth: { user: { _id: 'u1' } }, ip: '10.1.2.3' })).to.equal('u1');
+        });
+
+        it('hands out an engine handle, never the engine', async () => {
+            const keys: string[][] = [];
+            const peek: any = { name: 'peek', apiVersion: 1, initialize: (api: any) => { keys.push(Object.keys(api.engines.select({ needs: ['text'] })).sort()); } };
+            started = await launch([{ extra: 'features/peek', uag: peek }], { engines: ['stub-agent'] });
+            expect(keys).to.deep.equal([['accepts', 'generate', 'model', 'name']]);
+        });
+
+        it('compares routes as Express matches them, and keeps the form\'s own paths', async () => {
+            let message = '';
+            const a: any = { name: 'a', apiVersion: 1, routes: { form: { 'POST /Doc/Run': { name: 'a', handler: () => ({}) } } } };
+            const b: any = { name: 'b', apiVersion: 1, routes: { form: { 'POST /doc/run/': { name: 'b', handler: () => ({}) } } } };
+            await launch([{ extra: 'features/a', uag: a }, { extra: 'features/b', uag: b }]).then((s) => { started = s; }, (err) => { message = err.message; });
+            expect(message).to.include('The form route "POST /doc/run/" is claimed by two features: a (features/a) and b (features/b)');
+            message = '';
+            const own: any = { name: 'own', apiVersion: 1, routes: { form: { 'POST /submission/x': { name: 'own', handler: () => ({}) } } } };
+            await launch([{ extra: 'features/own', uag: own }]).then((s) => { started = s; }, (err) => { message = err.message; });
+            expect(message).to.include('route "POST /submission/x" is one of the form\'s own routes');
+        });
+
+        it('applies the rest of a module whose feature is already in use', async () => {
+            const feature = sampleFeature();
+            started = await launch([feature, { extra: 'modules/more', uag: feature.uag, config: { tools: [tool('more_tool')] } }]);
+            const names = (await started.request().get('/plugins').set(admin)).body.filter((p: any) => p.type === 'tool').map((p: any) => p.name);
+            expect(names).to.include('more_tool');
+        });
+
+        it('refuses a module tool named like one in the server\'s own configuration', async () => {
+            let message = '';
+            await start({ forms: { notes: notesForm }, config: { tools: [tool('lookup')] }, modules: [{ extra: 'tools/lookup', config: { tools: [tool('lookup')] } }] })
+                .then((s) => { started = s; }, (err) => { message = err.message; });
+            expect(message).to.include('The MCP tool "lookup" is defined by both the server\'s configuration and tools/lookup');
+        });
+
+        it('streams a failure with its status', async () => {
+            started = await launch([sampleFeature()]);
+            const failed = await started.request().post('/notes/sample/stream').set({ ...admin, Accept: 'text/event-stream' }).send({ fail: true });
+            expect(events(failed.text).pop()!.data).to.include({ status: 422, code: 'process_failed' });
         });
     });
 

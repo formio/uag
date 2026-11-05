@@ -21,8 +21,9 @@ export function pluginsFile(env: Record<string, string | undefined> = process.en
 /** A real dynamic import(), kept one after compilation to CommonJS. */
 const dynamicImport: (specifier: string) => Promise<any> = new Function('specifier', 'return import(specifier)') as any;
 
-/** A module (a feature, an extra), rather than a plugin: an object without a `type`. */
-const isModule = (entry: any) => !!entry && typeof entry === 'object' && !Array.isArray(entry) && typeof entry.type !== 'string';
+/** The keys a module may have: an entry with one of them is a module (a feature, an extra), anything else a plugin. */
+const MODULE_KEYS = ['uag', 'extra', 'plugins', 'pluginTypes', 'config', 'formRoutes', 'actions', 'hooks', 'providers', 'processors'];
+const isModule = (entry: any) => !!entry && typeof entry === 'object' && !Array.isArray(entry) && typeof entry.type !== 'string' && MODULE_KEYS.some((key) => key in entry);
 
 /**
  * Load the plugins file, if any, and use it, named by its path in error

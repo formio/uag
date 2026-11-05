@@ -135,17 +135,18 @@ export class UAGServer extends Server {
       this.usedExtras.add(module.extra);
     }
     if (module.uag !== undefined) {
-      const definitions = ([] as any[]).concat(module.uag);
-      const fresh = definitions.filter((definition) => !this.features.has(definition?.name));
-      if (!fresh.length) return;
-      if (fresh.length !== definitions.length) {
-        throw new Error(`${label} brings features of which some are already in use (${definitions.filter((d) => !fresh.includes(d)).map((d) => d.name).join(', ')}): use each feature once`);
-      }
-      for (const definition of definitions) this.features.add(definition, label);
-      module = { ...module, formRoutes: [...([] as any[]).concat(module.formRoutes ?? []), ...definitions.map((definition) => this.features.formRoutes(definition))] };
+      // A feature already in use is set up once: the rest of the module still applies.
+      const fresh = ([] as any[]).concat(module.uag).filter((definition) => !this.features.has(definition?.name));
+      for (const definition of fresh) this.features.add(definition, label);
+      const { uag: _uag, ...rest } = module;
+      module = { ...rest, formRoutes: [...([] as any[]).concat(module.formRoutes ?? []), ...fresh.map((definition) => this.features.formRoutes(definition))] };
     }
-    // MCP tools and engine types: each defined once.
-    this.usedNames ||= new Map();
+    // MCP tools and engine types: each defined once, the server's own configuration included.
+    if (!this.usedNames) {
+      this.usedNames = new Map();
+      for (const tool of ((this.config as any)?.tools || []) as any[]) if (tool?.name) this.usedNames.set(`MCP tool "${tool.name}"`, "the server's configuration");
+      for (const name of Object.keys((this.config as any)?.engineTypes || {})) this.usedNames.set(`engine type "${name}"`, "the server's configuration");
+    }
     const names = [
       ...((module.config?.tools || []) as any[]).map((tool) => tool?.name && `MCP tool "${tool.name}"`),
       ...Object.keys(module.config?.engineTypes || {}).map((name) => `engine type "${name}"`)
@@ -334,8 +335,8 @@ export class UAGServer extends Server {
     registerDocuments(this.plugins);
     const project = this.uagProject;
     if (project instanceof UAGProjectInterface) project.plugins = this.plugins;
-    // The features: their settings checked, listed, and initialized before any request.
-    if (project instanceof UAGProjectInterface) await this.features.start(project, this.plugins, this.config as any);
+    // The features: their settings checked and listed (initialized once the plugins and engines are ready).
+    if (project instanceof UAGProjectInterface) await this.features.prepare(this.plugins, this.config as any);
     if (project instanceof UAGProjectInterface) {
       // Decide which engines are on before serving anything, so a misconfigured
       // engine stops startup with its name in the error instead of failing the
@@ -345,6 +346,18 @@ export class UAGServer extends Server {
       listEngines(this.plugins, project);
       await listTools(this.plugins, project);
     }
+  }
+
+  /** The plugins, then each feature's initialize: with the registry started and the engines loaded. */
+  declare private featuresReady?: Promise<void>;
+  protected initializePlugins(): Promise<void> {
+    if (!this.featuresReady) {
+      this.featuresReady = super.initializePlugins().then(async () => {
+        const project = this.uagProject;
+        if (project instanceof UAGProjectInterface) await this.features.initialize(project);
+      });
+    }
+    return this.featuresReady;
   }
 
   async router() {

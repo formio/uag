@@ -14,6 +14,7 @@ function errorShape(requestId: string, err: any) {
     const status = err instanceof FormflowError ? err.status : 500;
     return {
         requestId,
+        status,
         error: status === 500 ? INTERNAL_ERROR : String(err?.message || INTERNAL_ERROR),
         code: (err instanceof FormflowError && err.code) || errorCode(status)
     };
@@ -25,11 +26,10 @@ function errorShape(requestId: string, err: any) {
  * run's signal aborts when the client goes away. `api.stream` is this.
  */
 export async function streamAnswer(feature: string, req: FeatureRequest, res: Response, run: (context: FeatureRunContext) => any, options: { heartbeatMs?: number } = {}): Promise<void> {
-    const controller = new AbortController();
-    res.on('close', () => {
-        if (!res.writableFinished) controller.abort(new FormflowError(499, 'The client closed the connection.', 'client_closed'));
-    });
-    const context = (progress: FeatureRunContext['progress']): FeatureRunContext => ({ signal: controller.signal, progress });
+    const signal = req.signal || requestSignal(req, res);
+    // The client went away while the request was being prepared: nothing to answer.
+    if (signal.aborted) return;
+    const context = (progress: FeatureRunContext['progress']): FeatureRunContext => ({ signal, progress });
     if (!wantsStream(req.get('accept'))) {
         const result = await run(context(() => undefined));
         res.json({ result });
@@ -59,10 +59,24 @@ export async function streamAnswer(feature: string, req: FeatureRequest, res: Re
     }
 }
 
+/** A signal that aborts when the client closes the connection before the answer is sent. */
+export function requestSignal(req: any, res: Response): AbortSignal {
+    const controller = new AbortController();
+    const abort = () => {
+        if (!res.writableFinished) controller.abort(new FormflowError(499, 'The client closed the connection.', 'client_closed'));
+    };
+    // (A request is destroyed once its body is read: the response and the socket say whether the client is gone.)
+    if (res.destroyed || res.socket?.destroyed) abort();
+    else res.on('close', abort);
+    return controller.signal;
+}
+
 /**
  * One feature's form routes for a project: each endpoint behind the UAG's
  * caller authentication for agent operations, its JSON body limit, a request
- * id, the named operation's rate limits and its error shape.
+ * id, the named operation's rate limits, its error shape, and (unless the
+ * endpoint says `access: false`) the caller's access to the form. Each request
+ * gets `req.signal`, which aborts when the client goes away.
  */
 export function featureFormRouter(project: UAGProjectInterface, api: FeatureApi, routes: Record<string, FeatureEndpoint>): Router {
     const router = Router();
@@ -70,7 +84,11 @@ export function featureFormRouter(project: UAGProjectInterface, api: FeatureApi,
     const { json, requestId, handle } = agentEndpoints(project);
     for (const [key, endpoint] of Object.entries(routes)) {
         const [, method, path] = ROUTE.exec(key) as RegExpExecArray;
+        const access = endpoint.access === undefined ? ['create', 'update'] : endpoint.access;
         const run = handle(endpoint.name, async (req: any, res: Response) => {
+            // Node's own request signal (a getter) aborts when the request ends: this one, when the client goes away first.
+            Object.defineProperty(req, 'signal', { value: requestSignal(req, res), configurable: true, enumerable: true });
+            if (access) api.requireAccess(req.auth, req.form, access);
             const answer = await endpoint.handler(req as FeatureRequest, res, api);
             if (!res.headersSent && answer !== undefined) res.json(answer);
         });

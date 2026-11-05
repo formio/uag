@@ -1596,7 +1596,7 @@
             var parser = new SSEParser(function (name, data) {
                 if (typeof options.onEvent === 'function') options.onEvent(name, data);
                 if (name === 'done') done = data;
-                else if (name === 'failed' || name === 'error') failure = uagError((data && data.error) || 'The request failed.', 0, data && data.code);
+                else if (name === 'failed' || name === 'error') failure = uagError((data && data.error) || 'The request failed.', data && data.status, data && data.code);
             });
             if (response.body && response.body.getReader) {
                 var reader = response.body.getReader();

@@ -89,17 +89,23 @@ export function createFeatureApi(project: UAGProjectInterface, definition: Featu
         engines: {
             select({ name, needs = [] }) {
                 const engines = project.formflowEngines();
+                if (!engines) throw new FormflowError(503, 'The engines are not loaded yet.', 'not_ready');
                 const capable = (engine: any) => engine?.kind === 'agent' && typeof engine.generate === 'function' && needs.every((kind) => readsOf(engine).includes(kind));
                 const engine: any = name ? engines.get(name) : engines.agent.find(capable);
                 if (!engine || !capable(engine)) {
                     const missing = needs.find((kind) => !engine || !readsOf(engine).includes(kind)) || needs[0] || 'text';
                     throw new FormflowError(503, name && !engine ? `The engine "${name}" is not enabled.` : `no enabled engine can read ${missing} documents`, 'no_engine');
                 }
-                return engine as GeneratingEngine;
-            },
-            async generate(engine, request) {
-                await requireLicense();
-                return engine.generate(request);
+                // A handle, not the engine: generating always goes through the license check.
+                return {
+                    name: engine.name,
+                    model: engine.model,
+                    accepts: readsOf(engine),
+                    async generate(request: any) {
+                        await requireLicense();
+                        return engine.generate(request);
+                    }
+                };
             }
         },
         markdown: {
@@ -111,7 +117,10 @@ export function createFeatureApi(project: UAGProjectInterface, definition: Featu
             componentAt: (form, path) => componentAt((form as any).form?.components || [], path),
             componentByKey: (form, key) => componentByKey((form as any).form?.components || [], key)
         },
-        callerKey: (auth) => callerKey(auth as any),
+        callerKey: (req) => {
+            const key = callerKey((req as any).auth);
+            return key === 'anonymous' ? `anonymous:${req.ip || req.socket?.remoteAddress || ''}` : key;
+        },
         errors: {
             create: (status, message, code) => new FormflowError(status, message, code),
             is: (err) => err instanceof FormflowError
