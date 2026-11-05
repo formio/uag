@@ -2,7 +2,12 @@
 
 ## Unreleased
 
+Needs `@formio/appserver` 2.26.1 or later.
+
 ### Fixed
+
+- `AUTHORIZE_HTML` replaces the sign-in page for remote MCP clients; the published `@formio/appserver-core` ignored it before 2.26.1.
+- `server.use()` uses an ES module namespace by its default export when it has named exports too, and warns about a module with none of a module's keys; such a module was used as an empty one before `@formio/appserver-core` 2.26.1.
 
 - The `image-pdf` converter's `maxPixels` is an operator setting: `config.plugins.settings.converter['image-pdf'].maxPixels`, or `DOCUMENTS_MAX_IMAGE_PIXELS`, changes the largest PNG it converts (default 50000000 pixels). The converter declared no settings, so the setting was dropped and the limit could not be changed.
 - `@formio/uag/testing`: the `files` option of `createTestModuleApi` and `mountModuleRoutes` is used. A form without a `files` function of its own reads stored values that are not base64 through it; it was ignored.
