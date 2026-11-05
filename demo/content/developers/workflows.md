@@ -7,7 +7,7 @@ order: 30
 
 An agentic workflow runs a form's tasks with no person in the loop. The application sends its submissions to the UAG, which forwards each one to Form.io. An **Agent: Run task** action on the form runs one of the form's [tasks](/developers/concepts#tasks) on the submission, before the save or after it, and the UAG saves the task's answers. A task's save is an update, and an update can start the next task. The instructions live in the form, so changing what an agent does is a form edit, not a deployment.
 
-This page builds the college application workflow from the [demo site's project](https://github.com/formio/uag/blob/v2.0.0-rc.5/demo/module/project.json): an `admissions` task scores each application and decides, and a `finance` task assigns a scholarship award to the applicants admissions puts on the scholarship track. See it running at [/examples/workflow](/examples/workflow).
+This page builds the college application workflow from the [demo site's project](https://github.com/formio/uag/blob/v2.0.0-rc.7/demo/module/project.json): an `admissions` task scores each application and decides, and a `finance` task assigns a scholarship award to the applicants admissions puts on the scholarship track. See it running at [/examples/workflow](/examples/workflow).
 
 > **Tip:** Build this workflow in your own project with the [admissions workflow prompt](https://github.com/formio/ai/blob/main/examples/agents/admissions-workflow.md) and the [Agentic Coding Plugin](/developers/agentic-coding). Its `formio-uag` skill adds the "Agent: Run task" actions in a project template, a UAG module or a portal stage connected to the UAG.
 
@@ -66,6 +66,8 @@ Tag the form `uag`, add a criteria content component, and flag the fields the ta
 The sample's panel holds the other scores and the rationale too, each with its own `uagAuthoritative`: only `uag` applies to what is inside a container, so the other `uag*` properties go on each field. `uagEngine: "agent"` on the criteria sends the whole task, decision fields included, to agent engines; remove it to let a decision engine decide `status` and `decision`.
 
 The criteria is the agent's whole briefing: who it acts as, what each field means, how to judge each answer, the allowed values, and the exact option values for closed-set fields. A vague criteria is the most common reason an agent writes values the form rejects. The sample's admissions criteria tells the agent to set `status` to `scholarshipEvaluation` for the strongest applicants, and the finance task is keyed on that value.
+
+A file component can be the task's input too, such as an uploaded transcript: the run reads the document and gives the engines its text (see [Documents as input](/developers/form-properties#documents-as-input)).
 
 ### Closed-set fields with only an agent engine
 
@@ -277,7 +279,7 @@ A run after the save is otherwise invisible: the response does not wait, and the
 - **Action Logs**, with the database: one entry per run (above).
 - **The UAG's log.** A failed run is logged with its task, submission and error. With `DEBUG=formio:uag:runner`, every run is logged with the number of fields it saved, or `nothing changed`.
 - **The provenance** in the submission's `metadata.uag`: which engine decided or generated each field, with what confidence, and when. See [Reconciliation and provenance](/developers/concepts#reconciliation-and-provenance).
-- **The flow viewer.** The [flow viewer sample](https://github.com/formio/uag/tree/v2.0.0-rc.5/demo/flow) is a small logging proxy in front of the UAG that shows every leg live: the submission, what the UAG asks each engine on an engine server, and every research tool call. Send an `X-Request-Id` with the submission: the UAG passes it to the engines for every run the submission starts, chained runs included, so all the legs share it.
+- **The flow viewer.** The [flow viewer sample](https://github.com/formio/uag/tree/v2.0.0-rc.7/demo/flow) is a small logging proxy in front of the UAG that shows every leg live: the submission, what the UAG asks each engine on an engine server, and every research tool call. Send an `X-Request-Id` with the submission: the UAG passes it to the engines for every run the submission starts, chained runs included, so all the legs share it.
 
 To see what the engines answer for some data without saving anything, call the stateless [Agent API](/developers/agent-api) with the same form and task.
 
@@ -289,7 +291,7 @@ To see what the engines answer for some data without saving anything, call the s
 - **Add the database** for run records, Action Logs and runs that survive a restart, and to run more than one instance.
 - **Change every `CHANGEME`** and keep keys in a secret store, not in Compose files.
 - **Raise `PROJECT_TTL`.** Samples use 10 seconds so criteria edits show quickly; every expiry re-reads the project export.
-- **Pin versions.** Run task needs `formio/uag` 2.0.0 or newer. Pin a tested set of images and engine models (see [Deployment](/developers/deployment#image-and-version-pinning)).
+- **Pin versions.** Run task needs UAG 2.0 (`formio/uag:rc` until 2.0.0 is released). Pin a tested set of images and engine models (see [Deployment](/developers/deployment#image-and-version-pinning)).
 - **Choose where the engines run.** To keep model keys and model traffic out of the UAG, run the engines on an [engine server](/developers/engine-server).
 - **Measure before trusting thresholds.** For decision engines, run [`uag-eval`](/developers/evaluation) on labeled examples before relying on the defaults.
 

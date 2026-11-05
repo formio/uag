@@ -1,8 +1,8 @@
 # @formio/uag-claude
 
-<sub>[Form.io UAG](https://github.com/formio/uag/blob/main/README.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/main/README.md#engines-and-routing) &rsaquo; this page</sub>
+<sub>[Form.io UAG](https://github.com/formio/uag/blob/v2.0.0-rc.7/README.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/v2.0.0-rc.7/README.md#engines-and-routing) &rsaquo; this page</sub>
 
-The **Claude** agent engine for the [UAG Agent API](https://github.com/formio/uag/blob/main/README.md#agent-api). It extracts and generates open values (dates, amounts, names, free text) with structured outputs. When a task lists read-only tools in `uagTools`, it researches with them first.
+The **Claude** agent engine for the [UAG Agent API](https://github.com/formio/uag/blob/v2.0.0-rc.7/README.md#agent-api). It extracts and generates open values (dates, amounts, names, free text) with structured outputs. When a task lists read-only tools in `uagTools`, it researches with them first.
 
 It is included in the `formio/uag` Docker image. Enable it by naming it, and set its key:
 
@@ -11,7 +11,7 @@ UAG_ENGINES=claude          # or jev,claude
 CLAUDE_API_KEY=...
 ```
 
-Its tasks are Agentic Formflow, so the UAG also needs a `LICENSE_KEY` that includes the UAG (see [License](https://github.com/formio/uag/blob/main/README.md#license)).
+Its tasks are Agentic Formflow, so on a self-hosted project the UAG also needs a `LICENSE_KEY` that includes the UAG (see [License](https://github.com/formio/uag/blob/v2.0.0-rc.7/README.md#license)); a project on Form.io's hosted service needs none. A form's chat needs no license on Form.io Open Source or a hosted project.
 
 ## Settings
 
@@ -67,13 +67,13 @@ Every request sends `effort` (or `researchEffort`), so the model must accept it:
 `@formio/uag-claude` 1.x was a different program: the Claude integration, a standalone server (`uag-claude`, the `formio/uag-claude` image) that ran its own MCP client against the UAG. 2.0 is an engine: a library the UAG loads, with no server and no command to run. Installing 2.0 where 1.x ran gives a package that does nothing on its own.
 
 - **To keep the 1.x integration,** pin `@formio/uag-claude@^1` (or the `formio/uag-claude:1.3` image). 1.3.x keeps working against UAG 2.0, and gets security fixes only.
-- **To move to 2.0,** turn the engine on in the UAG (`UAG_ENGINES=claude`, `CLAUDE_API_KEY`), or in a `formio/uag-engines` container next to it, and remove the integration container. See [Migrating to 2.0](https://github.com/formio/uag/blob/main/MIGRATING-2.0.md#the-claude-integration-is-retired) for what replaces its webhooks and commands.
+- **To move to 2.0,** turn the engine on in the UAG (`UAG_ENGINES=claude`, `CLAUDE_API_KEY`), or in a `formio/uag-engines` container next to it, and remove the integration container. See [Migrating to 2.0](https://github.com/formio/uag/blob/v2.0.0-rc.7/MIGRATING-2.0.md#the-claude-integration-is-retired) for what replaces its webhooks and commands.
 
 | 1.x setting | 2.0 |
 |---|---|
 | `CLAUDE_API_KEY` | Unchanged; `ANTHROPIC_API_KEY` also works. |
 | `CLAUDE_MODEL` | Unchanged, but the model must accept `effort` (see [Choosing a model](#choosing-a-model)). |
-| `CLAUDE_MAX_TOKENS` | Gone: each answer may use up to 16,000 tokens. Use `CLAUDE_EFFORT` and `CLAUDE_RESEARCH_EFFORT` to trade depth for cost. |
+| `CLAUDE_MAX_TOKENS` | Unchanged: the `maxTokens` setting (16,000 by default; see [Settings](#settings)). `CLAUDE_EFFORT` and `CLAUDE_RESEARCH_EFFORT` also trade depth for cost. |
 | `CLAUDE_MAX_ITERATIONS` | The UAG's `agentApi.research.maxIterations`. |
 | `PROJECT`, `PROJECT_KEY`, `ADMIN_KEY`, `BASE_URL`, `PORT` | Not engine settings: the engine runs inside the UAG (or on the engine server), and the UAG calls it. |
 | `UAG_SERVER` | Not an engine setting either. On the engine server it is the UAG's URL, which research calls back into (`/mcp`); inside the UAG it is not needed. |

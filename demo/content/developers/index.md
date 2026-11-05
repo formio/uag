@@ -38,8 +38,8 @@ The UAG is built from layers that either supply context to the agent or accept d
 | **MCP interface** | `/mcp` serves the [Model Context Protocol](https://modelcontextprotocol.io) over Streamable HTTP. Each request gets its own MCP server instance (stateless mode), so concurrent requests never share a transport. | [MCP tools](/developers/mcp-tools) |
 | **Agent API** | `{form}/agent/*`, under each form's URL on the UAG, runs a form's tasks inside the UAG with model engines you enable, and returns validated values. It is the HTTP surface for applications. It saves nothing. | [Agent API](/developers/agent-api) |
 | **Authentication** | Form.io's own: a Form.io user token works against the UAG as against Form.io, and is forwarded unchanged. For MCP, the UAG issues its own tokens: servers use the `client_credentials` grant or an admin credential, and remote MCP clients can sign users in through an OAuth 2.0 flow with PKCE (`MCP_OAUTH`), with whatever login the project uses (Form.io login, SAML, OIDC, custom). | [Security](/developers/security) |
-| **Built-in tools** | Eleven MCP tools that list forms, describe fields, validate and collect data, submit, search, update, and expose tasks. Each is annotated as read or write. | [MCP tools](/developers/mcp-tools) |
-| **Custom tools and actions** | A module can add MCP tools, override the built-in ones, and add form actions: Express middleware that runs after the UAG has validated what an agent sent. | [Modules](/developers/modules) |
+| **Built-in tools** | Twelve MCP tools that list forms, describe fields, validate and collect data, submit, search, update, expose tasks, and read uploaded documents. Each is annotated as read or write. | [MCP tools](/developers/mcp-tools) |
+| **Custom tools and actions** | A module can add MCP tools, override the built-in ones, and add form actions: Express middleware that runs after the UAG has validated what an agent sent. It can also add form routes, formio.js components, settings and [plugins](/developers/plugins), such as converters that read other file types. | [Modules](/developers/modules) |
 | **Built-in actions** | The UAG forwards every submission to Form.io, which runs the form's own actions (Save Submission, Webhook, Email and the rest) as it always does. The UAG adds one action of its own, "Agent: Run task", which runs one of the form's tasks before the save or after it. | [Workflows](/developers/workflows) |
 | **Response templates** | What the tools return to the agent is rendered from Lodash templates, which a module can override. | [Modules](/developers/modules) |
 | **Pre-defined forms** | A module can ship a project template (forms, resources, actions, roles) that the UAG installs into the project. | [Modules](/developers/modules) |
@@ -192,6 +192,8 @@ Engines only answer. The UAG decides which fields each engine sees, validates ev
 | Embed a form as a chat in your own page | [Chat widget](/developers/chat) |
 | Embed the UAG in a Node.js application | [Node.js API](/developers/node-api) |
 | Add tools, actions, forms and templates | [Modules](/developers/modules) |
+| Add converters and document processes | [Plugins](/developers/plugins) |
+| Turn uploaded files into AI-generated content people review | [AI Document](/developers/ai-document) |
 | Choose, configure and route engines | [Engines](/developers/engines) |
 | Write your own engine | [Engine SDK](/developers/engine-sdk) |
 | Keep model keys out of the UAG | [Engine server](/developers/engine-server) |

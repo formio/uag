@@ -48,12 +48,13 @@ A form's operations take the same credentials as the form's submissions, so an a
 - **Server keys are refused from browsers.** A request carrying `x-token` or `x-admin-key` together with an `Origin` or `Sec-Fetch-Site` header is answered `401`, so a project key cannot be used from a web page even if it leaks into one. Node's `fetch` sends neither header, so servers are unaffected. User and remote tokens are not server keys and work from browsers.
 - **Scoped tokens are refused.** The short-lived tokens the UAG gives remote engines for research work only on `/mcp` (`401`: "Scoped tokens can only be used on /mcp.").
 - **A request with no credential is refused** (`401`), unless the form opts into anonymous use. A form that sets [`uagAnonymous: "true"`](/developers/form-properties#uaganonymous) answers visitors with no credential, as the Anonymous role, when that role may create its submissions (otherwise `403`). Anonymous requests are limited per client address and in total, counted by each UAG process: `AGENT_ANONYMOUS_RATE_LIMIT` (default 10 a minute) and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT` (default 100 a minute), or `agentApi.anonymous.rateLimit` and `totalRateLimit`. Over either limit the answer is `429` with `Retry-After`, before any engine is called; either set to `0` turns anonymous use off. See [Anonymous visitors](/developers/security#anonymous-visitors).
+- **A module's form routes take the same credentials.** A [module's form routes](/developers/modules#settings-routes-and-components), such as the AI Document's `{form}/document/process`, are checked as these operations are, so on a `uagAnonymous` form whose Anonymous role may create submissions, visitors who are not signed in reach them too, under the same anonymous limits. A route that must not be public declares an `access` the Anonymous role lacks, such as `['update']`, or checks `req.auth.user`.
 
 `GET /agent/capabilities` takes a UAG bearer token or a server key.
 
 The examples on this page send a user's token as `$FORMIO_TOKEN`: the `x-jwt-token` response header of a Form.io login (`POST {project}/user/login`). From a server, send `-H "x-admin-key: $ADMIN_KEY"` (Open Source) or `-H "x-token: $PROJECT_KEY"` instead.
 
-Every response, refusals included, carries an `X-Request-Id` header (send your own `X-Request-Id` to set it), and the same id is in every JSON body as `requestId`. Search the UAG logs for it when a request fails. Browsers can read the header: it is in the CORS exposed headers. Every error, whatever refused the request, has one shape; see [Errors](#errors).
+Every response, refusals included, carries an `X-Request-Id` header, and the same id is in every JSON body as `requestId`. Search the UAG logs for it when a request fails. Send your own `X-Request-Id` to set it: it is kept when it is 1 to 128 letters, digits, `.`, `_`, `:` or `-`, and replaced with a new id otherwise. Browsers can read the header: it is in the CORS exposed headers. Every error, whatever refused the request, has one shape; see [Errors](#errors).
 
 ## Common request fields
 
@@ -64,7 +65,7 @@ Every response, refusals included, carries an `X-Request-Id` header (send your o
 | `overwrite` | boolean | extract, decide, generate | Default `false`: only empty fields are answered, and filled ones are listed in `excluded` as `already has a value`. |
 | `text` | string | extract | Source text. Replaces the task's input for this call. |
 
-Request bodies are limited to 5 MB; a larger one is answered `413` (`payload_too_large`).
+Request bodies are limited to `agentApi.bodyLimit` (`AGENT_BODY_LIMIT`, default 5 MB), within the server's `MAX_BODY_SIZE` (16 MB); a larger one is answered `413` (`payload_too_large`), and the message names the limit. A module's form routes share the limit.
 
 ## The result object
 
@@ -296,7 +297,7 @@ Chat is part of conversation forms, like the MCP tools: it needs an agent engine
 | `locked` | No | Field paths the person set in the form itself (at most 500). The turn neither asks for nor changes them; their values are shown to the engine as collected. The chat widget sends the fields the person edited in the form view. |
 
 ```bash
-curl -s -X POST https://uag.example.com/servicerequest/agent/chat \
+curl -s -X POST https://uag.example.com/service-request/agent/chat \
   -H "x-jwt-token: $FORMIO_TOKEN" -H 'Content-Type: application/json' \
   -d '{ "messages": [{ "role": "user", "content": "I am Marcus Webb, marcus@example, and my internet is completely down" }],
         "data": {} }'
@@ -376,7 +377,7 @@ With the AI Document module in use, `POST {form}/document/process` processes the
 { "path": "rows[2].contract", "files": [{ "storage": "s3", "key": "uploads/contract.pdf", "name": "contract.pdf", "originalName": "contract.pdf", "size": 482113, "type": "application/pdf" }], "data": { } }
 ```
 
-`path` is the component's data path, with row indices; `files` the value of its files component; `data` the form's data, given to the plugin as context only. The caller needs create or update access to the form, and Agentic Formflow must be licensed (`403` otherwise, as for the other operations). The body counts against `agentApi.bodyLimit`, the rate limits apply, and one caller may run `documents.perUser` (3) requests at once (`429` beyond).
+`path` is the component's data path, with row indices; `files` the value of its files component; `data` the form's data, given to the plugin as context only. The caller needs create or update access to the form (on a `uagAnonymous` form, visitors who are not signed in may call it too; see [Credentials](#credentials)), and Agentic Formflow must be licensed (`403` otherwise, as for the other operations). The body counts against `agentApi.bodyLimit`, the rate limits apply, and one caller may run `documents.perUser` (3) requests at once (`429` beyond).
 
 With `Accept: text/event-stream` the answer is `200` and server-sent events on the same response: `progress` events (`{ "progress": 0.3, "message": "Processing" }`), then exactly one `done` (`{ "result": { ... } }`) or `failed` event (the error shape below), then the response ends. A comment line is written every `documents.heartbeatMs`. Browsers read it with `fetch` and a stream reader, since `EventSource` cannot send a POST. With any other `Accept`, the answer is `200 { "result": { ... } }` when done, or the error shape.
 
@@ -439,21 +440,21 @@ curl -s https://uag.example.com/agent/capabilities -H "Authorization: Bearer $TO
 Every error from a form's agent operations and `/agent/capabilities` is JSON in one shape, whatever refused the request (the operation, the credential check, the project's authentication, the body parser):
 
 ```json
-{ "requestId": "b1ff8531-...", "error": "Chat is turned off for the form \"servicerequest\".", "code": "chat_disabled" }
+{ "requestId": "b1ff8531-...", "error": "Chat is turned off for the form \"serviceRequest\".", "code": "chat_disabled" }
 ```
 
 `requestId` equals the `X-Request-Id` header. `error` is for people and may change; branch on `code`, which is stable. A `license_required` error also carries `edition`. A `500` never carries details: its `error` is "The request failed. See the UAG logs for this request id."
 
 | Status | `code` | Cause |
 |---|---|---|
-| `400` | `invalid_request` | An unknown task (the message lists the form's tasks); a form with no tasks; extract with no `text` for a task with no input; `persona` with no `task`; `submissionId` sent to decide; a task whose `uagTools` names a tool that may write or does not exist (generate); a body that is not JSON; a chat turn whose `messages` are missing, too many, too long, malformed or do not end with the person's, whose `data` is not an object, or whose `locked` is not a list of at most 500 paths. |
+| `400` | `invalid_request` | An unknown task (the message lists the form's tasks); a form with no tasks; extract with no `text` for a task, or (no task named) a form, with no input; `persona` with no `task`; `submissionId` sent to decide; a task whose `uagTools` names a tool that may write or does not exist (generate); a body that is not JSON; a chat turn whose `messages` are missing, too many, too long, malformed or do not end with the person's, whose `data` is not an object, or whose `locked` is not a list of at most 500 paths. |
 | `401` | `unauthorized` | No valid credential: an invalid or expired `x-jwt-token`, `x-remote-token` or bearer token; a wrong server key, or one sent with an `Origin` or `Sec-Fetch-Site` header; a scoped token; a portal team member whose permission does not allow writes. |
 | `401` | `sign_in_required` | No credential, on a form that does not allow anonymous use (`uagAnonymous`, and anonymous limits not `0`). |
 | `403` | `license_required` | Agentic Formflow is not licensed. The license is checked before the form's tasks are read, so an unlicensed deployment answers it for `extract`, `decide` and `generate` on every form, tagged `uag` or not. Chat never needs a license. |
 | `403` | `forbidden` | The caller lacks the form access the operation needs (for an anonymous visitor, the Anonymous role may not create the form's submissions). |
 | `403` | `chat_disabled` | Chat: the form sets `uagChat: "false"`. |
 | `404` | `form_not_found` | The form does not exist or is not tagged `uag`. The operations at the UAG's root (`/agent/extract`, `/agent/decide`, `/agent/generate`) no longer exist. |
-| `413` | `payload_too_large` | The request body is larger than 5 MB. |
+| `413` | `payload_too_large` | The request body is larger than `agentApi.bodyLimit` (`AGENT_BODY_LIMIT`, default 5 MB), or than the server's `MAX_BODY_SIZE`. |
 | `429` | `rate_limited` | The caller is over its rate limit, an anonymous visitor is over the anonymous limits, or every engine that could answer is. Carries `Retry-After` in seconds when the caller is limited, and, for chat, when every engine is. |
 | `500` | `internal_error` | An unexpected failure; see the UAG's log under the request id. |
 | `502` | `engines_failed` | Chat: every engine that could answer failed or timed out. The engines' errors are in the UAG's logs, under the request id. |
@@ -480,12 +481,12 @@ module.exports = {
 
 | Setting | Keyed by | Behavior |
 |---|---|---|
-| `caller` | Operation: `extract`, `decide`, `generate`, `chat`, `capabilities`, or `default` | Counted per caller (the user's id) before anything else runs. Over the limit: `429` with `Retry-After`. |
+| `caller` | Operation: `extract`, `decide`, `generate`, `chat`, `capabilities`, a module route's name (AI Document: `document`), or `default` | Counted per caller (the user's id) before anything else runs. Over the limit: `429` with `Retry-After`. |
 | `engine` | Engine instance name, or `default` | An engine over its limit is skipped and the next engine in the routing list is tried. `429` only when every engine that could answer is over its limit. |
 
 Each limit is `{ limit, windowMs }`, a fixed window (`windowMs` defaults to 60000). A scope with no limit, and no `default`, is unlimited. Counters are kept in memory per process, so each instance of a multi-instance deployment has its own allowance.
 
-> **Note:** Callers without a user of their own share a counter: every request with a server key (`x-token`, `x-admin-key`) and every anonymous visitor count as one caller, and all `client_credentials` tokens as another. Size `caller` limits for servers with that in mind.
+> **Note:** Callers without a user of their own share a counter: every request with a server key (`x-token`, `x-admin-key`) and every anonymous visitor count as one caller, and all `client_credentials` tokens as another. Size `caller` limits for servers with that in mind. A module that keeps limits of its own can count anonymous visitors per address: [`api.callerKey(req)`](/developers/modules#the-module-api) gives `anonymous:<address>` for them.
 
 ## Licensing
 
@@ -518,5 +519,7 @@ The other MCP tools and conversation forms never need a license, and neither doe
 | `agentApi.anonymous.totalRateLimit` | `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`, else `100` | Anonymous requests a minute in total. `0` turns anonymous use off. |
 | `agentApi.chat.*` | | A form's chat: its engines, timeout and bounds. See [Chat settings](#chat-settings). |
 | `agentApi.bodyLimit` | `AGENT_BODY_LIMIT`, else `5242880` (5 MB) | The largest request body an operation takes, in bytes. The server's `MAX_BODY_SIZE` (16 MB) still applies first. |
-| `agentApi.files.maxBytes` | `10485760` (10 MB) | The largest uploaded document read for a task. |
-| `agentApi.files.maxChars` | `200000` | The most characters of one document's content an engine gets; the rest is cut and marked `truncated`. |
+| `agentApi.files.maxBytes` | `10485760` (10 MB) | The largest uploaded document read for a task. The `read_document` MCP tool uses `documents.maxFileBytes` (`DOCUMENTS_MAX_FILE_BYTES`, default 25 MB) instead. |
+| `agentApi.files.maxChars` | `200000` | The most characters of one document's content an engine gets; the rest is cut and marked `truncated`. It also caps the text [`read_document`](/developers/mcp-tools#readdocument) returns. |
+| `agentApi.files.timeout` | `30000` | Milliseconds to load and read one document for a task, counted from when its read starts. A document that takes longer reaches the engine as its name and the reason. |
+| `agentApi.files.concurrency` | `4` | The most documents one request reads at a time. |

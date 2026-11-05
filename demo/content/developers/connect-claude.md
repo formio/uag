@@ -7,7 +7,7 @@ order: 50
 
 Claude can use your forms directly. Connected to the UAG, it lists the `uag`-tagged forms a user may use, asks for what each one needs, validates the answers against the form, and saves the submission, all as the user who signed in. Nothing about your forms is written into Claude: the form is the rulebook, read at the moment of use.
 
-This page connects two Claude clients, and shows how Form.io roles decide what the agent may do. It follows the [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.5/demo/samples/custom-module), a Community Edition project with **Customer** and **Employee** resources where managers onboard employees and employees onboard customers. No license is needed.
+This page connects two Claude clients, and shows how Form.io roles decide what the agent may do. It follows the [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.7/demo/samples/custom-module), a Community Edition project with **Customer** and **Employee** resources where managers onboard employees and employees onboard customers. No license is needed.
 
 | Client | How it connects | What the UAG needs |
 |---|---|---|
@@ -23,7 +23,7 @@ Either way the user signs in through the UAG's OAuth (PKCE) flow, with the proje
 The sample runs Form.io Community Edition, MongoDB, the UAG, and nginx, which serves Form.io and the UAG on one port, `3000`. nginx sends `/mcp`, `/auth` and `/.well-known` to the UAG and everything else to Form.io, so one origin serves the forms, the login page and the MCP endpoint.
 
 ```bash
-git clone -b v2.0.0-rc.5 https://github.com/formio/uag.git
+git clone -b v2.0.0-rc.7 https://github.com/formio/uag.git
 cd uag/demo/samples/custom-module
 # In docker-compose.yml first: replace every CHANGEME (both ADMIN_KEY values must be the same).
 docker compose up -d
@@ -206,7 +206,7 @@ A module can also add MCP tools, and add form actions that run after the UAG has
 | The login page says it cannot load the form | `LOGIN_FORM` does not point at a login form's JSON endpoint that the browser can reach. |
 | Claude lists no forms, or says a form does not exist | The form is not tagged `uag`, the user lacks access, or the project cache has not refreshed. Restart the UAG to re-register at once. Claude reads the tool list when it connects, so after tagging a new form, restart Claude Desktop or reconnect the connector. |
 | `mcp-remote` keeps signing in as the wrong user | Delete `~/.mcp-auth` and sign in again. |
-| Claude asks to sign in again after a few hours | A sign-in lasts as long as the user's Form.io login token (Form.io's `jwt.expireTime`, 240 minutes by default), whatever `JWT_EXPIRE_TIME` says. Raise Form.io's setting for longer sessions. |
+| Claude asks to sign in again after a few hours | A sign-in lasts at most as long as the user's Form.io login token (Form.io's `jwt.expireTime`, 240 minutes by default). A client that does not refresh within twice `JWT_EXPIRE_TIME` (120 minutes by default) must sign in again too. Raise Form.io's setting for longer sessions. |
 | `mcp-remote` or a connector says the server does not support sign-in, and `/.well-known/*` answers `404` | OAuth sign-in is off: `MCP_OAUTH` is not `true`, or the UAG has no usable database (`MONGO` unset, or no license to use it). The UAG's startup log says which. |
 | A remote connector cannot authenticate | The discovery documents name a URL the connector cannot reach, often `http` behind a TLS proxy. Read `/.well-known/oauth-protected-resource`; set `TRUST_PROXY` behind a proxy, or `BASE_URL` to the public HTTPS URL. |
 | Every `/mcp` request returns `401` | The client sends no bearer token, or its token is not valid: expired, or signed with a different `JWT_SECRET` (a restart without a fixed `JWT_SECRET`, or another instance). |

@@ -10,7 +10,7 @@
       .t { font-size: 12.5px; font-weight: 600; }
       .e { font-size: 11px; fill: #3f7a22; font-weight: 600; }
       .g { font-size: 11px; fill: #566073; }
-      .o { font-size: 11.5px; fill: #b4581f; font-weight: 600; }
+      .o { font-size: 11.5px; fill: #3a4756; font-weight: 600; }
       .chip { font-size: 10.5px; fill: #2a333e; }
       .num { font-size: 11px; font-weight: 700; fill: #fff; }
       .task { fill: #fff; stroke: #3a4756; stroke-width: 1.5; }
@@ -20,12 +20,12 @@
       .flow { stroke: #3a4756; stroke-width: 1.8; fill: none; }
       .call { stroke: #69b342; stroke-width: 2; fill: none; }
       .back { stroke: #8d99a8; stroke-width: 1.8; fill: none; stroke-dasharray: 5 4; }
-      .skip { stroke: #e08a4f; stroke-width: 1.8; fill: none; stroke-dasharray: 6 5; }
+      .skip { stroke: #3a4756; stroke-width: 1.8; fill: none; stroke-dasharray: 9 5; }
     </style>
     <marker id="f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3a4756"/></marker>
     <marker id="c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#69b342"/></marker>
     <marker id="b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8d99a8"/></marker>
-    <marker id="s" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#e08a4f"/></marker>
+    <marker id="s" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3a4756"/></marker>
   </defs>
   <rect x="1" y="1" width="1258" height="528" rx="18" fill="#fff" stroke="#e0e5ec"/>
 

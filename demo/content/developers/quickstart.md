@@ -259,7 +259,7 @@ curl -s -X POST $UAG/supportrequest/agent/decide \
 A form's operations are under the form's URL on the UAG, as its submissions are: here the form's path, `supportrequest`, at the UAG's root. Against an Enterprise or hosted project, the form is under the project's name (`$UAG/<project name>/supportrequest/agent/decide`), and the key is `-H "x-token: $PROJECT_KEY"`.
 
 ```json
-{ "requestId": "b011c34d-9bda-447c-bb8d-9e53f8d362dc", "error": "The form \"supportRequest\" defines no tasks." }
+{ "requestId": "b011c34d-9bda-447c-bb8d-9e53f8d362dc", "error": "The form \"supportRequest\" defines no tasks.", "code": "invalid_request" }
 ```
 
 The form defines no task yet, so the UAG answers `400` and says so. Give it one: a criteria content component, and the `uag` property on the field the task decides (see [Concepts](/developers/concepts)). This replaces the form with the same fields plus a `triage` task that decides `urgency` (on a hosted project, add the same two properties in the form builder instead):

@@ -18,7 +18,7 @@ Ask the user for these. Do not guess, and do not invent secret values.
 - **`JWT_SECRET`** (required) — secret used to sign and validate the UAG's own tokens. Generate a random value if the user has no preference, and show it to them rather than hiding it.
 - **`PROJECT_KEY`** — project API key, for an Enterprise project only (setting it tells the UAG the project is Enterprise). For an Open Source server set `ADMIN_KEY` instead.
 - **`ADMIN_KEY`** — server admin key, Community Edition only.
-- **`LICENSE_KEY`** — the Form.io license; required for self-hosted Enterprise deployments, not for Community Edition or a project on Form.io's hosted service (`https://*.form.io`). The Agent API's `{form}/agent/extract`, `decide` and `generate` and the "Agent: Run task" action, with real model engines, also need it to include the UAG (an online license with the `uagServer` scope and UAG servers to spare, or an offline license with the `uag` option), on Community Edition too; a project on Form.io's hosted service needs none for them. MCP with a local client does not. (`UAG_LICENSE` is the deprecated name, still read.)
+- **`LICENSE_KEY`** — the Form.io license; one that includes the UAG is required for self-hosted Enterprise deployments, not for Community Edition or a project on Form.io's hosted service (`https://*.form.io`). The Agent API's `{form}/agent/extract`, `decide` and `generate` and the "Agent: Run task" action, with real model engines, also need it to include the UAG (an online license with the `uagServer` scope and UAG servers to spare, or an offline license with the `uag` option), on Community Edition too; a project on Form.io's hosted service needs none for them. MCP with a local client does not. (`UAG_LICENSE` is the deprecated name, still read.)
 - **`PORT`** — defaults to `3200`.
 
 Ask which kind of MCP client will connect (see [Connecting an agent](#connecting-an-agent)). Only for remote clients, also ask for:
@@ -39,7 +39,7 @@ docker run -d --name formio-uag -p 3200:3200 \
   -e PROJECT_KEY="..." \
   -e LICENSE_KEY="..." \
   -e JWT_SECRET="..." \
-  formio/uag
+  formio/uag:rc
 ```
 
 For a project on Form.io's hosted service (`PROJECT=https://your-project.form.io`), drop `LICENSE_KEY`. For an Open Source server, replace `PROJECT_KEY` and `LICENSE_KEY` with `ADMIN_KEY`. For remote MCP clients, add `-e MCP_OAUTH=true -e MONGO="..."` (and `-e TRUST_PROXY=true` behind a reverse proxy you control).
@@ -47,10 +47,10 @@ For a project on Form.io's hosted service (`PROJECT=https://your-project.form.io
 Or install the npm package and run it as a Node process:
 
 ```bash
-npm install @formio/uag
+npm install @formio/uag@rc
 ```
 
-Working `docker-compose` stacks live in [`demo/`](./demo/) (the demo site) and [`demo/samples/`](./demo/samples/) — start from one of those for anything beyond a single container. The samples reference `formio/uag` untagged, so they pull the current release; the demo site pins its own `:demo` tags.
+Working `docker-compose` stacks live in [`demo/`](./demo/) (the demo site) and [`demo/samples/`](./demo/samples/) — start from one of those for anything beyond a single container. The samples use the `rc` channel tags (`formio/uag:rc`, `formio/uag-engines:rc`), which follow the newest 2.0 release candidate until 2.0.0 is released; the demo site builds its own images from the repository (`formio/uag:demo`). Use `:rc` and `@rc` too, never an untagged image or package, which resolves to an older release.
 
 ## Connecting an agent
 

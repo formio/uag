@@ -1,7 +1,7 @@
 # The Form.io UAG demo site, as one Docker Compose stack of two services, on the
 # demo's project on Form.io's hosted service (FORMIO_PROJECT_URL, https://uag.form.io).
 #
-#   site        the public site: product pages, docs, the three live demos and
+#   site        the public site: product pages, docs, the live demos and
 #               the flow viewer. The ONLY service with a published port. It
 #               serves plain HTTP; put your load balancer or proxy in front of it
 #               for TLS, and set DEMO_DOMAIN to the name it serves. It runs the

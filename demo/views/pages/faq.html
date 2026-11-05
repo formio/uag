@@ -39,7 +39,7 @@
         <details class="faq-item" id="open-source-features" open>
           <summary>What features are available to the Open Source server?</summary>
           <div class="faq-answer">
-            <p>Everything except Agentic Formflow and the UAG's own database. With Form.io Open Source and an unlicensed UAG, any agent can read, validate and write a form's data, with the form as the rulebook:</p>
+            <p>Everything except Agentic Formflow, the AI Document and the UAG's own database. With Form.io Open Source and an unlicensed UAG, any agent can read, validate and write a form's data, with the form as the rulebook:</p>
             <div class="table-wrap">
               <table>
                 <thead>
@@ -54,11 +54,14 @@
                   <tr><td><code>find_submissions</code></td><td>Search records by field values, or count them</td><td>Available</td></tr>
                   <tr><td><code>submission_update</code></td><td>Apply confirmed changes to an existing record</td><td>Available</td></tr>
                   <tr><td><code>fetch_external_data</code></td><td>Load a field's options from a URL, a Form.io resource or a data source</td><td>Available</td></tr>
+                  <tr><td><code>read_document</code></td><td>Read the text of a file uploaded to a submission, in a file field or an AI Document field</td><td>Available</td></tr>
                   <tr><td>Forms and submissions REST API</td><td>Your applications point their project URL at the UAG; it forwards submissions, login and registration to Form.io with the caller's own credential</td><td>Available</td></tr>
                   <tr><td><code>GET /agent/capabilities</code></td><td>Reports the edition, and whether Agentic Formflow may run and why</td><td>Available</td></tr>
+                  <tr><td><code>POST {form}/agent/chat</code></td><td>One turn of the <a href="/developers/chat">chat widget</a>'s conversation, answered by one of the UAG's agent engines</td><td>Available. Needs an agent engine (<code>UAG_ENGINES</code> and its model key)</td></tr>
                   <tr><td><code>POST {form}/agent/extract</code>, <code>/decide</code>, <code>/generate</code></td><td>The UAG's engines decide and fill in fields</td><td>License needed. Runs with only the stub engines, which answer with placeholders</td></tr>
                   <tr><td>The "Agent: Run task" action</td><td>Runs a task on a submission sent to the UAG, before the save or after it</td><td>License needed. Runs with only the stub engines. Otherwise a run before the save refuses the save with <code>403</code>; a run after the save fails, and is logged</td></tr>
                   <tr><td><code>agent_provide</code>, <code>agent_decide</code></td><td>Give the client a task's criteria, or its decision questions, to answer with its own model</td><td>License needed</td></tr>
+                  <tr><td>The <a href="/developers/ai-document">AI Document</a> (<code>POST {form}/document/process</code>)</td><td>Reads an uploaded file and runs a document plugin on it, such as copying clauses word for word and checking the copy</td><td>License needed. Also needs the AI Document module (<code>@formio/uag-extras</code>) in the UAG</td></tr>
                   <tr><td><code>uag-eval</code></td><td>Scores an engine offline against example answers</td><td>License needed</td></tr>
                 </tbody>
               </table>
@@ -87,7 +90,7 @@
               <li><strong>A self-hosted Form.io Enterprise project</strong> needs a license that includes the UAG before the UAG will load it at all.</li>
               <li><strong>A license includes the UAG</strong> when it is an online license whose key has the <code>uagServer</code> scope, which allows a number of UAG servers (each project a UAG serves counts as one), or an offline license with the <code>uag</code> option, issued for the one project it serves.</li>
               <li><strong>The UAG's own database</strong> (<code>MONGO</code>), which remote MCP sign-in (<code>MCP_OAUTH</code>), run records in Action Logs and runs that survive a restart use, needs a license on every edition, the hosted service included. The database needs a license that includes the UAG, unless the project and the database are both on development hosts (<code>localhost</code>, <code>*.local</code>); Compose service names such as <code>formio</code> and <code>mongo</code> are not, so without a license give both services a <code>*.local</code> network alias, or run them on <code>localhost</code>. Without a license the UAG starts with those features off, and says why in its log.</li>
-              <li><strong>Everything else</strong>, including conversation forms and every MCP tool marked "Available" in the table above, needs no license on Form.io Open Source or the hosted service.</li>
+              <li><strong>Everything else</strong>, including conversation forms, the chat widget and everything marked "Available" in the table above, needs no license on Form.io Open Source or the hosted service.</li>
             </ul>
             <p>Put the license in <code>LICENSE_KEY</code>, the same variable Form.io Enterprise reads, so one Form.io license that includes the UAG runs both. <code>UAG_LICENSE</code> still works, and is deprecated. See <a href="/developers/deployment#licensing">Licensing</a>, or <a href="/contact">ask us for a trial</a>.</p>
           </div>

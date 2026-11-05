@@ -132,7 +132,7 @@ describe('Demo site app', function () {
             try {
                 for (const pathname of EXAMPLES) {
                     const html = await (await fetch(`${demo.url}${pathname}`)).text();
-                    expect(html, pathname).to.include('data-license-notice="unlicensed"').and.include('You need a UAG license to run these demos on your own machine.');
+                    expect(html, pathname).to.include('data-license-notice="unlicensed"').and.include('To run the workflow, formflow and AI Document demos on your own machine, the UAG needs a license that includes the UAG');
                     expect(html, pathname).to.include('href="https://ai.form.io"');
                 }
                 const home = await (await fetch(`${demo.url}/`)).text();

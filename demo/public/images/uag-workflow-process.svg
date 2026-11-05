@@ -40,7 +40,7 @@
   <text x="36" y="324" class="sub">Agent: Run task</text>
   <text x="36" y="338" class="sub">actions</text>
   <text x="36" y="430" class="lane">Engines</text>
-  <text x="36" y="448" class="sub">Claude, JEV</text>
+  <text x="36" y="448" class="sub">Claude</text>
 
   <!-- Applicant -->
   <circle cx="165" cy="80" r="14" fill="#fff" stroke="#3a4756" stroke-width="1.8"/>

@@ -168,7 +168,7 @@ Files that are not a task's input or context are never sent to engines: they are
 
 #### Rich text fields
 
-A textarea with the CKEditor or Quill editor is a rich text field: its value is HTML. The engine is told which elements it may write, and what it writes is sanitized before it is validated, returned or saved: elements the editors do not keep, `style` and `class`, event handlers, scripts, frames and links other than `http`, `https` and `mailto` are removed. A task's criteria need not list the allowed tags.
+A textarea with the CKEditor or Quill editor is a rich text field: its value is HTML. The engine is told which elements it may write, and what it writes is sanitized before it is validated, returned or saved: elements the editors do not keep, `style` and `class`, event handlers, scripts, frames and links other than `http`, `https` and `mailto` are removed. A task's criteria need not list the allowed tags. HTML an MCP client writes into a rich text field (with `collect_field_data`, `confirm_form_submission`, `submit_completed_form` or `submission_update`) is sanitized the same way; submissions from the browser are not changed.
 
 ## Task settings
 
@@ -204,7 +204,7 @@ A tool that may write, or that does not exist, is refused when the task is plann
 "properties": { "uag": "admissions", "uagField": "criteria", "uagTools": "find_submissions" }
 ```
 
-The tools that qualify are those annotated read-only: `get_forms`, `get_form_fields`, `get_field_info`, `collect_field_data`, `confirm_form_submission`, `find_submissions`, `agent_provide`, `agent_decide` and `fetch_external_data`, plus any custom tool whose annotations set `readOnlyHint: true`.
+The tools that qualify are those annotated read-only: `get_forms`, `get_form_fields`, `get_field_info`, `collect_field_data`, `confirm_form_submission`, `find_submissions`, `agent_provide`, `agent_decide`, `fetch_external_data` and `read_document`, plus any custom tool whose annotations set `readOnlyHint: true`.
 
 ### `uagEngine`
 

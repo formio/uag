@@ -1,6 +1,6 @@
 # @formio/uag-sdk
 
-<sub>[Form.io UAG](https://github.com/formio/uag/blob/main/README.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/main/README.md#engines-and-routing) &rsaquo; this page</sub>
+<sub>[Form.io UAG](https://github.com/formio/uag/blob/v2.0.0-rc.7/README.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/v2.0.0-rc.7/README.md#engines-and-routing) &rsaquo; this page</sub>
 
 Build engine packages for the Form.io Universal Agent Gateway (UAG). This package contains:
 
@@ -154,8 +154,9 @@ The check creates an instance and calls it. Pass options, such as a fake client,
 - the definition and the engine have the contract's shape;
 - the engine uses the instance name and the `model` option;
 - `extract` returns only the fields it was asked about, or `decide` only the questions it was asked;
+- `accepts`, when set, lists only `text` and `pdf`; `generate`, when present, returns text, its model and a valid `stopReason`;
 - research stops at `maxIterations`, and reports every tool call it made;
-- an aborted signal stops the engine, including during research.
+- an aborted signal stops the engine, including during research and `generate`.
 
 A research round is the calls a model makes together; calls made one after another count as separate rounds.
 

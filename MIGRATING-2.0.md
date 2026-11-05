@@ -1,6 +1,6 @@
 # Migrating to UAG 2.0
 
-UAG 2.0 is the first release of the Agent API and of the **Agent: Run task** action. If you run UAG 1.13 for local MCP clients and conversation forms, nothing you use changes: those need no license and no new configuration. Read on if you connect remote MCP clients (claude.ai, Claude Desktop connectors), set `MONGO`, call agents from Form.io webhooks, write modules, or tried the Agent API from the repository before 2.0.
+UAG 2.0 is the first release of the Agent API and of the **Agent: Run task** action. If you run UAG 1.13 for local MCP clients and conversation forms, they keep working with no license and no new configuration, though some defaults changed: see [Defaults that changed](#defaults-that-changed). Read on too if you connect remote MCP clients (claude.ai, Claude Desktop connectors), set `MONGO`, call agents from Form.io webhooks, write modules, or tried the Agent API from the repository before 2.0.
 
 ## Applications can send submissions to the UAG
 
@@ -55,6 +55,19 @@ The database holds only `uag-meta`, `uag-authcodes` and `uag-taskruns`, never su
 
 Using it needs a license that includes the UAG, on every edition and on Form.io's hosted service, unless the project and the database are both on development hosts. Without the license the UAG still starts, with the database features off; it writes nothing to the database, and says why in its log. If you set `MONGO` for 1.13 and do not want the database, unset it.
 
+## Defaults that changed
+
+| | 1.13 | 2.0 |
+|---|---|---|
+| `JWT_EXPIRE_TIME` | `3600` minutes (60 hours) | `60` minutes. A `client_credentials` token acts as the project administrator. Set it explicitly to keep the old lifetime. |
+| `/auth/token` with `client_credentials` | Returned a refresh token | Returns none (RFC 6749, 4.4.3): request a new token with the credentials when it expires. |
+| `MAX_BODY_SIZE` | `100mb` | `16mb`, Form.io's own limit: bodies are parsed before authentication. |
+| An application that embeds the UAG | Started without Node's `--no-node-snapshot` | `new UAGServer()` throws unless Node runs with `--no-node-snapshot` (or `NODE_OPTIONS=--no-node-snapshot`), which `isolated-vm` needs. The `uag` command and the image add it themselves. |
+| Remote MCP sign-in | | Access and refresh tokens are distinct, so clients signed in through OAuth sign in again once after the upgrade. |
+| TLS to Form.io | Certificates not verified | Verified on the UAG's requests to Form.io. Trust a self-signed certificate's CA with `NODE_EXTRA_CA_CERTS`, or, on a private deployment only, set `NODE_TLS_REJECT_UNAUTHORIZED=0`. |
+| A module's project template | Installed on every `PROJECT_TTL` refresh | Installed once at startup (`TEMPLATE_SYNC=boot`). `refresh` installs on every refresh too; `off` never installs. |
+| Files and signatures in MCP tool results | The stored value (base64 for a base64 upload) | Described: a file as `{ "name", "type", "size" }`, a signature as `(signed)`. To read a document's text, call [`read_document`](https://ai.form.io/developers/mcp-tools#readdocument). |
+
 ## Webhooks become "Agent: Run task"
 
 `/agent/provide` is removed, and with it the webhook pattern built on it. The **Agent: Run task** action replaces it: it runs a task on a submission sent to the UAG, and after the save it saves the results as an update through the UAG, so the form's update actions, including other Run task actions, run on it. Tasks chain by their conditions, as webhooks did.
@@ -81,7 +94,7 @@ To run a task again on stored submissions, save them again through the UAG.
 
 ## The Claude integration is retired
 
-`integrations/claude` (`@formio/uag-claude` 1.x, `formio/uag-claude`) is retired in 2.0. From 2.0.0, the npm name `@formio/uag-claude` carries the Claude *engine*, which runs inside the UAG 2.x and is not a server; if you install the integration from npm, pin `@formio/uag-claude@^1`. The engine's README maps the 1.x settings to 2.0 under [Upgrading from 1.x](https://github.com/formio/uag/blob/main/engines/claude/README.md#upgrading-from-1x), and npm marks 1.x deprecated once 2.0.0 is published. Its 1.3.x release gets security fixes only, from the `1.x` branch. Its `agent_provide_data` webhooks need UAG 1.x, since 2.0 removed that tool: move them to Run task before upgrading the UAG. Its direct commands drive a model over the UAG's other MCP tools, which 2.0 still serves.
+`integrations/claude` (`@formio/uag-claude` 1.x, `formio/uag-claude`) is retired in 2.0. From 2.0.0, the npm name `@formio/uag-claude` carries the Claude *engine*, which runs inside the UAG 2.x and is not a server; if you install the integration from npm, pin `@formio/uag-claude@^1`. The engine's README maps the 1.x settings to 2.0 under [Upgrading from 1.x](./engines/claude/README.md#upgrading-from-1x), and npm marks 1.x deprecated once 2.0.0 is published. Its 1.3.x release gets security fixes only, from the `1.x` branch. Its `agent_provide_data` webhooks need UAG 1.x, since 2.0 removed that tool: move them to Run task before upgrading the UAG. Its direct commands drive a model over the UAG's other MCP tools, which 2.0 still serves.
 
 | Integration | 2.0 |
 |---|---|

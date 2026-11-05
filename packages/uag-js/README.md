@@ -13,29 +13,33 @@ Formio.use(UAG('https://uag.example.com'));
 Formio.createForm(document.getElementById('claim'), 'https://forms.example.com/myproject/claim');
 ```
 
+Without a bundler, load the UAG's own `https://uag.example.com/uag-js/uag.use.js` (and `uag-js.css`) after formio.js: it registers itself with that UAG and its modules' components. See [Or load it from the UAG](https://ai.form.io/developers/renderer#or-load-it-from-the-uag).
+
 Requests to the UAG carry the user's Form.io token (`x-jwt-token`), as formio.js sends it to Form.io; no other token is needed. Routing in the browser is not a security boundary: protect the fields an agent owns on the server, with an agent role, form permissions and `uagAuthoritative`.
 
 ## AI Document
 
-The **AI Document** component (`uagdocument`) is a UAG module: it comes with `@formio/uag-extras/modules/ai-document`, not with this package. A UAG that uses the module adds the component to `/uag-js/uag.use.js` and the portal script; an application with a bundler registers it after this package: `Formio.use(UAG(url)); Formio.use(aiDocument);`. It builds on `client`, below.
+The **AI Document** component (`uagdocument`) is a UAG module from [`@formio/uag-extras`](https://github.com/formio/uag-extras) (`npm install @formio/uag-extras@rc`), not from this package. A UAG that uses the module adds the component to its `/uag-js/uag.use.js`; an application with a bundler registers it after this package:
+
+```js
+import aiDocument from '@formio/uag-extras/modules/ai-document/client';
+Formio.use(UAG('https://uag.example.com'));
+Formio.use(aiDocument);
+```
+
+See [AI Document](https://ai.form.io/developers/ai-document).
 
 ## For components: `client`
 
-Once `Formio.use(UAG(url))` has run, `client` (also `FormioUAG.client` and `UAG.client`) is the API that components of UAG modules build on, stable within a major version:
-
-| Member | What it gives |
-|---|---|
-| `url()`, `token(form?)`, `headers(form?)` | The UAG's URL, the user's Form.io token, and the headers that identify the user to the UAG. |
-| `formUrl(definition)` | A form's URL on the UAG, from its definition or a rendered form. |
-| `ready`, `loaded`, `plugins(type?)`, `plugin(type, name)` | The installed plugins (`document`, `converter`, `module`), embedded by the UAG's scripts or fetched with the user's token. |
-| `stream(url, body, { onEvent, signal, form })` | POST JSON, accepting server-sent events: every event goes to `onEvent`; it resolves with the `done` event's data (or the JSON answer), and rejects with the UAG's message, `status` and `code`. |
-| `renderMarkdown(text)`, `escapeHtml(text)` | Markdown as the UAG sanitizes it, rendered with every text escaped. |
+Once the UAG is registered, `client` (also `Formio.uagClient`, `FormioUAG.client` and `UAG.client`) is the browser API that components of UAG modules build on, stable within a major version: the UAG's URL, the user's token and headers, a form's URL on the UAG, the installed plugins, `stream()` for module routes, and Markdown rendering.
 
 ```js
 import { client } from '@formio/uag-js';
 await client.ready;
 const done = await client.stream(client.formUrl(form) + '/document/process', { path, files }, { onEvent: (name, data) => {} });
 ```
+
+Every member, and how `stream()` resolves and rejects: [For module components: `client`](https://ai.form.io/developers/renderer#for-module-components-client).
 
 ## Chat
 
@@ -44,7 +48,7 @@ Any form tagged `uag` can also be rendered as a chat, the way `Formio.createForm
 ```js
 Formio.use(UAG('https://uag.example.com'));
 
-const chat = await Formio.createChat(document.getElementById('help'), 'https://forms.example.com/myproject/servicerequest', {
+const chat = await Formio.createChat(document.getElementById('help'), 'https://forms.example.com/myproject/service-request', {
   suggestions: ['My internet is down'],
   markdown: (text) => marked.parse(text)   // optional; the output is sanitized
 });

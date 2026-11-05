@@ -5,9 +5,9 @@ section: Build
 order: 48
 ---
 
-The **AI Document** component (`uagdocument`) lets the people filling a form drop files and get AI-generated content from them: an exact extraction, a summary, an assessment. The form designer picks a **process** (a document plugin) and writes the instructions; converters bring each file to what the AI engine reads (PDF or text). Files upload to the form's own storage; the submission holds the file references and the result, never file bytes from the UAG.
+The **AI Document** component (`uagdocument`) lets the people filling a form drop files and get AI-generated content from them: an exact extraction, a summary, an assessment. The form designer picks a **process** (a document plugin) and writes the instructions; converters bring each file to what the AI engine reads (PDF or text). Files upload to the form's own storage; the submission holds the file references and the result, never file bytes from the UAG. The [lease review example](/examples/documents) shows it at work.
 
-AI Document is a [module](/developers/modules#settings-routes-and-components): it comes with `@formio/uag-extras/modules/ai-document`, which brings the component, the process route and the `document` plugin type, and the plugins it runs come from the document extras of `@formio/uag-extras` or your own (see [Plugins](/developers/plugins)). The `formio/uag-documents` image has all of them. In your own server:
+AI Document is a [module](/developers/modules#settings-routes-and-components): it comes with `@formio/uag-extras/modules/ai-document`, which brings the component, the process route and the `document` plugin type, and the plugins it runs come from the document extras of `@formio/uag-extras` or your own (see [Plugins](/developers/plugins)). The `formio/uag-documents:rc` image has all of them. In your own server, after `npm install @formio/uag-extras@rc`:
 
 ```js
 import { UAGDocument } from '@formio/uag-extras/modules/ai-document';
@@ -35,6 +35,7 @@ They drop one or more files, which formio.js uploads to the configured storage. 
 ## For the application developer
 
 ```js
+// npm install @formio/uag-js@rc @formio/uag-extras@rc
 import { Formio } from '@formio/js';
 import { UAG } from '@formio/uag-js';
 import aiDocument from '@formio/uag-extras/modules/ai-document/client';
@@ -42,7 +43,7 @@ Formio.use(UAG('https://uag.example.com'));
 Formio.use(aiDocument);
 ```
 
-Rendering a form that contains an AI Document needs nothing else. An application with its own form builder awaits the manifest first: `await UAG.ready`. A page without a bundler loads `https://uag.example.com/uag-js/uag.use.js`, which registers itself with that UAG and carries the component of every module the UAG uses; or it loads the module's script from a CDN (`dist/modules/ai-document.min.js` of `@formio/uag-extras`), after `uag.use.js`.
+Rendering a form that contains an AI Document needs nothing else. An application with its own form builder awaits the manifest first: `await UAG.ready`. A page without a bundler loads `https://uag.example.com/uag-js/uag.use.js`, which registers itself with that UAG and carries the component of every module the UAG uses; or it loads the module's script and style from a CDN, after `uag.use.js`: `https://cdn.jsdelivr.net/npm/@formio/uag-extras@rc/dist/modules/ai-document.min.js` and `ai-document.css` beside it.
 
 ### The target field
 
@@ -54,12 +55,12 @@ In this release the UAG neither signs results nor checks AI Document values when
 
 ## The process route
 
-`POST {project}/{formPath}/document/process`, body `{ path, files, data? }`: `path` is the component's data path with row indices (`rows[2].contract`), `files` the files component's value, `data` the form's data (context for the plugin only). The caller needs create or update access to the form, as for the Agent API, and Agentic Formflow must be licensed (otherwise `403`, as the Agent API answers). See [Agent API](/developers/agent-api#process-an-ai-document).
+`POST {project}/{formPath}/document/process`, body `{ path, files, data? }`: `path` is the component's data path with row indices (`rows[2].contract`), `files` the files component's value, `data` the form's data (context for the plugin only). The caller needs create or update access to the form, as for the Agent API, and Agentic Formflow must be licensed (otherwise `403`, as the Agent API answers). Its rate limits are counted under the name `document` (`agentApi.rateLimits.caller.document`). On a form open to anonymous visitors (`uagAnonymous`), a visitor who is not signed in may use it too, under the anonymous limits (see [Modules](/developers/modules#anonymous-visitors)). See [Agent API](/developers/agent-api#process-an-ai-document).
 
 ## For the operator
 
 ```bash
-docker run -p 3200:3200 --env-file .env formio/uag-documents
+docker run -p 3200:3200 --env-file .env formio/uag-documents:rc
 ```
 
 ### Limits
@@ -77,7 +78,7 @@ docker run -p 3200:3200 --env-file .env formio/uag-documents
 | `engine` | the first agent engine that generates and reads what the files became | `DOCUMENTS_ENGINE` |
 | `prefer` | `{}` (MIME type to converter name) | |
 
-A limit that is exceeded fails the request, naming it; nothing is cut off silently. Keep `maxTotalBytes` and `maxPages` within your engine provider's limits (the UAG warns at startup when they are above them). Documents go to the provider of the engine that reads them: a component's engine, or `documents.engine`, chooses which.
+A limit that is exceeded fails the request, naming it; nothing is cut off silently. Keep `maxTotalBytes` and `maxPages` within your engine provider's limits (the UAG warns at startup when they are above them). Documents go to the provider of the engine that reads them: a component's engine, or `documents.engine`, chooses which. Only an agent engine that generates content can process documents; of the official engines, that is `claude`, in the UAG or on an engine server. With no such engine enabled, processing answers `503` (`no_engine`).
 
 ### Storage
 

@@ -56,7 +56,7 @@ function securityHeaders(config) {
 /** Why the examples cannot all run here, by the reason formflowStatus() gives. */
 const LICENSE_NOTICES = {
     unreachable: { reason: 'unreachable', why: 'No UAG answered at this site\'s <code>UAG_URL</code>, so the live demos cannot run.' },
-    unlicensed: { reason: 'unlicensed', why: 'The UAG this site uses runs conversation forms, so the chat works, but not Agentic Formflow (the workflow and formflow demos) without a <code>LICENSE_KEY</code> that includes the UAG, or a project on Form.io\'s hosted service.' },
+    unlicensed: { reason: 'unlicensed', why: 'The UAG this site uses runs conversation forms, so the chat works, but not Agentic Formflow (the workflow, formflow and AI Document demos) without a <code>LICENSE_KEY</code> that includes the UAG, or a project on Form.io\'s hosted service.' },
 };
 
 export function createApp(config = readConfig(), overrides = {}) {

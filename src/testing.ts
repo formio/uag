@@ -61,8 +61,9 @@ export function testForm(definition: Record<string, any>, options: { id?: string
                 }
                 return bytes;
             }
-            if (options.files) return options.files(value, readOptions);
-            throw new Error('testForm reads base64 (data: URL) files only: give createTestModuleApi or mountModuleRoutes a "files" function for others.');
+            const files = options.files || (this as any)?.files;
+            if (files) return files(value, readOptions);
+            throw new Error('testForm reads base64 (data: URL) files only: give testForm, createTestModuleApi or mountModuleRoutes a "files" function for others.');
         }
     };
     return form;
@@ -108,6 +109,11 @@ function settingsOf(module: ServerModule<any>, options: TestModuleOptions): Reco
     return Object.freeze({ ...(settings || {}) });
 }
 
+/** The form, reading stored values that are not base64 through `files` unless it has its own. */
+function withFiles<Form>(form: Form, files: TestModuleOptions['files']): Form {
+    return files && form && typeof form === 'object' && !(form as any).files ? { ...form, files } : form;
+}
+
 /** The UAG's module API for a module, in a test. */
 export async function createTestModuleApi<Settings extends Record<string, any> = Record<string, any>>(module: ServerModule<any>, options: TestModuleOptions = {}): Promise<UAGModuleApi<Settings>> {
     const loaded = loadedOf(module, settingsOf(module, options));
@@ -129,6 +135,11 @@ export async function createTestModuleApi<Settings extends Record<string, any> =
     if (module.plugins) registry.add(module.plugins, module.name);
     if (options.plugins?.length) registry.add(options.plugins, 'test');
     await registry.initialize({ server: {} as any });
+    if (options.files) {
+        // A form without its own "files" function reads other stored values through this one.
+        const read = api.files.read;
+        api.files.read = (form: any, value: any, auth: any, readOptions?: any) => read(withFiles(form, options.files), value, auth, readOptions);
+    }
     return api as UAGModuleApi<Settings>;
 }
 
@@ -164,7 +175,7 @@ export async function mountModuleRoutes(module: ServerModule<any>, options: Test
     };
     const router = moduleFormRouter({} as any, loaded, api, host);
     const withForm = (req: Request, res: Response, next: NextFunction) => {
-        (req as any).form = options.form;
+        (req as any).form = withFiles(options.form, options.files);
         (req as any).auth = options.auth || testAuth();
         next();
     };

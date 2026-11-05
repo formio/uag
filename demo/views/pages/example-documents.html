@@ -5,11 +5,11 @@
           <div class="meta"><span class="tag">AI Document</span><span class="tag">@formio/uag-extras</span><span class="tag tag-blue">Document plugins</span><span class="tag">Claude</span><span class="tag tag-green">Checked against the file</span></div>
         </div>
         <h1>A form that reads the file you upload.</h1>
-        <p class="lede">Review a lease by uploading it. One AI Document copies its key clauses into the form word for word, and checks every word of the copy against the lease. Another writes a summary for the property manager, and a third translates the lease into Spanish for the tenant. You check them before you save.</p>
+        <p class="lede">Review a lease by uploading it. One AI Document copies its key clauses into the form word for word, and checks every word of the copy against the lease's text (a scan or photo has no text to check against, so its copy is flagged for you to check). Another writes a summary for the property manager, and a third translates the lease into Spanish for the tenant. You check them before you save.</p>
         <ol class="how">
           <li><strong>You upload a lease</strong>A PDF, a Word document, a text file, or a scan or photo of it. Download a sample lease from the form if you don't have one.</li>
           <li><strong>Converted</strong>The UAG identifies the file from its bytes and reads it as a PDF or as text, with converter plugins for Word and Excel.</li>
-          <li><strong>Copied and checked</strong>The <code>extract</code> plugin asks the model for the clauses, then compares the copy with the lease's text. A copy that differs is retried, then flagged.</li>
+          <li><strong>Copied and checked</strong>The <code>extract</code> plugin asks the model for the clauses, then compares the copy with the lease's text. A copy that differs is retried, then flagged. A scan or photo has no text to compare, so its copy is flagged for a manual check.</li>
           <li><strong>Summarized and translated</strong>The <code>analyze</code> plugin writes about the lease as the form's instructions ask; <code>translate</code> puts it into the language the form designer picked. Every result streams its progress and is yours to edit.</li>
         </ol>
       </div>
@@ -47,9 +47,9 @@
           <h2>Generated, then checked.</h2>
         </div>
         <div class="notes">
-          <div class="card"><h3>Exact words</h3><p>The clauses are compared with the lease's own text. Missing, changed or added words lower the score; below the form's minimum, the result is flagged and the differences are listed.</p></div>
+          <div class="card"><h3>Exact words</h3><p>Each passage is matched against the lease's text. A copy with reworded, invented or omitted passages, or too few exact words for the form's minimum, is retried, then flagged with the differences listed.</p></div>
           <div class="card"><h3>Into your own field</h3><p>An AI Document can write into a field of the form: HTML for a rich-text editor, Markdown otherwise. It asks before it replaces something you wrote.</p></div>
-          <div class="card"><h3>Plugins, not prompts in code</h3><p>What the AI does is a document plugin installed on the UAG. The form designer picks one in the form builder and writes the instructions there; Build shows the settings.</p></div>
+          <div class="card"><h3>Plugins, not prompts in code</h3><p>What the AI does is a document plugin installed on the UAG. The form designer picks one in the form builder and writes the instructions there; the demo's Build tab shows the settings.</p></div>
         </div>
       </div>
     </section>
@@ -58,11 +58,11 @@
       <div class="container split">
         <div>
           <h2>Add it to your app.</h2>
-          <p>The <strong>AI Document</strong> is a UAG module, <code>@formio/uag-extras/modules/ai-document</code>: the UAG serves its component with <code>@formio/uag-js</code>. It uploads to the form's own storage, posts the file references to the UAG's <code>{form}/document/process</code>, shows the streamed progress and the result, and keeps both in the submission: never the file's bytes.</p>
+          <p>The <strong>AI Document</strong> is a UAG module, <code>@formio/uag-extras/modules/ai-document</code> (<code>npm install @formio/uag-extras@rc</code>, from <a href="https://github.com/formio/uag-extras" target="_blank" rel="noopener">formio/uag-extras</a>): the UAG serves its component with <code>@formio/uag-js</code>. It uploads to the form's own storage, posts the stored files to the UAG's <code>{form}/document/process</code>, shows the streamed progress and the result, and keeps both in the submission. With Base64 storage, the default and this demo's, the file itself is in the submission too; with S3, Azure or URL storage, only a reference to it.</p>
           <ul class="checks">
             <li>It sends the signed-in user's own Form.io token, so the UAG reads the files with <strong>their</strong> permissions.</li>
             <li>In the developer portal, set the project's custom JavaScript and CSS to the UAG's <code>/uag-js/portal.js</code> and <code>/uag-js/portal.css</code> to build with it.</li>
-            <li>The <code>formio/uag-documents</code> image carries the <code>extract</code>, <code>analyze</code> and <code>translate</code> plugins and the Word and Excel converter.</li>
+            <li>The <code>formio/uag-documents:rc</code> image carries the <code>extract</code>, <code>analyze</code> and <code>translate</code> plugins and the Word and Excel converter.</li>
             <li>A process of your own is one file: <a href="/developers/plugins#your-first-document-plugin">build Translate yourself</a>, step by step.</li>
           </ul>
           <p style="margin-top:24px"><a class="link-arrow" href="/developers/ai-document">AI Document</a> &nbsp; <a class="link-arrow" href="/developers/plugins">Plugins</a></p>
@@ -73,7 +73,7 @@
 
 // Render the form from its Form.io URL, as before. Its AI Document
 // components process each upload with the plugin the designer chose.
-Formio.createForm(el, 'https://forms.example.com/myproject/leasereview');</code></pre></div>
+Formio.createForm(el, 'https://forms.example.com/myproject/lease-review');</code></pre></div>
       </div>
     </section>
 

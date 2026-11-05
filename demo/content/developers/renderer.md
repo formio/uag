@@ -37,6 +37,41 @@ UAG -> Form.io: the submission, after Run task
 | `uag-js.css` | Default styles for the notes Agent Input adds, and for the [chat](/developers/chat). Override them freely. |
 | `index.d.ts` | TypeScript types. |
 
+The script that registers itself, `uag.use.js`, is not in the package: the UAG serves it, with its own URL and modules built in. See below.
+
+### Or load it from the UAG
+
+Every UAG serves the `@formio/uag-js` it is installed with, under `/uag-js/`. A page without a bundler can load it from there, after formio.js:
+
+```html
+<link rel="stylesheet" href="https://uag.example.com/uag-js/uag-js.css">
+<script src="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.js"></script>
+<script src="https://uag.example.com/uag-js/uag.use.js"></script>
+```
+
+`uag.use.js` registers itself, so the page needs no `Formio.use()`: with the UAG's URL, taken from the script's own `src`, with the UAG's plugin manifest embedded, and with the component of every [module](/developers/modules#components) the UAG uses. Do not also call `Formio.use(FormioUAG.UAG(...))` on top of it: registering twice would build the chat on Agent Input's form display.
+
+| Path | What it is |
+|---|---|
+| `/uag-js/uag.use.js` | `index.js`, its registration, then each module's component script. |
+| `/uag-js/uag-js.css` | `uag-js.css`, then each module's component stylesheet. |
+| `/uag-js/components/<type>.js`, `/uag-js/components/<type>.css` | One module component's script or stylesheet, by its type. |
+
+These are public: no credential, any origin, whatever the UAG's `CORS` setting. Each is revalidated on every load (`Cache-Control: no-cache` with an `ETag`), so a page always gets what the UAG has installed now. A UAG installed without `@formio/uag-js` answers `uag.use.js`, `uag-js.css`, `portal.js` and `portal.css` with `404` "@formio/uag-js is not installed with this UAG." (module components are served either way).
+
+`uag.use.js` registers with the default [options](#options). To pass options, load `index.js` instead (from npm, or from the CDN as in [Register it once](#register-it-once)), register it yourself, then load the module components the page uses from the UAG:
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/uag-js@rc/uag-js.css">
+<link rel="stylesheet" href="https://uag.example.com/uag-js/components/uagdocument.css">
+<script src="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@formio/uag-js@rc/index.js"></script>
+<script>
+  Formio.use(FormioUAG.UAG('https://uag.example.com', { trigger: 'pause' }));
+</script>
+<script src="https://uag.example.com/uag-js/components/uagdocument.js"></script>
+```
+
 ## Register it once
 
 ```js
@@ -53,7 +88,7 @@ Formio.createForm(document.getElementById('claim'), 'https://forms.example.com/m
 Formio.createForm(document.getElementById('contact'), 'https://forms.example.com/myproject/contact');
 
 // Or a form as a chat (see Chat widget):
-Formio.createChat(document.getElementById('help'), 'https://forms.example.com/myproject/servicerequest');
+Formio.createChat(document.getElementById('help'), 'https://forms.example.com/myproject/service-request');
 ```
 
 Registering also adds the `chat` display and `Formio.createChat` (also exported as `createChat`, and `UAG.createChat`).
@@ -119,6 +154,7 @@ The tag now does four things at once. A form tagged `uag`:
 | `requireReview` | `false` | Make the user check each uncertain value before the wizard moves on or the form submits. See [Rules](#rules-agent-input-keeps). |
 | `fetch` | the global `fetch` | The `fetch` Agent Input uses. |
 | `onStart`, `onResult`, `onError`, `onDone` | | Agent Input's callbacks, for every form. See [Attaching by hand](#attaching-by-hand). |
+| `manifest` | fetched at registration | The installed plugins, as `GET {project}/plugins` describes them, for the modules' components (see [`client`](#for-module-components-client)). Without it, registering fetches them with the user's token. `uag.use.js` passes the UAG's own. |
 
 ## Set up the form
 
@@ -302,7 +338,7 @@ Why a key must stay on the server:
 - A key runs as administrator: any form tagged `uag`, any task, and model calls billed to you. The relay decides which form and task the browser may use.
 - Server-to-server requests from your backend carry no `Origin`, so the UAG accepts the key there. Do not forward the browser's `Origin`, cookies or other headers.
 
-The relay below serves the page and the form definition, and relays extraction for one form and task, streaming the UAG's response back as it arrives. It is adapted from the [Agentic Formflow demo's back end](https://github.com/formio/uag/blob/v2.0.0-rc.5/demo/server/formflow.mjs), and needs Node.js 20.11 or later.
+The relay below serves the page and the form definition, and relays extraction for one form and task, streaming the UAG's response back as it arrives. It is adapted from the [Agentic Formflow demo's back end](https://github.com/formio/uag/blob/v2.0.0-rc.7/demo/server/formflow.mjs), and needs Node.js 20.11 or later.
 
 ```js
 // server.mjs: node server.mjs
@@ -436,8 +472,44 @@ npm install express @formio/uag-js@rc
 </html>
 ```
 
+## For module components: `client`
+
+A [module's component](/developers/modules#components) builds on `client`, the public browser API of `@formio/uag-js`, stable within a major version. It works once the UAG is registered (`Formio.use(UAG(url))`, or `uag.use.js`), and is one object under several names: `Formio.uagClient` on the formio.js it was registered with, `FormioUAG.client` with script tags, `UAG.client`, and the `client` export. Look it up when a component uses it, not when its script loads.
+
+| Member | What it gives |
+|---|---|
+| `url()` | The UAG's URL, as given to `UAG()`. |
+| `token(form?)` | The user's Form.io token: the rendered form's own, else formio.js's; `null` without one. |
+| `headers(form?)` | The headers that identify the user to the UAG: `x-jwt-token`, and `x-remote-token` when formio.js holds a portal team member's remote token. |
+| `formUrl(definition)` | A form's URL on the UAG, from its definition or a rendered form, as `UAG()` addresses forms; `''` for a definition without an `_id`. |
+| `ready`, `loaded` | A promise that resolves once the installed plugins are known, and whether they are yet. |
+| `plugins(type?)`, `plugin(type, name)` | The installed plugins (documents, converters, modules, and the types modules define), from the [`manifest`](#options) `uag.use.js` embeds, or fetched at registration with the user's token (none when that fails). `plugin` gives one, or `null`. |
+| `stream(url, body, options?)` | A POST to a module route, below. |
+| `renderMarkdown(markdown)` | HTML for Markdown as the UAG's `sanitizeMarkdown` keeps it: headings, paragraphs, lists, tables, emphasis, code, and `http`, `https` and `mailto` links, with every text escaped. Also `UAG.renderMarkdown` and the `renderMarkdown` export. |
+| `escapeHtml(value)` | The value as HTML-escaped text. |
+| `Formio` | The formio.js the UAG was registered with. |
+
+`stream(url, body, { onEvent, signal, form, headers, fetch })` sends `body` as JSON, accepting server-sent events, with `headers(form)` and then any `headers` you give:
+
+- every event is passed to `onEvent(name, data)` as it arrives;
+- it resolves with the `done` event's data, or with the JSON answer of a route that does not stream;
+- it rejects with an `Error` carrying the UAG's message, `status` and `code`: for an error answer, for a stream that held a `failed` or `error` event (once the stream ends), and for one that ended without `done`;
+- `signal` aborts the request, and `fetch` replaces the `fetch` given to `UAG()` (or the global one).
+
+```js
+const client = Formio.uagClient;
+await client.ready;
+const answer = await client.stream(client.formUrl(this.root) + '/address-check/check', { address: this.dataValue }, {
+    form: this.root,
+    onEvent: (name, data) => { if (name === 'progress') this.emit('addressCheckProgress', data); }
+});
+```
+
+A module route answers in the Agent API's error shape, behind the same caller check; see [Settings, routes and components](/developers/modules#settings-routes-and-components).
+
 ## Next steps
 
 - [Agent API](/developers/agent-api): a form's agent operations and the field results.
 - [Form properties](/developers/form-properties): tasks, inputs, thresholds, confidence fields and `uagAnonymous`.
 - [Security](/developers/security): re-deciding on the server, credentials and rate limits.
+- [Modules](/developers/modules#components): components that build on `client`.

@@ -337,6 +337,24 @@ describe('Modules', function () {
             expect(anonymous.status).to.be.oneOf([401, 403]);
         });
 
+        it('lets anonymous visitors reach a route on a form that opts in (uagAnonymous) and lets Anonymous create, unless the route needs update', async () => {
+            const publicForm = { ...notesForm, name: 'public', path: 'public', properties: { uagAnonymous: 'true' }, submissionAccess: [{ type: 'create_own', roles: ['anonymous'] }] };
+            const privateRoute = {
+                name: 'private', apiVersion: 1,
+                routes: { form: { 'POST /private/echo': { name: 'private', access: ['update'], handler: () => ({ ok: true }) } } }
+            };
+            started = await start({ forms: { notes: notesForm, public: publicForm }, modules: [sampleModule(), privateRoute] });
+            const allowed = await started.request().post('/public/sample/echo').send({});
+            expect(allowed.status, allowed.text).to.equal(200);
+            expect(allowed.body).to.include({ form: 'public' });
+            const notOptedIn = await started.request().post('/notes/sample/echo').send({});
+            expect(notOptedIn.status, notOptedIn.text).to.equal(401);
+            expect(notOptedIn.body).to.include({ code: 'sign_in_required' });
+            const needsUpdate = await started.request().post('/public/private/echo').send({});
+            expect(needsUpdate.status, needsUpdate.text).to.equal(403);
+            expect((await started.request().post('/public/private/echo').set(admin).send({})).status).to.equal(200);
+        });
+
         it('answers a module route\'s body that is not JSON in the error shape', async () => {
             started = await launch([sampleModule()]);
             const res = await started.request().post('/notes/sample/echo').set({ ...admin, 'Content-Type': 'application/json' }).send('"not json');

@@ -1,8 +1,8 @@
 # @formio/uag-jev
 
-<sub>[Form.io UAG](https://github.com/formio/uag/blob/main/README.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/main/README.md#engines-and-routing) &rsaquo; this page</sub>
+<sub>[Form.io UAG](https://github.com/formio/uag/blob/v2.0.0-rc.7/README.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/v2.0.0-rc.7/README.md#engines-and-routing) &rsaquo; this page</sub>
 
-The TypeSafe **Jev** decision engine for the [UAG Agent API](https://github.com/formio/uag/blob/main/README.md#agent-api). It answers a task's closed-set fields (radio, select, checkbox, select boxes, survey and small resource selects) in one request, typically in 70–500 ms, with a confidence for each answer.
+The TypeSafe **Jev** decision engine for the [UAG Agent API](https://github.com/formio/uag/blob/v2.0.0-rc.7/README.md#agent-api). It answers a task's closed-set fields (radio, select, checkbox, select boxes, survey and small resource selects) in one request, typically in 70–500 ms, with a confidence for each answer.
 
 It is included in the `formio/uag` Docker image. Enable it by naming it, and set its key:
 
@@ -11,7 +11,7 @@ UAG_ENGINES=jev
 TYPESAFE_API_KEY=...
 ```
 
-Decisions are Agentic Formflow, so the UAG also needs a `LICENSE_KEY` that includes the UAG (see [License](https://github.com/formio/uag/blob/main/README.md#license)).
+Decisions are Agentic Formflow, so on a self-hosted project the UAG also needs a `LICENSE_KEY` that includes the UAG (see [License](https://github.com/formio/uag/blob/v2.0.0-rc.7/README.md#license)); a project on Form.io's hosted service needs none.
 
 ## Settings
 
@@ -42,7 +42,7 @@ Routing lists name the instances: `routing.decision: ["next", "jev"]`.
 Behavior differs between Jev versions. Keep `model` at a dated version, and run `uag-eval` on your own labeled examples before changing it or any threshold. `uag-eval --engine jev` works from a checkout of the UAG repository or inside the `formio/uag` image:
 
 ```
-docker run --rm --entrypoint node -v "$PWD:/data" -e TYPESAFE_API_KEY -e LICENSE_KEY formio/uag \
+docker run --rm --entrypoint node -v "$PWD:/data" -e TYPESAFE_API_KEY -e LICENSE_KEY formio/uag:rc \
   --no-node-snapshot bin/uag-eval.js --form /data/claim.json --examples /data/claim-examples.json \
   --engine jev --project <your project URL>
 ```

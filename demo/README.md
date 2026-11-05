@@ -5,11 +5,11 @@
 The marketing and demo site for the Form.io Universal Agent Gateway, published at **[ai.form.io](https://ai.form.io)**:
 
 - **Product** (`/`) and **Getting Started** (`/getting-started`): what the UAG is, and how to run it yourself.
-- **Examples** (`/examples`): three live demos, each with a flow viewer beside it showing every call the agents make.
+- **Examples** (`/examples`): four live demos, each with a flow viewer beside it showing every call the agents make.
   - **Conversation Forms** (`/examples/conversation`): a chat whose questions come entirely from a form.
   - **Agentic Workflow** (`/examples/workflow`): a college application reviewed by two chained agents, with no human in the loop.
   - **Agentic Formflow** (`/examples/formflow`): a claims wizard that chooses its own pages and fills itself in from a description.
-  - **AI Document** (`/examples/documents`): a lease review whose AI Document components copy an uploaded lease's key clauses word for word into a field, check the copy, and summarize the lease. It needs the document plugins in the UAG (the `formio/uag-documents` image, or `UAG_PLUGINS`).
+  - **AI Document** (`/examples/documents`): a lease review whose AI Document components copy an uploaded lease's key clauses word for word into a field, check the copy, and summarize the lease. It needs the AI Document module and the document plugins in the UAG (the `formio/uag-documents:rc` image, or a `UAG_PLUGINS` file that lists them).
 - **Developers** (`/developers`): the technical documentation, from how the UAG works to the engine SDK.
 - **Contact Us** (`/contact`): the hosted Form.io contact form.
 
@@ -120,7 +120,7 @@ The common ones are in [`.env.example`](./.env.example), and every one, with its
 
 ## Working on it
 
-Run on your own machine, the examples say whether they can run: with no UAG to talk to, or one that cannot run Agentic Formflow (no license that includes the UAG, and not on a hosted project), they show a notice that a license is needed to run them locally, and the workflow and formflow demos say they are not supported. The deployed site (`NODE_ENV=production`) never shows it: there, a UAG that does not answer is an outage, and the demos say so themselves.
+Run on your own machine, the examples say whether they can run: with no UAG to talk to, or one that cannot run Agentic Formflow (no license that includes the UAG, and not on a hosted project), they show a notice that a license is needed to run them locally, and the workflow, formflow and AI Document demos say they are not supported. The deployed site (`NODE_ENV=production`) never shows it: there, a UAG that does not answer is an outage, and the demos say so themselves.
 
 ### The whole demo on your machine, self-hosted (`yarn demo:start <port>`)
 
@@ -158,13 +158,13 @@ The port is the first of three, on 127.0.0.1:
 
 | Port | What |
 |---|---|
-| `3430` | The demo site, with all three examples: `/examples/conversation`, `/examples/workflow`, `/examples/formflow`. |
+| `3430` | The demo site, with the examples: `/examples/conversation`, `/examples/workflow`, `/examples/formflow` and `/examples/documents` (the last needs the AI Document module in the UAG, as above). |
 | `3431` | Form.io Enterprise and its portal. |
 | `3432` | The UAG, built from this checkout. |
 
 Give another port to run a second copy beside the first; each runs as its own Compose project (`uag-demo-<port>`).
 
-It builds the images from this checkout (the first start takes several minutes), starts MongoDB and Form.io, and runs the setup job, which creates the `UAG Demo` project and imports the demo's roles, forms and actions into it (`module/project.json`): `serviceRequest`, `application`, `sum` and `claim`, with their "Agent: Run task" actions. Then it starts the UAG on that project, with its own database on the same MongoDB, the engine server, the flow proxy and the site. Last, it creates a stage, **UAG Gateway**, and connects it to the UAG. When it is up it prints the URLs and the portal's administrator sign-in:
+It builds the images from this checkout (the first start takes several minutes), starts MongoDB and Form.io, and runs the setup job, which creates the `UAG Demo` project and imports the demo's roles, forms and actions into it (`module/project.json`): `serviceRequest`, `application`, `sum`, `claim` and `leaseReview`, with their "Agent: Run task" actions. Then it starts the UAG on that project, with its own database on the same MongoDB, the engine server, the flow proxy and the site. Last, it creates a stage, **UAG Gateway**, and connects it to the UAG. When it is up it prints the URLs and the portal's administrator sign-in:
 
 ```
 The UAG demo is running:
@@ -180,7 +180,7 @@ The UAG demo is running:
   UAG                  http://127.0.0.1:3432
 ```
 
-Every start is fresh: Ctrl+C stops the stack and removes its data, and the settings you did not set are new each time (the output lists them). If the UAG's license does not allow `formio.e2e.test`, it says that Agentic Formflow is off, and the workflow and formflow demos will not run. If connecting the stage fails (Chromium not installed, for one), the demo still runs, without it. `yarn demo:start` with no port still runs the site alone (see [Against a UAG you run](#against-a-uag-you-run)).
+Every start is fresh: Ctrl+C stops the stack and removes its data, and the settings you did not set are new each time (the output lists them). If the UAG's license does not allow `formio.e2e.test`, it says that Agentic Formflow is off, and the workflow, formflow and AI Document demos will not run. If connecting the stage fails (Chromium not installed, for one), the demo still runs, without it. `yarn demo:start` with no port still runs the site alone (see [Against a UAG you run](#against-a-uag-you-run)).
 
 ### Run it against your own project
 
@@ -219,7 +219,7 @@ In `demo/.env.local` (git ignores it):
 
 Ctrl+C stops everything. If a port is taken, it says which one and which setting moves it.
 
-**What works.** The conversation, workflow and formflow demos work as soon as it is up: the Agentic Workflow's agents run in the local UAG, on the applications the site saves through it. The AI Document demo also needs the document plugins: set `UAG_PLUGINS` to a plugins file that lists them (the `extract`, `analyze` and `translate` document plugins, and the `office-text` converter for Word files), in `demo/.env.local` or the shell. Without them, an upload answers that its process is not installed.
+**What works.** The conversation, workflow and formflow demos work as soon as it is up: the Agentic Workflow's agents run in the local UAG, on the applications the site saves through it. The AI Document demo also needs the AI Document module and the document plugins: set `UAG_PLUGINS` to a plugins file that lists them (the `ai-document` module, the `extract`, `analyze` and `translate` document plugins, and the `office-text` converter for Word files), in `demo/.env.local` or the shell. Without them, an upload answers that its process is not installed.
 
 ### Against a UAG you run
 
@@ -267,7 +267,7 @@ It runs Form.io Open Source and MongoDB in Docker, the UAG from `lib/`, the engi
 | Path | What |
 |---|---|
 | `server/` | The site: `index.mjs` (routes), `pages.mjs` (the pages, from `views/`), `docs.mjs` and `diagrams.mjs` (the docs, from `content/developers/`), one module per demo, and the guard, sessions and flow viewer. |
-| `public/` | Styles, scripts, images, and the three demo apps under `public/apps/`. |
+| `public/` | Styles, scripts, images, and the four demo apps under `public/apps/`. |
 | `flow/proxy.mjs` | The flow proxy. |
 | `module/` | The demo project (`project.json`) and the sample applicants. |
 | `samples/` | Things to start your own deployment from: the [custom module](./samples/custom-module) (Claude Desktop) and [engine setups](./samples/engines). |

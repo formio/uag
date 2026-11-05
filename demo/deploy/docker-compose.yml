@@ -7,20 +7,26 @@
 #               on 8080. Your load balancer ends TLS and forwards every path of
 #               the domain to it.
 #   formio-uag  the Universal Agent Gateway, with the JEV and Claude engines
-#               inside it. Private; only the site reaches it.
+#               inside it. Private; only the site reaches it. The AI Document
+#               demo (/examples/documents) also needs the AI Document module
+#               and the document plugins: run formio/uag-documents instead of
+#               formio/uag, or mount a plugins file (UAG_PLUGINS). With
+#               formio/uag alone, that demo answers that its process is not
+#               installed.
 #
 # Before running it, replace each CHANGE_ME (a "$" in a value is written "$$"),
 # and set DEMO_DOMAIN to the domain the site is served at.
 #
 #   docker compose pull && docker compose up -d
 #
-# To move to another release, change both image tags. The site's health check
-# is GET /health.
+# Both images follow the rc channel (the newest 2.0 release candidate), so
+# "docker compose pull" moves them together. To pin a release, set both tags
+# to it (2.0.0-rc.7, say). The site's health check is GET /health.
 name: uag-demo
 
 services:
   formio-uag:
-    image: formio/uag:2.0.0-rc.3
+    image: formio/uag:rc
     restart: always
     environment:
       PORT: "3200"
@@ -38,7 +44,7 @@ services:
       CLAUDE_MODEL: claude-sonnet-5-5
 
   site:
-    image: formio/uag-demo:2.0.0-rc.3
+    image: formio/uag-demo:rc
     restart: always
     depends_on:
       - formio-uag

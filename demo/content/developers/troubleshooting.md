@@ -1,6 +1,6 @@
 ---
 title: Troubleshooting
-description: Symptoms mapped to their causes, for startup, the UAG's database, forms, authentication, MCP clients, the Agent API, Run task workflows, engines and licensing.
+description: Symptoms mapped to their causes, for startup, the UAG's database, forms, authentication, MCP clients, the Agent API, Run task workflows, engines, modules, plugins, documents and licensing.
 section: Operate
 order: 90
 ---
@@ -17,7 +17,7 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 | Which engines are on, and is Agentic Formflow allowed? | `GET /agent/capabilities` with a bearer token, or with `x-token`/`x-admin-key` from a server. |
 | What did a request do? | Every Agent API response carries `X-Request-Id`. Search the UAG log for it. Set `DEBUG=formio:*` for detail. |
 | What did a task run do? | With the database, open Action Logs in a portal stage connected to the UAG (classic portal). Without it, search the UAG log for `Run task "<task>" failed`. To see each field's `reason`, send the submission's data to the form's `{form}/agent/decide` or `{form}/agent/generate` with the task and `overwrite: true`; nothing is saved. |
-| What is an agentic run doing right now? | Put the [flow viewer](https://github.com/formio/uag/tree/v2.0.0-rc.5/demo/flow) in front of the UAG and engine server. |
+| What is an agentic run doing right now? | Put the [flow viewer](https://github.com/formio/uag/tree/v2.0.0-rc.7/demo/flow) in front of the UAG and engine server. |
 
 ## Startup
 
@@ -82,7 +82,7 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 | A Form.io user token (`x-jwt-token`) is refused with `401` | Form.io's `/current` refused it: it expired, the user logged out, or Form.io could not be reached. A refusal is remembered for 10 seconds. |
 | `mcp-remote` signs in as the wrong user | Delete `~/.mcp-auth` and sign in again. |
 | A browser call to `{form}/agent/*` with a key returns `401` | Admin credentials are refused from browsers (`Origin` or `Sec-Fetch-Site` present). Send the signed-in user's Form.io token (`x-jwt-token`) instead. |
-| `{form}/agent/*` returns `401` "Sign in to use this form's agent operations." | The request has no credential, and the form does not allow anonymous use: it needs `uagAnonymous: "true"`, and `AGENT_ANONYMOUS_RATE_LIMIT` and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT` must not be `0`. Or send the user's Form.io token. |
+| `{form}/agent/*` returns `401` "Sign in to use this form's agent operations and routes." | The request has no credential, and the form does not allow anonymous use: it needs `uagAnonymous: "true"`, and `AGENT_ANONYMOUS_RATE_LIMIT` and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT` must not be `0`. Or send the user's Form.io token. |
 | `{form}/agent/*` returns `403` "Anonymous visitors may not submit this form." | The form allows anonymous use, but the Anonymous role may not create its submissions. |
 | `{form}/agent/*` returns `429` "Too many requests. Try again shortly." to anonymous visitors | Over the anonymous limits: `AGENT_ANONYMOUS_RATE_LIMIT` per client address (default 10 a minute) or `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT` in total (default 100 a minute), counted by each UAG process. Wait `Retry-After` seconds. Behind a reverse proxy without `TRUST_PROXY`, every visitor shares the proxy's address. |
 | A portal team member's request through a connected stage returns `401` | Their team permission does not allow it: `team_read` and `team_access` may only read, and only `team_write`, `team_admin` and the owner may run a form's agent operations. See [Portal team members](/developers/security#portal-team-members). |
@@ -110,6 +110,8 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 | `400` naming the task | An unknown task (the message lists the form's tasks), extract with no `text` for a task with no input, or a `uagTools` entry that may write or does not exist. |
 | `400` on decide with a `submissionId` | Decide works on the data in the request and saves nothing. To decide a stored submission's fields, run its task when it is saved, with an "Agent: Run task" action. |
 | A call to `/agent/provide` fails | It was removed in 2.0. Use an "Agent: Run task" action on the form, or `{form}/agent/generate` and `{form}/agent/decide` on the submission's data. |
+| `413` with `code: "payload_too_large"` | The body is over the agent operations' limit, `AGENT_BODY_LIMIT` (or `agentApi.bodyLimit`; 5 MB by default), which the message names. A file sent inline as base64 is about 1.33 times (4/3) its size. Module routes share the limit, and `MAX_BODY_SIZE` (16 MB by default) applies before it. |
+| A task's file input reaches the engine as its name and a reason, not its text | No installed converter reads its type (add a [converter plugin](/developers/plugins)), it is an image or a PDF with no text layer (a scan), it is over `agentApi.files.maxBytes` (10 MB), or it is stored where the UAG cannot read it (Google Drive, Dropbox). See [Documents as input](/developers/form-properties#documents-as-input). |
 | `429` | The caller is over its `agentApi.rateLimits.caller` limit (wait `Retry-After` seconds), or every engine that could answer is over its own limit. |
 | A field is `missing` | Read its `reason`: `not mentioned`, `the engine returned no value`, an engine failure, or `no enabled engine can answer`. |
 | A field is always `uncertain` | Its answer changes when the options are reversed (rewrite ambiguous option labels, or set `uagOrderCheck: "false"`), the mention check is in the uncertain band, or `uagThreshold` is above what the engine reaches. Measure with `uag-eval`. |
@@ -158,6 +160,20 @@ More on [Chat widget](/developers/chat#troubleshooting).
 | "Agent: Run task" opens as a blank page in the portal | The stage is not connected to the UAG, so the portal asks Form.io, which does not know the action. See [Connecting the Enterprise portal](/developers/deployment#connecting-the-enterprise-portal). |
 | Action Logs show no task runs | The UAG has no usable database, the stage is not connected to the UAG, or you use the new portal, which reads Action Logs from its own API server. |
 
+## Modules, plugins and documents
+
+| Symptom | Cause |
+|---|---|
+| Startup stops: "The form route "…" is defined by both … and …" (or a component type, an MCP tool or an engine type) | Two modules define the same thing. Leave one out with `MODULES_DISABLED`, or rename yours. |
+| Startup stops: "… the script of component "…" is not a browser script that registers the component" | The component's `script` is an ES module, or does not parse. Point it at the built, self-registering file (see [Components](/developers/modules#components)). |
+| The log warns "The component script … is not a browser script" | A component script changed after startup and no longer parses. `/uag-js/uag.use.js` and `/uag-js/portal.js` leave it out until it parses again. |
+| A plugin is missing: `GET {project}/plugins` does not list it, or a form names a process that "is not installed" | The plugins file was not loaded: check `UAG_PLUGINS`, or the mount at `/app/plugins/index.mjs`. The startup log names the file it loaded ("Plugins loaded from …", or "Plugins and modules loaded from …"), and `UAG_PLUGINS=off` loads none. Or `PLUGINS_DISABLED` names it. See [Plugins](/developers/plugins#when-it-does-not-work). |
+| `/uag-js/uag.use.js`, `uag-js.css`, `portal.js` or `portal.css` answers `404` "@formio/uag-js is not installed with this UAG." | The UAG was installed from npm without `@formio/uag-js`. Install `@formio/uag-js@rc` beside `@formio/uag`. The images include it. |
+| `read_document` answers "No uploaded file at "…" in that submission." | `data_path` does not name a file field or an AI Document field with a file there. For a field with several files, add the index: `contract[1]`. |
+| `read_document` answers "The file is stored as …, which cannot be read here." | The UAG cannot read files from that storage (Google Drive, Dropbox). Use S3, Azure or base64 storage. |
+| `read_document` answers "… cannot be read as text: no installed converter reads it." or "… has no text to read: …" | No converter reads that file type: add a [converter plugin](/developers/plugins). Or the file is an image, or a PDF with no text layer (a scan). |
+| `read_document` answers "The file "…" is larger than the … bytes that may be read." | The file is over `DOCUMENTS_MAX_FILE_BYTES` (`documents.maxFileBytes`, 25 MB by default). |
+
 ## Engines and engine servers
 
 | Symptom | Cause |
@@ -176,6 +192,6 @@ More on [Chat widget](/developers/chat#troubleshooting).
 Run one of the samples to confirm the environment itself is sound, then compare its configuration with yours:
 
 - [Quickstart](/developers/quickstart) for a minimal stack.
-- The [demo stack](https://github.com/formio/uag/tree/v2.0.0-rc.5/demo), with conversation forms and workflows, and the [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.5/demo/samples/custom-module).
+- The [demo stack](https://github.com/formio/uag/tree/v2.0.0-rc.7/demo), with conversation forms and workflows, and the [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.7/demo/samples/custom-module).
 
 To report a bug, include the `@formio/uag` version from `/status`, the `X-Request-Id` of a failing request and the matching log lines. Report security issues privately; see [Security](/developers/security#reporting-a-vulnerability).

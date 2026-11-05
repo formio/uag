@@ -92,7 +92,9 @@ const PAGE = { width: 595.28, height: 841.89, margin: 36 };
  * decoded). A PNG is decoded whole, in memory and synchronously, so its pixel
  * count is checked from its header first: a small, highly compressed file can
  * describe an image far larger than its size suggests. JPEGs are embedded
- * without being decoded. A converter setting, `maxPixels`, changes it.
+ * without being decoded. The converter's `maxPixels` setting changes it
+ * (config.plugins.settings.converter['image-pdf'].maxPixels, or
+ * DOCUMENTS_MAX_IMAGE_PIXELS).
  */
 export const MAX_IMAGE_PIXELS = 50_000_000;
 
@@ -112,6 +114,14 @@ export const imagePdfConverter: Converter = {
     apiVersion: 1,
     accepts: [{ type: MIME.png, ext: ['.png'] }, { type: MIME.jpeg, ext: ['.jpg', '.jpeg'] }],
     produces: ['pdf'],
+    settings: {
+        maxPixels: {
+            type: 'number',
+            env: 'DOCUMENTS_MAX_IMAGE_PIXELS',
+            default: MAX_IMAGE_PIXELS,
+            description: 'The largest PNG, in pixels (width × height), converted; a larger one is refused before it is decoded.'
+        }
+    },
     async convert(input, options) {
         options.signal.throwIfAborted();
         if (input.type === MIME.png) {

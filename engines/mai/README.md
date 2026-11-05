@@ -1,8 +1,8 @@
 # @formio/uag-mai
 
-<sub>[Form.io UAG](https://github.com/formio/uag/blob/main/README.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/main/README.md#engines-and-routing) &rsaquo; this page</sub>
+<sub>[Form.io UAG](https://github.com/formio/uag/blob/v2.0.0-rc.7/README.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/v2.0.0-rc.7/README.md#engines-and-routing) &rsaquo; this page</sub>
 
-The **MAI** agent engine for the [UAG Agent API](https://github.com/formio/uag/blob/main/README.md#agent-api): Microsoft's MAI models (MAI-Thinking-1) on [Microsoft Foundry](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-mai-thinking). It extracts and generates open values (dates, amounts, names, free text). When a task lists read-only tools in `uagTools`, it researches with them first.
+The **MAI** agent engine for the [UAG Agent API](https://github.com/formio/uag/blob/v2.0.0-rc.7/README.md#agent-api): Microsoft's MAI models (MAI-Thinking-1) on [Microsoft Foundry](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/use-foundry-models-mai-thinking). It extracts and generates open values (dates, amounts, names, free text). When a task lists read-only tools in `uagTools`, it researches with them first.
 
 > **Not released.** MAI-Thinking-1 is in preview on Microsoft Foundry, without a service-level agreement, so this engine is not published to npm or included in the Docker images yet. It is kept here, tested, for when MAI is generally available.
 
@@ -15,7 +15,7 @@ MAI_API_KEY=...
 MAI_DEPLOYMENT=<your deployment name>
 ```
 
-Its tasks are Agentic Formflow, so the UAG also needs a `LICENSE_KEY` that includes the UAG (see [License](https://github.com/formio/uag/blob/main/README.md#license)).
+Its tasks are Agentic Formflow, so on a self-hosted project the UAG also needs a `LICENSE_KEY` that includes the UAG (see [License](https://github.com/formio/uag/blob/v2.0.0-rc.7/README.md#license)); a project on Form.io's hosted service needs none. A form's chat needs no license on Form.io Open Source or a hosted project.
 
 ## Settings
 
@@ -33,7 +33,7 @@ Authentication is by API key. Microsoft Entra ID is not supported yet.
 
 ## How it works
 
-It is the [OpenAI engine](https://github.com/formio/uag/tree/main/engines/openai)'s agent kind, pointed at your Foundry resource's MAI endpoint. Each extraction asks for one JSON object matching the fields' schema, given in the prompt, and reads it from the answer; for a task that researches, a function-calling loop over its read-only tools comes first. A refusal, a content-safety block, a truncated answer or an answer that is not JSON is an engine failure, and the UAG falls back to the next engine. It never sends `max_tokens`, which MAI refuses.
+It is the [OpenAI engine](https://github.com/formio/uag/tree/v2.0.0-rc.7/engines/openai)'s agent kind, pointed at your Foundry resource's MAI endpoint. Each extraction asks for one JSON object matching the fields' schema, given in the prompt, and reads it from the answer; for a task that researches, a function-calling loop over its read-only tools comes first. A refusal, a content-safety block, a truncated answer or an answer that is not JSON is an engine failure, and the UAG falls back to the next engine. It never sends `max_tokens`, which MAI refuses.
 
 MAI has no decision API, so this is an agent engine only. Decision fields routed to it are answered as extraction and reported `calibrated: false`.
 

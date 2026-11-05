@@ -2,7 +2,7 @@
       <div class="container">
         <div class="example-topbar">
           <p class="eyebrow"><a href="/examples">Examples</a>&nbsp;/&nbsp;Agentic Workflow</p>
-          <div class="meta"><span class="tag">Agent: Run task</span><span class="tag">Open Source or Enterprise, licensed</span><span class="tag">Claude</span><span class="tag tag-green">Criteria live in the form</span></div>
+          <div class="meta"><span class="tag">Agent: Run task</span><span class="tag">Licensed or hosted</span><span class="tag">Claude</span><span class="tag tag-green">Criteria live in the form</span></div>
         </div>
         <h1>Agents that review every application.</h1>
         <p class="lede">Submit a college application and watch it get decided with no person in the loop. An admissions agent reviews it against criteria defined in the form and records its decision. If it earns a scholarship, the saved result triggers a finance agent that picks the award.</p>
@@ -74,8 +74,8 @@
           <h2>Build it yourself.</h2>
           <ul class="checks">
             <li><strong>Tag the form</strong> <code>uag</code>.</li>
-            <li><strong>Write the criteria</strong> in a content component with <code>uag: admissions</code> and <code>uagField: criteria</code>. With no decision engine, as here, add <code>uagEngine: agent</code> to it.</li>
-            <li><strong>Flag the agent fields</strong> with <code>uag: admissions</code>, or wrap them in a panel that carries it, and give the ones no client may set <code>uagAuthoritative: "true"</code>. With no decision engine, also mark the closed-set fields the agent decides (<code>status</code>, <code>decision</code>, <code>awardLevel</code>) <code>uagAgentDecides: "true"</code>, or their answers are never saved and the finance task never starts.</li>
+            <li><strong>Write the criteria</strong> in a content component with <code>uag: admissions</code> and <code>uagField: criteria</code>. Add <code>uagEngine: agent</code> to it to send the whole task to the agent engine (Claude here), even with a decision engine enabled; this demo's UAG also runs JEV.</li>
+            <li><strong>Flag the agent fields</strong> with <code>uag: admissions</code>, or wrap them in a panel that carries it, and give the ones no client may set <code>uagAuthoritative: "true"</code>. Because the agent decides them, also mark the closed-set fields (<code>status</code>, <code>decision</code>, <code>awardLevel</code>) <code>uagAgentDecides: "true"</code>, or their answers are never saved and the finance task never starts.</li>
             <li><strong>Add an "Agent: Run task" action</strong> for each task, as on the right: admissions on create, finance on update when its condition holds, both after the save.</li>
           </ul>
           <p style="margin-top:20px">Then save submissions through the UAG: point your application's project URL at the UAG instead of Form.io. Form.io still stores the submission and runs its own actions; a submission sent straight to Form.io runs no task. It works on Form.io Open Source and Enterprise with a license that includes the UAG, or on a project on Form.io's hosted service. This demo's actions name no agent role, so each run acts with the credential of the request that saved the application; see <a href="/developers/project-setup">Project setup for agents</a> for the other option.</p>

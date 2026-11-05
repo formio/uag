@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 760" role="img" aria-labelledby="t d">
   <title id="t">UAG architecture</title>
-  <desc id="d">Three kinds of caller reach the UAG: people through an MCP client call /mcp, applications and the @formio/uag-js module for formio.js call the stateless Agent API under each form's URL, {form}/agent/extract, decide and generate, and a chat embedded in a page calls {form}/agent/chat, and applications and portals that use the UAG as their project URL submit forms and sign in through it. Inside the UAG every call is authenticated with a Form.io identity: a Form.io user token, checked with Form.io and forwarded unchanged, OAuth sign-in for remote MCP clients, or client_credentials and API keys for servers. Calls are served by the MCP tools, the Agent API or the submission pipeline, which validates with the form, runs the UAG's own action, Agent: Run task, and forwards every save to Form.io. Below the UAG are the Form.io project, which stores every submission and runs its own actions; the UAG's optional database, set with MONGO, which holds run records, remote MCP sign-in codes and the license grace period, never submissions; and the engines, which only answer. Agents write only through the UAG.</desc>
+  <desc id="d">Three kinds of caller reach the UAG: people through an MCP client call /mcp, applications and the @formio/uag-js module for formio.js call the stateless Agent API under each form's URL, {form}/agent/extract, decide and generate, and a chat embedded in a page calls {form}/agent/chat, and applications and portals that use the UAG as their project URL submit forms and sign in through it. Inside the UAG every call is authenticated with a Form.io identity: a Form.io user token, checked with Form.io and forwarded unchanged, OAuth sign-in for remote MCP clients, or client_credentials and API keys for servers. Calls are served by the MCP tools, among them read_document for the text of an uploaded file, the Agent API or the submission pipeline, which validates with the form, runs the UAG's own action, Agent: Run task, and forwards every save to Form.io. Modules add routes on every form, formio.js components, plugins and settings, MCP tools and tool overrides, form actions, hooks, response templates and a project template. Below the UAG are the Form.io project, which stores every submission and runs its own actions; the UAG's optional database, set with MONGO, which holds run records, remote MCP sign-in codes and the license grace period, never submissions; and the engines, which only answer. Agents write only through the UAG.</desc>
   <defs>
     <style>
       text { font-family: Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; fill: #0c141d; }
@@ -76,7 +76,7 @@
   <text x="262" y="395" class="mono tool">submit_completed_form</text>
   <text x="52" y="419" class="grp">RECORDS</text>
   <text x="52" y="436" class="mono tool">find_submissions · submission_update</text>
-  <text x="52" y="450" class="mono tool">fetch_external_data</text>
+  <text x="52" y="450" class="mono tool">fetch_external_data · read_document</text>
   <text x="352" y="419" class="grp">TASKS</text>
   <text x="352" y="436" class="mono tool">agent_decide</text>
   <text x="352" y="450" class="mono tool">agent_provide</text>
@@ -112,8 +112,9 @@
   <text x="532" y="489" class="h2">Submission pipeline</text>
   <text x="532" y="507" class="xs">The form's rules, then Agent: Run task, then the save, forwarded to Form.io.</text>
 
-  <rect x="36" y="528" width="928" height="30" rx="8" fill="none" stroke="#8d99a8" stroke-dasharray="5 4"/>
-  <text x="52" y="548" class="xs"><tspan style="font-weight:700;fill:#2a333e">Modules</tspan>  add custom MCP tools, tool overrides, form actions, response templates, and a project template of forms and resources.</text>
+  <rect x="36" y="526" width="928" height="40" rx="8" fill="none" stroke="#8d99a8" stroke-dasharray="5 4"/>
+  <text x="52" y="542" class="xs"><tspan style="font-weight:700;fill:#2a333e">Modules</tspan>  add routes on every form, formio.js components, plugins and plugin types, and settings checked at startup;</text>
+  <text x="52" y="558" class="xs">custom MCP tools, tool overrides, form actions, hooks, response templates, and a project template of forms and resources.</text>
 
   <!-- Down to project, database and engines -->
   <path d="M60 616 V574" class="flow" marker-end="url(#a)"/>

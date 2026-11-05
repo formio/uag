@@ -59,15 +59,15 @@ Supply all of these from your platform's secret store, never from a committed fi
 | `/mcp` | `Authorization: Bearer <scoped token>` | The identity the token was issued for, limited to its read-only tools |
 | Project routes (forms, submissions, login) | `x-jwt-token: <Form.io user token>` | That Form.io user, exactly as at Form.io. The token is forwarded unchanged. |
 | Project routes | `x-remote-token: <portal remote token>`, from a portal stage connected to the UAG | The portal team member, with what Form.io grants their team permission (see [Portal team members](#portal-team-members)) |
-| A form's agent operations (`{form}/agent/*`) | Any credential of the project routes (`x-jwt-token`, `x-remote-token`), or `Authorization: Bearer <UAG access token>` | That user or team member |
-| A form's agent operations, `/agent/capabilities` | `x-token: <PROJECT_KEY>` or `x-admin-key: <ADMIN_KEY>` | Administrator. Refused (`401`) on any request with an `Origin` or `Sec-Fetch-Site` header, so a key cannot be used from a browser. |
-| A form's agent operations, `/agent/capabilities` | A scoped token | Refused (`401`). Scoped tokens exist for research calls back into `/mcp` and can never start work. |
+| A form's agent operations (`{form}/agent/*`) and [module routes](#modules-and-plugins) | Any credential of the project routes (`x-jwt-token`, `x-remote-token`), or `Authorization: Bearer <UAG access token>` | That user or team member |
+| A form's agent operations, module routes, `/agent/capabilities` | `x-token: <PROJECT_KEY>` or `x-admin-key: <ADMIN_KEY>` | Administrator. Refused (`401`) on any request with an `Origin` or `Sec-Fetch-Site` header, so a key cannot be used from a browser. |
+| A form's agent operations, module routes, `/agent/capabilities` | A scoped token | Refused (`401`). Scoped tokens exist for research calls back into `/mcp` and can never start work. |
 
 Use administrator credentials only for trusted server-side automation: back-office jobs and integrations. Anything acting for a person (a chat app, a form that fills itself in) should present that person's own Form.io token or UAG token, so their permissions apply. Never ship a project or admin key to a browser.
 
 ### Anonymous visitors
 
-A visitor with no credential may use a form's agent operations only when the form sets [`uagAnonymous: "true"`](/developers/form-properties#uaganonymous) and lets the Anonymous role create submissions. Each such request may call a model at your expense, so anonymous use is limited per client address and in total (`AGENT_ANONYMOUS_RATE_LIMIT`, default 10 a minute, and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`, default 100 a minute). The counts are kept by each UAG process, so with several replicas the deployment allows that many times more. Behind a reverse proxy, set `TRUST_PROXY`, or every visitor shares the proxy's address. Values the operations return are suggestions in the visitor's browser: re-decide anything that routes or approves on the server with Run task and `uagAuthoritative`.
+A visitor with no credential may use a form's agent operations, and the [routes its modules add](#modules-and-plugins), only when the form sets [`uagAnonymous: "true"`](/developers/form-properties#uaganonymous) and lets the Anonymous role create submissions. Each such request may call a model at your expense, so anonymous use is limited per client address and in total (`AGENT_ANONYMOUS_RATE_LIMIT`, default 10 a minute, and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`, default 100 a minute). The counts are kept by each UAG process, so with several replicas the deployment allows that many times more. Behind a reverse proxy, set `TRUST_PROXY`, or every visitor shares the proxy's address. Values the operations return are suggestions in the visitor's browser: re-decide anything that routes or approves on the server with Run task and `uagAuthoritative`.
 
 ### Portal team members
 
@@ -148,13 +148,15 @@ The optional database (`MONGO`) holds only the UAG's own state, in collections n
 
 Give the `MONGO` user the `readWrite` role on `UAG_DATABASE` only. Run records name users and submissions, so treat the database as you treat Form.io's, and set `TASK_RUN_RETENTION_DAYS` to your retention policy. See [Deployment](/developers/deployment#the-database).
 
-## Rate limits
+## Rate and size limits
 
 `agentApi.rateLimits` limits callers per operation and engines per instance. A caller over its limit gets `429` with `Retry-After`; an engine over its limit is skipped for the next one. Counters are in memory per process, so each instance of a multi-instance deployment has its own allowance. Requests with a server key and anonymous visitors share one counter, and `client_credentials` tokens another. Anonymous visitors have limits of their own as well (see [Anonymous visitors](#anonymous-visitors)). MCP tool calls are not rate limited by the UAG; limit spend in the MCP client. See [Agent API](/developers/agent-api#rate-limits).
 
+A form's agent operations, and module routes, take a JSON body of at most `agentApi.bodyLimit` bytes (`AGENT_BODY_LIMIT`, default 5 MB); a larger one is refused with `413` `payload_too_large`, naming the limit. The server's `MAX_BODY_SIZE` (default 16 MB) applies to every request first, before authentication, so raise either only as far as the forms need.
+
 ## Prompt injection
 
-Submissions are untrusted text, and models follow instructions they find in their input. The UAG does not try to detect injection. It limits what an injected instruction can achieve:
+Submissions, and the documents a task or module reads, are untrusted text, and models follow instructions they find in their input. The UAG does not try to detect injection. It limits what an injected instruction can achieve:
 
 | An injected instruction could | The UAG's answer |
 |---|---|
@@ -164,6 +166,7 @@ Submissions are untrusted text, and models follow instructions they find in thei
 | Push a closed-set decision to a chosen option | Decision fields only accept their options, and decision engines report a calibrated confidence. Mark sensitive ones `uagAuthoritative`, and route uncertain ones to a person with `uagConfidenceField`. |
 | Steer an open value (a summary, a score) within what the form accepts | Possible. Agent-engine values are always `suggested`: treat them as proposals, and validate ranges and formats in the form. |
 | Steer what research reads | Possible, within the task's read-only tools and the caller's permissions. List few tools, and avoid admin identity for research on untrusted input. |
+| Put markup or script into a field reviewers will see | HTML an agent engine writes into a rich text field (a textarea with the CKEditor or Quill editor), and HTML an MCP client writes there with `collect_field_data`, `confirm_form_submission`, `submit_completed_form` or `submission_update`, is reduced to the markup the editors keep: allowed elements and attributes, text escaped, scripts, styles and frames dropped with their content. Modules clean the Markdown they produce with `api.markdown.sanitize` (AI Document does), which keeps no raw HTML, images or links other than `http`, `https` and `mailto`. Both are exported for your own code, as `sanitizeRichText` and `sanitizeMarkdown`. What a browser submits itself is saved as sent: render it as you render any user input. |
 
 The UAG's end-to-end tests include an application essay that tries to change the applicant's GPA, and inputs that tell the model to set other fields. In each case the stored values are only the task's own, validated fields.
 
@@ -187,6 +190,14 @@ So the most an injected instruction can do is put values the person could have t
 - **Cost.** Every turn calls a model at your expense. On a public form (`uagAnonymous`), anonymous turns count against the anonymous limits with the form's other agent operations; signed-in callers against `agentApi.rateLimits.caller.chat`; each turn is bounded by `agentApi.chat.maxMessages`, `maxMessageLength` and `maxTranscriptChars`, and what it sends the engine from the form's data is bounded too (see [Where data goes](#where-data-goes)), so a large request body does not make a large prompt. Each response reports the engine's token `usage`, for a relay that keeps a budget.
 - **Licensing.** Chat is part of conversation forms and needs no Agentic Formflow license, so a deployment with an agent engine offers it on every form tagged `uag`, whether or not Agentic Formflow is licensed. Turn it off per form with [`uagChat: "false"`](/developers/form-properties#uagchat).
 
+## Modules and plugins
+
+[Modules](/developers/modules) and [plugins](/developers/plugins) are code the UAG runs, in its own process, with everything that process can reach: its keys, its network and its files. The module API gives a module no Form.io key, no project object and no engine credential, and an engine it selects checks the Agentic Formflow license before every model call, but the API is not a sandbox. Use only modules and plugins you trust, and treat what loads them like any other deployment setting: a module mounted at `/app/module` or named by `UAG_MODULE`, the plugins file (`UAG_PLUGINS`, or `/app/plugins/index.mjs` in the image), and `server.use()` in your own server. `MODULES_DISABLED` leaves a module out by name.
+
+- **Module routes** (a module's `routes.form`) get the agent operations' protections: the same credentials ([What callers present](#what-callers-present)), with keys refused from browsers and scoped tokens refused; the agent operations' body limit; the rate limits of the route's `name` (`agentApi.rateLimits.caller[name]`); the caller's access to the form (the route's `access`, by default create or update); and the Agent API's error shape. Routes a module adds with the lower-level `formRoutes` get none of these.
+- **Anonymous visitors reach module routes too.** On a form with `uagAnonymous: "true"` whose Anonymous role may create submissions, a visitor who is not signed in reaches each module route under the [anonymous limits](#anonymous-visitors), as for the agent operations. A route that must not be public declares an `access` the Anonymous role lacks, such as `['update']`, or checks `req.auth.user` itself. Anonymous visitors share one `agentApi.rateLimits.caller` counter; for a limit per address of its own, a module counts by `api.callerKey(req)`, which is `anonymous:<address>` for them.
+- **Component scripts and styles are public.** `/uag-js/*`, with every module's component, is served to anyone, with no credential and to every origin, whatever `CORS` says. Put no secret in a component. The portal script (`/uag-js/portal.js`) loads the script named in its `?chain=` only over `https`; the portal stylesheet (`/uag-js/portal.css`) imports one over `https` or `http`.
+
 ## Where data goes
 
 Enabling an engine sends submission data to its provider: TypeSafe for `jev`, Anthropic for `claude`, OpenAI (or the server it points at) for `openai`, xAI for `grok`, Google for `gemini`. What is sent is a task's criteria, its input (or, without an input, the whole submission except the fields being answered), its `uagContext` values and today's date, plus whatever research tools return.
@@ -194,7 +205,8 @@ Enabling an engine sends submission data to its provider: TypeSafe for `jev`, An
 - Do not enable an engine for data that must not leave your deployment.
 - To keep everything in your network, point the `openai` engine at a local OpenAI-compatible server such as Ollama or vLLM (see [Engines](/developers/engines)).
 - To keep model keys and model traffic out of the UAG, run engines on an [engine server](/developers/engine-server) on a private network.
-- MCP conversations send whatever the MCP client sends to its model; the UAG sends nothing to a model itself.
+- MCP conversations send whatever the MCP client sends to its model; the UAG sends nothing to a model itself. `read_document` gives the client a document's text, which it then sends to its model.
+- Documents: a file in a task's input or in its `uagContext` is read, and its text is sent to the task's engines; any other file or signature is described (name, type and size), never sent. A module that calls an engine sends what it chooses: AI Document sends the files it processes, as PDF or text, with its process's instructions.
 - A form's chat sends its agent engine: the UAG's chat instructions, the form's title, description and `uagChatInstructions`; the conversation (the newest messages within `agentApi.chat.maxTranscriptChars`); for each field the chat may collect, its path, label, type, description, placeholder, value rule, format and static options, and its current value (each value cut to 500 characters, all of them within `maxTranscriptChars`); the labels of the fields still needed, the optional ones and those to finish in the form; and today's date. Nothing else from the request's `data` is sent: not task fields, hidden fields or fields the chat cannot collect.
 
 `fetch_external_data` calls the URLs configured on the form's select and data source components, from the UAG's network. Treat the right to edit forms as the right to choose what the UAG fetches. The URL, headers and filter are filled in with the form data the caller sends, so a template such as `{{data.field}}` lets an agent choose part of the request: keep submitted values out of URL templates. With **Authenticate** on, the caller's token is sent to that URL as `x-jwt-token`, so use it only for hosts you trust. The UAG does not block private or internal addresses.
@@ -211,7 +223,7 @@ Enabling an engine sends submission data to its provider: TypeSafe for `jev`, An
 **Network**
 
 - Keep the UAG on a private network unless remote agents must connect in. Local MCP clients, applications and engine servers all work without a public address.
-- When it must be public for remote MCP clients, terminate TLS in front of it, publish only `/mcp`, `/auth` and `/.well-known` (as the custom module sample's nginx does), and make sure the OAuth documents name that HTTPS URL (`TRUST_PROXY` behind the proxy, or `BASE_URL`). Leave `MCP_OAUTH` off when no remote client needs it.
+- When it must be public for remote MCP clients, terminate TLS in front of it, publish only `/mcp`, `/auth` and `/.well-known` (as the custom module sample's nginx does), and make sure the OAuth documents name that HTTPS URL (`TRUST_PROXY` behind the proxy, or `BASE_URL`). Leave `MCP_OAUTH` off when no remote client needs it. That list is for MCP clients alone: applications whose browsers use the UAG also need the routes they call (a `uag` form's submissions, `{form}/agent/*` and module routes) and `/uag-js/*`.
 - Restrict `CORS`, which defaults permissively for local development, to the origins that call the Agent API from browsers.
 - Never set `NODE_TLS_REJECT_UNAUTHORIZED=0` on a deployment reachable from outside your network; it disables certificate checks for every outbound request.
 - Keep engine servers and the flow viewer on private networks, and never publish their ports. The flow viewer has no authentication and shows submission data.
@@ -239,4 +251,4 @@ Enabling an engine sends submission data to its provider: TypeSafe for `jev`, An
 
 ## Reporting a vulnerability
 
-Do not open a public issue. Report privately to [security@form.io](mailto:security@form.io), or through GitHub's [private vulnerability reporting](https://github.com/formio/uag/security/advisories/new) for the repository, with the affected package or image and its version. Receipt is acknowledged within five business days. See [SECURITY.md](https://github.com/formio/uag/blob/v2.0.0-rc.5/SECURITY.md).
+Do not open a public issue. Report privately to [security@form.io](mailto:security@form.io), or through GitHub's [private vulnerability reporting](https://github.com/formio/uag/security/advisories/new) for the repository, with the affected package or image and its version. Receipt is acknowledged within five business days. See [SECURITY.md](https://github.com/formio/uag/blob/v2.0.0-rc.7/SECURITY.md).

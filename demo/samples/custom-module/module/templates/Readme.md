@@ -27,7 +27,7 @@ return project.mcpResponse(ResponseTemplate.getAvailableForms, {
 });
 ```
 
-If we look at the **src/templates** folder, you will see the markdown file that coorelates with this response. The names of the files match the name of the template, so the template for this response is found at **src/templates/getAvailableForms.md**.  If you wish to override this response template, simply copy this file and place it inside of the modules template folder.  You then just need to ensure you provide the same key in the **responseTemplates** configuration as follows.
+If we look at the **src/templates** folder, you will see the markdown file that coorelates with this response. The names of the files match the name of the template, so the template for this response is found at **src/templates/getAvailableForms.md**.  If you wish to override this response template, simply copy this file and place it inside of the modules template folder.  You then just need to ensure you provide the same key in the **responseTemplates** configuration as follows. Run a server like this one with `node --no-node-snapshot server.js` (or `NODE_OPTIONS=--no-node-snapshot`): `new UAGServer()` refuses to start without it.
 
 ```ts
 const fs = require('fs');
@@ -56,9 +56,9 @@ const { UAGServer } = require('@formio/uag');
 ### Creating new templates
 There may be a case where you need to introduce new tools or different reponses and may need to add new templates. To do this, you simply need to add the custom template to a "key" that is not defined in the ResponseTemplate enum found within the **src/template.ts** file.
 
-For example, the following defines a new tool that responds with a custom template. It assumes you have written the template to `templates/custom.md`.
+For example, the following defines a new tool that responds with a custom template. It assumes you have written the template to `templates/custom.md`. As above, run it with `node --no-node-snapshot`.
 
-Each entry in `config.tools` is a plain tool object (`ToolInfo`), not a function. Give every tool `annotations` that say whether it reads or writes, using the `reads`, `creates` or `overwrites` presets. Tools without annotations are treated as writes, and only tools marked read-only are offered to `/agent/provide` tasks.
+Each entry in `config.tools` is a plain tool object (`ToolInfo`), not a function. Give every tool `annotations` that say whether it reads or writes, using the `reads`, `creates` or `overwrites` presets. Tools without annotations are treated as writes, and only tools marked read-only may be listed in a task's `uagTools` for research, or offered to a remote engine through a scoped token.
 
 ```ts
 import * as fs from 'fs';

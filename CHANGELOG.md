@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- The `image-pdf` converter's `maxPixels` is an operator setting: `config.plugins.settings.converter['image-pdf'].maxPixels`, or `DOCUMENTS_MAX_IMAGE_PIXELS`, changes the largest PNG it converts (default 50000000 pixels). The converter declared no settings, so the setting was dropped and the limit could not be changed.
+- `@formio/uag/testing`: the `files` option of `createTestModuleApi` and `mountModuleRoutes` is used. A form without a `files` function of its own reads stored values that are not base64 through it; it was ignored.
+- The `uag` command and the Docker image stop on `SIGTERM` and `SIGINT`: they stop taking connections and destroy the server, which runs each module's and each plugin's `close`, then exit with `0`, or with `1` when that fails or takes more than 10 seconds. A module's `close` never ran there.
+- `@formio/uag-js` no longer ships `uag.use.js`, which was unused: loaded from a CDN, it registered the CDN as the UAG. Load the UAG's own `/uag-js/uag.use.js`. Its types drop the unused `documents` option, and the default export's type adds `client` and `renderMarkdown`.
+
 ## 2.0.0-rc.7
 
 Modules can now bring whole capabilities (settings, form routes, formio.js components, plugin types), and AI Document comes as a module of `@formio/uag-extras`, beside documents as task inputs, converters and engine generation. Needs `@formio/appserver-core` 2.26.0 or later, through `@formio/appserver`.
