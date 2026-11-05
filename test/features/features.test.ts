@@ -366,7 +366,7 @@ describe('Features', function () {
 
     describe('components', () => {
         it('serves the component, and adds it to uag.use.js, portal.js and the stylesheets', async () => {
-            started = await launch([sampleFeature()]);
+            started = await launch([[sampleFeature(), { extra: 'things/one', plugins: [{ type: 'samplething', name: 'one', title: 'One', version: '1.0.0', apiVersion: 1 }] }]]);
             const script = fs.readFileSync(SCRIPT, 'utf8');
             const own = await started.request().get('/uag-js/components/uagsample.js');
             expect(own.status).to.equal(200);
@@ -377,6 +377,10 @@ describe('Features', function () {
                 const res = await started.request().get(`/uag-js/${file}`);
                 expect(res.text, file).to.include(script);
                 expect(res.text.indexOf(script), file).to.be.greaterThan(res.text.indexOf('Formio.use(lib.UAG('));
+                // Each component in its own try, so one failing to load leaves the others.
+                expect(res.text, file).to.include(`try {\n${script}\n} catch (err) { console.error("[uag-js] The uagsample component of the sample feature could not load:", err); }`);
+                // The manifest carries the plugins of the types features define.
+                expect(res.text, file).to.match(/"type":"samplething","name":"one"/);
             }
             for (const file of ['uag-js.css', 'portal.css']) {
                 expect((await started.request().get(`/uag-js/${file}`)).text, file).to.include('.uag-sample');
