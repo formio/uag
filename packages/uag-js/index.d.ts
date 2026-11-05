@@ -189,11 +189,112 @@ export interface ChatForm {
 export interface UAGOptions extends Omit<AttachOptions, 'uagUrl' | 'formUrl'> {
     /** `false` attaches no Agent Input anywhere; submissions of `uag` forms still go to the UAG. */
     agentInput?: boolean;
+    /** AI Document options. `auto`: process files on upload unless a component turns it off (default true). */
+    documents?: { auto?: boolean };
+    /**
+     * Portal mode (the UAG's portal script): register only the AI Document
+     * component and the manifest. Saves are not routed and Agent Input is not run.
+     */
+    portal?: boolean;
+    /** The installed plugins, as `GET {project}/plugins` describes them. Fetched at registration when not given. */
+    manifest?: PluginManifestEntry[];
 }
+
+/** One installed plugin, as the UAG's manifest describes it. */
+export interface PluginManifestEntry {
+    type: string;
+    name: string;
+    title: string;
+    description?: string;
+    version: string;
+    stability: 'stable' | 'experimental';
+    editForm?: any[];
+    /** Document plugins: the file types the installed converters can bring to it. */
+    accept?: Array<{ type: string; ext: string[]; routes: Record<string, any>; converters: string[] }>;
+    inputs?: Array<Array<'pdf' | 'text'>>;
+    editable?: boolean;
+    output?: 'markdown' | 'text';
+    defaults?: Record<string, any>;
+    [field: string]: any;
+}
+
+/** An AI Document's stored `result`. */
+export interface AIDocumentResult {
+    content: string;
+    format: 'markdown' | 'text';
+    status: 'ok' | 'flagged';
+    issues: Array<{ kind: string; message: string; output?: string; document?: string; page?: number; file?: string }>;
+    summary: string;
+    edited: boolean;
+    meta: { plugin: string; engine: string; model: string; files: Array<{ name: string; route: string[]; pages?: number }> };
+}
+
+/**
+ * Events an AI Document emits on its form: `uagDocumentStart` ({ component, path, files }),
+ * `uagDocumentProgress` ({ component, path, progress, message? }), `uagDocumentResult`
+ * ({ component, path, result }), `uagDocumentError` ({ component, path, error }).
+ */
+export type AIDocumentEvent = 'uagDocumentStart' | 'uagDocumentProgress' | 'uagDocumentResult' | 'uagDocumentError';
+
+/** Render Markdown as the AI Document does: headings, paragraphs, lists, tables, emphasis, code and safe links, all text escaped. */
+export declare function renderMarkdown(markdown: string): string;
+
+/** Options for `client.stream`. */
+export interface ClientStreamOptions {
+    /** Called with every server-sent event, by name. */
+    onEvent?(name: string, data: any): void;
+    signal?: AbortSignal;
+    /** The rendered form, whose Form.io token identifies the user. */
+    form?: any;
+    headers?: Record<string, string>;
+    fetch?: typeof fetch;
+}
+
+/** An error the UAG answered with. */
+export interface UAGClientError extends Error {
+    status?: number;
+    code?: string;
+}
+
+/**
+ * The public browser API that components of UAG modules build on, once
+ * `Formio.use(UAG(url))` has run. Stable within a major version.
+ */
+export interface UAGClient {
+    /** The UAG's URL. */
+    url(): string;
+    /** The user's Form.io token, from the form's own formio or the SDK. */
+    token(form?: any): string | null;
+    /** The headers that identify the user to the UAG. */
+    headers(form?: any): Record<string, string>;
+    /** A form's URL on the UAG, from its definition (or a rendered form). */
+    formUrl(definition: any): string;
+    /** Resolves once the installed plugins are known. */
+    ready: Promise<void>;
+    /** Whether the installed plugins are known yet. */
+    readonly loaded: boolean;
+    /** The installed plugins, of one type or all. */
+    plugins(type?: string): PluginManifestEntry[];
+    plugin(type: string, name: string): PluginManifestEntry | null;
+    /** POST JSON, accepting server-sent events: resolves with the `done` event's data, or the JSON answer. */
+    stream(url: string, body: any, options?: ClientStreamOptions): Promise<any>;
+    renderMarkdown(markdown: string): string;
+    escapeHtml(value: unknown): string;
+    /** The formio.js the UAG was registered with. */
+    readonly Formio: any;
+}
+
+export declare const client: UAGClient;
 
 /** The formio.js module: `Formio.use(UAG('https://uag.example.com'))`. It also registers the `chat` display and `Formio.createChat`. */
 export declare function UAG(uagUrl: string, options?: UAGOptions): (Formio: any) => { fetch: Record<string, any>; displays?: Record<string, any> };
 export declare namespace UAG {
+    /** Resolves once the installed document plugins are known (embedded by the UAG's scripts, or fetched at registration). */
+    const ready: Promise<void>;
+    /** The same as `renderMarkdown`. */
+    function renderMarkdown(markdown: string): string;
+    /** The same as `client`. */
+    const client: UAGClient;
     /** The same as `attach`. */
     function attach(form: any, options?: AttachOptions): AgentInput;
     /** The same as `createChat`. */

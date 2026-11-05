@@ -1424,6 +1424,227 @@
         return wrapper.setForm(src);
     }
 
+
+    // ---------------------------------------------------------------------
+    // The installed plugins (the UAG's manifest), for the modules' components.
+    // ---------------------------------------------------------------------
+
+    /** The installed plugins, as the UAG's manifest describes them. */
+    var manifestState = { manifest: null, resolve: null, promise: null };
+    manifestState.promise = new Promise(function (resolve) { manifestState.resolve = resolve; });
+
+    function setManifest(manifest) {
+        manifestState.manifest = Array.isArray(manifest) ? manifest : [];
+        manifestState.resolve();
+    }
+
+    /** Fetch the manifest from the UAG, with the user's token. Resolves with [] when it cannot. */
+    function fetchManifest(uagUrl, sdk) {
+        var fetchImpl = (registered.options && registered.options.fetch) || (typeof fetch === 'function' ? fetch : null);
+        if (!fetchImpl) return Promise.resolve([]);
+        var headers = { Accept: 'application/json' };
+        try {
+            var token = sdk && typeof sdk.getToken === 'function' ? sdk.getToken() : null;
+            if (token) headers['x-jwt-token'] = token;
+        }
+        catch (err) { /* no token */ }
+        return Promise.resolve().then(function () {
+            return fetchImpl(trimSlash(uagUrl) + '/plugins', { headers: headers });
+        }).then(function (response) {
+            return response && response.ok ? response.json() : [];
+        }).catch(function () { return []; });
+    }
+
+    // --- Markdown, as sanitizeMarkdown keeps it, rendered with every text escaped ---
+
+    function safeHref(href) {
+        return /^(https?:|mailto:)/i.test(String(href || '').trim()) ? String(href).trim() : '';
+    }
+
+    /** Inline Markdown: backslash escapes, code, links (safe targets only), strong, emphasis. Everything else is escaped text. */
+    function inlineMarkdown(text) {
+        var out = '';
+        var rest = String(text || '');
+        var pattern = /(`+)([^`]*?)\1|\[([^\]]*)\]\(\s*<?([^)\s>]*)>?(?:\s+"[^"]*")?\s*\)|<((?:https?:|mailto:)[^>\s]+)>|\*\*([^*]+)\*\*|__([^_]+)__|\*([^*\s][^*]*?)\*|_([^_\s][^_]*?)_|\\([!-\/:-@[-`{-~])/;
+        var match;
+        while ((match = pattern.exec(rest))) {
+            out += escapeHtml(rest.slice(0, match.index));
+            // A backslash escape (sanitizeMarkdown escapes what it shows as text): the character itself.
+            if (match[10]) out += escapeHtml(match[10]);
+            else if (match[1]) out += '<code>' + escapeHtml(match[2]) + '</code>';
+            else if (match[3] !== undefined) {
+                var href = safeHref(match[4]);
+                out += href ? '<a href="' + escapeHtml(href) + '" target="_blank" rel="noopener noreferrer">' + inlineMarkdown(match[3]) + '</a>' : inlineMarkdown(match[3]);
+            }
+            else if (match[5]) out += '<a href="' + escapeHtml(match[5]) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(match[5]) + '</a>';
+            else if (match[6] || match[7]) out += '<strong>' + inlineMarkdown(match[6] || match[7]) + '</strong>';
+            else out += '<em>' + inlineMarkdown(match[8] || match[9]) + '</em>';
+            rest = rest.slice(match.index + match[0].length);
+        }
+        return out + escapeHtml(rest);
+    }
+
+    function tableRow(line) {
+        return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(function (cell) { return cell.trim(); });
+    }
+
+    /**
+     * Render Markdown to HTML: headings, paragraphs, lists, tables, emphasis,
+     * code and http/https/mailto links, nothing else. All text is escaped.
+     */
+    function renderMarkdown(markdown) {
+        var lines = String(markdown || '').replace(/\r\n?/g, '\n').split('\n');
+        var html = [];
+        var i = 0;
+        while (i < lines.length) {
+            var line = lines[i];
+            var fence = /^\s{0,3}(`{3,}|~{3,})/.exec(line);
+            if (fence) {
+                var code = [];
+                i++;
+                while (i < lines.length && !(new RegExp('^\\s{0,3}' + fence[1][0] + '{' + fence[1].length + ',}\\s*$')).test(lines[i])) code.push(lines[i++]);
+                i++;
+                html.push('<pre><code>' + escapeHtml(code.join('\n')) + '</code></pre>');
+                continue;
+            }
+            if (!line.trim()) { i++; continue; }
+            var heading = /^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$/.exec(line);
+            if (heading) {
+                html.push('<h' + heading[1].length + '>' + inlineMarkdown(heading[2]) + '</h' + heading[1].length + '>');
+                i++;
+                continue;
+            }
+            if (/^\s*\|/.test(line) && i + 1 < lines.length && /^\s*\|?\s*:?-{1,}:?\s*(\|\s*:?-{1,}:?\s*)*\|?\s*$/.test(lines[i + 1])) {
+                var head = tableRow(line);
+                i += 2;
+                var rows = [];
+                while (i < lines.length && /^\s*\|/.test(lines[i])) rows.push(tableRow(lines[i++]));
+                html.push('<table class="table table-sm"><thead><tr>' + head.map(function (cell) { return '<th>' + inlineMarkdown(cell) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+                    rows.map(function (row) { return '<tr>' + row.map(function (cell) { return '<td>' + inlineMarkdown(cell) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>');
+                continue;
+            }
+            var item = /^\s*([-*+]|\d+[.)])\s+(.*)$/.exec(line);
+            if (item) {
+                var ordered = /\d/.test(item[1]);
+                var items = [];
+                while (i < lines.length) {
+                    var next = /^\s*([-*+]|\d+[.)])\s+(.*)$/.exec(lines[i]);
+                    if (!next || /\d/.test(next[1]) !== ordered) break;
+                    items.push('<li>' + inlineMarkdown(next[2]) + '</li>');
+                    i++;
+                }
+                html.push((ordered ? '<ol>' : '<ul>') + items.join('') + (ordered ? '</ol>' : '</ul>'));
+                continue;
+            }
+            var paragraph = [];
+            while (i < lines.length && lines[i].trim() && !/^\s{0,3}(#{1,6}\s|`{3,}|~{3,})/.test(lines[i]) && !/^\s*([-*+]|\d+[.)])\s+/.test(lines[i]) && !/^\s*\|/.test(lines[i])) {
+                paragraph.push(lines[i++].trim());
+            }
+            if (!paragraph.length) { html.push('<p>' + inlineMarkdown(lines[i++]) + '</p>'); continue; }
+            html.push('<p>' + paragraph.map(inlineMarkdown).join('<br>') + '</p>');
+        }
+        return html.join('');
+    }
+
+    // ---------------------------------------------------------------------
+    // client: the public browser API that components of UAG modules build on.
+    // ---------------------------------------------------------------------
+
+    /** The headers that identify the user to the UAG: their Form.io token, and a portal team member's remote token. */
+    function authHeaders(form) {
+        var headers = {};
+        var token = formioToken(form);
+        if (token) headers['x-jwt-token'] = token;
+        try {
+            var sdk = registered.Formio;
+            var remote = sdk && typeof sdk.getRemoteToken === 'function' ? sdk.getRemoteToken() : null;
+            if (remote) headers['x-remote-token'] = remote;
+        }
+        catch (err) { /* no remote token */ }
+        return headers;
+    }
+
+    /** An Error with the UAG's status and code. */
+    function uagError(message, status, code) {
+        var err = new Error(message);
+        if (status) err.status = status;
+        if (code) err.code = code;
+        return err;
+    }
+
+    /**
+     * POST JSON to the UAG, accepting server-sent events. Resolves with the
+     * `done` event's data, or with the JSON answer; rejects with the UAG's
+     * message (and `status`, `code`) for an error answer or a `failed` event.
+     * Every event is passed to `options.onEvent(name, data)`.
+     */
+    function stream(url, body, options) {
+        options = options || {};
+        var fetchImpl = options.fetch || (registered.options && registered.options.fetch) || (typeof fetch === 'function' ? fetch : null);
+        if (!fetchImpl) return Promise.reject(uagError('fetch is not available.'));
+        var headers = Object.assign({ 'Content-Type': 'application/json', Accept: 'text/event-stream' }, authHeaders(options.form), options.headers || {});
+        var done = null;
+        var failure = null;
+        return Promise.resolve().then(function () {
+            return fetchImpl(url, { method: 'POST', headers: headers, body: JSON.stringify(body || {}), signal: options.signal });
+        }).then(function (response) {
+            var type = (response.headers && response.headers.get && response.headers.get('content-type')) || '';
+            if (!response.ok || type.indexOf('text/event-stream') === -1) {
+                return response.json().catch(function () { return {}; }).then(function (answer) {
+                    if (!response.ok) throw uagError((answer && answer.error) || ('The request failed (' + response.status + ').'), response.status, answer && answer.code);
+                    done = answer;
+                });
+            }
+            var parser = new SSEParser(function (name, data) {
+                if (typeof options.onEvent === 'function') options.onEvent(name, data);
+                if (name === 'done') done = data;
+                else if (name === 'failed' || name === 'error') failure = uagError((data && data.error) || 'The request failed.', data && data.status, data && data.code);
+            });
+            if (response.body && response.body.getReader) {
+                var reader = response.body.getReader();
+                var decoder = new TextDecoder();
+                var pump = function () {
+                    return reader.read().then(function (chunk) {
+                        if (chunk.done) return;
+                        parser.push(decoder.decode(chunk.value, { stream: true }));
+                        return pump();
+                    });
+                };
+                return pump();
+            }
+            return response.text().then(function (text) { parser.push(text + '\n\n'); });
+        }).then(function () {
+            if (failure) throw failure;
+            if (done === null) throw uagError('The request ended without an answer.');
+            return done;
+        });
+    }
+
+    /**
+     * The public browser API for components: the UAG's URL, the user's token,
+     * a form's URL on the UAG, the installed plugins, streamed requests, and
+     * Markdown rendering. Stable within a major version of @formio/uag-js.
+     */
+    var client = {
+        url: function () { return registered.uagUrl; },
+        token: function (form) { return formioToken(form); },
+        headers: function (form) { return authHeaders(form); },
+        formUrl: function (definition) { return uagFormUrl(registered.uagUrl, definition && definition.form && definition.form._id ? definition.form : definition); },
+        ready: manifestState.promise,
+        /** Whether the installed plugins are known yet (`ready` has resolved). */
+        get loaded() { return manifestState.manifest !== null; },
+        plugins: function (type) {
+            return (manifestState.manifest || []).filter(function (plugin) { return plugin && (!type || plugin.type === type); });
+        },
+        plugin: function (type, name) {
+            return client.plugins(type).filter(function (plugin) { return plugin.name === name; })[0] || null;
+        },
+        stream: stream,
+        renderMarkdown: function (markdown) { return renderMarkdown(markdown); },
+        escapeHtml: function (value) { return escapeHtml(value); },
+        get Formio() { return registered.Formio; }
+    };
+
     /**
      * The formio.js module: `Formio.use(UAG('https://uag.example.com', options))`.
      * Options: `agentInput` (`false` turns Agent Input off), and Agent Input's
@@ -1432,8 +1653,19 @@
      */
     function UAG(uagUrl, options) {
         if (!uagUrl) throw new Error('UAG(): give the UAG\'s URL, e.g. UAG(\'https://uag.example.com\').');
+        options = options || {};
         return function (Formio) {
-            registered = { uagUrl: trimSlash(uagUrl), Formio: Formio || null, options: options || {} };
+            registered = { uagUrl: trimSlash(uagUrl), Formio: Formio || null, options: options };
+            // Components of UAG modules find the client on the formio.js they are given.
+            if (Formio && (typeof Formio === 'object' || typeof Formio === 'function')) {
+                try { Object.defineProperty(Formio, 'uagClient', { value: client, configurable: true }); }
+                catch (err) { /* a frozen Formio: components use FormioUAG.client */ }
+            }
+            // The installed plugins (the manifest), which components of UAG modules read through `client`.
+            if (options.manifest) setManifest(options.manifest);
+            else if (!manifestState.manifest) fetchManifest(registered.uagUrl, Formio).then(setManifest);
+            // Portal mode: only the manifest and the client, for the modules' components; saves and Agent Input are left alone.
+            if (options.portal) return {};
             var mod = { fetch: { uag: routingPlugin(registered.uagUrl) } };
             var displays = (Formio && Formio.Displays && Formio.Displays.displays) || {};
             mod.displays = {};
@@ -1452,6 +1684,10 @@
     }
     UAG.attach = attach;
     UAG.createChat = createChat;
+    /** Resolves once the installed document plugins are known (embedded, or fetched at registration). */
+    UAG.ready = manifestState.promise;
+    UAG.renderMarkdown = renderMarkdown;
+    UAG.client = client;
 
     return {
         UAG: UAG,
@@ -1462,6 +1698,8 @@
         ExtractionState: ExtractionState,
         SSEParser: SSEParser,
         isEmpty: isEmpty,
-        CHAT_TEMPLATES: CHAT_TEMPLATES
+        CHAT_TEMPLATES: CHAT_TEMPLATES,
+        renderMarkdown: renderMarkdown,
+        client: client
     };
 }));
