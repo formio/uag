@@ -37,7 +37,7 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 | "@formio/uag needs Node started with --no-node-snapshot" | An embedding server started Node without the flag. Start `node --no-node-snapshot`, or set `NODE_OPTIONS=--no-node-snapshot`. |
 | The log warns "JWT_SECRET is not set" | Tokens are signed with a random secret for this process only: set `JWT_SECRET`, the same on every instance. |
 | The log warns "MCP_OAUTH is on, but LOGIN_FORM is not set" | The sign-in page would load the login form from `PROJECT`, a container address. Set `LOGIN_FORM` to the login form's public URL. |
-| "@formio/uag needs @formio/appserver-core 2.25.2 or later" | An embedding application installs an older `@formio/appserver`, or its lockfile resolves an older core for it. Upgrade `@formio/appserver`. |
+| "@formio/uag needs @formio/appserver-core 2.26.0 or later" | An embedding application installs an older `@formio/appserver`, or its lockfile resolves an older core for it. Upgrade `@formio/appserver`. |
 | Docker Compose fails with `set CLAUDE_API_KEY in .env` (or another `set ... in .env`) | A sample's `.env` is missing or incomplete. For the demo stack, copy `.env.example`; for an engine sample, add the variables its table in `samples/engines/Readme.md` lists. Compose validates every service even when you start only some. |
 
 ## The UAG's database

@@ -162,7 +162,7 @@ class UAGServer extends Server {
 }
 ```
 
-The constructor checks that the `@formio/appserver-core` that `@formio/appserver` loads, the UAG's only copy of it, is 2.25.2 or later, and throws if not (see [assertSingleCore](#public-exports)). It then fills every option you leave out from the environment, so `new UAGServer()` with no arguments configures itself the way the Docker image does.
+The constructor checks that the `@formio/appserver-core` that `@formio/appserver` loads, the UAG's only copy of it, is 2.26.0 or later, and throws if not (see [assertSingleCore](#public-exports)). It then fills every option you leave out from the environment, so `new UAGServer()` with no arguments configures itself the way the Docker image does.
 
 `UAGConfig` extends `ServerConfig`, the Form.io server options, with the UAG's own.
 
@@ -431,7 +431,7 @@ The service applies the same license check, permissions, routing, validation and
 | `UAGServer` | class | The server. |
 | `UAGModule` | type | `ServerModule & { config?: UAGConfig }`. |
 | `assertNodeSnapshotDisabled(execArgv?, nodeOptions?)` | function | Throws unless Node was started with `--no-node-snapshot` (in its arguments or `NODE_OPTIONS`). The constructor calls it. |
-| `assertSingleCore(version?)` | function | Throws unless the `@formio/appserver-core` that `@formio/appserver` loads is 2.25.2 or later. The constructor calls it. Fix it by upgrading `@formio/appserver`. |
+| `assertSingleCore(version?)` | function | Throws unless the `@formio/appserver-core` that `@formio/appserver` loads is 2.26.0 or later. The constructor calls it. Fix it by upgrading `@formio/appserver`. |
 | `UAGProjectInterface`, `UAGFormInterface` | classes | The project and form interfaces above. |
 | `UAGConfig`, `UAGForm`, `UAGTemplateConfig`, `UAGToolOverride`, `UAGEngineEntry`, `UAGRoutingConfig`, `UAGRateLimit`, `UAGAgentApiConfig`, `UAGAnonymousConfig`, `UAGChatConfig` | types | Configuration types (`src/config.ts`). |
 | `trustProxySetting(value)` | function | Parses a `TRUST_PROXY` value into Express's `trust proxy` setting, or `undefined` when it is empty. See [Behind a reverse proxy](#behind-a-reverse-proxy). |
