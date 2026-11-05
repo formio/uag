@@ -1,5 +1,9 @@
 import { expect } from 'chai';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { isRichText, sanitizeRichText } from '../src/richText';
+import { restrictToScope } from '../src/router';
+import { UAGProjectInterface } from '../src/UAGProjectInterface';
 import { claimForm, makeProject } from './agent/fixtures';
 
 describe('Rich text values', () => {
@@ -48,5 +52,27 @@ describe('Binary values given to agents over MCP', () => {
         const photo = rows.find((row: any) => row.path === 'photo');
         expect(photo.value).to.equal(JSON.stringify({ name: 'p.png', type: 'image/png', size: 300 }));
         expect(JSON.stringify(rows)).to.not.contain(base64);
+    });
+});
+
+describe('Scoped tokens, whatever built the MCP server', () => {
+    it('disables every tool the scope does not allow, even when buildMcpServer ignored the scope', async () => {
+        const p: any = makeProject({ claim: claimForm() });
+        p.mcpJSONResponse = UAGProjectInterface.prototype.mcpJSONResponse.bind(p);
+        // As a module's project interface that overrides buildMcpServer() without passing the scope on.
+        const server = await p.buildMcpServer();
+        restrictToScope(server, { tools: ['get_forms', 'submission_update'] });
+        const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+        await server.connect(serverSide);
+        const client = new Client({ name: 'test', version: '1.0.0' });
+        await client.connect(clientSide);
+        try {
+            expect((await client.listTools()).tools.map((tool) => tool.name)).to.deep.equal(['get_forms']);
+            const refused: any = await client.callTool({ name: 'submission_update', arguments: {} }).catch((err) => ({ isError: true, err }));
+            expect(refused.isError).to.equal(true);
+        }
+        finally {
+            await client.close();
+        }
     });
 });
