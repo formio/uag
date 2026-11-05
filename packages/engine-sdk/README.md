@@ -21,7 +21,8 @@ Name the package `@formio/uag-<type>` (official engines) or `uag-engine-<type>` 
 const { defineEngine, EngineError, ENGINE_API_VERSION, requiredSchema } = require('@formio/uag-sdk');
 
 module.exports = defineEngine({
-    type: 'acme',
+    type: 'engine',
+    name: 'acme',
     kinds: ['agent'],
     apiVersion: ENGINE_API_VERSION,
     settings: {

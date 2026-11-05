@@ -33,10 +33,19 @@ export type EngineCreateContext<Settings = Record<string, any>> = {
     requireSetting(key: string): any;
 };
 
-/** What an engine package exports. */
+/**
+ * What an engine package exports: a plugin of type "engine". The 2.0 release
+ * candidates' shape, with the engine's name in `type`, is refused.
+ */
 export interface EngineTypeDefinition<Settings = Record<string, any>> {
+    /** Always "engine": the plugin type. */
+    type: 'engine';
     /** The type name, as in `UAG_ENGINES=<type>` and `<name>:<type>`. */
-    type: string;
+    name: string;
+    /** A human-readable name. Defaults to `name`. */
+    title?: string;
+    /** The engine's own version (semver). Defaults to the version in its package's package.json. */
+    version?: string;
     kinds: readonly ('decision' | 'agent')[];
     /** The engine contract version the type was built for: `ENGINE_API_VERSION`. */
     apiVersion: number;
@@ -45,7 +54,7 @@ export interface EngineTypeDefinition<Settings = Record<string, any>> {
     create(context: EngineCreateContext<Settings>): Engine | Promise<Engine>;
 }
 
-/** Validate an engine type definition and return it frozen. Throws a TypeError naming every problem. */
+/** Validate an engine type definition and return it frozen, its title defaulting to its name. Throws a TypeError naming every problem. */
 export declare function defineEngine<T extends EngineTypeDefinition<any>>(definition: T): Readonly<T>;
 
 /** Whether a value is a valid engine type definition, from this SDK, another copy of it, or none. */

@@ -11,6 +11,7 @@ const { openAICompatible } = require('@formio/uag-openai/compatible');
 
 module.exports = openAICompatible({
     type: 'grok',
+    title: 'Grok',
     description: 'xAI\'s Grok models: structured extraction, with research over read-only tools.',
     baseURL: 'https://api.x.ai/v1',
     apiKey: { env: 'XAI_API_KEY' },

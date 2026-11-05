@@ -59,7 +59,8 @@ describe('Research with a scoped token, as the caller', function () {
 
     /** An agent engine that researches the way the remote engine server does: over /mcp, with the scoped token. */
     const researcher = defineEngine({
-        type: 'researcher',
+        type: 'engine',
+        name: 'researcher',
         kinds: ['agent'],
         apiVersion: 1,
         settings: {},

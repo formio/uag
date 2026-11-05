@@ -20,7 +20,8 @@ describe('Pinning: research tools', function () {
     const received: any[] = [];
     /** An agent engine that records what it is sent. */
     const recorder = defineEngine({
-        type: 'recorder',
+        type: 'engine',
+        name: 'recorder',
         kinds: ['agent'],
         apiVersion: 1,
         settings: {},

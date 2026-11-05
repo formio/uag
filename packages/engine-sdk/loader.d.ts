@@ -15,7 +15,14 @@ export type LoadOptions = {
 /** An enabled engine and where it came from, ready for `Formflow.engineRegistry`. */
 export type LoadedEngine = {
     engine: Engine;
+    /** The engine type's name. */
     type: string;
+    /** The engine type's title. */
+    title?: string;
+    /** The kinds the engine type declares. */
+    kinds?: ('decision' | 'agent')[];
+    /** The engine type's own version, from its definition or its package. */
+    typeVersion?: string;
     package?: string;
     version?: string;
 };

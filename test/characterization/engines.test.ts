@@ -28,7 +28,8 @@ const SERVER_KEY = 'pinning-engine-server-key-0123456789';
 const ENGINE_PATH = path.join(__dirname, 'engine-path');
 
 const mine = defineEngine({
-    type: 'mine',
+    type: 'engine',
+    name: 'mine',
     kinds: ['agent'],
     apiVersion: 1,
     settings: { model: { default: 'mine-1' } },

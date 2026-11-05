@@ -26,7 +26,9 @@ const DEFAULT_BASE_URL = 'https://api.openai.com/v1';
 const MAX_OPTIONS = 255;
 
 module.exports = defineEngine({
-    type: 'openai',
+    type: 'engine',
+    name: 'openai',
+    title: 'OpenAI',
     kinds: ['agent', 'decision'],
     apiVersion: ENGINE_API_VERSION,
     description: 'OpenAI: structured extraction with research over read-only tools, on OpenAI or any server with its chat completions API; or decisions with probabilities, on OpenAI\'s Decisions API.',
