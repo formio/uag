@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.0.0-rc.7
 
 Modules can now bring whole capabilities (settings, form routes, formio.js components, plugin types), and AI Document comes as a module of `@formio/uag-extras`, beside documents as task inputs, converters and engine generation. Needs `@formio/appserver-core` 2.26.0 or later, through `@formio/appserver`.
 
