@@ -174,7 +174,7 @@ The constructor checks that the `@formio/appserver-core` that `@formio/appserver
 | `database` | `{ url, name?, config?, retentionDays? }` | from `MONGO`, `UAG_DATABASE` (`uag`), `MONGO_CONFIG`, `TASK_RUN_RETENTION_DAYS` (`90`) | The UAG's own database. See [The UAG database](#the-uag-database). |
 | `responseTemplates` | `UAGTemplateConfig` | `{}` | Lodash templates by name: replacements for built-in response templates, and new ones for your tools. See [Modules](/developers/modules#response-templates). |
 | `toolOverrides` | `UAGToolOverride` | `{}` | Per built-in tool, fields merged over its definition (description, title, schema, `execute`). See [Modules](/developers/modules#overriding-built-in-tools). |
-| `tools` | `ToolInfo[]` | `[]` | Custom MCP tools, served next to the built-in ones. |
+| `tools` | `ToolInfo[]` | `[]` | Custom MCP tools, served next to the built-in ones; a tool's `bind(project)` builds its project-specific part. |
 | `engines` | `UAGEngineEntry[]` | `UAG_ENGINES` | Engine instances to enable: `"<type>"`, `"<name>:<type>"`, or `{ name, type, options }`, where `type` may be an engine type definition. When this is an array (even empty), `UAG_ENGINES` is ignored. |
 | `engineTypes` | `Record<string, EngineTypeDefinition>` | none | Engine types your application provides, by type name. Resolved before the built-in types and installed packages. |
 | `routing` | `UAGRoutingConfig` | `{ decision: ['decision', 'agent'], value: ['agent'] }` | Engine preference lists and per-engine timeouts. See [Engines and routing](/developers/engines#routing). |
@@ -229,13 +229,7 @@ For each option, the first of these wins:
 3. The environment variable in the tables above.
 4. The default.
 
-> **Warning:** `merge` combines arrays element by element. If two modules both set `config.tools`, the second module's first tool is merged into the first module's first tool. Use each module without its tools, then add the combined list once:
->
-> ```js
-> server.use({ ...crm, config: { ...crm.config, tools: undefined } });
-> server.use({ ...billing, config: { ...billing.config, tools: undefined } });
-> server.use({ config: { tools: [...crm.config.tools, ...billing.config.tools] } });
-> ```
+`config.tools` is the exception: MCP tools add up across modules, and a tool name two modules define stops startup, naming both.
 
 ## The UAG database
 
@@ -255,13 +249,32 @@ The UAG needs no database: submissions stay in Form.io. With one of its own, set
 
 The UAG reads and writes only collections named `uag-*` (`uag-meta`, `uag-authcodes`, `uag-taskruns`), never submissions. Using the database needs a license that includes the UAG, unless the project and the database are both on development hosts (`localhost`, `*.localhost`, `lvh.me`, `*.lvh.me`, `*.local`), on every edition, including projects on Form.io's hosted service. Without the license the UAG starts, writes nothing to the database, and logs which features are off. `server.database` is the database once it is in use; `GET /agent/capabilities` reports `durableRuns` and `mcpOAuth`.
 
+## server.destroy()
+
+`await server.destroy()` stops the server's work in process: each module's `close(api)`, in the reverse order the modules were used, then the plugins' `close`, then the project. Call it when your own server shuts down, or between tests.
+
 ## server.use(module)
 
 ```ts
-type UAGModule = ServerModule & { config?: UAGConfig };
+type UAGModule = ServerModule<UAGModuleApi> & { config?: UAGConfig };
 
-type ServerModule = {
+type ServerModule<Api> = {
+    // Identity, and the module API (see Modules: Settings, routes and components)
+    name?: string;
+    title?: string;
+    version?: string;
+    apiVersion?: number;
+    host?: string;                                     // 'uag': only the UAG runs it
+    settings?(config, env): object;
+    routes?: { form?: Record<string, ModuleRoute<Api>> };
+    components?: ModuleComponent[];
+    initialize?(api: Api): void | Promise<void>;
+    close?(api: Api): void | Promise<void>;
+    // Everything else a module may add
     config?: ServerConfig;
+    plugins?: PluginEntry[];
+    pluginTypes?: PluginType[] | ((api: Api) => PluginType[]);
+    formRoutes?: RequestHandler | RequestHandler[];   // raw Express routers on every form
     db?: ServerDB;
     providers?: ProviderInterfaceLibrary;
     actions?: Record<string, Action>;
@@ -272,13 +285,15 @@ type ServerModule = {
 };
 ```
 
-`use()` applies a module to the server: it merges `config`, adds `actions`, `providers` and `processors`, registers `hooks`, and sets `db`. Call it before `router()`: the project, its tools and its response templates are built from the configuration at startup.
+`use()` applies a module to the server: it checks its module keys, merges `config`, adds `actions`, `providers`, `processors`, plugin types and plugins, registers `hooks`, and sets `db`. It takes a list, and an ES module namespace (`require()` of an ES module) by its default export. A module used twice, by `name`, is used once; a module named in `MODULES_DISABLED` (`config.modules.disabled`) is not used. Call it before `router()`: the project, its tools and its response templates are built from the configuration at startup, and a module with module keys used after stops startup.
+
+Import every module type from `@formio/uag`: `UAGModule`, `UAGModuleApi`, `UAGModuleRoute`, `ModuleForm`, `ModuleComponent`. In JavaScript, `/** @type {import('@formio/uag').UAGModule} */` types a module, and `/** @type {import('@formio/uag').UAGModuleRoute} */` a route, `api` included.
 
 `ProjectInterface` and `FormInterface` replace the classes the server builds the project and its forms from. The `UAGServer` constructor installs `UAGProjectInterface` and `UAGFormInterface`; a module that replaces them must extend the UAG's classes, or the UAG loses its MCP tools and Agent API. What each part of a module does is covered in [Modules](/developers/modules).
 
 ## The project: UAGProjectInterface
 
-`server.uagProject` is the loaded project, an instance of `UAGProjectInterface`. Custom tools reach the same object through the caller's identity (`extra.authInfo.project`, see [Modules](/developers/modules#custom-mcp-tools)).
+`server.uagProject` is the loaded project, an instance of `UAGProjectInterface`. Custom tools receive the same object as `extra.project`, and a bound tool's `bind` receives it when it builds the tool (see [Modules](/developers/modules#custom-mcp-tools)).
 
 ```ts
 class UAGProjectInterface extends ProjectInterface implements FormflowHost {
@@ -433,18 +448,26 @@ The service applies the same license check, permissions, routing, validation and
 | `assertNodeSnapshotDisabled(execArgv?, nodeOptions?)` | function | Throws unless Node was started with `--no-node-snapshot` (in its arguments or `NODE_OPTIONS`). The constructor calls it. |
 | `assertSingleCore(version?)` | function | Throws unless the `@formio/appserver-core` that `@formio/appserver` loads is 2.26.0 or later. The constructor calls it. Fix it by upgrading `@formio/appserver`. |
 | `UAGProjectInterface`, `UAGFormInterface` | classes | The project and form interfaces above. |
-| `UAGConfig`, `UAGForm`, `UAGTemplateConfig`, `UAGToolOverride`, `UAGEngineEntry`, `UAGRoutingConfig`, `UAGRateLimit`, `UAGAgentApiConfig`, `UAGAnonymousConfig`, `UAGChatConfig` | types | Configuration types (`src/config.ts`). |
+| `UAGConfig`, `UAGForm`, `UAGTemplateConfig`, `UAGDocumentsConfig`, `UAGToolOverride`, `UAGEngineEntry`, `UAGRoutingConfig`, `UAGRateLimit`, `UAGAgentApiConfig`, `UAGAnonymousConfig`, `UAGChatConfig` | types | Configuration types (`src/config.ts`). |
 | `trustProxySetting(value)` | function | Parses a `TRUST_PROXY` value into Express's `trust proxy` setting, or `undefined` when it is empty. See [Behind a reverse proxy](#behind-a-reverse-proxy). |
 | `UAGTemplate`, `ResponseTemplate` | class, enum | The response template renderer, and the built-in template names. |
 | `UAGRouter(project)` | function | The bare MCP handler, with no authentication: tools then get no `extra.authInfo`. Mount it behind `project.authorizeRequest`, or use `project.uagRouter()`, which does. |
-| `ToolInfo`, `ToolAnnotations`, `ParentInfo`, `DataUpdate`, `SearchQuery` | types | Tool definition types. |
+| `ToolInfo`, `ToolExtra`, `ToolEntry`, `ToolAnnotations`, `ParentInfo`, `DataUpdate`, `SearchQuery` | types | Tool definition types. |
+| `sanitizeRichText(html)`, `isRichText(component)`, `RICH_TEXT_TAGS`, `RICH_TEXT_RULE` | functions, constants | The HTML rich text fields keep, as the UAG sanitizes what engines write into them. Modules can use them for HTML they produce, such as a document reader's output. |
 | `reads(title)`, `creates(title)`, `overwrites(title)` | functions | Annotation presets for tools. |
 | `escapeSearchPattern(value)` | function | Escape a literal for a `__regex` query (handles `/`). |
-| `getTools(project)` and `getForms`, `getFormFields`, `getFieldInfo`, `collectData`, `confirmSubmission`, `submitCompletedForm`, `findSubmission`, `submissionUpdate`, `fetchExternalData`, `agentProvide`, `agentDecide` | functions | The built-in tool factories: each takes the project and returns a promise of its `ToolInfo` (`await getForms(project)`); `getTools` resolves to all of them. |
+| `getTools(project)` and `getForms`, `getFormFields`, `getFieldInfo`, `collectData`, `confirmSubmission`, `submitCompletedForm`, `findSubmission`, `submissionUpdate`, `fetchExternalData`, `agentProvide`, `agentDecide`, `readDocument` | functions | The built-in tool factories: each takes the project and returns a promise of its `ToolInfo` (`await getForms(project)`); `getTools` resolves to all of them. |
 | `loadUAGEngines(config?, env?)` | function | Enable engines as `router()` does, returning an `EngineRegistry`. |
 | `BUILT_IN_ENGINES`, `RemoteEngine`, `StubDecisionEngine`, `StubAgentEngine`, `MIN_KEY_LENGTH`, `UAG_ROOT` | values | The built-in engine types, the shortest engine server key (32), and the UAG's install root, where engine packages are looked up first. |
 | `AgentRouter(project, authenticate)` | function | The router for `GET /agent/capabilities` on its own. |
 | `FormAgentRouter(project, credentials)`, `agentCredentials(project)`, `agentNotFound(project)` | functions | A form's agent operations (`agent/extract`, `agent/decide`, `agent/generate`, `agent/chat`), mounted on each form's routes; the credential check they run behind; and the `404` for an agent operation of a form the project does not have. |
+| `definePlugin(plugin)`, `definePluginType(type)`, `PluginRegistry`, `loadPluginFile(path)`, `PLUGIN_NAME`, `Plugin`, `PluginType`, `PluginEntry` | functions, class, types | The plugin framework, from `@formio/appserver-core`. `server.plugins` is the server's registry. See [Plugins](/developers/plugins). |
+| `usePluginFiles(server, env?)`, `pluginsFile(env?)`, `DEFAULT_PLUGINS_FILE` | functions, constant | Load the plugins file `UAG_PLUGINS` names (or `/app/plugins/index.mjs` when it exists), as the `uag` command does after the module. |
+| `Converter`, `DocumentPlugin`, `DocumentContext`, `DocumentResult`, `DocumentFile`, `Issue` | types | The `converter` and `document` plugin contracts (experimental in 2.0). |
+| `BUILT_IN_CONVERTERS`, `identify(buffer, hint, converters?)`, `ConverterRoutes`, `runConverter` | values, functions | Converters: the built-in ones, byte-based identification, converter routes and conversion. Modules reach them through `api.converters`. |
+| `UAGModule`, `UAGModuleApi`, `UAGModuleRequest`, `UAGModuleRoute`, `ModuleForm`, `ModuleComponent`, `GeneratingEngine` | types | The module API and its types. See [Modules](/developers/modules#the-module-api). |
+| `@formio/uag/testing`: `createTestModuleApi`, `mountModuleRoutes`, `testForm`, `testAuth` | functions | Test a module without a project. See [Modules](/developers/modules#testing-a-module). |
+| `sanitizeMarkdown(markdown)` | function | The Markdown the AI Document keeps: raw HTML removed (its text kept), only `http`, `https` and `mailto` links, no images, no code fence around the whole value. |
 | The Form.io server classes | various | `Server`, `ProjectInterface`, `FormInterface`, `AuthRequest`, `Action`, `ActionInfo`, `SubmissionRequest`, `SubmissionResponse`, `ServerConfig`, `Utils`, `Database`, the `Formflow` namespace and the rest of the Form.io logic the UAG is built on. |
 
 The package's types are in `lib/index.d.ts` (`"types": "lib/index.d.ts"`).

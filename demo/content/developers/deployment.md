@@ -159,6 +159,7 @@ The login form JSON endpoint the `/auth/authorize` page loads, such as `https://
 | `NODE_TLS_REJECT_UNAUTHORIZED` | unset | `0` to accept a self-signed `PROJECT` certificate. Never on a deployment reachable from outside. Turns off the hosted SaaS exemption. |
 | `DEBUG` | unset | Debug logging, for example `formio:*` or `formio:uag*`. |
 | `UAG_MODULE` | none | For the `uag` command only: a file or folder exporting a module. The Docker image loads `/app/module` instead. |
+| `MODULES_DISABLED` | none | Modules to leave out, by name, comma-separated (`ai-document`): for a module an image includes that you do not want. |
 
 ### Engines
 

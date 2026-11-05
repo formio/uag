@@ -1,11 +1,11 @@
 ---
 title: Modules
-description: Package forms, MCP tools, actions, response templates and a login page into a module that configures the UAG for your domain.
+description: Package forms, MCP tools, actions, plugins, form routes, formio.js components and settings into a module that configures the UAG for your domain.
 section: Extend
 order: 20
 ---
 
-A module is a JavaScript object that extends the UAG. It can give the project the forms and resources your use case needs, add MCP tools, add form actions, change what the built-in tools say to the model, and replace the login page. One module can be mounted into the Docker image, loaded by the `uag` command, or passed to `server.use()` in your own server, and published to npm for others to use.
+A module is a JavaScript object that extends the UAG. It can give the project the forms and resources your use case needs, add MCP tools, add form actions, change what the built-in tools say to the model, and replace the login page. A module can also bring a whole capability: a formio.js component for the form builder and the forms, the form routes behind it, its settings, and the plugin types it needs. **AI Document** is such a module. One module can be mounted into the Docker image, loaded by the `uag` command, or passed to `server.use()` in your own server, and published to npm for others to use.
 
 This page describes each part of a module, then builds a complete one: a small CRM with a Contact resource, a pipeline tool and a lead-scoring action.
 
@@ -13,6 +13,18 @@ This page describes each part of a module, then builds a complete one: a small C
 
 ```ts
 type UAGModule = {
+    name?: string;                      // lowercase and "-"; a module used twice, by name, is used once
+    title?: string;
+    version?: string;
+    apiVersion?: number;                // the module API it is written against
+    host?: 'uag';                       // it needs the UAG's members of the API
+    settings?(config, env): object;     // what the module reads as api.settings
+    routes?: { form?: Record<string, ModuleRoute> };  // routes on every form
+    components?: ModuleComponent[];     // formio.js components the UAG serves to browsers
+    initialize?(api): void | Promise<void>;
+    close?(api): void | Promise<void>;
+    plugins?: PluginEntry[];
+    pluginTypes?: PluginType[] | ((api) => PluginType[]);
     config?: UAGConfig;                 // template, tools, toolOverrides, responseTemplates, auth, engines, ...
     actions?: Record<string, Action>;   // custom form actions, by action name
     hooks?: Record<string, HookFn | HookFn[]>;
@@ -29,11 +41,14 @@ type UAGModule = {
 | `config.template` | A Form.io project template: the forms, resources, roles and actions the module needs the project to have. | [The project template](#the-project-template) |
 | `config.tools` | Custom MCP tools. | [Custom MCP tools](#custom-mcp-tools) |
 | `config.toolOverrides` | Changes to the built-in tools. | [Overriding built-in tools](#overriding-built-in-tools) |
+| `plugins` | Plugins this module brings: converters that read more file types, document plugins, and the like. | [Plugins](#plugins) |
 | `config.responseTemplates` | Replacements for the built-in response templates, and new templates for your tools. | [Response templates](#response-templates) |
 | `config.auth.authAppHtml` | The HTML of the login page for remote MCP sign-in (`MCP_OAUTH`). | [The login page](#the-login-page) |
 | `actions` | Custom form actions, by name. | [Custom actions](#custom-actions) |
 | `hooks` | Middleware added around submission requests and actions. | [Hooks](#hooks) |
 | `config.engines`, `config.engineTypes`, `config.routing`, `config.agentApi` | Engines and how fields are routed to them. | [Engines and routing](/developers/engines) |
+| `name`, `title`, `version`, `apiVersion` | The module's identity, and the module API it is written against. | [Settings, routes and components](#settings-routes-and-components) |
+| `settings`, `routes.form`, `components`, `initialize`, `close`, `host` | Settings checked at startup, routes on every form, formio.js components for browsers, start-up and shutdown calls, and the host it needs. | [Settings, routes and components](#settings-routes-and-components) |
 | Every other `config` key | Any server option, such as `cors` or `templateSync`. | [Node.js API](/developers/node-api#new-uagserverconfig) |
 
 `processors`, `providers`, `db`, `ProjectInterface` and `FormInterface` are lower-level extension points of the Form.io logic the UAG is built on; most modules never need them. A replacement `ProjectInterface` or `FormInterface` must extend `UAGProjectInterface` or `UAGFormInterface`; the UAG's tools and Agent API live in them.
@@ -58,7 +73,7 @@ services:
 docker run -v "$PWD/module:/app/module" -e PROJECT=... formio/uag:rc
 ```
 
-A mounted module runs inside the UAG's own installation in `/app`, so `require()` finds the UAG's dependencies, such as `zod` and `lodash`, from `/app/node_modules`. It cannot `require('@formio/uag')` by name: the image is that package. The examples on this page therefore spell out annotations as plain objects rather than importing the `reads()` preset. A module that needs its own dependencies can bring them in its own `node_modules` folder.
+A mounted module runs inside the UAG's own installation in `/app`, so `require()` finds the UAG's dependencies, such as `zod` and `lodash`, from `/app/node_modules`, and `require('@formio/uag')` finds the UAG itself, as it does when the module is used from npm. A module that needs its own dependencies can bring them in its own `node_modules` folder, or in an image built `FROM formio/uag`.
 
 ### With the uag command
 
@@ -107,7 +122,7 @@ To apply a changed form or action from a new version of your module, change it i
 
 ## Custom MCP tools
 
-Each entry in `config.tools` is a tool object, `ToolInfo`:
+Each entry in `config.tools` is a tool object, `ToolInfo`. A tool whose definition depends on the project builds that part with `bind(project)` (see [Bound tools](#bound-tools)):
 
 ```ts
 type ToolInfo = {
@@ -116,7 +131,14 @@ type ToolInfo = {
     description?: string;              // what the tool does, and when the model should call it
     inputSchema?: ZodRawShape;         // { argument: zod schema }
     annotations?: ToolAnnotations;     // whether it reads or writes
-    execute?: (args: any, extra: { authInfo: AuthRequest; [key: string]: any }) => Promise<CallToolResult>;
+    execute?: (args: any, extra: ToolExtra) => Promise<CallToolResult>;
+    bind?: (project: UAGProjectInterface) => Partial<ToolInfo> | Promise<Partial<ToolInfo>>;
+};
+
+type ToolExtra = {
+    authInfo: AuthRequest;             // the caller: who the work runs as
+    project: UAGProjectInterface;      // the project serving the request
+    [key: string]: any;                // on /mcp, the rest of the MCP request context
 };
 
 interface ToolAnnotations {
@@ -163,11 +185,11 @@ annotations: { title: 'CRM pipeline summary', readOnlyHint: true, destructiveHin
 
 ### execute(args, extra)
 
-`execute` receives the validated arguments and `extra`, whose `authInfo` is the caller's `AuthRequest`. The same tool runs for MCP clients and for Agent API research, and in both cases `authInfo` is the identity the work runs as.
+`execute` receives the validated arguments (an empty object for a tool that takes none) and `extra`, a `ToolExtra`: `extra.project` is the project serving the request, and `extra.authInfo` is the caller's `AuthRequest`. The same tool runs for MCP clients and for Agent API research, with the same arguments, and in both cases `authInfo` is the identity the work runs as.
 
 | You need | Use |
 |---|---|
-| The project | `extra.authInfo.project` (a `UAGProjectInterface`). In your own server, `server.uagProject` is the same object. |
+| The project | `extra.project` (a `UAGProjectInterface`). A bound tool's `bind` also receives it. In your own server, `server.uagProject` is the same object. |
 | A form | `await project.getForm('contact')`, by machine name, name or id. `null` when it does not exist. |
 | The caller's permissions | `extra.authInfo.formPermissions(form)`: `{ create, read, update, delete }`. |
 | Submissions | `form.find(query, auth)`, `form.count(query, auth)`, `form.loadSubmission(id, auth)`. Pass `extra.authInfo` so Form.io applies the caller's permissions. |
@@ -178,9 +200,232 @@ annotations: { title: 'CRM pipeline summary', readOnlyHint: true, destructiveHin
 
 The full methods of the project and form interfaces are in [Node.js API](/developers/node-api#the-project-uagprojectinterface).
 
+### Bound tools
+
+A tool's `bind(project)` builds the part of the tool that depends on the project (`inputSchema`, `annotations`, `execute`, ...), as the built-in tools are built. Its static `name`, `title` and `description` are used unless `bind` returns its own, so the tool's name is known without a project. Use one when, for example, an argument is limited to the project's forms:
+
+```js
+const { z } = require('zod');
+
+/** read_contact: a contact by id, on any of the project's forms. */
+module.exports = {
+    name: 'read_contact',
+    title: 'Read a contact',
+    description: 'Read one contact by its submission id.',
+    bind(project) {
+        return {
+            annotations: { title: 'Read a contact', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+            inputSchema: {
+                form_name: z.enum(project.formNames),
+                submission_id: z.string()
+            },
+            async execute({ form_name, submission_id }, { project, authInfo }) {
+                const form = await project.getForm(form_name);
+                const submission = await form?.loadSubmission(submission_id, authInfo);
+                return project.mcpJSONResponse(submission ? submission.data : { error: 'Not found.' }, !submission);
+            }
+        };
+    }
+};
+```
+
+The UAG builds its tool list on every `/mcp` request and every research plan, so `bind` runs each time: keep it cheap, and load libraries or other slow state once, outside it. A `bind` that throws stops startup, as a duplicate name does. A bare function in `config.tools` stops startup with a message showing this shape.
+
 ### Tools in the Agent API
 
 The Agent API offers tools to agent engines for research when a task's criteria component lists them in `uagTools`. Custom tools qualify when they are annotated read-only. Each is converted for the engine: its Zod shape becomes a JSON schema, arguments the model sends are validated with the same schema, and the call runs in process with the caller's identity. A remote engine on an engine server calls the same tools back over `/mcp` with a scoped token that lists only them. See [Engine server](/developers/engine-server#research-and-scoped-tokens).
+
+## Settings, routes and components
+
+A module that brings a whole capability uses more keys: `settings`, `routes`, `components`, `initialize` and `close`. A module with any of them needs a `name` and an `apiVersion`, the version of the [module API](#the-module-api) it is written against: version 1, from UAG 2.0.0-rc.7. A module that uses the UAG's own members of the API (licenses, engines, converters) also says `host: 'uag'`, so a server other than the UAG refuses it at startup instead of failing on the first request.
+
+```js
+import { UAGDocument } from '@formio/uag-extras/modules/ai-document';
+server.use(UAGDocument);
+```
+
+Several modules are used together as a list, `server.use([UAGDocument, Extract])`, in a plugins file or a module file too; one given twice (by `name`) is used once, and two versions of one stop startup. Once used, a module's component is in `/uag-js/uag.use.js` and the portal script, its routes answer on every form, and `GET {project}/plugins` lists it as `module:<name>`, which is the quickest way to check it is loaded. An operator leaves a module out with `MODULES_DISABLED=address-check`.
+
+This page's example is a module that checks a postal address: `address-check`, with the route `POST {form}/address-check/check` and the component `uagaddresscheck`.
+
+```js
+// address-check/index.js (CommonJS, for the uag command and the image; an ES module works with server.use())
+/** @type {import('@formio/uag').UAGModule} */
+module.exports = {
+    name: 'address-check',                    // lowercase and "-"; a module used twice is used once
+    title: 'Address check',
+    version: '1.0.0',
+    apiVersion: 1,                            // the module API it is written against
+    host: 'uag',                              // it uses the UAG's members of the API
+    settings(config, env) {                   // what the module reads as api.settings; throw to stop startup
+        const maxLength = Number(config.addressCheck?.maxLength ?? env.ADDRESS_CHECK_MAX_LENGTH ?? 200);
+        if (!(maxLength > 0)) throw new Error('maxLength: must be above 0');
+        return { maxLength };
+    },
+    routes: {
+        form: {
+            'POST /address-check/check': {
+                rateLimit: { limit: 30, windowMs: 60000 },   // a default; the operator's own setting wins
+                handler: (req, res, api) => {
+                    const address = String(req.body?.address || '').trim();
+                    if (!address) throw api.errors.create(400, 'Send an address to check.', 'invalid_request');
+                    if (address.length > api.settings.maxLength) throw api.errors.create(413, `At most ${api.settings.maxLength} characters.`, 'payload_too_large');
+                    return { valid: /\d/.test(address), address };
+                }
+            }
+        }
+    },
+    components: [{ type: 'uagaddresscheck', script: require.resolve('./dist/address-check.min.js'), style: require.resolve('./dist/address-check.css') }],
+    initialize: (api) => api.log.info(`checks addresses of up to ${api.settings.maxLength} characters`),
+    close: (api) => {}                        // timers, pools: stop them here
+};
+```
+
+| Key | What the UAG does with it |
+|---|---|
+| `apiVersion`, `host` | Startup stops when this UAG does not provide that version of the module API, or when the module needs another host. |
+| `settings` | Called once at startup, before the project loads, with the server's configuration and the environment. It returns a plain object, never a promise: that object, frozen, is `api.settings`. An error it throws stops startup, naming the module. |
+| `routes.form` | Each `"<METHOD> <path>"` answers on every form, by path and by id: behind the caller authentication of agent operations, the JSON body limit, a request id, the rate limits of its `name` (below), the caller's access to the form (`access`, below) and the Agent API's error shape `{ requestId, error, code }`. Paths are compared without case or a trailing slash: two modules with one route stop startup, and so does a path the form's own routes use (`/`, `/submission`, `/exists`, `/agent`, `/action`, `/actions`). Put a module's routes under its own name, `/<module-name>/…`: the UAG never takes those. |
+| `components` | Each script is served at `/uag-js/components/<type>.js` and added to `uag.use.js` and `portal.js`; each style to `uag-js.css` and `portal.css`. A script is a built browser script that registers the component, not an ES module: the UAG parses it at startup, and refuses one that does not parse, since browsers get every component in one script. Two modules with one component type stop startup. Start component types with `uag`. |
+| `pluginTypes` | The plugin types the module defines, as any module may; or a function of the module's API, `(api) => [...]`, for plugin types that need it. |
+| `initialize` | Called once at startup, after the project, the plugins and the engines are loaded, before any request. An error it throws stops startup. |
+| `close` | Called once when the server is destroyed (`await server.destroy()`), in the reverse order the modules were used. |
+
+`use()` every module before the server starts (`router()`): a module with these keys used later stops startup. A module may still add any Express router to every form with `formRoutes`, the lower-level hook `routes.form` is built on: those routes get no access check, no conflict check, and none of the agent operations' protections.
+
+### The handler
+
+A route's handler is `(req, res, api)`:
+
+| | |
+|---|---|
+| `req.form` | The form the route was called on: `id`, `name`, `path`, `title`, and `definition`, the stored form's JSON (its `components`). Find a component with `api.forms.componentAt(req.form, path)`, from the stored form, never from the request. |
+| `req.auth` | The caller, already authenticated, and already checked against the route's `access`. Pass it to `api.files.read`. |
+| `req.body` | The JSON the client sent, within the agent operations' body limit. |
+| `req.signal` | Aborts when the client goes away: pass it to `api.files.read` and to the engine. |
+| `req.requestId` | The request id, also in the `X-Request-Id` header and in the UAG's logs. |
+
+It answers in one of three ways:
+- **Return the JSON**: `return { valid: true }` answers `200 { "valid": true }`.
+- **Throw a refusal**: `throw api.errors.create(413, 'At most 200 characters.', 'payload_too_large')` answers `413 { "requestId": "…", "error": "At most 200 characters.", "code": "payload_too_large" }`. Any other error answers 500 with no detail; the details are in the UAG's log under the request id.
+- **Stream progress**: `return api.stream(req, res, async ({ signal, progress }) => { … return result; })`. Call `progress(fraction, message)` with a number from 0 to 1 and an optional message: `progress(0.5, 'Checking the street')`. A client that accepts `text/event-stream` gets `progress` events (`{ "progress": 0.5, "message": "Checking the street" }`), then `done` (`{ "result": … }`) or `failed` (`{ "status", "requestId", "error", "code" }`); any other client gets `{ "result": … }` as JSON. In both, what `run` returns is under `result`.
+
+A route's `access` is the form methods a caller needs, one of which is enough: by default `['create', 'update']`, what filling in the form takes. Give other methods (`['read']`), or `false` for a route that checks access itself; the check runs before the handler, with the same `401` and `403` answers as the Agent API. A route's `name` is the operation its rate limits are counted under, `agentApi.rateLimits.caller[name]`; it defaults to the module's name, may not be one of the UAG's own (`extract`, `decide`, `generate`, `chat`, `capabilities`), and its `rateLimit` is the default the operator's setting overrides.
+
+```js
+'POST /address-check/check': {
+    async handler(req, res, api) {
+        // The caller's create or update access to the form was checked before this runs.
+        await api.requireLicense();
+        const engine = api.engines.select({ needs: ['text'] });   // a handle: generate checks the license
+        return api.stream(req, res, async ({ signal, progress }) => {
+            progress(0.2, 'Asking the engine');
+            const answer = await engine.generate({ instructions: `Is this a postal address? ${req.body.address}`, format: 'text', signal });
+            return { verdict: answer.text };
+        });
+    }
+}
+```
+
+### Components
+
+A module's component is a function of the page's `Formio` that returns the formio.js module; the build wraps it in a script that registers it once `Formio` is on the page. The UAG wraps each component script in its own `try`, so one that throws while loading is logged and the others still register. It builds on `Formio.uagClient`, the public browser API of `@formio/uag-js` (set when the UAG is registered, so look it up when used): the UAG's URL, the user's token, the installed plugins, `stream()` for routes, and Markdown rendering. See [`client`](https://github.com/formio/uag/tree/main/packages/uag-js#for-components-client) for every member. It never bundles formio.js: it uses the one the page registered.
+
+```js
+// address-check/client.js
+export default function addressCheck(Formio) {
+    const TextField = Formio.Components.components.textfield;
+    class AddressCheckComponent extends TextField {
+        static schema(...extend) { return TextField.schema({ type: 'uagaddresscheck', label: 'Address', key: 'address' }, ...extend); }
+        async check() {
+            const client = Formio.uagClient;
+            const answer = await client.stream(client.formUrl(this.root) + '/address-check/check', { address: this.dataValue }, {
+                form: this.root,
+                onEvent: (name, data) => { if (name === 'progress') this.emit('addressCheckProgress', data); }   // show it in a status element
+            });
+            return answer.result;   // a streamed route answers { result }
+        }
+    }
+    return { components: { uagaddresscheck: AddressCheckComponent } };
+}
+```
+
+Build it with the published build (it needs `esbuild`: install it as a dev dependency, or name it to `npx` as below), which writes `dist/address-check.mjs` (for bundlers), `dist/address-check.min.js` (the script `components` points at, also for CDNs) and `dist/address-check.css`, with their integrity values:
+
+```bash
+npx -p @formio/uag-extras -p esbuild uag-build-client client.js --name address-check --style style.css --out dist
+```
+
+Components reach browsers three ways, always matching the installed module: the UAG adds them to `uag.use.js` and the portal script; an application with a bundler imports the module's client and calls `Formio.use()` with it; a page without one loads the module's script from a CDN, such as jsDelivr, after `uag.use.js`.
+
+### The module API
+
+A module gets one `api`, version 1, in its routes, `initialize`, `close`, a function `pluginTypes`, and its MCP tools (`extra.module` in a tool's `execute`):
+
+| Member | What it does |
+|---|---|
+| `name`, `apiVersion`, `host` | The module's name and API version, and the server it runs on: `{ name: 'uag', version }`. |
+| `settings`, `log` | The resolved settings (frozen), and a log whose messages name the module. |
+| `plugins.get/list/settings` | The plugin registry: plugins by type and name, and their operator settings. |
+| `requireAccess(auth, form, methods)` | Throws 403, as the Agent API does, unless the caller may use the form with one of `methods`. Routes get this check from `access` (after the caller check, which answers 401 to a caller who is not signed in); use it for anything else. |
+| `requireLicense()` | Throws 403 `license_required` unless Agentic Formflow is allowed. |
+| `files.read(form, value, auth, { maxBytes, component, signal })` | A stored file value's bytes, read with the caller's credentials and the file component's storage check (a value pointing elsewhere is refused before any fetch). |
+| `converters.identify/route/accept/run/list` | File types from their bytes, the converter route to the representations a plugin reads, and running it. |
+| `engines.select({ name, needs })` | An engine that generates and reads what is needed, as `{ name, model, accepts, generate(request) }`: its `generate` checks the license first. Throws 503 `no_engine` when no enabled engine fits. Modules never get the engine itself. |
+| `stream(req, res, run, { heartbeatMs })` | Answers with what `run` returns, as JSON or as server-sent progress events (above). |
+| `callerKey(req)` | A key per caller, for limits: the user, the token or the key, and for anonymous callers their address. |
+| `markdown.sanitize/fromHtml`, `pdf.pageCount`, `forms.componentAt/componentByKey`, `errors.create/is` | Helpers. |
+
+Modules never get the project object or an engine's credentials through the API: what it gives keeps the UAG's checks (access, license, file storage, rate limits) in one place, and stays stable within a major version. Anything a module reaches outside `api` and `req.form`'s members may change in a minor release. The API is not a sandbox, though: a module runs in the UAG process with everything the process can reach. Use only modules you trust.
+
+### Testing a module
+
+`@formio/uag/testing` runs a module's API and routes without a Form.io project or a running UAG: the real errors, streaming, form lookups, converters and engine handles, with stand-ins for the caller, the license, the engines and the files.
+
+```js
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const supertest = require('supertest');
+const { createTestModuleApi, mountModuleRoutes, testForm, testAuth } = require('@formio/uag/testing');
+const AddressCheck = require('../index.js');
+
+const form = testForm({ _id: 'f1', name: 'shipping', path: 'shipping', components: [{ type: 'uagaddresscheck', key: 'address' }] });
+
+test('settings come from the configuration', async () => {
+    const api = await createTestModuleApi(AddressCheck, { config: { addressCheck: { maxLength: 20 } } });
+    assert.equal(api.settings.maxLength, 20);
+});
+
+test('the route refuses an empty address', async () => {
+    const app = await mountModuleRoutes(AddressCheck, { form, auth: testAuth(), engines: [{ name: 'fake', generate: async () => ({ text: 'yes' }) }] });
+    const res = await supertest(app).post('/shipping/address-check/check').send({});
+    assert.equal(res.status, 400);
+    assert.equal(res.body.code, 'invalid_request');
+});
+```
+
+The kit needs `@formio/uag` (a peer dependency of your module); the example also uses [`supertest`](https://www.npmjs.com/package/supertest), a dev dependency to install. `createTestModuleApi(module, { settings | config, env, plugins, engines, licensed, files })` resolves the settings as the server does. `mountModuleRoutes(module, { form, auth, ...the same })` mounts the routes on an Express app by the form's path and by `form/<id>`, with the access check and the error shape (no rate limits). `testForm(definition)` reads base64 file values; pass `files` for others. `testAuth({ permissions, user, admin })` is a caller with those permissions: a list (`['read']`) or `{ read: true }`. To try a module in a real UAG in process, see the contract tests of [`@formio/uag-extras`](https://www.npmjs.com/package/@formio/uag-extras).
+
+### Writing one
+
+Start from the samples in [`@formio/uag-extras`](https://www.npmjs.com/package/@formio/uag-extras): `npm run new -- modules <name> --component` starts a module with a route, a component and tests, and its contribution guide covers the review such a module gets. A module may also live in its own package: export it from a CommonJS file for the `uag` command and the image (an ES module's default export works with `server.use()`), depend on `@formio/uag` as a peer, and build its component with the published build above.
+
+## Plugins
+
+A **module** customizes your UAG deployment: it is the one place you wire the server — your project template, form actions, MCP tools, hooks, interface overrides, and which plugins to load. A **plugin** is one capability of a known type — "convert Word documents to PDF", "extract a document's exact text" — that describes itself, so operators can enable it and form builders can select and configure it. Modules can bring plugins; plugins never change how the server itself works.
+
+A module lists its plugins in `plugins`, and any plugin types it defines in `pluginTypes`. They are added to the UAG's one plugin registry in the order modules are used, and never merged with each other. A plugins file (`UAG_PLUGINS`, or `/app/plugins/index.mjs` in the image) adds more the same way. See [Plugins](/developers/plugins).
+
+```js
+module.exports = {
+    config: { /* ... */ },
+    plugins: [require('./my-converter')]
+};
+```
+
+### Documents as task inputs
+
+A file component that is a task's input, or in its `uagContext`, is read for the engines (see [Documents as input](/developers/form-properties#documents-as-input)) through the installed converters: every file type with a route to text is read, the built-in converters giving PDF (its text layer), text, Markdown, CSV, JSON, HTML and XML, and converters from plugins the rest. To read another format, add a converter plugin; there are no file readers in the module configuration.
 
 ## Overriding built-in tools
 
@@ -609,7 +854,7 @@ module.exports = {
     async execute({ company }, extra) {
         // The caller's identity. Its project is the UAG project serving the request.
         const auth = extra.authInfo;
-        const project = auth.project;
+        const project = extra.project;
         const form = await project.getForm('contact');
         if (!form) {
             return project.mcpResponse('formNotFound', { formName: 'contact' }, true);
