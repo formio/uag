@@ -21,16 +21,17 @@ describe('Plugin registry: engines, tools and actions listed', function () {
         return res.body;
     }
 
-    it('lists each engine type with its instances and kinds, never its settings', async () => {
+    it('lists each engine type with its instances, kinds, what it reads and whether it generates, never its settings', async () => {
         process.env.UAG_ENGINE_SECRETIVE_API_KEY = 'listing-secret-value';
         try {
             started = await start({ config: { engines: ['triage:stub-decision', 'check:stub-decision', 'stub-agent'] } });
             const engines = await manifest('engine');
             expect(engines.map((e: any) => e.name)).to.deep.equal(['stub-decision', 'stub-agent']);
-            expect(engines[0]).to.include({ type: 'engine', title: 'Stub decision engine', stability: 'stable' });
+            expect(engines[0]).to.include({ type: 'engine', title: 'Stub decision engine', stability: 'stable', generate: false });
             expect(engines[0].kinds).to.deep.equal(['decision']);
             expect(engines[0].instances).to.deep.equal(['triage', 'check']);
-            expect(engines[1]).to.include({ name: 'stub-agent' });
+            expect(engines[1]).to.include({ name: 'stub-agent', generate: true });
+            expect(engines[1].accepts).to.deep.equal(['text']);
             expect(engines[0]).to.not.have.property('settings');
             expect(JSON.stringify(engines)).to.not.include('listing-secret-value');
         }

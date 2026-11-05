@@ -162,11 +162,13 @@ safeRequestId('bad id with spaces');     // undefined
 Version 1. JSON over HTTP, with the version in the path and in every body: the path lets future versions run side by side, and the body catches a proxy that mixes them up.
 
 ```text
-GET  /v1/engines                 -> { protocol, engines: [{ name, kind, model, maxOptions?, toolUse? }] }
+GET  /v1/engines                 -> { protocol, engines: [{ name, kind, model, maxOptions?, toolUse?, accepts?, generate? }] }
 POST /v1/engines/:name/decide    { protocol, state, questions }
                                  -> { protocol, model, answers, usage? }
 POST /v1/engines/:name/extract   { protocol, instructions, state, fields, schema, tools?, maxIterations? }
                                  -> { protocol, model, values, toolCalls?, usage? }
+POST /v1/engines/:name/generate  { protocol, instructions, system?, attachments?, format, maxTokens? }
+                                 -> { protocol, text, model, stopReason, usage? }
 
 Authorization: Bearer <engine server key>     every request
 X-UAG-Scoped-Token: <scoped token>            research extracts only
@@ -190,12 +192,16 @@ Accept: application/json
   "protocol": 1,
   "engines": [
     { "name": "jev", "kind": "decision", "model": "jev-1.13.0", "maxOptions": 255 },
-    { "name": "claude", "kind": "agent", "model": "claude-opus-5-5", "toolUse": true }
+    { "name": "claude", "kind": "agent", "model": "claude-opus-5-5", "toolUse": true, "accepts": ["text", "pdf"], "generate": true }
   ]
 }
 ```
 
-Each engine needs a valid name (lowercase letters, digits and `-`, starting with a letter, at most 63 characters), a `kind`, and a non-empty `model`. A decision engine needs `maxOptions`, a whole number of at least 2. An agent engine without `toolUse: true` is passed over for tasks that research.
+Each engine needs a valid name (lowercase letters, digits and `-`, starting with a letter, at most 63 characters), a `kind`, and a non-empty `model`. A decision engine needs `maxOptions`, a whole number of at least 2. An agent engine without `toolUse: true` is passed over for tasks that research. An agent engine reports `accepts`, the document kinds `generate` reads (`text`, `pdf`; default `["text"]`), and `generate`, whether it generates free text for document plugins.
+
+### POST /v1/engines/:name/generate
+
+Free text over attached documents, for document plugins. Each attachment is `{ "kind": "pdf", "data": "<base64>", "label", "pages"? }` or `{ "kind": "text", "text", "label", "textFormat"? }`. The PDFs of one request may total at most 32 MB once decoded (`413` over it); the UAG refuses before sending when they exceed its `documents.maxTotalBytes`. The answer is `{ "protocol": 1, "text", "model", "stopReason": "end" | "max_tokens", "usage"? }`. An engine without `generate`, or asked for a kind it does not read, answers `400`. Document bytes and text are never logged.
 
 ### POST /v1/engines/:name/decide
 

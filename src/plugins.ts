@@ -22,6 +22,8 @@ export const enginePluginType: PluginType = {
     validate: (plugin: Plugin) => ENGINE_NAME.test(plugin.name) ? [] : [`engine name "${plugin.name}" must be lowercase letters, digits and "-", starting with a letter`],
     manifest: (plugin: Plugin) => ({
         kinds: plugin.kinds,
+        accepts: plugin.accepts,
+        generate: plugin.generate,
         instances: plugin.instances
     })
 };
@@ -40,10 +42,13 @@ export const toolPluginType: PluginType = {
 
 const semver = (version: string | undefined) => (version && /^\d+\.\d+\.\d+/.test(version)) ? version : UAG_VERSION;
 
-/** List each loaded engine type: its instances and kinds. */
+/** List each loaded engine type: its instances, kinds, what agent instances read, and whether they generate. */
 export function listEngines(registry: PluginRegistry, project: UAGProjectInterface) {
     const engines = project.formflowEngines();
     const entries: Plugin[] = engineTypesOf(engines).map((type) => {
+        const instances = type.instances.map((name) => engines.get(name)).filter(Boolean) as any[];
+        const agents = instances.filter((engine) => engine.kind === 'agent');
+        const accepts = [...new Set(agents.flatMap((engine) => Array.isArray(engine.accepts) ? engine.accepts : ['text']))];
         return {
             type: 'engine',
             name: type.name,
@@ -51,6 +56,8 @@ export function listEngines(registry: PluginRegistry, project: UAGProjectInterfa
             version: semver(type.version),
             apiVersion: 1,
             kinds: type.kinds,
+            accepts,
+            generate: agents.some((engine) => typeof engine.generate === 'function'),
             instances: type.instances
         };
     });

@@ -79,10 +79,44 @@ afterEach(async () => {
     await Promise.all(servers.splice(0).map((server) => new Promise((resolve) => { server.closeAllConnections(); server.close(resolve); })));
 });
 
+/** An agent engine that generates over PDF and text documents, recording what it was sent. */
+const generated = [];
+const writer = defineEngine({
+    type: 'engine',
+    name: 'writer',
+    kinds: ['agent'],
+    apiVersion: 1,
+    create: ({ name }) => ({
+        name,
+        kind: 'agent',
+        model: 'writer-1',
+        accepts: ['text', 'pdf'],
+        extract: async () => ({ model: 'writer-1', values: {} }),
+        async generate(request) {
+            generated.push(request);
+            request.signal?.throwIfAborted();
+            return { text: `# Summary\n${request.attachments.length} document(s)`, model: 'writer-1', stopReason: request.maxTokens === 1 ? 'max_tokens' : 'end', usage: { inputTokens: 10, outputTokens: 5 } };
+        },
+    }),
+});
+
+/** An agent engine whose generate always fails. */
+const broken = defineEngine({
+    type: 'engine',
+    name: 'broken',
+    kinds: ['agent'],
+    apiVersion: 1,
+    create: ({ name }) => ({
+        name, kind: 'agent', model: 'broken-1',
+        extract: async () => ({ model: 'broken-1', values: {} }),
+        generate: async () => { throw new Error('the model refused'); },
+    }),
+});
+
 async function start({ env = {}, connect } = {}) {
     const { app } = await createEngineServer({
         env: { UAG_ENGINE_SERVER_KEY: KEY, UAG_SERVER: UAG, UAG_ENGINES: 'scripted,plain,fixed', ...env },
-        types: { scripted, plain, fixed },
+        types: { scripted, plain, fixed, writer, broken },
         connect,
     });
     const server = await new Promise((resolve) => { const s = app.listen(0, '127.0.0.1', () => resolve(s)); });
@@ -153,8 +187,8 @@ describe('engine server', () => {
             expect(await res.json()).to.deep.equal({
                 protocol: 1,
                 engines: [
-                    { name: 'scripted', kind: 'agent', model: 'scripted-1', toolUse: true },
-                    { name: 'plain', kind: 'agent', model: 'plain-1', toolUse: false },
+                    { name: 'scripted', kind: 'agent', model: 'scripted-1', toolUse: true, accepts: ['text'], generate: false },
+                    { name: 'plain', kind: 'agent', model: 'plain-1', toolUse: false, accepts: ['text'], generate: false },
                     { name: 'fixed', kind: 'decision', model: 'fixed-1', maxOptions: 255 },
                 ],
             });
@@ -188,6 +222,84 @@ describe('engine server', () => {
             expect(await res.json()).to.deep.equal({ protocol: 1, model: 'scripted-1', values: { name: 'Ada', city: 'London' }, usage: { inputTokens: 5, outputTokens: 2 } });
             expect(mcp.connects).to.have.length(0);
             expect(seen[0]).to.not.have.property('tools');
+        });
+    });
+
+    describe('generate', () => {
+        const pdf = Buffer.from('%PDF-1.7\n% test document\n');
+        const body = (extra = {}) => ({
+            protocol: 1,
+            instructions: 'Summarize.',
+            system: 'Be brief.',
+            format: 'markdown',
+            attachments: [
+                { kind: 'pdf', data: pdf.toString('base64'), label: 'Document 1: a.pdf (1 pages)', pages: 1 },
+                { kind: 'text', text: 'Ada lives in London.', label: 'Document 2: b.txt', textFormat: 'plain' },
+            ],
+            ...extra,
+        });
+
+        it('describes what an agent engine reads and whether it generates', async () => {
+            const url = await start({ env: { UAG_ENGINES: 'writer,plain' } });
+            const res = await fetch(`${url}/v1/engines`, { headers: { Authorization: `Bearer ${KEY}` } });
+            expect((await res.json()).engines).to.deep.equal([
+                { name: 'writer', kind: 'agent', model: 'writer-1', toolUse: false, accepts: ['text', 'pdf'], generate: true },
+                { name: 'plain', kind: 'agent', model: 'plain-1', toolUse: false, accepts: ['text'], generate: false },
+            ]);
+        });
+
+        it('passes the request through, with PDFs decoded from base64, and answers text, model and stopReason', async () => {
+            generated.length = 0;
+            const url = await start({ env: { UAG_ENGINES: 'writer' } });
+            const res = await post(url, '/v1/engines/writer/generate', body({ maxTokens: 300 }));
+            expect(res.status).to.equal(200);
+            expect(await res.json()).to.deep.equal({ protocol: 1, text: '# Summary\n2 document(s)', model: 'writer-1', stopReason: 'end', usage: { inputTokens: 10, outputTokens: 5 } });
+            const [request] = generated;
+            expect(Buffer.isBuffer(request.attachments[0].data)).to.equal(true);
+            expect(request.attachments[0].data.equals(pdf)).to.equal(true);
+            expect(request.attachments[1]).to.deep.equal({ kind: 'text', text: 'Ada lives in London.', label: 'Document 2: b.txt', textFormat: 'plain' });
+            expect(request).to.include({ instructions: 'Summarize.', system: 'Be brief.', format: 'markdown', maxTokens: 300 });
+            expect(request.signal).to.be.an.instanceOf(AbortSignal);
+        });
+
+        it('reports a truncated answer as max_tokens', async () => {
+            const url = await start({ env: { UAG_ENGINES: 'writer' } });
+            expect((await (await post(url, '/v1/engines/writer/generate', body({ maxTokens: 1 }))).json()).stopReason).to.equal('max_tokens');
+        });
+
+        it('refuses an engine without generate, a document kind the engine does not read, and a malformed request', async () => {
+            const url = await start({ env: { UAG_ENGINES: 'writer,plain' } });
+            const plainRes = await post(url, '/v1/engines/plain/generate', body({ attachments: [] }));
+            expect(plainRes.status).to.equal(400);
+            expect((await plainRes.json()).error).to.include('does not generate');
+            const pdfToPlain = await post(url, '/v1/engines/plain/generate', body());
+            expect(pdfToPlain.status).to.equal(400);
+            const bad = await post(url, '/v1/engines/writer/generate', body({ format: 'html' }));
+            expect(bad.status).to.equal(400);
+            expect((await bad.json()).error).to.include('"format"');
+        });
+
+        it('refuses PDFs over the document size cap with 413', async () => {
+            const url = await start({ env: { UAG_ENGINES: 'writer' } });
+            const big = Buffer.alloc(33 * 1024 * 1024, 1).toString('base64');
+            const res = await post(url, '/v1/engines/writer/generate', body({ attachments: [{ kind: 'pdf', data: big, label: 'big.pdf' }] }));
+            expect([413]).to.include(res.status);
+        });
+
+        it('never logs document text or bytes when the engine fails', async () => {
+            const lines = [];
+            const original = console.error;
+            console.error = (...args) => lines.push(args.join(' '));
+            try {
+                const url = await start({ env: { UAG_ENGINES: 'broken' } });
+                const res = await post(url, '/v1/engines/broken/generate', body({ attachments: [{ kind: 'text', text: 'SECRET-DOCUMENT-TEXT', label: 'x' }] }));
+                expect(res.status).to.equal(502);
+            }
+            finally {
+                console.error = original;
+            }
+            expect(lines.join('\n')).to.include('generate failed');
+            expect(lines.join('\n')).to.not.include('SECRET-DOCUMENT-TEXT');
         });
     });
 

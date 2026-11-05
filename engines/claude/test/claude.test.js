@@ -102,6 +102,69 @@ describe('Claude engine', () => {
         expect(fake.calls[0].streamed).to.equal(true);
     });
 
+    describe('generate', () => {
+        const pdf = Buffer.from('%PDF-1.7\n% claude test\n');
+        const answer = (text, stop = 'end_turn') => () => ({ model: 'claude-opus-5-5', stop_reason: stop, content: [{ type: 'text', text }], usage: { input_tokens: 100, output_tokens: 20 } });
+
+        it('reads text and PDFs', async () => {
+            expect((await create({ client: fakeAnthropic(answer('x')).client })).accepts).to.deep.equal(['text', 'pdf']);
+        });
+
+        it('sends PDF and text documents before the instructions, with cache control on the last document', async () => {
+            const fake = fakeAnthropic(answer('# Agreement'));
+            const engine = await create({ client: fake.client });
+            const response = await engine.generate({
+                instructions: 'Copy sections 1 to 4.',
+                system: 'Copy exactly.',
+                format: 'markdown',
+                attachments: [
+                    { kind: 'pdf', data: pdf, label: 'Document 1: a.pdf (2 pages)', pages: 2 },
+                    { kind: 'text', text: 'Annex text', label: 'Document 2: b.txt', textFormat: 'plain' }
+                ]
+            });
+            const { body } = fake.calls[0];
+            expect(body.system).to.equal('Copy exactly.');
+            expect(body.messages).to.have.length(1);
+            const [first, second, instructions] = body.messages[0].content;
+            expect(first).to.deep.equal({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: pdf.toString('base64') }, title: 'Document 1: a.pdf (2 pages)' });
+            expect(second).to.deep.equal({ type: 'document', source: { type: 'text', media_type: 'text/plain', data: 'Annex text' }, title: 'Document 2: b.txt', cache_control: { type: 'ephemeral' } });
+            expect(instructions).to.deep.equal({ type: 'text', text: 'Copy sections 1 to 4.' });
+            expect(response).to.deep.equal({ text: '# Agreement', model: 'claude-opus-5-5', stopReason: 'end', usage: { inputTokens: 100, outputTokens: 20 } });
+        });
+
+        it('streams, reporting progress as the answer grows', async () => {
+            const fake = fakeAnthropic(answer('A long answer of thirty-two chars'));
+            const engine = await create({ client: fake.client });
+            const progress = [];
+            await engine.generate({ instructions: 'Write.', format: 'markdown', onProgress: (chars) => progress.push(chars) });
+            expect(fake.calls[0].streamed).to.equal(true);
+            expect(progress.length).to.be.greaterThan(1);
+            expect(progress[progress.length - 1]).to.equal('A long answer of thirty-two chars'.length);
+            expect(progress).to.deep.equal([...progress].sort((a, b) => a - b));
+        });
+
+        it('reports max_tokens as a truncated answer, and takes the request\'s output limit', async () => {
+            const fake = fakeAnthropic(answer('cut', 'max_tokens'));
+            const response = await (await create({ client: fake.client })).generate({ instructions: 'Write.', format: 'text', maxTokens: 500 });
+            expect(response.stopReason).to.equal('max_tokens');
+            expect(fake.calls[0].body.max_tokens).to.equal(500);
+            expect(fake.calls[0].body.system).to.include('plain text');
+        });
+
+        it('turns a refusal into an engine failure', async () => {
+            const fake = fakeAnthropic(() => ({ stop_reason: 'refusal', content: [] }));
+            const engine = await create({ client: fake.client });
+            let message = '';
+            try {
+                await engine.generate({ instructions: 'Write.', format: 'markdown' });
+            }
+            catch (err) {
+                message = err.message;
+            }
+            expect(message).to.include('Claude declined');
+        });
+    });
+
     it('refuses a maxTokens that is not a whole number from 1 to 128000 at startup', async () => {
         for (const value of ['0', '128001', '1.5', 'lots']) {
             try {

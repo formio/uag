@@ -185,5 +185,39 @@ export interface AgentEngine {
     toolUse?: boolean;
     /** Structured extraction that returns values for the requested fields only. */
     extract(request: ExtractRequest): Promise<ExtractResponse>;
+    /**
+     * The document representations `generate` reads natively. Default ['text'].
+     * An engine lists 'pdf' only when it sends PDFs to its model as documents.
+     */
+    accepts?: Array<'text' | 'pdf'>;
+    /** Free-text generation over attached documents, for document plugins. Optional. */
+    generate?(request: GenerateRequest): Promise<GenerateResponse>;
 }
 export type Engine = DecisionEngine | AgentEngine;
+
+/** A document an engine reads: PDF bytes, or text with its format. */
+export type Attachment =
+    | { kind: 'pdf'; data: Buffer; label: string; pages?: number }
+    | { kind: 'text'; text: string; label: string; textFormat?: 'plain' | 'markdown' | 'csv' };
+
+export type GenerateRequest = {
+    /** The user prompt. */
+    instructions: string;
+    system?: string;
+    /** Sent before the instructions, in order. */
+    attachments?: Attachment[];
+    format: 'markdown' | 'text';
+    /** Default: the engine's own output limit setting. */
+    maxTokens?: number;
+    signal?: AbortSignal;
+    /** Called as the answer streams, with the characters produced so far. */
+    onProgress?(outputChars: number): void;
+};
+
+export type GenerateResponse = {
+    text: string;
+    model: string;
+    /** 'max_tokens': the answer was cut off at the output limit. */
+    stopReason: 'end' | 'max_tokens';
+    usage?: EngineUsage;
+};

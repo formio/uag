@@ -26,6 +26,14 @@ const SCOPED_TOKEN_HEADER = 'x-uag-scoped-token';
 const REQUEST_ID_HEADER = 'x-request-id';
 const REQUEST_ID = /^[A-Za-z0-9._:-]{1,128}$/;
 
+/**
+ * The most PDF bytes one generate request carries: the provider request cap
+ * the UAG's documents.maxTotalBytes stays within (32 MB).
+ */
+const MAX_DOCUMENT_BYTES = 32 * 1024 * 1024;
+const DOCUMENT_KINDS = ['text', 'pdf'];
+const TEXT_FORMATS = ['plain', 'markdown', 'csv'];
+
 /** A request id that is safe to send and log: up to 128 letters, digits, `.`, `_`, `:` or `-`. Anything else is undefined. */
 function safeRequestId(value) {
     return typeof value === 'string' && REQUEST_ID.test(value) ? value : undefined;
@@ -102,14 +110,81 @@ function checkDescription(body) {
         if (engine.kind === 'decision') {
             check(Number.isInteger(engine.maxOptions) && engine.maxOptions >= 2, `The decision engine "${engine.name}" needs maxOptions.`);
         }
+        if (engine.kind === 'agent' && engine.accepts !== undefined) {
+            check(Array.isArray(engine.accepts) && engine.accepts.length && engine.accepts.every((kind) => DOCUMENT_KINDS.includes(kind)),
+                `The engine "${engine.name}" must list "text" and "pdf" only in "accepts".`);
+        }
         return {
             name: engine.name,
             kind: engine.kind,
             model: engine.model,
             ...(engine.kind === 'decision' && { maxOptions: engine.maxOptions }),
-            ...(engine.kind === 'agent' && { toolUse: engine.toolUse === true }),
+            ...(engine.kind === 'agent' && {
+                toolUse: engine.toolUse === true,
+                accepts: engine.accepts || ['text'],
+                generate: engine.generate === true,
+            }),
         };
     });
+}
+
+/**
+ * A generate request, as an engine server receives it. PDF attachments arrive
+ * as base64 and are returned as Buffers; their decoded total may not exceed
+ * `maxBytes`.
+ */
+function checkGenerateRequest(body, maxBytes = MAX_DOCUMENT_BYTES) {
+    checkVersion(body);
+    check(typeof body.instructions === 'string', '"instructions" must be a string.');
+    check(body.system === undefined || typeof body.system === 'string', '"system" must be a string.');
+    check(['markdown', 'text'].includes(body.format), '"format" must be "markdown" or "text".');
+    check(body.maxTokens === undefined || (Number.isInteger(body.maxTokens) && body.maxTokens > 0), '"maxTokens" must be a positive whole number.');
+    check(body.attachments === undefined || Array.isArray(body.attachments), '"attachments" must be a list.');
+    let pdfBytes = 0;
+    const attachments = (body.attachments || []).map((attachment, i) => {
+        const where = `Attachment ${i + 1}`;
+        check(isObject(attachment) && typeof attachment.label === 'string', `${where} needs a label.`);
+        if (attachment.kind === 'pdf') {
+            check(typeof attachment.data === 'string', `${where} must carry its PDF as base64 "data".`);
+            check(attachment.pages === undefined || (Number.isInteger(attachment.pages) && attachment.pages >= 0), `${where} "pages" must be a whole number.`);
+            const data = Buffer.from(attachment.data, 'base64');
+            pdfBytes += data.length;
+            check(pdfBytes <= maxBytes, `The attached PDFs exceed ${maxBytes} bytes.`, 413);
+            return { kind: 'pdf', data, label: attachment.label, ...(attachment.pages !== undefined && { pages: attachment.pages }) };
+        }
+        check(attachment.kind === 'text' && typeof attachment.text === 'string', `${where} must be a "pdf" or "text" attachment.`);
+        check(attachment.textFormat === undefined || TEXT_FORMATS.includes(attachment.textFormat), `${where} "textFormat" must be plain, markdown or csv.`);
+        return { kind: 'text', text: attachment.text, label: attachment.label, ...(attachment.textFormat && { textFormat: attachment.textFormat }) };
+    });
+    return {
+        instructions: body.instructions,
+        ...(body.system !== undefined && { system: body.system }),
+        attachments,
+        format: body.format,
+        ...(body.maxTokens !== undefined && { maxTokens: body.maxTokens }),
+    };
+}
+
+/** Attachments for the wire: PDF bytes as base64. Never logged. */
+function encodeAttachments(attachments = []) {
+    return attachments.map((attachment) => attachment.kind === 'pdf'
+        ? { kind: 'pdf', data: Buffer.from(attachment.data).toString('base64'), label: attachment.label, ...(attachment.pages !== undefined && { pages: attachment.pages }) }
+        : { kind: 'text', text: attachment.text, label: attachment.label, ...(attachment.textFormat && { textFormat: attachment.textFormat }) });
+}
+
+/** The decoded size of the PDFs among attachments. */
+function pdfByteLength(attachments = []) {
+    return attachments.reduce((total, attachment) => total + (attachment.kind === 'pdf' ? Buffer.byteLength(attachment.data) : 0), 0);
+}
+
+/** A generate response, as the UAG receives it. */
+function checkGenerateResponse(body) {
+    checkVersion(body, 'response');
+    check(typeof body.text === 'string', 'The response has no "text".');
+    check(typeof body.model === 'string', 'The response does not name its model.');
+    check(['end', 'max_tokens'].includes(body.stopReason), '"stopReason" must be "end" or "max_tokens".');
+    const usage = checkUsage(body.usage);
+    return { text: body.text, model: body.model, stopReason: body.stopReason, ...(usage && { usage }) };
 }
 
 /** A token count: a whole number, or null when not reported. */
@@ -185,5 +260,10 @@ module.exports = {
     checkDescription,
     checkDecisionResponse,
     checkExtractResponse,
+    checkGenerateRequest,
+    checkGenerateResponse,
+    encodeAttachments,
+    pdfByteLength,
+    MAX_DOCUMENT_BYTES,
     errorBody,
 };

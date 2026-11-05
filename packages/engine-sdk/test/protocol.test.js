@@ -43,16 +43,34 @@ describe('remote engine protocol', () => {
     it('reads a description, keeping only what the protocol defines', () => {
         const engines = protocol.checkDescription({ protocol: 1, engines: [
             { name: 'jev', kind: 'decision', model: 'jev-1', maxOptions: 255, apiKey: 'leak' },
-            { name: 'claude', kind: 'agent', model: 'c-1', toolUse: true },
+            { name: 'claude', kind: 'agent', model: 'c-1', toolUse: true, accepts: ['text', 'pdf'], generate: true },
             { name: 'local', kind: 'agent', model: 'l-1' },
         ] });
         expect(engines).to.deep.equal([
             { name: 'jev', kind: 'decision', model: 'jev-1', maxOptions: 255 },
-            { name: 'claude', kind: 'agent', model: 'c-1', toolUse: true },
-            { name: 'local', kind: 'agent', model: 'l-1', toolUse: false },
+            { name: 'claude', kind: 'agent', model: 'c-1', toolUse: true, accepts: ['text', 'pdf'], generate: true },
+            { name: 'local', kind: 'agent', model: 'l-1', toolUse: false, accepts: ['text'], generate: false },
         ]);
+        expect(() => protocol.checkDescription({ protocol: 1, engines: [{ name: 'x', kind: 'agent', model: 'm', accepts: ['docx'] }] })).to.throw(/"accepts"/);
         expect(() => protocol.checkDescription({ protocol: 1, engines: [{ name: '../x', kind: 'agent', model: 'm' }] })).to.throw(/valid name/);
         expect(() => protocol.checkDescription({ protocol: 1, engines: [{ name: 'jev', kind: 'decision', model: 'm' }] })).to.throw(/maxOptions/);
+    });
+
+    it('reads generate requests, decoding PDFs and capping their size, and generate responses', () => {
+        const pdf = Buffer.from('%PDF-1.7');
+        const request = protocol.checkGenerateRequest({ protocol: 1, instructions: 'i', format: 'markdown', attachments: [
+            { kind: 'pdf', data: pdf.toString('base64'), label: 'a.pdf', pages: 2 },
+            { kind: 'text', text: 't', label: 'b.txt', textFormat: 'csv' },
+        ] });
+        expect(request.attachments[0].data.equals(pdf)).to.equal(true);
+        expect(request.attachments[1]).to.deep.equal({ kind: 'text', text: 't', label: 'b.txt', textFormat: 'csv' });
+        expect(() => protocol.checkGenerateRequest({ protocol: 1, instructions: 'i', format: 'markdown', attachments: [{ kind: 'pdf', data: pdf.toString('base64'), label: 'a' }] }, 4))
+            .to.throw(/exceed 4 bytes/).with.property('status', 413);
+        expect(() => protocol.checkGenerateRequest({ protocol: 1, instructions: 'i', format: 'html' })).to.throw(/"format"/);
+        expect(protocol.encodeAttachments([{ kind: 'pdf', data: pdf, label: 'a' }])).to.deep.equal([{ kind: 'pdf', data: pdf.toString('base64'), label: 'a' }]);
+        expect(protocol.pdfByteLength([{ kind: 'pdf', data: pdf, label: 'a' }, { kind: 'text', text: 'xx', label: 'b' }])).to.equal(pdf.length);
+        expect(protocol.checkGenerateResponse({ protocol: 1, text: 'x', model: 'm', stopReason: 'max_tokens' })).to.deep.equal({ text: 'x', model: 'm', stopReason: 'max_tokens' });
+        expect(() => protocol.checkGenerateResponse({ protocol: 1, text: 'x', model: 'm', stopReason: 'length' })).to.throw(/stopReason/);
     });
 
     it('reads responses', () => {

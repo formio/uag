@@ -13,6 +13,11 @@
  * loop over them - calls go through the UAG's `callTool`, which enforces the
  * task's tool list and the caller's permissions - and then asks for the same
  * structured answer with tools turned off.
+ *
+ * generate() writes free text over attached documents (PDFs as document
+ * blocks, text as text documents), before the instructions, with the last
+ * document marked for the prompt cache so a retry with the same documents
+ * reads them from the cache. It reports progress as the answer streams.
  */
 const { defineEngine, EngineConfigError, EngineError, ENGINE_API_VERSION, requiredSchema, toolResultText } = require('@formio/uag-sdk');
 
@@ -121,6 +126,14 @@ module.exports = defineEngine({
             return stream.finalMessage();
         }
 
+        /** A document block for one attachment: PDF bytes, or text. */
+        function documentBlock(attachment) {
+            if (attachment.kind === 'pdf') {
+                return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: Buffer.from(attachment.data).toString('base64') }, title: attachment.label };
+            }
+            return { type: 'document', source: { type: 'text', media_type: 'text/plain', data: attachment.text }, title: attachment.label };
+        }
+
         /**
          * Look up what the fields need with the read-only tools, appending every
          * turn to `messages` (append-only, thinking blocks included). Stops when
@@ -170,6 +183,33 @@ module.exports = defineEngine({
             apiVersion: ENGINE_API_VERSION,
             model,
             toolUse: true,
+            accepts: ['text', 'pdf'],
+
+            async generate(request) {
+                const content = (request.attachments || []).map(documentBlock);
+                // A retry with the same documents reads them from the prompt cache.
+                if (content.length) content[content.length - 1].cache_control = { type: 'ephemeral' };
+                content.push({ type: 'text', text: request.instructions });
+                const system = [request.system, request.format === 'text' ? 'Answer in plain text, without Markdown.' : ''].filter(Boolean).join('\n\n');
+                const limit = Math.min(request.maxTokens || maxTokens, MAX_TOKENS_CEILING);
+                let chars = 0;
+                const message = await create({
+                    ...(system && { system }),
+                    max_tokens: limit,
+                    messages: [{ role: 'user', content }]
+                }, request.signal, request.onProgress && ((delta) => {
+                    chars += String(delta || '').length;
+                    request.onProgress(chars);
+                }));
+                assertNotRefused(message);
+                return {
+                    text: textOf(message),
+                    model: message.model || model,
+                    stopReason: message.stop_reason === 'max_tokens' ? 'max_tokens' : 'end',
+                    ...(message.usage && { usage: { inputTokens: message.usage.input_tokens ?? null, outputTokens: message.usage.output_tokens ?? null } })
+                };
+            },
+
             async extract(request) {
                 const { schema, decode } = requiredSchema(request.schema);
                 const messages = [{
