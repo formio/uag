@@ -2144,6 +2144,241 @@
           ]
         }
       ]
+    },
+    "leaseReview": {
+      "title": "Lease Review",
+      "type": "form",
+      "name": "leaseReview",
+      "path": "lease-review",
+      "display": "form",
+      "tags": [
+        "uag"
+      ],
+      "access": [
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous"
+          ]
+        }
+      ],
+      "submissionAccess": [],
+      "submissionRevisions": "",
+      "revisions": "original",
+      "esign": {},
+      "pdfComponents": [],
+      "components": [
+        {
+          "type": "textfield",
+          "key": "property",
+          "label": "Property",
+          "input": true,
+          "placeholder": "Unit 4B, 210 Harbor Street",
+          "validate": {
+            "required": true,
+            "maxLength": 200
+          },
+          "tableView": true
+        },
+        {
+          "type": "textfield",
+          "key": "reviewer",
+          "label": "Reviewed by",
+          "input": true,
+          "validate": {
+            "maxLength": 120
+          },
+          "tableView": true
+        },
+        {
+          "type": "panel",
+          "key": "clausesPanel",
+          "title": "Key clauses, word for word",
+          "input": false,
+          "components": [
+            {
+              "type": "uagdocument",
+              "key": "leaseClauses",
+              "label": "Upload the lease",
+              "input": true,
+              "tree": true,
+              "tableView": false,
+              "description": "PDF, Word, text, or a scan or photo (PNG or JPEG), up to 3 MB. The clauses are copied into the field below, in the lease's exact words, and checked against it.",
+              "uag": {
+                "plugin": "extract",
+                "settings": {
+                  "minScore": 0.98,
+                  "repair": true,
+                  "allow": ""
+                },
+                "instructions": "Copy, word for word, each clause of this lease about: the term and any renewal; the rent and when it is due; the security deposit; and how either party may end the lease early. Copy each clause whole, with the lease's own heading for it, and add no headings or words of your own.",
+                "instructionsComponent": "",
+                "accept": [],
+                "converters": {},
+                "engine": "",
+                "auto": true,
+                "target": "keyClauses"
+              },
+              "components": [
+                {
+                  "type": "file",
+                  "key": "files",
+                  "label": "Lease",
+                  "input": true,
+                  "storage": "base64",
+                  "multiple": false,
+                  "hideLabel": true,
+                  "filePattern": ".pdf,.docx,.txt,.md,.png,.jpg,.jpeg",
+                  "fileMaxSize": "3MB",
+                  "tableView": false
+                },
+                {
+                  "type": "hidden",
+                  "key": "result",
+                  "input": true
+                }
+              ],
+              "hideLabel": false
+            },
+            {
+              "type": "textarea",
+              "key": "keyClauses",
+              "label": "Key clauses",
+              "input": true,
+              "editor": "quill",
+              "isUploadEnabled": false,
+              "wysiwyg": {
+                "theme": "snow"
+              },
+              "autoExpand": true,
+              "rows": 8,
+              "tableView": false,
+              "description": "Filled in from the lease. Edit it if you need to; your edits are kept."
+            }
+          ]
+        },
+        {
+          "type": "panel",
+          "key": "summaryPanel",
+          "title": "Summary for the property manager",
+          "input": false,
+          "components": [
+            {
+              "type": "uagdocument",
+              "key": "leaseSummary",
+              "label": "Upload the lease again to summarize it",
+              "input": true,
+              "tree": true,
+              "tableView": false,
+              "description": "The summary is written by the AI from the lease. Check it before you approve.",
+              "uag": {
+                "plugin": "analyze",
+                "settings": {
+                  "maxWords": 200
+                },
+                "instructions": "Summarize this lease for a property manager in short bullet points: the parties, the rent and when it is due, the deposit, the term and renewal, who pays for repairs and utilities, and anything unusual or risky for the landlord. Say plainly when the lease is silent on one of these.",
+                "instructionsComponent": "",
+                "accept": [],
+                "converters": {},
+                "engine": "",
+                "auto": true,
+                "target": ""
+              },
+              "components": [
+                {
+                  "type": "file",
+                  "key": "files",
+                  "label": "Lease",
+                  "input": true,
+                  "storage": "base64",
+                  "multiple": false,
+                  "hideLabel": true,
+                  "filePattern": ".pdf,.docx,.txt,.md,.png,.jpg,.jpeg",
+                  "fileMaxSize": "3MB",
+                  "tableView": false
+                },
+                {
+                  "type": "hidden",
+                  "key": "result",
+                  "input": true
+                }
+              ],
+              "hideLabel": false
+            }
+          ]
+        },
+        {
+          "type": "panel",
+          "key": "translationPanel",
+          "title": "Translation for the tenant",
+          "input": false,
+          "components": [
+            {
+              "type": "uagdocument",
+              "key": "leaseTranslation",
+              "label": "Upload the lease to translate it for the tenant",
+              "input": true,
+              "tree": true,
+              "tableView": false,
+              "description": "Translated by the AI into Spanish, in the lease\u2019s own order. Check it before you approve.",
+              "uag": {
+                "plugin": "translate",
+                "settings": {
+                  "language": "es"
+                },
+                "instructions": "Translate this lease into plain, accurate Spanish for the tenant. Keep the parties' names, the address and every amount exactly as written, and each clause's number and heading.",
+                "instructionsComponent": "",
+                "accept": [],
+                "converters": {},
+                "engine": "",
+                "auto": true,
+                "target": ""
+              },
+              "components": [
+                {
+                  "type": "file",
+                  "key": "files",
+                  "label": "Lease",
+                  "input": true,
+                  "storage": "base64",
+                  "multiple": false,
+                  "hideLabel": true,
+                  "filePattern": ".pdf,.docx,.txt,.md,.png,.jpg,.jpeg",
+                  "fileMaxSize": "3MB",
+                  "tableView": false
+                },
+                {
+                  "type": "hidden",
+                  "key": "result",
+                  "input": true
+                }
+              ],
+              "hideLabel": false
+            }
+          ]
+        },
+        {
+          "type": "checkbox",
+          "key": "checked",
+          "label": "I have checked the clauses and the summary against the lease",
+          "input": true,
+          "validate": {
+            "required": true
+          },
+          "tableView": true
+        },
+        {
+          "type": "button",
+          "key": "submit",
+          "label": "Save the review",
+          "input": true,
+          "action": "submit",
+          "theme": "primary",
+          "disableOnInvalid": true
+        }
+      ]
     }
   },
   "actions": {
@@ -2278,6 +2513,19 @@
       "title": "Save Submission",
       "name": "save",
       "form": "claim",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    },
+    "leaseReview:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "leaseReview",
       "priority": 10,
       "method": [
         "create",

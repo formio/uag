@@ -1,6 +1,6 @@
 /**
  * The Form.io UAG demo site: the product pages, the developer documentation,
- * and the back end of the three live examples and the flow viewer.
+ * and the back end of the live examples and the flow viewer.
  *
  * It is the only public service of the demo stack. The UAG stays on the private
  * network, and this server connects out to it, and to the project on Form.io;
@@ -22,6 +22,7 @@ import { PAGES, Views, render, siteValues } from './pages.mjs';
 import { conversationRoutes } from './conversation.mjs';
 import { workflowRoutes } from './workflow.mjs';
 import { CLAIMS_PATH, formflowRoutes } from './formflow.mjs';
+import { DOCUMENTS_UAG_PATH, REVIEWS_PATH, documentRoutes } from './documents.mjs';
 import { startRetention } from './retention.mjs';
 
 /** Security headers. The live demos load formio.js and the Turnstile widget from their CDNs. */
@@ -93,9 +94,10 @@ export function createApp(config = readConfig(), overrides = {}) {
     app.use('/api', sessions.middleware({
         allowNew: (req) => !guard.windows.hit(`sessions:ip:${networkOf(req.ip)}`, { limit: config.sessionsPerNetwork, windowMs: 10 * 60_000 }),
     }));
-    // The claim upload is parsed by its own route, after the guard has let it in.
+    // The uploads (a claim's photos, a lease) are parsed by their own routes, after the guard has let them in.
     const smallJson = express.json({ limit: '200kb' });
-    app.use((req, res, next) => (req.path === CLAIMS_PATH ? next() : smallJson(req, res, next)));
+    const ownBody = (req) => req.path === CLAIMS_PATH || req.path === REVIEWS_PATH || (req.method === 'POST' && req.path.startsWith(DOCUMENTS_UAG_PATH));
+    app.use((req, res, next) => (ownBody(req) ? next() : smallJson(req, res, next)));
 
     // Whether the UAG may run Agentic Formflow (the workflow and formflow demos): it
     // needs a UAG license or a project on Form.io's hosted service. Conversation forms
@@ -146,6 +148,7 @@ export function createApp(config = readConfig(), overrides = {}) {
     conversationRoutes(api, context);
     workflowRoutes(api, context);
     formflowRoutes(api, context);
+    documentRoutes(api, context);
     api.use('/api', (req, res) => res.status(404).json({ error: 'Not found.' }));
     app.use(api);
 

@@ -56,10 +56,11 @@ export const DEFAULT_LIMITS = {
     chat: { session: { limit: 30, windowMs: 10 * 60_000 }, ip: { limit: 90, windowMs: 10 * 60_000 } },
     extract: { session: { limit: 30, windowMs: 10 * 60_000 }, ip: { limit: 90, windowMs: 10 * 60_000 } },
     submit: { session: { limit: 6, windowMs: 10 * 60_000 }, ip: { limit: 20, windowMs: 60 * 60_000 } },
+    document: { session: { limit: 10, windowMs: 10 * 60_000 }, ip: { limit: 30, windowMs: 10 * 60_000 } },
 };
 
 /** What each operation costs against the daily budget. An application runs two agents. */
-export const DEFAULT_COSTS = { chat: 1, extract: 1, submit: 1, application: 2 };
+export const DEFAULT_COSTS = { chat: 1, extract: 1, submit: 1, application: 2, document: 2 };
 
 /**
  * A project's name, which the UAG serves its routes and names its client ids
@@ -156,7 +157,7 @@ export function readConfig(env = process.env) {
         // The longest free-text input a demo task takes (a description, a message).
         maxInputLength: int(env.DEMO_MAX_INPUT_LENGTH, 8000),
         retentionHours: int(env.DEMO_RETENTION_HOURS, 24),
-        retentionForms: list(env.DEMO_RETENTION_FORMS, 'serviceRequest,application,sum,claim'),
+        retentionForms: list(env.DEMO_RETENTION_FORMS, 'serviceRequest,application,sum,claim,leaseReview'),
 
         links: {
             contactForm: env.CONTACT_FORM_URL || 'https://formio.form.io/contact',

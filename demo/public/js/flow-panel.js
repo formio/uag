@@ -88,6 +88,7 @@
   function runTitle(run) {
     var first = run.first;
     if (!first) return 'Run';
+    if (first.kind === 'agent' && first.operation === 'document') return 'AI Document · /document/process';
     if (first.kind === 'agent') {
       return '/agent/' + first.operation + (first.task ? ' · ' + first.task : '');
     }
