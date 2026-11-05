@@ -22,6 +22,9 @@ Its tasks are Agentic Formflow, so the UAG also needs a `LICENSE_KEY` that inclu
 | `effort` | `UAG_ENGINE_<NAME>_EFFORT`, `CLAUDE_EFFORT` | `low`, for extraction |
 | `researchEffort` | `UAG_ENGINE_<NAME>_RESEARCH_EFFORT`, `CLAUDE_RESEARCH_EFFORT` | `medium`, for research with tools |
 | `fallbacks` | `UAG_ENGINE_<NAME>_FALLBACKS`, `CLAUDE_FALLBACKS` | `default`; `off` disables |
+| `maxTokens` | `UAG_ENGINE_<NAME>_MAX_TOKENS`, `CLAUDE_MAX_TOKENS` | `16000`; 1 to 128000 |
+
+`maxTokens` bounds each request's output. A long value, such as a document transcribed into a rich text field, needs more than the default, and more time: raise the instance's routing timeout (`routing.timeouts`) with it, since the UAG abandons an engine at its timeout whatever it is producing.
 
 `<NAME>` is the instance name, upper-cased with `-` as `_`. An instance's own variable wins over the shared one. `effort` and `researchEffort` take `low`, `medium`, `high`, `xhigh` or `max`.
 
@@ -54,7 +57,8 @@ Every request sends `effort` (or `researchEffort`), so the model must accept it:
 - **Extraction** uses structured outputs (`output_config.format`) with a JSON schema the UAG derives from the form. Answers are valid JSON for exactly the requested fields. Values from this engine are always reported as `suggested`.
 - **Research:** when a task lists read-only tools, Claude may call them first, up to `agentApi.research.maxIterations` turns. Every call goes back through the UAG with the caller's identity. Claude then answers with the same structured output, with tools turned off. It never writes: the UAG validates the values and saves them itself.
 - **Refusals:** with `fallbacks` at `default`, the API re-runs a refused request on a fallback model server-side, for the models that have one (such as Claude Opus 5.5 and Sonnet 5.5). Claude Haiku 5.5 has none, so its refusals stand. A refusal that stands is reported as an engine failure, and the UAG falls back to the next engine.
-- **Token limit:** each answer may use up to 16,000 tokens. A research turn or an answer cut off at that limit is an engine failure, and the UAG falls back to the next engine.
+- **Streaming:** every request streams, so a long answer needs no request timeout of its own; the UAG's timeout still aborts it through its signal.
+- **Token limit:** each answer may use up to `maxTokens` (16,000 by default). A research turn or an extraction cut off at that limit is an engine failure, and the UAG falls back to the next engine.
 - **Aborts:** the routing timeout (for research, `agentApi.research.timeout`) aborts the request, and research stops before its next call.
 
 ## Upgrading from 1.x

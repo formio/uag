@@ -6,14 +6,33 @@ const claude = require('..');
 
 const ENV = { CLAUDE_API_KEY: 'sk-ant-test' };
 
-/** A fake Anthropic client recording requests and replying from a script, or from `reply(body)`. */
+/**
+ * A fake Anthropic client recording requests and replying from a script, or
+ * from `reply(body)`. Calls stream: `stream(body, opts)` emits the reply's text
+ * in pieces to 'text' listeners, then resolves `finalMessage()` with the reply.
+ */
 function fakeAnthropic(replies) {
     const calls = [];
     const respond = async (body, opts) => {
-        calls.push({ body, opts });
+        calls.push({ body, opts, streamed: true });
+        opts && opts.signal && opts.signal.throwIfAborted();
         return typeof replies === 'function' ? replies(body) : replies.shift();
     };
-    return { calls, client: { messages: { create: respond }, beta: { messages: { create: respond } } } };
+    const stream = (body, opts) => {
+        const listeners = [];
+        return {
+            on(event, listener) { if (event === 'text') listeners.push(listener); return this; },
+            async finalMessage() {
+                const reply = await respond(body, opts);
+                for (const block of (reply && reply.content) || []) {
+                    if (block.type !== 'text') continue;
+                    for (let i = 0; i < block.text.length; i += 4) listeners.forEach((listener) => listener(block.text.slice(i, i + 4)));
+                }
+                return reply;
+            }
+        };
+    };
+    return { calls, client: { messages: { stream }, beta: { messages: { stream } } } };
 }
 
 /** Answers like a model that researches whenever it may: a tool call while tools are on, then the fields. */
@@ -64,6 +83,33 @@ describe('Claude engine', () => {
             }
             catch (err) {
                 expect(err.message).to.include(text);
+            }
+        }
+    });
+
+    it('asks for 16000 output tokens by default, and for maxTokens when set, streaming with no timeout of its own', async () => {
+        const reply = () => ({ model: 'm', stop_reason: 'end_turn', content: [{ type: 'text', text: '{}' }] });
+        let fake = fakeAnthropic(reply);
+        await (await create({ client: fake.client })).extract(request());
+        expect(fake.calls[0].body.max_tokens).to.equal(16000);
+        expect(fake.calls[0].opts).to.not.have.property('timeout');
+
+        fake = fakeAnthropic(reply);
+        await (await create({ client: fake.client }, { ...ENV, CLAUDE_MAX_TOKENS: '64000' })).extract(request());
+        expect(fake.calls[0].body.max_tokens).to.equal(64000);
+        // Every call streams, so a long request needs no timeout; the UAG's signal still aborts it.
+        expect(fake.calls[0].opts).to.not.have.property('timeout');
+        expect(fake.calls[0].streamed).to.equal(true);
+    });
+
+    it('refuses a maxTokens that is not a whole number from 1 to 128000 at startup', async () => {
+        for (const value of ['0', '128001', '1.5', 'lots']) {
+            try {
+                await create({ client: {} }, { ...ENV, CLAUDE_MAX_TOKENS: value });
+                expect.fail(`expected ${value} to be refused`);
+            }
+            catch (err) {
+                expect(err.message).to.include('maxTokens setting must be a whole number');
             }
         }
     });

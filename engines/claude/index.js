@@ -5,6 +5,8 @@
  *   UAG_ENGINES=fast:claude,deep:claude
  *     UAG_ENGINE_FAST_MODEL=claude-haiku-5-5   UAG_ENGINE_DEEP_MODEL=claude-opus-5-5
  *
+ * Every call streams, so long answers need no request timeout of their own.
+ *
  * extract() makes one call with structured outputs (`output_config.format`),
  * so the answer is valid JSON for the requested fields. When the UAG passes
  * read-only tools (a task that enables research), it first runs a tool-use
@@ -16,6 +18,8 @@ const { defineEngine, EngineConfigError, EngineError, ENGINE_API_VERSION, requir
 
 const DEFAULT_MODEL = 'claude-opus-5-5';
 const MAX_TOKENS = 16000;
+/** The most output a request may ask for: Claude's largest output limit. */
+const MAX_TOKENS_CEILING = 128000;
 const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
 const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
 
@@ -65,6 +69,11 @@ module.exports = defineEngine({
         effort: { env: 'CLAUDE_EFFORT', default: 'low', description: 'Effort for extraction.' },
         researchEffort: { env: 'CLAUDE_RESEARCH_EFFORT', default: 'medium', description: 'Effort for research with tools.' },
         fallbacks: { env: 'CLAUDE_FALLBACKS', default: 'default', description: '"default" re-runs a refused request on a fallback model server-side; "off" turns that off.' },
+        maxTokens: {
+            env: 'CLAUDE_MAX_TOKENS',
+            default: String(MAX_TOKENS),
+            description: `The most output tokens one request may produce (1 to ${MAX_TOKENS_CEILING}). Raise it for long values, such as a document transcribed into a rich text field, together with the engine's routing timeout.`
+        },
     },
     create({ name, settings, options }) {
         const { model } = settings;
@@ -74,6 +83,10 @@ module.exports = defineEngine({
             throw new EngineConfigError(`The "${name}" engine's fallbacks setting must be "default" or "off", not ${JSON.stringify(settings.fallbacks)}.`);
         }
         const fallbacks = settings.fallbacks === 'default';
+        const maxTokens = Number(settings.maxTokens);
+        if (!Number.isInteger(maxTokens) || maxTokens < 1 || maxTokens > MAX_TOKENS_CEILING) {
+            throw new EngineConfigError(`The "${name}" engine's maxTokens setting must be a whole number from 1 to ${MAX_TOKENS_CEILING}, not ${JSON.stringify(settings.maxTokens)}.`);
+        }
 
         let client = options.client;
         if (!client) {
@@ -92,14 +105,18 @@ module.exports = defineEngine({
             });
         }
 
-        /** One Messages call, with the server-side refusal fallback unless turned off. */
-        function create(params, signal) {
+        /**
+         * One Messages call, streamed, with the server-side refusal fallback
+         * unless turned off. `onText` receives each piece of text as it arrives.
+         */
+        function create(params, signal, onText) {
             if (signal) signal.throwIfAborted();
-            const body = { model, max_tokens: MAX_TOKENS, ...params };
-            if (fallbacks) {
-                return client.beta.messages.create({ ...body, betas: [FALLBACK_BETA], fallbacks: 'default' }, { signal });
-            }
-            return client.messages.create(body, { signal });
+            const body = { model, max_tokens: maxTokens, ...params };
+            const stream = fallbacks
+                ? client.beta.messages.stream({ ...body, betas: [FALLBACK_BETA], fallbacks: 'default' }, { signal })
+                : client.messages.stream(body, { signal });
+            if (onText) stream.on('text', onText);
+            return stream.finalMessage();
         }
 
         /**
@@ -151,7 +168,6 @@ module.exports = defineEngine({
             apiVersion: ENGINE_API_VERSION,
             model,
             toolUse: true,
-
             async extract(request) {
                 const { schema, decode } = requiredSchema(request.schema);
                 const messages = [{
