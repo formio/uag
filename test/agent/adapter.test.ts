@@ -11,6 +11,7 @@ import type { ToolInfo } from '../../src/tools/utils';
 describe('Formflow adapters', () => {
     describe('formflowTool', () => {
         const calls: any[] = [];
+        const project: any = { name: 'the project' };
         const tool: ToolInfo = {
             name: 'set_value',
             title: 'Set a value',
@@ -24,7 +25,7 @@ describe('Formflow adapters', () => {
         } as any;
 
         it('describes the tool in JSON schema', () => {
-            const adapted = formflowTool(tool);
+            const adapted = formflowTool(tool, project);
             expect(adapted.name).to.equal('set_value');
             expect(adapted.description).to.equal('Sets a value.');
             expect(adapted.inputSchema).to.not.have.property('$schema');
@@ -32,7 +33,7 @@ describe('Formflow adapters', () => {
         });
 
         it('validates arguments with the tool\'s own schema, dropping unknown ones', () => {
-            const adapted = formflowTool(tool);
+            const adapted = formflowTool(tool, project);
             expect(adapted.parse({ path: 'a', value: 1, extra: true })).to.deep.equal({ ok: true, value: { path: 'a', value: 1 } });
             const bad: any = adapted.parse({ path: 'a', value: 'one' });
             expect(bad.ok).to.equal(false);
@@ -40,20 +41,23 @@ describe('Formflow adapters', () => {
         });
 
         it('is read-only only when annotated read-only', () => {
-            expect(formflowTool(tool).readOnly).to.equal(false);
-            expect(formflowTool({ ...tool, annotations: { readOnlyHint: true } } as any).readOnly).to.equal(true);
-            expect(formflowTool({ ...tool, annotations: undefined } as any).readOnly).to.equal(false);
+            expect(formflowTool(tool, project).readOnly).to.equal(false);
+            expect(formflowTool({ ...tool, annotations: { readOnlyHint: true } } as any, project).readOnly).to.equal(true);
+            expect(formflowTool({ ...tool, annotations: undefined } as any, project).readOnly).to.equal(false);
         });
 
-        it('runs the tool with the caller as its auth info', async () => {
+        it('runs the tool with the caller as its auth info, and the project', async () => {
             const auth: any = { user: { _id: 'u1' } };
-            await formflowTool(tool).execute({ path: 'a', value: 1 }, auth);
-            expect(calls[calls.length - 1]).to.deep.equal({ args: { path: 'a', value: 1 }, extra: { authInfo: auth } });
+            await formflowTool(tool, project).execute({ path: 'a', value: 1 }, auth);
+            const last = calls[calls.length - 1];
+            expect(last.args).to.deep.equal({ path: 'a', value: 1 });
+            expect(last.extra.authInfo).to.equal(auth);
+            expect(last.extra.project).to.equal(project);
         });
 
         it('falls back to the title, then the name, for the description', () => {
-            expect(formflowTool({ ...tool, description: undefined } as any).description).to.equal('Set a value');
-            expect(formflowTool({ ...tool, description: undefined, title: undefined } as any).description).to.equal('set_value');
+            expect(formflowTool({ ...tool, description: undefined } as any, project).description).to.equal('Set a value');
+            expect(formflowTool({ ...tool, description: undefined, title: undefined } as any, project).description).to.equal('set_value');
         });
     });
 

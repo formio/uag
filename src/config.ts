@@ -1,7 +1,7 @@
 import { ServerConfig } from '@formio/appserver';
 import type { FormflowAgentApiConfig, FormflowRateLimit, FormflowRoutingConfig } from './formflow';
 import type { EngineInstanceSpec, EngineTypeDefinition } from '@formio/uag-sdk';
-import { ToolInfo } from './tools/utils';
+import type { ToolEntry, ToolInfo } from './tools/utils';
 import type { UAGDatabaseOptions } from './database';
 export type UAGForm = {
   name: string;
@@ -113,7 +113,8 @@ export interface UAGConfig extends ServerConfig {
   loginForm?: string;
   responseTemplates?: UAGTemplateConfig,
   toolOverrides?: UAGToolOverride,
-  tools?: ToolInfo[],
+  /** Custom MCP tools: each a tool, optionally bound to the project with `bind(project)` (see ToolInfo.bind). */
+  tools?: ToolEntry[],
   /**
    * The engine instances to enable, as in `UAG_ENGINES` (`"jev"`, `"fast:claude"`) or as
    * `{ name, type, options }`. When unset, `UAG_ENGINES` is used; when neither names any, no

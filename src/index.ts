@@ -15,6 +15,7 @@ import { ActionLogRouter } from './actionLogs';
 import { taskRunner } from './runner';
 import { RunTaskAction, runTaskHooks } from './actions/runTask';
 import { UAG_VERSION } from './version';
+import { assertToolEntries } from './tools/utils';
 const debug = require('debug')('formio:uag');
 export type UAGModule = ServerModule & {
   config?: UAGConfig;
@@ -236,6 +237,8 @@ export class UAGServer extends Server {
    * on the form's own routes.
    */
   protected async extendRouter(router: Router): Promise<void> {
+    // A bare function in config.tools (the unreleased factory form) stops startup.
+    assertToolEntries(this.config.tools);
     await super.extendRouter(router);
     const uagProject = this.uagProject;
     if (uagProject) {
