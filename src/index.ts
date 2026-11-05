@@ -298,6 +298,8 @@ export * from '@formio/appserver';
 export * from './config';
 export * from './agent';
 export * from './tools';
+export { sanitizeMarkdown } from './markdown';
 export * from './router';
 export * from './template';
+export { sanitizeRichText, isRichText, RICH_TEXT_TAGS, RICH_TEXT_RULE } from './richText';
 export { UAGProjectInterface, UAGFormInterface };

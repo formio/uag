@@ -1,5 +1,6 @@
 import { AppServerForm, AuthRequest, FormInterface, InterpolatedError } from "@formio/appserver";
 import { flagOn } from "./formflow";
+import { isRichText, RICH_TEXT_RULE, sanitizeRichText } from "./richText";
 import type { FormflowForm, FormflowTask } from "./formflow";
 import {
     Component,
@@ -338,8 +339,12 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
             case 'signature':
                 rule += 'Have the user draw their signature. The value will be a base64-encoded PNG image string of that signature.';
                 break;
-            case 'textfield':
             case 'textarea':
+                rule += isRichText(component)
+                    ? RICH_TEXT_RULE
+                    : 'The value can be any alphanumeric string, containing letters, numbers, white space characters, and common symbols.';
+                break;
+            case 'textfield':
             case 'hidden':
                 rule += 'The value can be any alphanumeric string, containing letters, numbers, white space characters, and common symbols.';
                 break;
@@ -722,7 +727,7 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
             else if (value && this.isMultiple(comp) && typeof value === 'string') {
                 value = value.split(',').map((v: string) => v.trim());
             }
-            set(submission.data, path, value);
+            set(submission.data, path, this.normalizeWrittenValue(path, value));
         }
         return submission as Submission;
     }
@@ -800,6 +805,25 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
     /** The submission's values in form order with their labels, for Agentic Formflow. */
     formflowLabeledData(data: DataObject = {}): { path: string; label: string }[] {
         return this.formatData(data).map(({ path, label }) => ({ path, label }));
+    }
+
+    /**
+     * A value an agent engine generated, before it is checked and written: HTML
+     * for a rich text field is reduced to the markup its editor keeps.
+     */
+    formflowNormalizeValue(component: Component, value: any): any {
+        return isRichText(component) && typeof value === 'string' ? sanitizeRichText(value) : value;
+    }
+
+    /**
+     * A value an MCP client writes at a data path (collect_field_data,
+     * confirm_form_submission, submit_completed_form, submission_update), as
+     * an engine's is: HTML for a rich text field is reduced to the markup its
+     * editor keeps. Row indices are ignored to find the component.
+     */
+    normalizeWrittenValue(path: string, value: any): any {
+        const component = this.getComponent(String(path).replace(/\[\d+\]/g, ''));
+        return component ? this.formflowNormalizeValue(component, value) : value;
     }
 
     htmlToMarkdown(html: string): string {

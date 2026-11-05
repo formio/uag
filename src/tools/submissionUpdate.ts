@@ -40,10 +40,11 @@ export const submissionUpdate = async (project: UAGProjectInterface): Promise<To
                 const updateSummary = [];
                 for (const update of updates) {
                     const previousValue = get(updatedData, update.data_path);
-                    set(updatedData, update.data_path, update.new_value);
+                    const newValue = form.normalizeWrittenValue(update.data_path, update.new_value);
+                    set(updatedData, update.data_path, newValue);
                     updateSummary.push({
                         data_path: update.data_path,
-                        new_value: update.new_value,
+                        new_value: newValue,
                         previous_value: previousValue || ''
                     });
                 }
