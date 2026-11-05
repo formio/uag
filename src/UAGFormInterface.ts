@@ -1,5 +1,5 @@
 import { AppServerForm, AuthRequest, FormInterface, InterpolatedError } from "@formio/appserver";
-import { flagOn } from "./formflow";
+import { describeBinary, flagOn, isBinaryComponent } from "./formflow";
 import { isRichText, RICH_TEXT_RULE, sanitizeRichText } from "./richText";
 import type { FormflowForm, FormflowTask } from "./formflow";
 import {
@@ -753,7 +753,12 @@ export class UAGFormInterface extends FormInterface implements FormflowForm {
             }
             else if (this.inputComponent(component) && componentHasValue(component, value)) {
                 const modelType = Utils.getModelType(component);
-                if (isObjectLike(value)) {
+                if (isBinaryComponent(component)) {
+                    // Files and signatures are described, never inlined: a base64 upload would fill the context.
+                    const described = describeBinary(component, value);
+                    value = isObjectLike(described) ? JSON.stringify(described) : described;
+                }
+                else if (isObjectLike(value)) {
                     value = JSON.stringify(value);
                 }
                 else if (modelType === 'string' && isString(value)) {

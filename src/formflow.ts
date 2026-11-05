@@ -31,6 +31,8 @@ export const {
     flagOn,
     flagOff,
     ruleWithConstraints,
+    describeBinary,
+    isBinaryComponent,
 } = Formflow;
 
 export type AgentEngine = Formflow.AgentEngine;

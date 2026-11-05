@@ -38,3 +38,15 @@ describe('Rich text values', () => {
         expect(form.formflowNormalizeValue({ type: 'textarea' }, '<p>a</p><script>b</script>')).to.equal('<p>a</p><script>b</script>');
     });
 });
+
+describe('Binary values given to agents over MCP', () => {
+    it('describes an uploaded file instead of inlining its base64', () => {
+        const form: any = makeProject({ claim: claimForm() }).forms.claim;
+        form.form.components.push({ type: 'file', key: 'photo', label: 'Photo', input: true, storage: 'base64' });
+        const base64 = Buffer.from('a'.repeat(300)).toString('base64');
+        const rows = form.formatData({ photo: [{ storage: 'base64', name: 'p.png', originalName: 'p.png', type: 'image/png', size: 300, url: `data:image/png;base64,${base64}` }] });
+        const photo = rows.find((row: any) => row.path === 'photo');
+        expect(photo.value).to.equal(JSON.stringify({ name: 'p.png', type: 'image/png', size: 300 }));
+        expect(JSON.stringify(rows)).to.not.contain(base64);
+    });
+});
