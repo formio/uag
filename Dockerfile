@@ -27,6 +27,7 @@ COPY src/ ./src/
 COPY module/ ./module/
 COPY bin/ ./bin/
 COPY packages/engine-sdk/ ./packages/engine-sdk/
+COPY packages/uag-js/ ./packages/uag-js/
 COPY engines/ ./engines/
 COPY index.js tsconfig.json ./
 RUN yarn run build
@@ -47,6 +48,8 @@ COPY --from=builder /app/bin ./bin
 COPY --from=builder /app/index.js ./
 # The engine packages, which node_modules links to.
 COPY --from=builder /app/packages/engine-sdk ./packages/engine-sdk
+# @formio/uag-js, which the UAG serves at /uag-js/ (the AI Document and the portal script).
+COPY --from=builder /app/packages/uag-js ./packages/uag-js
 COPY --from=builder /app/engines ./engines
 # The UAG listens only once its project, engines and database are ready, and
 # /status needs no credential, so a 200 means it is serving.
