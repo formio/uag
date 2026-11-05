@@ -428,6 +428,7 @@ export * from './tools';
 export * from './documents';
 export * from './modules';
 export { sanitizeMarkdown } from './markdown';
+export { usePluginFiles, pluginsFile, DEFAULT_PLUGINS_FILE } from './pluginFiles';
 export * from './router';
 export * from './template';
 export { sanitizeRichText, isRichText, RICH_TEXT_TAGS, RICH_TEXT_RULE } from './richText';
