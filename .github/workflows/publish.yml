@@ -183,8 +183,18 @@ jobs:
 
       # No NODE_AUTH_TOKEN: OIDC supplies short-lived credentials, and leaving a
       # token in the environment makes npm prefer it and skip Trusted Publishing.
+      # Skipped when npm already has this version, so rerunning a release whose
+      # image steps failed publishes the images instead of stopping here.
       - name: Publish package to npm
-        run: npm publish --tag "${{ steps.version.outputs.channel }}"
+        run: |
+          set -euo pipefail
+          NAME=$(jq -r .name package.json)
+          VERSION="${{ steps.version.outputs.version }}"
+          if npm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then
+            echo "npm already has ${NAME}@${VERSION} — skipping."
+          else
+            npm publish --tag "${{ steps.version.outputs.channel }}"
+          fi
 
       - name: Docker Login
         uses: docker/login-action@v4
@@ -197,6 +207,9 @@ jobs:
       # replaces the previous build/tag/push trio — it builds both platforms and
       # pushes a single multi-arch manifest, which the plain docker driver cannot
       # do at all.
+      # The arm64 half is built under QEMU, which can crash and then hang instead
+      # of failing. Each image step has a timeout far above its usual 2-3 minutes,
+      # so a hang fails the run and "Re-run failed jobs" can try again.
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -204,6 +217,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and push formio/uag
+        timeout-minutes: 30
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -217,6 +231,7 @@ jobs:
 
       ### Publish the demo site image (formio/uag-demo), at the UAG's version.
       - name: Build and push formio/uag-demo
+        timeout-minutes: 30
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -246,6 +261,7 @@ jobs:
 
       - name: Build and push formio/uag-engines
         if: steps.engine_server.outputs.docker == 'publish'
+        timeout-minutes: 30
         uses: docker/build-push-action@v6
         with:
           context: .
