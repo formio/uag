@@ -17,6 +17,15 @@ export const BUILT_IN_ENGINES: Record<string, EngineTypeDefinition> = {
     'stub-agent': StubAgentEngine,
 };
 
+/** What is known of each loaded engine type, by type name: for listing it as a plugin. */
+export type LoadedEngineType = { name: string; title: string; version?: string; kinds: ('decision' | 'agent')[]; instances: string[] };
+const loadedTypes = new WeakMap<EngineRegistry, LoadedEngineType[]>();
+
+/** The engine types a registry's instances were created from, in order of first use. */
+export function engineTypesOf(registry: EngineRegistry | undefined): LoadedEngineType[] {
+    return (registry && loadedTypes.get(registry)) || [];
+}
+
 /**
  * Enable the engines the configuration names (`engines`), or else
  * `UAG_ENGINES`. Each type is resolved from the configuration's `engineTypes`,
@@ -34,5 +43,13 @@ export async function loadUAGEngines(
         config,
         apiVersion: Formflow.ENGINE_API_VERSION,
     });
-    return Formflow.engineRegistry(loaded);
+    const registry = Formflow.engineRegistry(loaded);
+    const types = new Map<string, LoadedEngineType>();
+    for (const entry of loaded as any[]) {
+        const type = types.get(entry.type) || { name: entry.type, title: entry.title || entry.type, version: entry.typeVersion || entry.version, kinds: entry.kinds || [entry.engine.kind], instances: [] as string[] };
+        type.instances.push(entry.engine.name);
+        types.set(entry.type, type);
+    }
+    loadedTypes.set(registry, [...types.values()]);
+    return registry;
 }

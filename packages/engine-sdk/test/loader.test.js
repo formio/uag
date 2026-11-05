@@ -25,7 +25,8 @@ function enginePackage(type, { kind = 'agent', apiVersion = 1, settings = '{}', 
     return `
 const { defineEngine } = require(${JSON.stringify(SDK)});
 module.exports = defineEngine({
-    type: ${JSON.stringify(type)},
+    type: 'engine',
+    name: ${JSON.stringify(type)},
     kinds: [${JSON.stringify(kind)}],
     apiVersion: ${apiVersion},
     settings: ${settings},
@@ -34,7 +35,8 @@ module.exports = defineEngine({
 }
 
 const agentType = (type, extra = {}) => defineEngine({
-    type,
+    type: 'engine',
+    name: type,
     kinds: ['agent'],
     apiVersion: 1,
     create: ({ name }) => ({ name, kind: 'agent', model: `${type}-1`, extract: async () => ({ model: `${type}-1`, values: {} }) }),
@@ -68,6 +70,13 @@ describe('engine loader', () => {
         const [loaded] = await loadEngines(parseInstances('openai'), { paths: [root] });
         expect(loaded).to.include({ type: 'openai', package: '@formio/uag-openai', version: '1.0.0' });
         expect(loaded.engine).to.include({ name: 'openai', kind: 'agent', model: 'openai-1' });
+    });
+
+    it('takes a packaged definition\'s version from its package.json when it gives none, and its title from its name', async () => {
+        const root = install({ '@formio/uag-openai': { version: '3.2.1', source: enginePackage('openai') } });
+        const { definition, version } = resolveType('openai', { paths: [root] });
+        expect(definition).to.include({ type: 'engine', name: 'openai', title: 'openai', version: '3.2.1' });
+        expect(version).to.equal('3.2.1');
     });
 
     it('loads a third-party engine from uag-engine-<type>, after @formio/uag-<type>', async () => {
@@ -208,8 +217,8 @@ describe('engine loader', () => {
         fs.cpSync(SDK, path.join(copy, 'sdk'), { recursive: true, filter: (src) => !src.includes(`${path.sep}test`) });
         const other = require(path.join(copy, 'sdk'));
         expect(other.defineEngine).to.not.equal(defineEngine);
-        const fromCopy = other.defineEngine({ type: 'copy', kinds: ['agent'], apiVersion: 1, create: ({ name }) => ({ name, kind: 'agent', model: 'm', extract: async () => ({}) }) });
-        const plain = { type: 'plain', kinds: ['agent'], apiVersion: 1, create: ({ name }) => ({ name, kind: 'agent', model: 'm', extract: async () => ({}) }) };
+        const fromCopy = other.defineEngine({ type: 'engine', name: 'copy', kinds: ['agent'], apiVersion: 1, create: ({ name }) => ({ name, kind: 'agent', model: 'm', extract: async () => ({}) }) });
+        const plain = { type: 'engine', name: 'plain', kinds: ['agent'], apiVersion: 1, create: ({ name }) => ({ name, kind: 'agent', model: 'm', extract: async () => ({}) }) };
         const loaded = await loadEngines(parseInstances([{ type: fromCopy }, { type: plain }]));
         expect(loaded.map((l) => l.type)).to.deep.equal(['copy', 'plain']);
     });

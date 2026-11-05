@@ -6,8 +6,13 @@ import {
     checkDecisionResponse,
     checkDescription,
     checkExtractResponse,
+    checkGenerateResponse,
+    encodeAttachments,
+    pdfByteLength,
     safeRequestId,
+    MAX_DOCUMENT_BYTES,
 } from '@formio/uag-sdk/protocol';
+import type { GenerateRequest, GenerateResponse } from '@formio/uag-sdk';
 import type { RemoteEngineDescription } from '@formio/uag-sdk/protocol';
 import type { AgentEngine, DecisionEngine, DecisionRequest, ExtractRequest } from '../formflow';
 import { currentRequestId } from './requestId';
@@ -44,6 +49,8 @@ type Connection = {
     baseUrl: string;
     key: string;
     fetch: Fetch;
+    /** The most PDF bytes one generate request may send: documents.maxTotalBytes. */
+    maxDocumentBytes: number;
 };
 
 class StartupError extends EngineConfigError {
@@ -187,12 +194,13 @@ export function remoteEngine(connection: Connection, remoteName: string, describ
             },
         };
     }
-    return {
+    const agent: AgentEngine & { accepts: Array<'text' | 'pdf'>; generate?(request: GenerateRequest): Promise<GenerateResponse> } = {
         name: connection.name,
         kind: 'agent',
         apiVersion: ENGINE_API_VERSION,
         model: described.model,
         toolUse: described.toolUse === true,
+        accepts: described.accepts || ['text'],
         async extract(request: ExtractRequest) {
             const research = !!request.tools?.length;
             // The engine server researches through its own MCP connection to the
@@ -211,10 +219,31 @@ export function remoteEngine(connection: Connection, remoteName: string, describ
             return { ...response, model: response.model || described.model };
         },
     };
+    if (described.generate) {
+        agent.generate = async (request: GenerateRequest): Promise<GenerateResponse> => {
+            // Refused before anything is sent; the documents are never logged.
+            if (pdfByteLength(request.attachments) > connection.maxDocumentBytes) {
+                throw new EngineError(`The attached PDFs exceed ${connection.maxDocumentBytes} bytes, the most one request to the engine server may carry.`);
+            }
+            const body = {
+                instructions: request.instructions,
+                ...(request.system !== undefined && { system: request.system }),
+                attachments: encodeAttachments(request.attachments),
+                format: request.format,
+                ...(request.maxTokens !== undefined && { maxTokens: request.maxTokens }),
+            };
+            const response = valid(checkGenerateResponse, await call(connection, `${path}/generate`, body, request.signal));
+            request.onProgress?.(response.text.length);
+            return { ...response, model: response.model || described.model };
+        };
+    }
+    return agent;
 }
 
 export const RemoteEngine = defineEngine({
-    type: 'remote',
+    type: 'engine',
+    name: 'remote',
+    title: 'Remote engine (engine server)',
     kinds: ['decision', 'agent'],
     apiVersion: ENGINE_API_VERSION,
     description: 'An engine hosted by an engine server, over the remote engine protocol.',
@@ -246,6 +275,7 @@ export const RemoteEngine = defineEngine({
             baseUrl: url.href.replace(/\/+$/, ''),
             key: settings.key,
             fetch: options.fetch || fetch,
+            maxDocumentBytes: Math.min(Number(config?.documents?.maxTotalBytes) || MAX_DOCUMENT_BYTES, MAX_DOCUMENT_BYTES),
         };
         const remoteName = settings.engine || name;
         const described = await describeRemote(connection, remoteName, {

@@ -1,4 +1,4 @@
-import type { DecisionQuestion, DecisionResponse, DecisionState, ExtractResponse, FieldSpec, ToolDefinition } from './contract';
+import type { Attachment, DecisionQuestion, DecisionResponse, DecisionState, ExtractResponse, FieldSpec, GenerateRequest, GenerateResponse, ToolDefinition } from './contract';
 
 /** The remote engine protocol version this SDK speaks. */
 export declare const PROTOCOL_VERSION: 1;
@@ -25,7 +25,19 @@ export type RemoteEngineDescription = {
     model: string;
     maxOptions?: number;
     toolUse?: boolean;
+    /** Agent engines: the document kinds generate reads. Default ['text']. */
+    accepts?: Array<'text' | 'pdf'>;
+    /** Agent engines: whether the engine generates free text. */
+    generate?: boolean;
 };
+
+/** The most PDF bytes one generate request carries (32 MB). */
+export declare const MAX_DOCUMENT_BYTES: number;
+
+/** A generate request on the wire: PDFs as base64. */
+export type WireAttachment =
+    | { kind: 'pdf'; data: string; label: string; pages?: number }
+    | { kind: 'text'; text: string; label: string; textFormat?: 'plain' | 'markdown' | 'csv' };
 
 export type RemoteExtractRequest = {
     instructions: string;
@@ -42,4 +54,8 @@ export declare function checkExtractRequest(body: unknown): RemoteExtractRequest
 export declare function checkDescription(body: unknown): RemoteEngineDescription[];
 export declare function checkDecisionResponse(body: unknown): DecisionResponse;
 export declare function checkExtractResponse(body: unknown): ExtractResponse;
+export declare function checkGenerateRequest(body: unknown, maxBytes?: number): Omit<GenerateRequest, 'signal' | 'onProgress'>;
+export declare function checkGenerateResponse(body: unknown): GenerateResponse;
+export declare function encodeAttachments(attachments?: Attachment[]): WireAttachment[];
+export declare function pdfByteLength(attachments?: Attachment[]): number;
 export declare function errorBody(message: string, expose?: boolean): { protocol: 1; error: string; expose: boolean };

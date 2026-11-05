@@ -1,6 +1,6 @@
 import { AuthProvider, AuthProviderInterface, AuthRequest, ProjectInterface, SubmissionRequest } from "@formio/appserver";
 import jwt from "jsonwebtoken";
-import { bearerOf, EngineRegistry, FormflowConfig, FormflowForm, FormflowHost, FormflowTool, formflowAuthenticate, readScopedToken, ScopedTokenClaims, toolsForScope } from "./formflow";
+import { bearerOf, EngineRegistry, FormflowConfig, FormflowFileReader, FormflowForm, FormflowHost, FormflowTool, formflowAuthenticate, readScopedToken, ScopedTokenClaims, toolsForScope } from "./formflow";
 import { taskRunner } from './runner';
 import { UAGConfig } from "./config";
 import { Form } from "@formio/core";
@@ -12,7 +12,9 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { UAG_VERSION } from './version';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { AgentRouter } from "./agent/router";
-import { allTools, formflowTool } from "./agent/tools";
+import type { PluginRegistry } from "@formio/appserver";
+import { converterFileReader } from "./documents/readers";
+import { allTools, formflowTool, runTool } from "./agent/tools";
 const debug = require('debug')('formio:uag:UAGProjectInterface');
 export class UAGProjectInterface extends ProjectInterface implements FormflowHost {
     public user: any = null;
@@ -54,12 +56,15 @@ export class UAGProjectInterface extends ProjectInterface implements FormflowHos
             server.registerTool(tool.name!, {
                 title: tool.title,
                 description: tool.description,
-                inputSchema: tool.inputSchema,
+                // Always a schema, even an empty one: the MCP SDK calls a tool
+                // registered without one as `execute(extra)`, and every tool is
+                // `execute(args, extra)`, as Agent API research calls it.
+                inputSchema: tool.inputSchema || {},
                 // Carries readOnly/destructive/idempotent/openWorld through to the
                 // client. Tools from config.tools may omit them, so this stays
                 // conditional rather than sending `annotations: undefined`.
                 ...(tool.annotations && { annotations: tool.annotations })
-            }, tool.execute);
+            }, (args: any, extra: any) => runTool(tool, this, args, extra));
         }
 
         // A scoped token that allows no tools must still answer tools/list, with
@@ -131,9 +136,20 @@ export class UAGProjectInterface extends ProjectInterface implements FormflowHos
         return form?.uag ? form : null;
     }
 
+    /** The server's plugin registry, once its plugins are listed. */
+    public plugins?: PluginRegistry;
+
+    /**
+     * Readers for uploaded documents: one built from the installed converters,
+     * which reads every type with a route to text.
+     */
+    formflowFileReaders(): FormflowFileReader[] {
+        return this.plugins ? [converterFileReader(this.plugins)] : [];
+    }
+
     /** Every MCP tool, as Agentic Formflow tools. */
     async formflowTools(): Promise<FormflowTool[]> {
-        return (await allTools(this)).map(formflowTool);
+        return (await allTools(this)).map((tool) => formflowTool(tool, this));
     }
 
     async authorizeRequest(req: SubmissionRequest, res: Response, next: NextFunction) {

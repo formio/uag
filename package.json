@@ -10,7 +10,9 @@
   },
   "files": [
     "lib",
-    "bin"
+    "bin",
+    "testing.js",
+    "testing.d.ts"
   ],
   "workspaces": [
     "engines/*",
@@ -43,7 +45,7 @@
   "author": "Form.io Developers",
   "license": "MIT",
   "dependencies": {
-    "@formio/appserver": "^2.25.2",
+    "@formio/appserver": "^2.26.0",
     "@formio/core": "2.9.0",
     "@formio/uag-sdk": "^2.0.0-rc.6",
     "@modelcontextprotocol/sdk": "1.32.2",
@@ -53,9 +55,13 @@
     "express": "^5.3.0",
     "jsonwebtoken": "^9.0.3",
     "lodash": "^4.18.1",
+    "markdown-it": "^15.0.3",
     "mongodb": "^7.7.0",
     "node-cache": "^5.1.2",
     "node-html-markdown": "^2.0.0",
+    "node-html-parser": "^9.0.5",
+    "pdf-lib": "^1.17.1",
+    "unpdf": "^2.1.0",
     "zod": "^4.6.7"
   },
   "resolutions": {

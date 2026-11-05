@@ -206,6 +206,35 @@ async function checkEngine(definition, { name = 'conformance', options = {}, env
             controller.abort();
             await within(timeout, rejects(engine.extract(extractRequest({ signal: controller.signal })), 'extract with an aborted signal'), 'extract with an aborted signal');
         });
+        await check('accepts lists only known document kinds', () => {
+            if (engine.accepts === undefined) return;
+            if (!Array.isArray(engine.accepts) || !engine.accepts.length) fail('accepts must be a non-empty list of "text" and "pdf"');
+            const unknown = engine.accepts.filter((kind) => !['text', 'pdf'].includes(kind));
+            if (unknown.length) fail(`accepts lists unknown kinds: ${unknown.join(', ')}`);
+        });
+        if (typeof engine.generate === 'function') {
+            await check('generate returns text, its model and a valid stopReason', async () => {
+                const response = await within(timeout, engine.generate({
+                    instructions: 'Summarize the attached document in one sentence.',
+                    attachments: [{ kind: 'text', text: 'Ada Lovelace lives in London and works on engines.', label: 'Document 1: notes.txt', textFormat: 'plain' }],
+                    format: 'markdown',
+                    maxTokens: 200,
+                }), 'generate');
+                if (!response || typeof response !== 'object') fail('generate did not return an object');
+                if (typeof response.text !== 'string') fail('the response has no text');
+                if (typeof response.model !== 'string' || !response.model) fail('the response does not name its model');
+                if (!['end', 'max_tokens'].includes(response.stopReason)) fail(`stopReason must be "end" or "max_tokens", not ${JSON.stringify(response.stopReason)}`);
+                checkUsage(response);
+            });
+            await check('generate stops when its signal is aborted', async () => {
+                const controller = new AbortController();
+                controller.abort();
+                await within(timeout, rejects(engine.generate({ instructions: 'Summarize.', format: 'text', signal: controller.signal }), 'generate with an aborted signal'), 'generate with an aborted signal');
+            });
+        }
+        else if (engine.generate !== undefined) {
+            await check('generate is a function', () => fail('generate must be a function when present'));
+        }
         if (engine.toolUse) {
             await check('research reports its tool calls and stops at maxIterations', async () => {
                 const { state, callTool } = lookupTool();

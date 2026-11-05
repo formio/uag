@@ -1,0 +1,207 @@
+{
+  "tools": [
+    {
+      "name": "get_forms",
+      "title": "Get Available Forms",
+      "description": "List the CRM forms the user can use.",
+      "annotations": {
+        "title": "Get available forms",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "get_form_fields",
+      "title": "Get Form Fields",
+      "description": "Get high level overview of the fields that are present in a form, and to understand the \"rules\" on how the data for each field type should be collected. The purpose of this tool is to determine what fields the user is requesting (and to understand how to format that values for that data), and use that to create a list of field data_path's that the user is providing context for. This list can then be provided to the `get_field_info` tool to determine the specific field level information for those fields (validation, required, collection rules, etc). PREREQUISITE: You must call the `get_forms` tool first to understand what forms are available to submit and the permissions associated with those forms.",
+      "annotations": {
+        "title": "Get form fields",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "get_field_info",
+      "title": "Get Field(s) Info",
+      "description": "Get detailed information about a specific field(s) that have been provided from the user. It is used to understand the properties, validation rules, and options of the specific field(s) the user has provided values for. This purpose of this tool is to provide detailed information for any field(s) (provided using the `field_paths` parameter) to help understand the structure and requirements of a form. PREREQUISITE: This tool should be called after the `get_form_fields` tool has been called AND once the user has provided some values for the provided fields.",
+      "annotations": {
+        "title": "Get field details",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "collect_field_data",
+      "title": "Collect Field Data",
+      "description": "Collect data for a form, or a specific field with nested components. Identify the component by its path, validate the provided value, and update the form_data object. After updating, determine the next required field to collect or indicate if all required fields are complete. PREREQUISITE: This tool should only be called after the `get_form_fields` tool AND subsequentially the `get_field_info` tool have been called to understand the structure and validation rules of the fields.",
+      "annotations": {
+        "title": "Collect field data",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "confirm_form_submission",
+      "title": "Confirm Form Submission",
+      "description": "Show a summary of the collected form data if the user wishes to see a summary of the collected data",
+      "annotations": {
+        "title": "Summarise before submitting",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "submit_completed_form",
+      "title": "Submit Completed Form",
+      "description": "Submit the completed form data. Should only be used once all the required fields have been collected, and the user has explicitly confirmed submission (e.g. has said \"submit\", \"send\", \"done\", etc)",
+      "annotations": {
+        "title": "Submit a completed form",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "find_submissions",
+      "title": "Find submissions within a form",
+      "description": "Find existing form submissions based on field values (search query). Use this to search for people, records, or data by name, email, phone, position, company, or other field values. Examples: find a contact by name, find someone who works at a company, find records with specific criteria. To retrieve the total count of records within a form, use this tool without providing a `search_query`.",
+      "annotations": {
+        "title": "Find submissions",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "submission_update",
+      "title": "Submission Update",
+      "description": "Apply multiple planned field updates to a selected submission after the user confirmed they wish to update the record.",
+      "annotations": {
+        "title": "Update a submission",
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "agent_provide",
+      "title": "Agent Provide",
+      "description": "Provides a mechanism for agents to process existing submission data, understand it, and then to provide additional data values provided a criteria and form context.",
+      "annotations": {
+        "title": "Process submission data",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "agent_decide",
+      "title": "Agent Decide",
+      "description": "Return the decision questions for a task's closed-set fields (radio, select, checkbox, select boxes, survey and small resource selects) as structured JSON: the state to decide on, every question, and how each answer maps back to a field value. Answer the questions with a decision model, then write the values with `submission_update`. Provide either `submission_id` or `form_data`.",
+      "annotations": {
+        "title": "Get decision questions",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "fetch_external_data",
+      "title": "Fetch External Data",
+      "description": "Fetch external data for a component that loads data from an external URL, a Form.io Resource, or a DataSource. Use this tool when `get_form_fields` indicates that a field requires calling `fetch_external_data` to retrieve its data. For select components, this returns the available options. For datasource components, this returns the fetched data. You can optionally provide a `search_value` to filter results server-side. If the component's URL or headers contain interpolation tokens (e.g. `{{ data.someField }}`), you MUST provide `form_data` with the current collected data so the tokens can be resolved.",
+      "annotations": {
+        "title": "Fetch external field data",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "read_document",
+      "title": "Read Uploaded Document",
+      "description": "Read the text of a document uploaded to a submission: a file in a file field, or in an AI Document field. Give the form, the submission id (from `find_submissions`) and the data path of the field (such as \"contract\" or \"rows[0].attachment\"; add an index, such as \"contract[1]\", for another file than the first). Returns the file name, its type, its page count when known, and its text; a long text is cut, and `truncated` is true.",
+      "annotations": {
+        "title": "Read an uploaded document",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "module_lookup",
+      "title": "Module lookup",
+      "description": "Look up a record in the module's directory by its id.",
+      "annotations": {
+        "title": "Module lookup",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    }
+  ],
+  "actions": {
+    "save": {
+      "title": "Save Submission",
+      "platform": true
+    },
+    "login": {
+      "title": "Login",
+      "platform": true
+    },
+    "role": {
+      "title": "Role Assignment",
+      "platform": true
+    },
+    "agentRunTask": {
+      "title": "Agent: Run task",
+      "platform": false
+    },
+    "crmSync": {
+      "title": "CRM sync",
+      "platform": false
+    }
+  },
+  "responses": {
+    "formNotFound": {
+      "content": [
+        {
+          "type": "text",
+          "text": "No form called \"invoice\" here. Call get_forms to see the forms."
+        }
+      ],
+      "isError": true
+    },
+    "formSubmitted": {
+      "content": [
+        {
+          "type": "text",
+          "text": "# Form Submitted Successfully! ✅\n\n**Form**: Lead\n**Submission ID** (for internal and future lookup use only): abc123\n**Submitted Fields**: 1\n\n- Company: Acme"
+        }
+      ]
+    }
+  },
+  "template": {
+    "forms": [
+      "lead"
+    ],
+    "title": "CRM"
+  }
+}

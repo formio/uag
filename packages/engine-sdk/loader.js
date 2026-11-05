@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { ENGINE_API_VERSION, definitionProblems } = require('./define');
+const { ENGINE_API_VERSION, definitionProblems, withDefaults } = require('./define');
 const { EngineConfigError, redact } = require('./errors');
 const { checkName, checkType, checkUnique, isPackageName } = require('./instances');
 const { missingSetting, resolveSettings, secretValues, settingVariable } = require('./settings');
@@ -87,19 +87,22 @@ function errorText(err) {
     return err && typeof err === 'object' && 'message' in err ? String(err.message) : String(err);
 }
 
-/** Check a definition, from this SDK, another copy of it, or none. */
-function checkDefinition(definition, source, apiVersion) {
+/**
+ * Check a definition, from this SDK, another copy of it, or none, and return it
+ * with its defaults (`title`, and `version` from the package it came from).
+ */
+function checkDefinition(definition, source, apiVersion, packageVersion) {
     const problems = definitionProblems(definition);
     if (problems.length) {
         throw new EngineConfigError(`${source} is not a UAG engine: it does not export a valid engine type definition (${problems.join('; ')}).`);
     }
     if (definition.apiVersion !== apiVersion) {
         throw new EngineConfigError(
-            `${source} (engine type "${definition.type}") was built for engine API version ${definition.apiVersion}; ` +
+            `${source} (engine type "${definition.name}") was built for engine API version ${definition.apiVersion}; ` +
             `this server supports version ${apiVersion}.`
         );
     }
-    return definition;
+    return withDefaults(definition, packageVersion);
 }
 
 /**
@@ -130,7 +133,7 @@ function resolveType(type, { types = {}, paths = [], apiVersion = ENGINE_API_VER
         }
         const definition = exported && exported.__esModule && exported.default ? exported.default : exported;
         return {
-            definition: checkDefinition(definition, `The package "${candidate}"`, apiVersion),
+            definition: checkDefinition(definition, `The package "${candidate}"`, apiVersion, pkg.version),
             package: candidate,
             ...(pkg.version && { version: pkg.version })
         };
@@ -165,7 +168,7 @@ function checkVariables(resolved) {
  * Errors name the instance and its type, and never contain a secret setting.
  */
 async function createEngine(definition, { name, options = {}, env = process.env, config = {} }) {
-    const label = `The "${name}" engine (type "${definition.type}")`;
+    const label = `The "${name}" engine (type "${definition.name}")`;
     const settings = resolveSettings(definition, name, options, env);
     const secrets = secretValues(definition, settings, options);
     let engine;
@@ -206,7 +209,7 @@ async function createEngine(definition, { name, options = {}, env = process.env,
 async function loadEngines(instances, { types = {}, paths = [], env = process.env, config = {}, apiVersion = ENGINE_API_VERSION } = {}) {
     const resolved = instances.map((instance) => {
         const found = resolveType(instance.type, { types, paths, apiVersion });
-        const name = instance.name || found.definition.type;
+        const name = instance.name || found.definition.name;
         checkName(name);
         return { ...found, name, options: instance.options || {} };
     });
@@ -215,7 +218,7 @@ async function loadEngines(instances, { types = {}, paths = [], env = process.en
     const loaded = [];
     for (const { definition, name, options, package: pkg, version } of resolved) {
         const engine = await createEngine(definition, { name, options, env, config });
-        loaded.push({ engine, type: definition.type, ...(pkg && { package: pkg }), ...(version && { version }) });
+        loaded.push({ engine, type: definition.name, title: definition.title, kinds: [...definition.kinds], ...(definition.version && { typeVersion: definition.version }), ...(pkg && { package: pkg }), ...(version && { version }) });
     }
     return loaded;
 }

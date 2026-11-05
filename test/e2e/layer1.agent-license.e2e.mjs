@@ -291,7 +291,7 @@ describe('Layer 1: Agentic Formflow license', function () {
             mkdirSync(dir, { recursive: true });
             writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'uag-engine-acme', version: '3.1.4', main: 'index.js' }));
             writeFileSync(path.join(dir, 'index.js'), `
-                module.exports = { type: 'acme', kinds: ['decision'], apiVersion: 1, create: ({ name }) => ({
+                module.exports = { type: 'engine', name: 'acme', kinds: ['decision'], apiVersion: 1, create: ({ name }) => ({
                     name, kind: 'decision', model: 'acme-1', maxOptions: 255,
                     decide: async () => { require('fs').writeFileSync(${JSON.stringify(marker)}, 'x'); return { model: 'acme-1', answers: {} }; },
                 }) };`);

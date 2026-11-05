@@ -5,7 +5,8 @@ import { defineEngine } from '@formio/uag-sdk';
 import { loadUAGEngines } from '../../src/agent/engines';
 
 const mine = defineEngine({
-    type: 'mine',
+    type: 'engine',
+    name: 'mine',
     kinds: ['agent'],
     apiVersion: 1,
     settings: { model: { default: 'mine-1' } },

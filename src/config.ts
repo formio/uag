@@ -1,7 +1,7 @@
 import { ServerConfig } from '@formio/appserver';
 import type { FormflowAgentApiConfig, FormflowRateLimit, FormflowRoutingConfig } from './formflow';
 import type { EngineInstanceSpec, EngineTypeDefinition } from '@formio/uag-sdk';
-import { ToolInfo } from './tools/utils';
+import type { ToolEntry, ToolInfo } from './tools/utils';
 import type { UAGDatabaseOptions } from './database';
 export type UAGForm = {
   name: string;
@@ -51,6 +51,31 @@ export type UAGToolOverride = {
   agent_provide?: ToolInfo;
   agent_decide?: ToolInfo;
   fetch_external_data?: ToolInfo;
+  read_document?: ToolInfo;
+};
+
+/** `config.documents`: limits and choices of the AI Document module (@formio/uag-extras/modules/ai-document). */
+export type UAGDocumentsConfig = {
+  /** Largest uploaded file read, in bytes (25 MB). DOCUMENTS_MAX_FILE_BYTES. */
+  maxFileBytes?: number;
+  /** Most files one component sends (10). */
+  maxFiles?: number;
+  /** Most bytes of one request's files (32 MB, the provider request cap). */
+  maxTotalBytes?: number;
+  /** Most pages once converted (500). DOCUMENTS_MAX_PAGES. */
+  maxPages?: number;
+  /** Most characters of text once converted (2,000,000). */
+  maxTextChars?: number;
+  /** One processing request, in ms (600000). DOCUMENTS_TIMEOUT_MS. */
+  timeoutMs?: number;
+  /** Comment line interval on a streamed response, in ms (15000). */
+  heartbeatMs?: number;
+  /** Concurrent processing requests per identity (3). */
+  perUser?: number;
+  /** The engine instance documents use. Default: the first capable agent engine. DOCUMENTS_ENGINE. */
+  engine?: string;
+  /** Converter name by MIME type, when several can do a step. */
+  prefer?: Record<string, string>;
 };
 
 /**
@@ -90,7 +115,12 @@ export interface UAGChatConfig {
   maxTranscriptChars?: number;
 }
 
-export type UAGAgentApiConfig = FormflowAgentApiConfig & { anonymous?: UAGAnonymousConfig; chat?: UAGChatConfig };
+export type UAGAgentApiConfig = FormflowAgentApiConfig & {
+  anonymous?: UAGAnonymousConfig;
+  chat?: UAGChatConfig;
+  /** The largest request body an agent operation takes, in bytes (AGENT_BODY_LIMIT). Default 5 MB. */
+  bodyLimit?: number;
+};
 
 /**
  * Express's `trust proxy` from TRUST_PROXY: `true` or `false`, a number of
@@ -112,8 +142,11 @@ export interface UAGConfig extends ServerConfig {
   baseUrl?: string;
   loginForm?: string;
   responseTemplates?: UAGTemplateConfig,
+  /** Limits and choices of the AI Document module. */
+  documents?: UAGDocumentsConfig,
   toolOverrides?: UAGToolOverride,
-  tools?: ToolInfo[],
+  /** Custom MCP tools: each a tool, optionally bound to the project with `bind(project)` (see ToolInfo.bind). */
+  tools?: ToolEntry[],
   /**
    * The engine instances to enable, as in `UAG_ENGINES` (`"jev"`, `"fast:claude"`) or as
    * `{ name, type, options }`. When unset, `UAG_ENGINES` is used; when neither names any, no

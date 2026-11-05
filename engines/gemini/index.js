@@ -11,6 +11,7 @@ const { openAICompatible } = require('@formio/uag-openai/compatible');
 
 module.exports = openAICompatible({
     type: 'gemini',
+    title: 'Gemini',
     description: 'Google\'s Gemini models: structured extraction, with research over read-only tools.',
     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
     apiKey: { env: ['GEMINI_API_KEY', 'GOOGLE_API_KEY'] },

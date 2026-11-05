@@ -11,9 +11,14 @@ const {
     ProtocolError,
     checkDecideRequest,
     checkExtractRequest,
+    checkGenerateRequest,
     errorBody,
     safeRequestId,
+    MAX_DOCUMENT_BYTES,
 } = require('@formio/uag-sdk/protocol');
+
+/** Generate bodies carry PDFs as base64 (4/3 of their size), plus the rest of the request. */
+const GENERATE_BODY_LIMIT = Math.ceil(MAX_DOCUMENT_BYTES * 4 / 3) + 2 * 1024 * 1024;
 const { openResearch, connectMcp } = require('./research');
 const debug = require('debug')('formio:uag:engine-server');
 
@@ -82,7 +87,11 @@ function describe(engine) {
         kind: engine.kind,
         model: engine.model,
         ...(engine.kind === 'decision' && { maxOptions: engine.maxOptions }),
-        ...(engine.kind === 'agent' && { toolUse: engine.toolUse === true }),
+        ...(engine.kind === 'agent' && {
+            toolUse: engine.toolUse === true,
+            accepts: Array.isArray(engine.accepts) ? engine.accepts : ['text'],
+            generate: typeof engine.generate === 'function',
+        }),
     };
 }
 
@@ -128,7 +137,10 @@ function engineServerApp({ engines, key, uagServer, connect = connectMcp }) {
         }
         next();
     });
-    app.use(express.json({ limit: '5mb' }));
+    // Generate requests carry documents; every other request stays small.
+    const smallBody = express.json({ limit: '5mb' });
+    const documentBody = express.json({ limit: GENERATE_BODY_LIMIT });
+    app.use((req, res, next) => (/\/generate$/.test(req.path) ? documentBody : smallBody)(req, res, next));
 
     app.get('/health', (req, res) => {
         res.json({ status: 'ok', engines: byName.size });
@@ -207,6 +219,32 @@ function engineServerApp({ engines, key, uagServer, connect = connectMcp }) {
         }
         finally {
             if (research) await research.close();
+        }
+    });
+
+    app.post('/v1/engines/:name/generate', async (req, res, next) => {
+        try {
+            const engine = engineFor(req.params.name, 'agent');
+            if (typeof engine.generate !== 'function') {
+                throw new HttpError(400, `The engine "${engine.name}" does not generate text.`);
+            }
+            const request = checkGenerateRequest(req.body);
+            const accepts = Array.isArray(engine.accepts) ? engine.accepts : ['text'];
+            if (request.attachments.some((attachment) => !accepts.includes(attachment.kind))) {
+                throw new HttpError(400, `The engine "${engine.name}" reads ${accepts.join(' and ')} documents only.`);
+            }
+            // Document bytes and text are never logged.
+            const response = await engine.generate({ ...request, signal: requestSignal(res) });
+            res.json({
+                protocol: PROTOCOL_VERSION,
+                text: String(response.text ?? ''),
+                model: response.model || engine.model,
+                stopReason: response.stopReason === 'max_tokens' ? 'max_tokens' : 'end',
+                ...(response.usage && { usage: response.usage }),
+            });
+        }
+        catch (err) {
+            next(err);
         }
     });
 

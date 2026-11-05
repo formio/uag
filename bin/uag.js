@@ -37,9 +37,13 @@ function restartWithoutSnapshot() {
 /** Start the UAG with a module, listening on PORT (default 3200). */
 async function start(uagModule) {
     const Express = require('express');
-    const { UAGServer, trustProxySetting } = require('../lib');
+    const { UAGServer, trustProxySetting, usePluginFiles } = require('../lib');
     const server = new UAGServer();
-    if (uagModule) server.use(uagModule);
+    // A module may be exported as a promise (an async module).
+    const resolved = await uagModule;
+    if (resolved) server.use(resolved);
+    // Then the plugins file: UAG_PLUGINS, or the image's /app/plugins/index.mjs.
+    await usePluginFiles(server);
     const app = Express();
     // Behind a reverse proxy, its forwarded headers give the public URL (TRUST_PROXY).
     const trust = trustProxySetting(process.env.TRUST_PROXY);

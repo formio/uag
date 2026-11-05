@@ -6,7 +6,8 @@ const { checkEngine } = require('../conformance');
 /** A well-behaved scripted agent: researches until told to stop, honours its signal and its limits. */
 function agentType(overrides = {}) {
     return defineEngine({
-        type: 'scripted',
+        type: 'engine',
+        name: 'scripted',
         kinds: ['agent'],
         apiVersion: 1,
         settings: { model: { default: 'scripted-1' } },
@@ -37,7 +38,8 @@ function agentType(overrides = {}) {
 }
 
 const decisionType = (overrides = {}) => defineEngine({
-    type: 'fixed',
+    type: 'engine',
+    name: 'fixed',
     kinds: ['decision'],
     apiVersion: 1,
     create: ({ name }) => ({
@@ -61,7 +63,8 @@ const decisionType = (overrides = {}) => defineEngine({
 describe('conformance check', () => {
     it('checks a definition made without defineEngine that has no settings', async () => {
         const plain = {
-            type: 'plain',
+            type: 'engine',
+            name: 'plain',
             kinds: ['decision'],
             apiVersion: 1,
             create: (context) => decisionType().create(context),
@@ -131,5 +134,55 @@ describe('conformance check', () => {
         const report = await checkEngine(broken);
         expect(report.failures).to.have.length(1);
         expect(report.failures[0]).to.include('failed to start: no key');
+    });
+});
+
+describe('engine conformance: generate and accepts', () => {
+    /** An agent engine with generate, its behavior set by `generate` and `accepts`. */
+    const generating = ({ generate, accepts } = {}) => defineEngine({
+        type: 'engine',
+        name: 'writer',
+        kinds: ['agent'],
+        apiVersion: 1,
+        create: ({ name }) => ({
+            name,
+            kind: 'agent',
+            model: 'writer-1',
+            ...(accepts !== undefined && { accepts }),
+            extract: async (request) => { request.signal?.throwIfAborted(); return { model: 'writer-1', values: {} }; },
+            ...(generate !== undefined && { generate }),
+        }),
+    });
+    const good = async (request) => {
+        request.signal?.throwIfAborted();
+        return { text: `Summary of ${request.attachments?.length || 0} document(s).`, model: 'writer-1', stopReason: 'end' };
+    };
+    const failuresOf = async (definition) => (await checkEngine(definition)).failures;
+
+    it('passes an engine whose generate returns text, its model and a valid stopReason, and honours its signal', async () => {
+        const report = await checkEngine(generating({ generate: good, accepts: ['text', 'pdf'] }));
+        expect(report.failures).to.deep.equal([]);
+        expect(report.results.map((r) => r.check)).to.include.members(['generate returns text, its model and a valid stopReason', 'generate stops when its signal is aborted', 'accepts lists only known document kinds']);
+    });
+
+    it('fails a generate with no text or an unknown stopReason', async () => {
+        expect((await failuresOf(generating({ generate: async () => ({ model: 'writer-1', stopReason: 'end' }) }))).join('\n')).to.include('the response has no text');
+        expect((await failuresOf(generating({ generate: async () => ({ text: 'x', model: 'writer-1', stopReason: 'length' }) }))).join('\n')).to.include('stopReason must be "end" or "max_tokens"');
+    });
+
+    it('fails a generate that ignores an aborted signal', async () => {
+        const ignores = async () => ({ text: 'x', model: 'writer-1', stopReason: 'end' });
+        expect((await failuresOf(generating({ generate: ignores }))).join('\n')).to.include('generate stops when its signal is aborted');
+    });
+
+    it('fails accepts naming an unknown kind', async () => {
+        const failures = await failuresOf(generating({ generate: good, accepts: ['pdf', 'docx'] }));
+        expect(failures.join('\n')).to.include('accepts lists unknown kinds: docx');
+    });
+
+    it('checks nothing about generate for an engine without it', async () => {
+        const report = await checkEngine(generating());
+        expect(report.results.map((r) => r.check)).to.not.include('generate returns text, its model and a valid stopReason');
+        expect(report.ok).to.equal(true);
     });
 });

@@ -12,9 +12,9 @@ The complete guide, with a worked CRM module, is [Modules](https://ai.form.io/de
 |---|---|
 | Docker | Mount it over `/app/module`: `-v "$PWD/module:/app/module"`, or `volumes: ["./module:/app/module"]` in Compose. |
 | The `uag` command | `UAG_MODULE=./module npx uag` (a file or folder, resolved against the working directory). |
-| Your own server | `server.use(require('./module'))` before `await server.router()`. Several modules can be used; their `config` objects merge, later ones winning. |
+| Your own server | `server.use(require('./module'))` before `await server.router()`. Several modules can be used, one call each or as a list, `server.use([first, second])`; their `config` objects merge, later ones winning, and their `config.tools` add up (a tool name defined twice stops startup). A module file may also export a list of modules. |
 
-A module mounted into the image runs inside the UAG's own installation, so it can `require()` the UAG's dependencies (`zod`, `lodash`) but not `@formio/uag` itself.
+A module mounted into the image runs inside the UAG's own installation, so it can `require()` the UAG's dependencies (`zod`, `lodash`) and `@formio/uag` itself.
 
 ## The module object
 
@@ -22,7 +22,7 @@ A module mounted into the image runs inside the UAG's own installation, so it ca
 module.exports = {
     config: {
         template: require('./project.json'),   // forms, resources, roles and actions the project needs
-        tools: [],                             // custom MCP tools (ToolInfo objects)
+        tools: [],                             // custom MCP tools (ToolInfo objects; bind(project) for project-specific parts)
         toolOverrides: {},                     // changes to built-in tools, by tool name
         responseTemplates: {},                 // replaced or new response templates, by name
         auth: { authAppHtml: undefined },      // the HTML of the /auth/authorize login page
@@ -38,7 +38,7 @@ module.exports = {
 | Key | What to know |
 |---|---|
 | `config.template` | A Form.io project template (an Open Source `/export`, or an Enterprise **Export Template**). Only what the project is missing is installed, matched by key; nothing the project has is changed. `TEMPLATE_SYNC` sets when: `boot` (default), `refresh`, or `off`. Tag forms `uag` so agents see them. |
-| `config.tools` | Each entry is a `ToolInfo` object: `name` (snake_case, unique), `description`, `inputSchema` (a Zod raw shape), `annotations`, and `execute(args, extra)`. A tool without `annotations` is treated as one that writes; only read-only tools can be listed in a task's `uagTools`. Get the project from `extra.authInfo.project`. |
+| `config.tools` | Each entry is a `ToolInfo` object. Its optional `bind(project)` returns the project-specific fields (or a promise of them), built on every tool listing, so keep it cheap; a bare function is refused at startup. A tool has `name` (snake_case, unique), `description`, `inputSchema` (a Zod raw shape), `annotations`, and `execute(args, extra)`. A tool without `annotations` is treated as one that writes; only read-only tools can be listed in a task's `uagTools`. `extra.project` is the project and `extra.authInfo` the caller. |
 | `config.toolOverrides` | Merged over the built-in tool with Lodash `defaultsDeep`, so the fields you set win and the rest stay. `{ name: '' }` removes a tool. |
 | `config.responseTemplates` | Lodash templates keyed by name. A built-in name (the files in [`src/templates`](../src/templates)) replaces that template; any other name adds one your tools render with `project.mcpResponse(name, data)`. See the [template example](../demo/samples/custom-module/module/templates/Readme.md). |
 | `config.auth.authAppHtml` | Replaces the login page with your own HTML (or set `AUTHORIZE_HTML`). `LOGIN_FORM` still names the Form.io login form the page renders. |

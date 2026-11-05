@@ -2,6 +2,7 @@ import { Router, type Request, type Response as ExpressResponse } from 'express'
 import { UAGProjectInterface } from './UAGProjectInterface';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { ScopedTokenClaims } from './formflow';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 // Helper function to create JSON RPC error responses
 const createJsonRpcErrorResponse = (code: number, message: string) => ({
@@ -33,6 +34,23 @@ const handleResponseError = (error: unknown, res: ExpressResponse): boolean => {
 };
 
 /**
+ * Hold a scoped token to its tools whatever built the server: a project
+ * interface a module replaces may override buildMcpServer() and register tools
+ * without the scope it was given. Every tool the token does not list, and every
+ * tool not annotated read-only, is disabled, so it is neither listed nor run.
+ */
+export function restrictToScope(server: McpServer, scope: Pick<ScopedTokenClaims, 'tools'>): void {
+    const allowed = new Set(scope.tools || []);
+    // The SDK keeps registered tools here; it has no public list of them.
+    const registered: Record<string, any> = (server as any)._registeredTools || {};
+    for (const [name, tool] of Object.entries(registered)) {
+        if (!allowed.has(name) || tool?.annotations?.readOnlyHint !== true) {
+            tool.disable?.();
+        }
+    }
+}
+
+/**
  * Build a per-request McpServer + transport (stateless mode) and tear both down
  * when the response closes. A fresh instance per request keeps concurrent requests
  * from overwriting each other's transport.
@@ -43,6 +61,7 @@ const connectMcpTransport = async (
     scope?: ScopedTokenClaims,
 ): Promise<StreamableHTTPServerTransport> => {
     const server = await project.buildMcpServer(scope);
+    if (scope) restrictToScope(server, scope);
     const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,  // Use "undefined" to trigger stateless mode.
     });

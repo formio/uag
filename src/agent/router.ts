@@ -1,7 +1,7 @@
 import { escapeRegExp } from "lodash";
 import express, { NextFunction, Request, RequestHandler, Response, Router } from "express";
 import { SubmissionRequest } from "@formio/appserver";
-import { errorCode, INTERNAL_ERROR, requestIdOf } from "./errors";
+import { agentError, errorCode, INTERNAL_ERROR, requestIdOf } from "./errors";
 import { bearerOf, flagOff, formflow, FormflowError, FormflowService, callerIdentity, isScopedToken, OperationContext, OperationResult, RateLimitError, resultEvent } from "../formflow";
 import type { UAGProjectInterface } from "../UAGProjectInterface";
 import { withRequestId } from "./requestId";
@@ -87,21 +87,32 @@ async function respondWithStream(req: AgentRequest, res: Response, run: (context
     }
 }
 
-/** The largest request body an agent operation takes, in bytes. */
+/** The largest request body an agent operation takes by default, in bytes. */
 export const AGENT_BODY_LIMIT = 5 * 1024 * 1024;
+
+/**
+ * The largest request body the project's agent operations take: `agentApi.bodyLimit`,
+ * then AGENT_BODY_LIMIT, then 5 MB. A document sent inline (a base64 file a task reads)
+ * may need more; the server's own MAX_BODY_SIZE (16 MB) still applies first.
+ */
+export function agentBodyLimit(project: UAGProjectInterface): number {
+    const configured = Number(project.config?.agentApi?.bodyLimit ?? process.env.AGENT_BODY_LIMIT);
+    return Number.isFinite(configured) && configured > 0 ? configured : AGENT_BODY_LIMIT;
+}
 
 type Handler = (req: AgentRequest, res: Response, service: FormflowService) => Promise<void>;
 
 /** The parts every Agent API endpoint shares: the request id, and errors answered as JSON (or as an event mid-stream). */
-function agentEndpoints(project: UAGProjectInterface) {
-    const parse = express.json({ limit: AGENT_BODY_LIMIT });
+export function agentEndpoints(project: UAGProjectInterface) {
+    const limit = agentBodyLimit(project);
+    const parse = express.json({ limit });
     // The server parses JSON bodies first, with its own larger limit, so the
     // agent operations' limit is checked here on a body already read.
     const json = (req: Request, res: Response, next: NextFunction) => {
         if (req.body === undefined) return parse(req, res, next);
         const length = Number(req.get('content-length')) || Buffer.byteLength(JSON.stringify(req.body ?? null));
-        if (length > AGENT_BODY_LIMIT) {
-            return res.status(413).json({ error: `The request body is larger than the agent operations' limit of ${AGENT_BODY_LIMIT / (1024 * 1024)} MB.`, code: 'payload_too_large' });
+        if (length > limit) {
+            return res.status(413).json({ error: `The request body is larger than the agent operations' limit of ${Math.round(limit / (1024 * 1024) * 10) / 10} MB.`, code: 'payload_too_large' });
         }
         next();
     };
@@ -124,19 +135,13 @@ function agentEndpoints(project: UAGProjectInterface) {
                 await withRequestId(agentReq.requestId, () => fn(agentReq, res, service));
             }
             catch (err: any) {
-                const status = err instanceof FormflowError ? err.status : 500;
+                const { status, body } = agentError(agentReq.requestId, err);
                 if (status === 500) {
                     debug(`[${agentReq.requestId}] ${operation} failed:`, err);
                 }
                 if (err instanceof RateLimitError) {
                     res.set('Retry-After', String(Math.ceil(err.retryAfterMs / 1000)));
                 }
-                const body = {
-                    requestId: agentReq.requestId,
-                    error: status === 500 ? INTERNAL_ERROR : err.message,
-                    code: (err instanceof FormflowError && err.code) || errorCode(status),
-                    ...(err?.edition && { edition: err.edition })
-                };
                 if (res.headersSent) {
                     // Mid-stream: report the failure as an event and close.
                     res.write(`event: error\ndata: ${JSON.stringify(body)}\n\n`);

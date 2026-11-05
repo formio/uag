@@ -75,7 +75,7 @@ export function anonymousGate(project: UAGProjectInterface) {
         const form: any = request.form;
         const limits = anonymousLimits(project);
         if (limits.perAddress === 0 || limits.total === 0 || !flagOn(form?.form?.properties?.uagAnonymous)) {
-            return res.status(401).json({ error: 'Sign in to use this form\'s agent operations.', code: 'sign_in_required' });
+            return res.status(401).json({ error: 'Sign in to use this form\'s agent operations and routes.', code: 'sign_in_required' });
         }
         const taken = limiterFor(project).take(String(req.ip || req.socket?.remoteAddress || ''), limits);
         if (!taken.allowed) {

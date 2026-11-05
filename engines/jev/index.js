@@ -78,7 +78,9 @@ function providerError(err) {
 }
 
 module.exports = defineEngine({
-    type: 'jev',
+    type: 'engine',
+    name: 'jev',
+    title: 'JEV',
     kinds: ['decision'],
     apiVersion: ENGINE_API_VERSION,
     description: 'TypeSafe Jev: confidence-scored Choice, Score and yes/no decisions.',

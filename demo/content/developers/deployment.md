@@ -159,6 +159,7 @@ The login form JSON endpoint the `/auth/authorize` page loads, such as `https://
 | `NODE_TLS_REJECT_UNAUTHORIZED` | unset | `0` to accept a self-signed `PROJECT` certificate. Never on a deployment reachable from outside. Turns off the hosted SaaS exemption. |
 | `DEBUG` | unset | Debug logging, for example `formio:*` or `formio:uag*`. |
 | `UAG_MODULE` | none | For the `uag` command only: a file or folder exporting a module. The Docker image loads `/app/module` instead. |
+| `MODULES_DISABLED` | none | Modules to leave out, by name, comma-separated (`ai-document`): for a module an image includes that you do not want. |
 
 ### Engines
 
@@ -346,7 +347,7 @@ For a reproducible deployment:
 
 - **Pin image tags.** The samples use the `rc` channel tag, which moves to each new release candidate. Production should pin `formio/uag:<version>` (and `formio/uag-engines:<version>`, `formio/formio-enterprise:<version>`).
 - **Pin models.** Set `CLAUDE_MODEL`, `TYPESAFE_MODEL` and the other model variables to specific versions. A new UAG release may change an engine's default, and answers differ between models. Run [`uag-eval`](/developers/evaluation) before changing one.
-- **Keep `@formio/appserver` current.** When embedding the UAG, it reaches `@formio/appserver-core` only through `@formio/appserver`, so there is one copy of it, which must be 2.25.2 or later; the UAG refuses to start with an older one, and says what to upgrade.
+- **Keep `@formio/appserver` current.** When embedding the UAG, it reaches `@formio/appserver-core` only through `@formio/appserver`, so there is one copy of it, which must be 2.26.0 or later; the UAG refuses to start with an older one, and says what to upgrade.
 - **Roll back** by pinning the previous image. Stored submissions are unaffected; UAG 1.x ignores the `metadata.uag.generated` provenance that 2.0 adds. See [MIGRATING-2.0.md](https://github.com/formio/uag/blob/v2.0.0-rc.5/MIGRATING-2.0.md) when upgrading from 1.x.
 
 ### A smaller image

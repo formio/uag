@@ -32,7 +32,8 @@ A package exports one engine type definition, made with `defineEngine`:
 const { defineEngine, EngineError, ENGINE_API_VERSION, requiredSchema } = require('@formio/uag-sdk');
 
 module.exports = defineEngine({
-    type: 'acme',
+    type: 'engine',
+    name: 'acme',
     kinds: ['agent'],
     apiVersion: ENGINE_API_VERSION,
     description: 'Acme models: structured extraction.',
@@ -513,7 +514,8 @@ function answer(question, seen) {
 }
 
 module.exports = defineEngine({
-    type: 'keywords',
+    type: 'engine',
+    name: 'keywords',
     kinds: ['decision'],
     apiVersion: ENGINE_API_VERSION,
     description: 'A toy decision engine that matches option words against the input.',
@@ -620,7 +622,8 @@ function prompt(request) {
 }
 
 module.exports = defineEngine({
-    type: 'mini-chat',
+    type: 'engine',
+    name: 'mini-chat',
     kinds: ['agent'],
     apiVersion: ENGINE_API_VERSION,
     description: 'A minimal agent engine over a chat completions API.',
