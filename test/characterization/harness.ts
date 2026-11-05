@@ -67,15 +67,25 @@ export async function start(options: { config?: any; modules?: any[]; forms?: Re
     const formio = new FakeFormio({ roles, forms: options.forms || { contact: contactForm }, actions: options.actions || {} });
     formio.secret = SECRET;
     await formio.start();
-    const server = new UAGServer({
-        project: formio.endpoint.replace('127.0.0.1', 'localhost'), ttl: 0, retries: 1, license: TEST_LICENSE,
-        auth: { adminKey: ADMIN_KEY, secret: SECRET, portal: PORTAL },
-        ...(options.config || {})
-    } as any);
-    for (const module of options.modules || []) server.use(module);
-    await server.initialize();
+    let server: UAGServer | undefined;
     const app = express();
-    app.use(await server.router());
+    try {
+        server = new UAGServer({
+            project: formio.endpoint.replace('127.0.0.1', 'localhost'), ttl: 0, retries: 1, license: TEST_LICENSE,
+            auth: { adminKey: ADMIN_KEY, secret: SECRET, portal: PORTAL },
+            ...(options.config || {})
+        } as any);
+        for (const module of options.modules || []) server.use(module);
+        await server.initialize();
+        app.use(await server.router());
+    }
+    catch (err) {
+        // A UAG that fails to start leaves nothing running behind it.
+        (server?.uagProject as any)?.destroy?.();
+        ProjectInterface.module = undefined;
+        await formio.stop();
+        throw err;
+    }
     const shared = http.createServer(app);
     await new Promise<void>((resolve) => shared.listen(0, '127.0.0.1', resolve));
     const url = `http://127.0.0.1:${(shared.address() as any).port}`;

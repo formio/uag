@@ -17,6 +17,7 @@ import { RunTaskAction, runTaskHooks } from './actions/runTask';
 import { UAG_VERSION } from './version';
 import { assertToolEntries } from './tools/utils';
 import { listEngines, listTools } from './plugins';
+import { registerDocuments } from './documents/plugins';
 
 /** Projects whose engines were loaded while the plugins were listed. */
 const enginesLoaded = new WeakSet<object>();
@@ -262,6 +263,8 @@ export class UAGServer extends Server {
    */
   protected async listPlugins(): Promise<void> {
     await super.listPlugins();
+    // Converters: the converter type and the built-in converters, for task file inputs, read_document and modules.
+    registerDocuments(this.plugins);
     const project = this.uagProject;
     if (project instanceof UAGProjectInterface) {
       // Decide which engines are on before serving anything, so a misconfigured
@@ -321,6 +324,7 @@ export * from '@formio/appserver';
 export * from './config';
 export * from './agent';
 export * from './tools';
+export * from './documents';
 export { sanitizeMarkdown } from './markdown';
 export * from './router';
 export * from './template';
