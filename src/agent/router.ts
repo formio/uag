@@ -87,21 +87,32 @@ async function respondWithStream(req: AgentRequest, res: Response, run: (context
     }
 }
 
-/** The largest request body an agent operation takes, in bytes. */
+/** The largest request body an agent operation takes by default, in bytes. */
 export const AGENT_BODY_LIMIT = 5 * 1024 * 1024;
+
+/**
+ * The largest request body the project's agent operations take: `agentApi.bodyLimit`,
+ * then AGENT_BODY_LIMIT, then 5 MB. A document sent inline (a base64 file a task reads)
+ * may need more; the server's own MAX_BODY_SIZE (16 MB) still applies first.
+ */
+export function agentBodyLimit(project: UAGProjectInterface): number {
+    const configured = Number(project.config?.agentApi?.bodyLimit ?? process.env.AGENT_BODY_LIMIT);
+    return Number.isFinite(configured) && configured > 0 ? configured : AGENT_BODY_LIMIT;
+}
 
 type Handler = (req: AgentRequest, res: Response, service: FormflowService) => Promise<void>;
 
 /** The parts every Agent API endpoint shares: the request id, and errors answered as JSON (or as an event mid-stream). */
-function agentEndpoints(project: UAGProjectInterface) {
-    const parse = express.json({ limit: AGENT_BODY_LIMIT });
+export function agentEndpoints(project: UAGProjectInterface) {
+    const limit = agentBodyLimit(project);
+    const parse = express.json({ limit });
     // The server parses JSON bodies first, with its own larger limit, so the
     // agent operations' limit is checked here on a body already read.
     const json = (req: Request, res: Response, next: NextFunction) => {
         if (req.body === undefined) return parse(req, res, next);
         const length = Number(req.get('content-length')) || Buffer.byteLength(JSON.stringify(req.body ?? null));
-        if (length > AGENT_BODY_LIMIT) {
-            return res.status(413).json({ error: `The request body is larger than the agent operations' limit of ${AGENT_BODY_LIMIT / (1024 * 1024)} MB.`, code: 'payload_too_large' });
+        if (length > limit) {
+            return res.status(413).json({ error: `The request body is larger than the agent operations' limit of ${Math.round(limit / (1024 * 1024) * 10) / 10} MB.`, code: 'payload_too_large' });
         }
         next();
     };

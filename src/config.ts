@@ -90,7 +90,12 @@ export interface UAGChatConfig {
   maxTranscriptChars?: number;
 }
 
-export type UAGAgentApiConfig = FormflowAgentApiConfig & { anonymous?: UAGAnonymousConfig; chat?: UAGChatConfig };
+export type UAGAgentApiConfig = FormflowAgentApiConfig & {
+  anonymous?: UAGAnonymousConfig;
+  chat?: UAGChatConfig;
+  /** The largest request body an agent operation takes, in bytes (AGENT_BODY_LIMIT). Default 5 MB. */
+  bodyLimit?: number;
+};
 
 /**
  * Express's `trust proxy` from TRUST_PROXY: `true` or `false`, a number of
