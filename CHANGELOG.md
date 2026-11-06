@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.0.0-rc.8
 
 Needs `@formio/appserver` 2.26.1 or later.
 
