@@ -189,11 +189,10 @@ export interface ChatForm {
 export interface UAGOptions extends Omit<AttachOptions, 'uagUrl' | 'formUrl'> {
     /** `false` attaches no Agent Input anywhere; submissions of `uag` forms still go to the UAG. */
     agentInput?: boolean;
-    /** AI Document options. `auto`: process files on upload unless a component turns it off (default true). */
-    documents?: { auto?: boolean };
     /**
-     * Portal mode (the UAG's portal script): register only the AI Document
-     * component and the manifest. Saves are not routed and Agent Input is not run.
+     * Portal mode, used by the UAG's portal script: registers only the client
+     * and the manifest, for the modules' components. Saves are not routed, and
+     * neither Agent Input nor the chat is registered.
      */
     portal?: boolean;
     /** The installed plugins, as `GET {project}/plugins` describes them. Fetched at registration when not given. */
@@ -328,5 +327,7 @@ declare const uag: {
     SSEParser: typeof SSEParser;
     isEmpty: typeof isEmpty;
     CHAT_TEMPLATES: typeof CHAT_TEMPLATES;
+    renderMarkdown: typeof renderMarkdown;
+    client: typeof client;
 };
 export default uag;

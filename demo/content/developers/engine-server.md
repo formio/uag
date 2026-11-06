@@ -110,7 +110,7 @@ At startup, each remote instance asks the engine server for its engine's kind an
 The "claude" engine could not start: the engine server at http://uag-engines:3300 does not host an engine named "claude" (it hosts "jev").
 ```
 
-The instance then behaves as a local engine of that kind: a decision instance reports the remote engine's `maxOptions`, an agent instance its `toolUse`, and both report its model.
+The instance then behaves as a local engine of that kind: a decision instance reports the remote engine's `maxOptions`, an agent instance its `toolUse`, `accepts` and whether it has `generate`, and both report its model.
 
 ## Security
 
@@ -143,10 +143,10 @@ Every Agent API request has an id: the caller's `X-Request-Id` when it is a shor
 
 The id travels with the run:
 
-1. The UAG's `remote` engine sends it as `X-Request-Id` on each `decide` and `extract` call it makes for that request.
+1. The UAG's `remote` engine sends it as `X-Request-Id` on each `decide`, `extract` and `generate` call it makes for that request.
 2. The engine server sends it on with its research requests to the UAG's `/mcp`, and puts it in each failure's log line: `[uag-engines] [<id>] POST /v1/engines/claude/extract failed: ...` (with `DEBUG=formio:uag:engine-server`, the stack follows under the same id).
 
-A logging proxy in front of both, such as the demo site's [flow proxy](https://github.com/formio/uag/blob/v2.0.0-rc.5/demo/flow/proxy.mjs), can then group the request, every engine call and every research call of one run.
+A logging proxy in front of both, such as the demo site's [flow proxy](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/flow/proxy.mjs), can then group the request, every engine call and every research call of one run.
 
 The header is optional on every leg, and the protocol version does not change with it. Only an id of 1 to 128 letters, digits, `.`, `_`, `:` or `-` is accepted or passed on; anything else is dropped (the UAG generates its own instead). An "Agent: Run task" run carries the `X-Request-Id` of the submission request that started it, when that request sent one, and so does every run its save chains to. Engine calls with no such request behind them, such as a Run task on a save made through an MCP tool, carry none.
 
@@ -172,7 +172,7 @@ POST /v1/engines/:name/generate  { protocol, instructions, system?, attachments?
 
 Authorization: Bearer <engine server key>     every request
 X-UAG-Scoped-Token: <scoped token>            research extracts only
-X-Request-Id: <request id>                    optional, on decide and extract
+X-Request-Id: <request id>                    optional, on decide, extract and generate
 errors: { protocol, error, expose }           with a 4xx or 5xx status
 ```
 
@@ -301,10 +301,10 @@ An error is a `4xx` or `5xx` status with:
 
 | Status | When (the `@formio/uag-engines` server) |
 |---|---|
-| `400` | A body in another protocol version or of the wrong shape; invalid JSON; a `decide` to an agent engine or an `extract` to a decision engine; a research extract without a scoped token, or to an engine without `toolUse`. |
+| `400` | A body in another protocol version or of the wrong shape; invalid JSON; a `decide` to an agent engine or an `extract` or `generate` to a decision engine; a research extract without a scoped token, or to an engine without `toolUse`; a `generate` the engine cannot serve (see [POST /v1/engines/:name/generate](#post-v1enginesnamegenerate)). |
 | `401` | A missing or wrong engine server key. |
 | `404` | No engine with that name; an unknown route. |
-| `413` | A body larger than 5 MB. |
+| `413` | A body larger than 5 MB; for `generate`, larger than about 44.7 MB (32 MB of PDFs as base64, plus 2 MB), or PDFs over 32 MB once decoded. |
 | other `4xx` | Another problem reading the body keeps its own status, such as `415` for a character set the server does not read. |
 | `502` | The engine failed. `expose` is `true` only for an `EngineError`. |
 | `503` | A research extract when `UAG_SERVER` is not set. |
@@ -321,7 +321,9 @@ On the UAG side, a call that cannot reach the engine server fails with "The engi
 | `SCOPED_TOKEN_HEADER` | `'x-uag-scoped-token'`. |
 | `REQUEST_ID_HEADER`, `safeRequestId(value)` | `'x-request-id'`, and the check for a short, safe id. |
 | `checkDecideRequest(body)`, `checkExtractRequest(body)` | Validate a request; throw a `ProtocolError` (with `status`, 400) naming the problem. |
-| `checkDescription(body)`, `checkDecisionResponse(body)`, `checkExtractResponse(body)` | Validate a response, as the UAG does. |
+| `checkGenerateRequest(body, maxBytes?)` | Validate a generate request and decode its PDFs; PDFs over `maxBytes` (default `MAX_DOCUMENT_BYTES`) throw a `ProtocolError` with status 413. |
+| `checkDescription(body)`, `checkDecisionResponse(body)`, `checkExtractResponse(body)`, `checkGenerateResponse(body)` | Validate a response, as the UAG does. |
+| `encodeAttachments(attachments)`, `MAX_DOCUMENT_BYTES` | Attachments as they travel (PDFs as base64), and the most PDF bytes one generate request carries (32 MB). |
 | `checkVersion(body, side?)` | Refuse another version, naming both. |
 | `errorBody(message, expose?)` | `{ protocol: 1, error, expose }`. |
 
@@ -377,7 +379,8 @@ Any server that speaks the protocol works with the UAG's `remote` type. It must:
 4. Answer errors as `{ protocol: 1, error, expose }`, with `expose: false` for anything that might carry internal details.
 5. Stop work when the UAG closes the connection: that is how its routing timeout reaches you.
 6. Optionally, log the `X-Request-Id` it sends, when it is a safe token, and send it on with research calls.
-7. For research: connect an MCP client (Streamable HTTP) to the UAG's `/mcp` at a URL from your configuration, with `Authorization: Bearer <X-UAG-Scoped-Token>`; list the tools; offer the model only the requested tools that are listed; call them over MCP; stop after `maxIterations` rounds; and report the calls you made in `toolCalls`. If you do not support research, describe agent engines without `toolUse`.
+7. Optionally, serve `POST /v1/engines/<name>/generate` for agent engines that write free text over documents, and describe them with `generate: true` and `accepts`. Agent engines described without `generate` are never sent one.
+8. For research: connect an MCP client (Streamable HTTP) to the UAG's `/mcp` at a URL from your configuration, with `Authorization: Bearer <X-UAG-Scoped-Token>`; list the tools; offer the model only the requested tools that are listed; call them over MCP; stop after `maxIterations` rounds; and report the calls you made in `toolCalls`. If you do not support research, describe agent engines without `toolUse`.
 
 The server below hosts one decision engine, `triage`, in Python with the standard library only. Its keyword scoring stands in for a model call.
 

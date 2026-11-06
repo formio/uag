@@ -1,4 +1,4 @@
-export const ExampleAction = {
+const ExampleAction = {
     /**
      * The ActionInfo for this action. This defines and describes the action.
      */
@@ -77,9 +77,11 @@ export const ExampleAction = {
         return async (req, res, next) => {
             // The action is executed here as Express.js middleware.
             console.log(form.project?.settings); // The encrypted project settings for Enterprise Only.
-            console.log(req.body);  // The submission data if the handler is "before"
+            console.log(req.submission); // The submission about to be saved if the handler is "before" (change it here).
             console.log(res.resource); // The "response" data if the handler is "after";
             next(); // Call next to continue processing.
         }
     }
-}
+};
+
+module.exports = { ExampleAction };

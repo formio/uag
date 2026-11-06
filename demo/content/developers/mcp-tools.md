@@ -19,10 +19,10 @@ To offer a conversation on a web page without running an MCP client and a model 
 | **Transport** | Streamable HTTP. `POST` for JSON-RPC requests, `GET` for the server stream. |
 | **Sessions** | None. The UAG runs in stateless mode and builds a fresh MCP server for every request, so requests are independent and can run concurrently. A client does not need to keep a session id. |
 | **Server info** | `name: "formio-uag"` |
-| **Authentication** | `Authorization: Bearer <UAG access token>` on every request. Without a valid token the UAG answers `401` with `WWW-Authenticate: Bearer realm="uag-server"` (RFC 6750): when a token was sent, the header adds `error="invalid_token"` and its reason, and the body is `{ "error": "invalid_token", "error_description": "..." }`; with no token, the body's `error` is `unauthorized`. When OAuth sign-in for remote clients is on (`MCP_OAUTH`, with the UAG's database), the header also names `resource_metadata`, the UAG's `/.well-known/oauth-protected-resource`. |
+| **Authentication** | `Authorization: Bearer <UAG access token>` on every request. Without a valid token the UAG answers `401` with `WWW-Authenticate: Bearer realm="uag-server"` (RFC 6750): when a token was sent, the header adds `error="invalid_token"` and its reason, and the body is `{ "error": "invalid_token", "error_description": "..." }`; with no token, the body's `error` is `unauthorized`. When OAuth sign-in for remote clients is on (`MCP_OAUTH`, with the UAG's database), the header also names `resource_metadata`, the UAG's `/.well-known/oauth-protected-resource`. Server keys (`x-admin-key`, `x-token`) are not accepted on `/mcp`: such a request is passed on to Form.io, which answers `404`. Exchange the key for a token at `/auth/token` instead ([`client_credentials`](#local-clients-clientcredentials)). A [scoped token](/developers/security#scoped-tokens-for-remote-engines) lists and runs only the read-only tools it names. |
 | **Capabilities** | Tools. The tool list is built per request from the forms currently registered, plus any custom tools from a [module](/developers/modules). |
 
-The `form_name` argument of every tool is an enumeration of the registered form names, so a client sees exactly which forms exist in the tool schema, and a call naming any other form fails argument validation. Clients read the tool list when they connect, so a form tagged afterwards appears once the client reconnects.
+The `form_name` argument of every built-in tool except `read_document` is an enumeration of the registered form names, so a client sees exactly which forms exist in the tool schema, and a call naming any other form fails argument validation. `read_document` takes `form_name` as a string, and answers an unknown form with an `isError` result. Clients read the tool list when they connect, so a form tagged afterwards appears once the client reconnects.
 
 ## How agents connect
 
@@ -135,8 +135,11 @@ Every built-in tool carries [MCP annotations](https://modelcontextprotocol.io/sp
 | [`agent_provide`](#agentprovide) | Reads | A task's criteria, a submission's values and the task's fields, as instructions. |
 | [`agent_decide`](#agentdecide) | Reads | A task's decision questions as structured JSON. |
 | [`fetch_external_data`](#fetchexternaldata) | Reads | Options or data for a URL, resource or data source component. |
+| [`read_document`](#readdocument) | Reads | The text of a document uploaded to a submission: a file field, or an AI Document's files. |
 
-Results are Markdown text in a single `text` content block, rendered from [response templates](/developers/modules) a module can override. A result that reports a failure sets `isError: true`: an unknown form, a save refused by validation (`submit_completed_form`, `submission_update`), a missing submission for `submission_update`, `agent_provide` or `agent_decide`, and a refused search. Validation errors from `collect_field_data` and `confirm_form_submission` are ordinary results, since they are part of the conversation: the agent asks again. `agent_decide`, and `collect_field_data` with `as_json`, return JSON text plus the same object as `structuredContent`; with `as_json`, validation errors come back as `{ "errors": [{ "path", "label", "error" }] }` with `isError: true`.
+Results are Markdown text in a single `text` content block, rendered from [response templates](/developers/modules) a module can override. A result that reports a failure sets `isError: true`: an unknown form, a save refused by validation (`submit_completed_form`, `submission_update`), a missing submission for `submission_update`, `agent_provide`, `agent_decide` or `read_document`, a refused search, and a document `read_document` cannot read. Validation errors from `collect_field_data` and `confirm_form_submission` are ordinary results, since they are part of the conversation: the agent asks again. `agent_decide`, `read_document`, and `collect_field_data` with `as_json`, return JSON text plus the same object as `structuredContent`; with `as_json`, validation errors come back as `{ "errors": [{ "path", "label", "error" }] }` with `isError: true`.
+
+Uploaded files and signatures are never put into a result as they are stored (a base64 upload would fill the model's context): in the submission data a result shows, a file is described as `{ "name", "type", "size" }`, a signature as `(signed)` and a sketch pad as `(a drawing)`. To read an uploaded document's text, call [`read_document`](#readdocument).
 
 All tools run with the caller's identity. A form the caller cannot access is still listed by `get_forms`, marked as having no access, and Form.io refuses the operations the caller is not permitted.
 
@@ -150,7 +153,7 @@ Tools address fields by **data path**: the field's full key path in the submissi
 { "firstName": "Joe", "company.name": "Acme Corp", "children[0].name": "Tom", "children[0].age": 5 }
 ```
 
-The UAG converts it into a submission: comma-separated strings become arrays for multi-value fields, and objects for select boxes.
+The UAG converts it into a submission: comma-separated strings become arrays for multi-value fields, and objects for select boxes. HTML written into a rich text field is reduced to the markup its editor keeps, as an engine's is (see [Rich text fields](/developers/form-properties#rich-text-fields)); this applies to `collect_field_data`, `confirm_form_submission`, `submit_completed_form` and `submission_update`.
 
 Nested forms, Data Grids and Edit Grids are collected separately. `get_field_info` marks them **Has Nested Components**; pass their data path as `parent_path` to `get_form_fields` and `collect_field_data` to work inside them.
 
@@ -297,6 +300,28 @@ Loads what a field needs from outside the form: the options of a select whose da
 | `search_value` | string | No | Filters options server-side, when the component has a `searchField`. |
 
 For a select it returns each option's label and value; the agent must use the value. For a Data Source it returns the form data with the fetched value in place.
+
+### `read_document`
+
+Returns the text of a document uploaded to a submission: a file in a file component, or one of an [AI Document](/developers/ai-document)'s files. The submission is loaded with the caller's identity, and the file wherever Form.io keeps it, with the caller's credentials. Its type is identified from its bytes, and it is read through the installed converters, as a task's [document input](/developers/form-properties#documents-as-input) is: the built-in ones read PDF (its text layer), text, Markdown, CSV, JSON, HTML and XML, and [converter plugins](/developers/plugins) add other formats.
+
+| Argument | Type | Required | Description |
+|---|---|---|---|
+| `form_name` | string | Yes | The form, as `get_forms` lists it. Not an enumeration: an unknown form is an `isError` result. |
+| `submission_id` | string | Yes | The full id, from `find_submissions`. |
+| `data_path` | string | Yes | The data path of the file field or AI Document field, such as `contract` or `rows[0].attachment`. The first file is read; add an index for another one: `contract[1]`. |
+
+It returns JSON text plus the same object as `structuredContent`:
+
+```json
+{ "file_name": "contract.pdf", "type": "application/pdf", "pages": 12, "text": "Section 1. …", "truncated": false }
+```
+
+`pages` is `null` when the converters do not count pages. `text` is cut at `agentApi.files.maxChars` (default 200000 characters), and `truncated` is then `true`. A file larger than `documents.maxFileBytes` (`DOCUMENTS_MAX_FILE_BYTES`, default 25 MB) is not read.
+
+A failure is an `isError: true` result: an unknown form or submission, from the [response templates](/developers/modules#response-templates), or `{ "error": "..." }` when there is no uploaded file at `data_path`, the file is stored where the UAG cannot read it or could not be downloaded, it is over the size limit, no installed converter reads its type, or it has no text to read (a scan or a photo with no text layer). The message names the file and the reason, never its content.
+
+`read_document` is annotated read-only, so a task may list it in [`uagTools`](/developers/form-properties#uagtools). It needs no license.
 
 ## The conversation sequence
 

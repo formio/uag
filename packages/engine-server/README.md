@@ -1,6 +1,6 @@
 # @formio/uag-engines
 
-<sub>[Form.io UAG](https://github.com/formio/uag/blob/main/README.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/main/README.md#engines-and-routing) &rsaquo; this page</sub>
+<sub>[Form.io UAG](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md#engines-and-routing) &rsaquo; this page</sub>
 
 Runs engine packages for the Form.io UAG in their own process, behind the remote engine protocol. The UAG reaches them with its built-in `remote` engine type. Model API keys and model traffic then stay in this container, and the UAG holds no model credential. Any engine package works here, unchanged.
 
@@ -13,7 +13,7 @@ The `formio/uag-engines` image includes the official engines: `jev`, `claude`, `
 ```yaml
 services:
   formio-uag:
-    image: formio/uag:2
+    image: formio/uag:rc
     environment:
       UAG_ENGINES: jev:remote,claude:remote
       UAG_ENGINE_JEV_URL: http://uag-engines:3300
@@ -27,7 +27,7 @@ services:
         condition: service_healthy
 
   uag-engines:
-    image: formio/uag-engines:2
+    image: formio/uag-engines:rc
     environment:
       UAG_ENGINES: jev,claude
       TYPESAFE_API_KEY: ${TYPESAFE_API_KEY}
@@ -39,7 +39,7 @@ services:
 
 On the UAG, `<name>:remote` is an instance hosted here; by default it uses the engine of the same name on the engine server (`UAG_ENGINE_<NAME>_ENGINE` names another). Any mix works: `UAG_ENGINES=jev,claude:remote` keeps `jev` in the UAG, with its key there, and moves only Claude.
 
-Without Docker: `npm install @formio/uag-engines @formio/uag-claude`, then run `npx uag-engines` with the same variables.
+Without Docker: `npm install @formio/uag-engines@rc @formio/uag-claude@rc`, then run `npx uag-engines` with the same variables.
 
 ## Settings
 
@@ -66,9 +66,9 @@ Engines are resolved as on the UAG: an instance named in `UAG_ENGINES` is looked
 
 ## Protocol
 
-`GET /health`, `GET /v1/engines`, `POST /v1/engines/:name/decide` and `POST /v1/engines/:name/extract`, all JSON, with `protocol: 1` in every body. See [`@formio/uag-sdk/protocol`](https://github.com/formio/uag/blob/main/packages/engine-sdk/protocol.js) for the shapes.
+`GET /health`, `GET /v1/engines`, `POST /v1/engines/:name/decide`, `POST /v1/engines/:name/extract` and `POST /v1/engines/:name/generate` (free text over attached documents, for agent engines that generate), all JSON, with `protocol: 1` in every body. See [`@formio/uag-sdk/protocol`](https://github.com/formio/uag/blob/v2.0.0-rc.8/packages/engine-sdk/protocol.js) for the shapes, and [Engine server](https://ai.form.io/developers/engine-server) for the full reference.
 
-Decide and extract calls may carry the Agent API request's `X-Request-Id`. The engine server sends it on with every research request to the UAG's `/mcp` and puts it in its logs, so a logging proxy can group every leg of a run. Only a short token (up to 128 letters, digits, `.`, `_`, `:` or `-`) is passed on; the header is optional either way, and the protocol version is unchanged.
+Decide, extract and generate calls may carry the Agent API request's `X-Request-Id`. The engine server sends it on with every research request to the UAG's `/mcp` and puts it in its logs, so a logging proxy can group every leg of a run. Only a short token (up to 128 letters, digits, `.`, `_`, `:` or `-`) is passed on; the header is optional either way, and the protocol version is unchanged.
 
 ## Building the image
 

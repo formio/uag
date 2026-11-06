@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased
+
+Needs `@formio/appserver` 2.26.1 or later.
+
+### Added
+
+- **Add-ons**: the plugins folder `/app/plugins` (or a folder `UAG_PLUGINS` names) may hold a folder per add-on, each with its own `index.mjs` and `node_modules`; without an `index.mjs` of its own, the UAG loads each folder's, in name order. They merge as modules do: a module two of them bring is used once, a plugin may use a type another defines, and two that register the same plugin, plugin type, route or component stop startup, naming both files. A folder with an `index.mjs` still loads that file alone. See the Plugins page.
+
+### Changed
+
+- `formio/uag-documents` is now an add-on that runs beside `formio/uag`: it copies the AI Document module and the document extras into a volume, which the UAG mounts at `/app/plugins/documents`; it no longer contains the UAG. Its tags follow `@formio/uag-extras` (`formio/uag-documents:1`). See the AI Document page.
+- Node API: `usePluginFiles(server, env?)` returns the files it loaded (a list); `pluginFiles(env?)`, `pluginFilesIn(path)` and `DEFAULT_PLUGINS_DIR` replace `pluginsFile` and `DEFAULT_PLUGINS_FILE`.
+
+### Fixed
+
+- `AUTHORIZE_HTML` replaces the sign-in page for remote MCP clients; the published `@formio/appserver-core` ignored it before 2.26.1.
+- `server.use()` uses an ES module namespace by its default export when it has named exports too, and warns about a module with none of a module's keys; such a module was used as an empty one before `@formio/appserver-core` 2.26.1.
+
+- The `image-pdf` converter's `maxPixels` is an operator setting: `config.plugins.settings.converter['image-pdf'].maxPixels`, or `DOCUMENTS_MAX_IMAGE_PIXELS`, changes the largest PNG it converts (default 50000000 pixels). The converter declared no settings, so the setting was dropped and the limit could not be changed.
+- `@formio/uag/testing`: the `files` option of `createTestModuleApi` and `mountModuleRoutes` is used. A form without a `files` function of its own reads stored values that are not base64 through it; it was ignored.
+- The `uag` command and the Docker image stop on `SIGTERM` and `SIGINT`: they stop taking connections and destroy the server, which runs each module's and each plugin's `close`, then exit with `0`, or with `1` when that fails or takes more than 10 seconds. A module's `close` never ran there.
+- `@formio/uag-js` no longer ships `uag.use.js`, which was unused: loaded from a CDN, it registered the CDN as the UAG. Load the UAG's own `/uag-js/uag.use.js`. Its types drop the unused `documents` option, and the default export's type adds `client` and `renderMarkdown`.
+
 ## 2.0.0-rc.7
 
 Modules can now bring whole capabilities (settings, form routes, formio.js components, plugin types), and AI Document comes as a module of `@formio/uag-extras`, beside documents as task inputs, converters and engine generation. Needs `@formio/appserver-core` 2.26.0 or later, through `@formio/appserver`.

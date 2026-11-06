@@ -1,8 +1,8 @@
 # @formio/uag-grok
 
-<sub>[Form.io UAG](https://github.com/formio/uag/blob/main/README.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/main/README.md#engines-and-routing) &rsaquo; this page</sub>
+<sub>[Form.io UAG](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md#engines-and-routing) &rsaquo; this page</sub>
 
-The **Grok** agent engine for the [UAG Agent API](https://github.com/formio/uag/blob/main/README.md#agent-api): xAI's models, through xAI's OpenAI-compatible API. It extracts and generates open values (dates, amounts, names, free text) with structured outputs. When a task lists read-only tools in `uagTools`, it researches with them first.
+The **Grok** agent engine for the [UAG Agent API](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md#agent-api): xAI's models, through xAI's OpenAI-compatible API. It extracts and generates open values (dates, amounts, names, free text) with structured outputs. When a task lists read-only tools in `uagTools`, it researches with them first.
 
 It is included in the `formio/uag` Docker image. Enable it by naming it, and set its key and model:
 
@@ -12,7 +12,7 @@ XAI_API_KEY=...
 XAI_MODEL=<a Grok model ID>
 ```
 
-Its tasks are Agentic Formflow, so the UAG also needs a `LICENSE_KEY` that includes the UAG (see [License](https://github.com/formio/uag/blob/main/README.md#license)).
+Its tasks are Agentic Formflow, so on a self-hosted project the UAG also needs a `LICENSE_KEY` that includes the UAG (see [License](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md#license)); a project on Form.io's hosted service needs none. A form's chat needs no license on Form.io Open Source or a hosted project.
 
 ## Settings
 
@@ -44,7 +44,7 @@ There is no default model: set `model` to a specific model ID from xAI's documen
 
 ## How it works
 
-It is the [OpenAI engine](https://github.com/formio/uag/tree/main/engines/openai)'s agent kind with xAI's endpoint and key built in: one chat completion with a strict JSON schema per extraction, and a function-calling loop over the task's read-only tools for research, ending in the same structured answer. A refusal, a truncated answer or an answer that is not JSON is an engine failure, and the UAG falls back to the next engine.
+It is the [OpenAI engine](https://github.com/formio/uag/tree/v2.0.0-rc.8/engines/openai)'s agent kind with xAI's endpoint and key built in: one chat completion with a strict JSON schema per extraction, and a function-calling loop over the task's read-only tools for research, ending in the same structured answer. A refusal, a truncated answer or an answer that is not JSON is an engine failure, and the UAG falls back to the next engine.
 
 Each field's format (such as `date`) and pattern are written into its description, not sent as schema constraints. Grok enforces constraints strictly, and every field is required in a strict schema, so it would otherwise invent a value that fits the pattern for a field the input does not state. The UAG validates every value either way.
 

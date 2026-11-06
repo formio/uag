@@ -3,10 +3,10 @@ import { PluginRegistry } from '@formio/appserver';
 import { pdf, png } from '../helpers/documents';
 import { identify, readAsText, converterFileReader, registerDocuments, MIME } from '../../src/documents';
 
-async function registry() {
+async function registry(config: Record<string, any> = {}) {
     const plugins = new PluginRegistry();
     registerDocuments(plugins);
-    await plugins.initialize({ server: { config: {} } as any });
+    await plugins.initialize({ server: { config } as any });
     return plugins;
 }
 
@@ -25,6 +25,16 @@ describe('Documents: reading files as text', () => {
         const meta = { name: 'people.csv', type: 'text/csv' } as any;
         expect(reader.accepts(meta, latinCsv.subarray(0, 16))).to.equal(true);
         expect((await reader.read(latinCsv, meta) as any).text).to.include('José');
+    });
+
+    it('gives image-pdf its maxPixels setting from the configuration', async () => {
+        expect((await registry()).settings('converter', 'image-pdf')).to.deep.equal({ maxPixels: 50_000_000 });
+        const plugins = await registry({ plugins: { settings: { converter: { 'image-pdf': { maxPixels: 1000 } } } } });
+        expect(plugins.settings('converter', 'image-pdf')).to.deep.equal({ maxPixels: 1000 });
+        let error: any;
+        try { await readAsText(plugins, png(40, 30), { name: 'photo.png' }); }
+        catch (err) { error = err; }
+        expect(error?.message).to.include('40×30 pixels, more than the image-pdf converter takes (1000 pixels)');
     });
 
     it('still refuses binary content named as text', () => {

@@ -98,7 +98,7 @@ By default a task reads the whole submission, except the fields it is filling. F
   "properties": { "uag": "triage", "uagField": "input" } }
 ```
 
-An input can also be a container, in which case every value inside it is input. A task can have several inputs.
+An input can also be a container, in which case every value inside it is input. A task can have several inputs. A file component given as input or context reaches engines as the uploaded document's text; any other file is described by name, type and size, never sent (see [Documents as input](/developers/form-properties#documents-as-input)).
 
 The input matters most for `{form}/agent/extract`, which fills a task's fields from free text. Extract needs either a task with an input (and the input's value in `data`) or a `text` value in the request, which replaces the input for that call.
 
@@ -304,4 +304,4 @@ What the UAG makes of it:
 
 ## Earlier names
 
-Tasks were called personas before UAG 2.0, and 2.0 removed the old names: the MCP tools take `task` (and `agent_provide_data` is `agent_provide`), `uag-eval` takes `--task`, and the Agent API refuses a body that names `persona` and no `task`. See [MIGRATING-2.0.md](https://github.com/formio/uag/blob/v2.0.0-rc.5/MIGRATING-2.0.md).
+Tasks were called personas before UAG 2.0, and 2.0 removed the old names: the MCP tools take `task` (and `agent_provide_data` is `agent_provide`), `uag-eval` takes `--task`, and the Agent API refuses a body that names `persona` and no `task`. See [MIGRATING-2.0.md](https://github.com/formio/uag/blob/v2.0.0-rc.8/MIGRATING-2.0.md).

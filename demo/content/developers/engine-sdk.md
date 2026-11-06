@@ -69,7 +69,7 @@ module.exports = defineEngine({
 | `uag-engine-<type>` | Anyone | `UAG_ENGINES=<type>` |
 | Any other name, such as `@acme/uag-engine-x` | Anyone | `UAG_ENGINES=<name>:@acme/uag-engine-x`, or the bare package name |
 
-A type name is looked up as `@formio/uag-<type>`, then `uag-engine-<type>`. Name an unscoped package `uag-engine-<type>` so users can enable it by its type name alone. By convention the package's `type` matches: `uag-engine-keywords` exports `type: 'keywords'`. The loader does not check it, but an instance enabled by the bare package name is named after the `type`.
+A type name is looked up as `@formio/uag-<type>`, then `uag-engine-<type>`. Name an unscoped package `uag-engine-<type>` so users can enable it by its type name alone. By convention the definition's `name` matches: `uag-engine-keywords` exports `name: 'keywords'`. The loader does not check it, but an instance enabled by the bare package name is named after the definition's `name`.
 
 The package's `main` exports the definition (`module.exports = defineEngine(...)`). A transpiled module whose `default` export is the definition, with `__esModule` set, also loads. Packages are loaded with `require()`, so an ES module package needs Node 22.12 or later.
 
@@ -81,8 +81,14 @@ Packages are looked up only in the `node_modules` of the host's installation and
 function defineEngine<T extends EngineTypeDefinition<any>>(definition: T): Readonly<T>;
 
 interface EngineTypeDefinition<Settings = Record<string, any>> {
+    /** Always "engine": the plugin type. */
+    type: 'engine';
     /** The type name, as in UAG_ENGINES=<type> and <name>:<type>. */
-    type: string;
+    name: string;
+    /** A human-readable name. Defaults to `name`. */
+    title?: string;
+    /** The engine's own version (semver). Defaults to the version in its package's package.json. */
+    version?: string;
     kinds: readonly ('decision' | 'agent')[];
     /** The engine contract version the type was built for: ENGINE_API_VERSION. */
     apiVersion: number;
@@ -92,15 +98,20 @@ interface EngineTypeDefinition<Settings = Record<string, any>> {
 }
 ```
 
-`defineEngine` validates the definition and returns it frozen, so a mistake fails when the package loads, not when the UAG starts. It throws a `TypeError` naming every problem:
+`defineEngine` validates the definition and returns it frozen, its `title` defaulting to its `name`, so a mistake fails when the package loads, not when the UAG starts. It throws a `TypeError` naming every problem:
 
 | Rule | |
 |---|---|
-| `type` | Lowercase letters, digits and `-`, starting with a letter, at most 63 characters (`ENGINE_NAME`). |
+| `type` | `'engine'`. |
+| `name` | Lowercase letters, digits and `-`, starting with a letter, at most 63 characters (`ENGINE_NAME`). |
+| `title` | When given, a non-empty string. |
+| `version` | When given, a semver string such as `'1.0.0'`. |
 | `kinds` | `['decision']`, `['agent']`, or both. |
 | `apiVersion` | A whole number. The loader refuses a type whose version is not the host's, naming both versions. Use `ENGINE_API_VERSION` (currently `1`). |
 | `create` | A function. |
 | `settings` | An object of camelCase names to setting specs, with only the keys below. A `default` must have the setting's type. |
+
+A definition in the shape of the 2.0 release candidates, with the engine's name in `type` (`{ type: 'acme', kinds, ... }`), is refused with a message that shows the shape above.
 
 Definitions are checked structurally, so a package built with another copy of the SDK, or written without it, loads too. `isEngineType(value)` tells you whether a value passes.
 
@@ -266,6 +277,10 @@ interface AgentEngine {
     toolUse?: boolean;
     /** Structured extraction that returns values for the requested fields only. */
     extract(request: ExtractRequest): Promise<ExtractResponse>;
+    /** The document representations `generate` reads natively. Default ['text']. */
+    accepts?: Array<'text' | 'pdf'>;
+    /** Free-text generation over attached documents, for modules and plugins. Optional. */
+    generate?(request: GenerateRequest): Promise<GenerateResponse>;
 }
 
 type ExtractRequest = {
@@ -319,6 +334,45 @@ type ToolCallResult = { content: { type: string; text?: string; [key: string]: a
 - Return values only for the fields asked. Leave out a field the information does not support; do not invent a value. The UAG validates every value against the form.
 - Values from an agent engine are always reported `suggested`.
 - Agent engines also answer a form's [chat](/developers/chat) turns, through this same `extract` call, with nothing new to implement. A chat turn's `fields` hold the form's fields plus two of the turn's own, whose paths start with `-`: `-reply` (a string, the next message) and `-confirmed` (a boolean). Treat them like any field. An engine that runs in the UAG and declares `toolUse` is offered one read-only tool on chat turns, `check_values`, even though no task lists `uagTools`; remote engines are not. See [Agent API: Chat](/developers/agent-api#chat).
+
+### Generating text over documents
+
+An agent engine may also implement `generate`, which writes free text over attached documents, and declare `accepts`, the document kinds it reads natively. Modules and plugins call it through `api.engines.select` (see [Modules: The module API](/developers/modules#the-module-api)), which picks an agent engine that has `generate` and accepts what the documents became. Of the official engines, only `claude` implements it.
+
+```ts
+/** A document an engine reads: PDF bytes, or text with its format. */
+type Attachment =
+    | { kind: 'pdf'; data: Buffer; label: string; pages?: number }
+    | { kind: 'text'; text: string; label: string; textFormat?: 'plain' | 'markdown' | 'csv' };
+
+type GenerateRequest = {
+    /** The user prompt. */
+    instructions: string;
+    system?: string;
+    /** Sent before the instructions, in order. */
+    attachments?: Attachment[];
+    format: 'markdown' | 'text';
+    /** Default: the engine's own output limit setting. */
+    maxTokens?: number;
+    signal?: AbortSignal;
+    /** Called as the answer streams, with the characters produced so far. */
+    onProgress?(outputChars: number): void;
+};
+
+type GenerateResponse = {
+    text: string;
+    model: string;
+    /** 'max_tokens': the answer was cut off at the output limit. */
+    stopReason: 'end' | 'max_tokens';
+    usage?: EngineUsage;
+};
+```
+
+- `accepts` defaults to `['text']`. List `'pdf'` only when your engine sends PDFs to its model as documents.
+- Put the attachments before the instructions, in order.
+- Honour `signal` as `extract` does, and call `onProgress` as the answer streams, when it is given.
+- Never log the documents.
+- An answer cut off at the output limit is not a failure: return it with `stopReason: 'max_tokens'`.
 
 ### Research
 
@@ -412,10 +466,13 @@ type ConformanceReport = {
 | decide stops when its signal is aborted | decision |
 | extract answers only the fields it was asked about | agent |
 | extract stops when its signal is aborted | agent |
+| accepts lists only known document kinds (`text`, `pdf`), when set | agent |
+| generate returns text, its model and a valid `stopReason` | agent with `generate` |
+| generate stops when its signal is aborted | agent with `generate` |
 | research reports its tool calls and stops at `maxIterations` | agent with `toolUse` |
 | research stops calling tools when its signal is aborted | agent with `toolUse` |
 
-The check sends fixed requests (Ada Lovelace's name and city; colour, size and urgency questions; a paged `lookup` tool), so give the engine a fake client that answers them, or real credentials in `env`. With a real model the answers vary, so the check tests the contract, not the content. A research check is marked `skipped` when the engine made no tool calls.
+The check sends fixed requests (Ada Lovelace's name and city; colour, size and urgency questions; a paged `lookup` tool; a short text document to summarize), so give the engine a fake client that answers them, or real credentials in `env`. With a real model the answers vary, so the check tests the contract, not the content. A research check is marked `skipped` when the engine made no tool calls.
 
 ## Example: a keyword decision engine
 
@@ -438,7 +495,7 @@ uag-engine-keywords/
   "files": ["index.js"],
   "engines": { "node": ">=22.0.0" },
   "scripts": { "test": "node --test" },
-  "dependencies": { "@formio/uag-sdk": "^2.0.0-rc.4" }
+  "dependencies": { "@formio/uag-sdk": "^2.0.0-rc.7" }
 }
 ```
 
@@ -828,7 +885,7 @@ ENV UAG_ENGINE_PATH=/engines
 
 ## Versions
 
-`ENGINE_API_VERSION` is `1` in `@formio/uag-sdk` 2.x, and every UAG 2.x supports it. Depend on `@formio/uag-sdk@^2.0.0-rc.4`, which also matches 2.0.0 and later 2.x releases. A future contract version will be refused by older hosts with an error that names both versions, rather than failing at the first request.
+`ENGINE_API_VERSION` is `1` in `@formio/uag-sdk` 2.x, and every UAG 2.x supports it. Depend on `@formio/uag-sdk@^2.0.0-rc.7`, the first release with this definition shape, which also matches 2.0.0 and later 2.x releases. A future contract version will be refused by older hosts with an error that names both versions, rather than failing at the first request.
 
 ## Next steps
 

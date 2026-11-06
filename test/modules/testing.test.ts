@@ -83,5 +83,16 @@ describe('The module test kit (@formio/uag/testing)', () => {
         const file = { storage: 'base64', name: 'a.txt', url: `data:text/plain;base64,${Buffer.from('hello').toString('base64')}` };
         const app = await mountModuleRoutes(counter, { form });
         expect((await supertest(app).post('/notes/counter/read').send({ file })).body).to.deep.equal({ text: 'hello' });
+        const stored = { storage: 's3', name: 'b.txt', key: 'b.txt' };
+        const refused = await supertest(app).post('/notes/counter/read').send({ file: stored });
+        expect(refused.status).to.equal(500);
+        const files = (value: any) => Buffer.from(`stored ${value.key}`);
+        const mounted = await mountModuleRoutes(counter, { form, files });
+        expect((await supertest(mounted).post('/notes/counter/read').send({ file: stored })).body).to.deep.equal({ text: 'stored b.txt' });
+        const api = await createTestModuleApi(counter, { files });
+        expect(String(await api.files.read(form, stored, testAuth(), {}))).to.equal('stored b.txt');
+        expect(String(await api.files.read(form, file, testAuth(), {}))).to.equal('hello');
+        const own = testForm({ _id: 'f2', name: 'own', path: 'own', components: [] }, { files: () => Buffer.from('own') });
+        expect(String(await api.files.read(own, stored, testAuth(), {}))).to.equal('own');
     });
 });

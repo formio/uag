@@ -8,7 +8,7 @@
             <a class="btn btn-outline" href="/getting-started">Run it yourself <span class="arrow"></span></a>
           </div>
           <div class="install-card">
-            <p>Or install the Form.io <strong><a href="https://github.com/formio/ai" target="_blank">Agentic Coding Plugin</a></strong> and have your coding agent make your forms agent-ready.</p>
+            <p>Or install the Form.io <strong><a href="{{links.plugin}}" target="_blank" rel="noopener">Agentic Coding Plugin</a></strong> and have your coding agent make your forms agent-ready.</p>
             <div class="install">
               <code>npx skills add formio/ai</code>
               <button type="button" class="copy" data-copy>Copy</button>
@@ -191,7 +191,7 @@
         <div class="section-head center">
           <h2>Try it yourself!</h2>
         </div>
-        <div class="grid grid-3">
+        <div class="grid grid-2">
           <a class="card card-link" href="/examples/conversation">
             <div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#chat"/></svg></div>
             <span class="num">01 · CONVERSATION FORMS</span>
@@ -211,6 +211,13 @@
             <span class="num">03 · AGENTIC FORMFLOW</span>
             <h3>Forms that fill themselves</h3>
             <p>The user describes what happened. A decision engine picks the wizard pages that apply, and extraction prefills them for the user to check.</p>
+            <p class="link-arrow">Try it</p>
+          </a>
+          <a class="card card-link" href="/examples/documents">
+            <div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#form"/></svg></div>
+            <span class="num">04 · AI DOCUMENT</span>
+            <h3>Forms that read your files</h3>
+            <p>The user uploads a lease. The form copies its key clauses word for word, checks the copy against the lease, and writes a summary and a Spanish translation for the user to check.</p>
             <p class="link-arrow">Try it</p>
           </a>
         </div>
@@ -388,7 +395,7 @@
           <h2>Let your coding agent build it.</h2>
           <p>The Form.io Agentic Coding Plugin gives Claude Code, Cursor, Codex and other coding agents that read skills the Form.io skill library, including the <code>formio-uag</code> skill. Describe what the agent should do, and your coding agent tags and writes your forms for agents, designs their tasks, deploys the UAG and its engines, and wires your application to it.</p>
           <ul class="checks">
-            <li>Each example page links the prompt that builds that demo in your own project.</li>
+            <li>The conversation, workflow and formflow example pages each link the prompt that builds that demo in your own project.</li>
             <li>The plugin writes forms through the Form.io MCP server and shows you each change before it saves.</li>
             <li>Settings that open a form to anonymous users or spend model credits are listed separately for you to confirm.</li>
           </ul>

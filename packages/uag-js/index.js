@@ -734,7 +734,7 @@
      * The chat: a formio.js display that renders a form as a conversation.
      *
      *   Formio.use(UAG('https://uag.example.com'));
-     *   Formio.createChat(element, 'https://forms.example.com/myproject/servicerequest');
+     *   Formio.createChat(element, 'https://forms.example.com/myproject/service-request');
      *
      * Each message the person sends goes to the form's chat on the UAG
      * (`{form}/agent/chat`) with the conversation and the form's data; the

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 450" role="img" aria-labelledby="t d">
   <title id="t">The demo site's Compose stack</title>
-  <desc id="d">A visitor reaches your load balancer over HTTPS, which sends plain HTTP to the site, the only published service. On the stack's private network, the site calls the UAG through the flow proxy it runs inside it, for the Agent API (the chat's turns and the claim's extraction) and the saves of the chat's requests, the workflow's applications and the claims, and shows each visitor their own calls in the flow viewer. The UAG runs the JEV and Claude engines inside it and calls the JEV and Claude APIs; the site calls no model itself. The UAG reads the demo's project on Form.io's hosted service, https://uag.form.io, and forwards every save to it; the site reads forms and applications from it directly with the project key. Nothing calls back into the stack.</desc>
+  <desc id="d">A visitor reaches your load balancer over HTTPS, which sends plain HTTP to the site, the only published service. On the stack's private network, the site calls the UAG through the flow proxy it runs inside it, for the Agent API (the chat's turns and the claim's extraction), the AI Document's document/process calls on the lease review, and the saves of the chat's requests, the workflow's applications and the claims, and shows each visitor their own calls in the flow viewer. The UAG runs the JEV and Claude engines inside it and calls the JEV and Claude APIs; for the AI Document demo it also needs the AI Document module and its document plugins in its plugins folder, which the formio/uag-documents add-on fills when it runs beside the UAG; the site calls no model itself. The UAG reads the demo's project on Form.io's hosted service, https://uag.form.io, and forwards every save to it; the site reads forms and applications from it directly with the project key. Nothing calls back into the stack.</desc>
   <defs>
     <style>
       text { font-family: Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; fill: #0c141d; }
@@ -49,7 +49,7 @@
   <text x="412" y="268" text-anchor="middle" class="g">the only published</text>
   <text x="412" y="282" text-anchor="middle" class="g">service (DEMO_PORT)</text>
 
-  <rect x="600" y="96" width="210" height="150" rx="10" class="card"/>
+  <rect x="600" y="96" width="210" height="176" rx="10" class="card"/>
   <text x="705" y="122" text-anchor="middle" class="h">formio-uag</text>
   <text x="705" y="142" text-anchor="middle" class="s">the UAG, built from</text>
   <text x="705" y="157" text-anchor="middle" class="s">this repository</text>
@@ -59,11 +59,14 @@
   <rect x="710" y="174" width="82" height="54" rx="8" class="chip"/>
   <text x="751" y="196" text-anchor="middle" class="s" style="font-weight:600;fill:#0c141d">Claude</text>
   <text x="751" y="213" text-anchor="middle" class="s" style="font-size:10.5px">engine</text>
+  <text x="705" y="248" text-anchor="middle" class="s" style="font-size:10.5px">and, for AI Document, a plugins folder</text>
+  <text x="705" y="262" text-anchor="middle" class="s" style="font-size:10.5px">(the formio/uag-documents add-on)</text>
 
   <!-- site -> UAG -->
   <path d="M504 170 H596" class="flow" marker-end="url(#a)"/>
-  <text x="550" y="146" text-anchor="middle" class="e">saves,</text>
-  <text x="550" y="160" text-anchor="middle" class="e mono" style="font-size:10px">…/agent/*</text>
+  <text x="550" y="132" text-anchor="middle" class="e">saves,</text>
+  <text x="550" y="146" text-anchor="middle" class="e mono" style="font-size:10px">…/agent/*,</text>
+  <text x="550" y="160" text-anchor="middle" class="e mono" style="font-size:8.5px">…/document/process</text>
 
   <!-- Models -->
   <rect x="870" y="134" width="110" height="82" rx="10" class="card"/>
@@ -76,7 +79,7 @@
   <rect x="560" y="370" width="420" height="62" rx="10" class="card"/>
   <text x="580" y="396" class="h">uag.form.io</text>
   <text x="580" y="416" class="s">The demo's project on Form.io's hosted service.</text>
-  <path d="M705 248 V366" class="flow" marker-end="url(#a)"/>
+  <path d="M705 274 V366" class="flow" marker-end="url(#a)"/>
   <text x="716" y="340" class="e">reads the project,</text>
   <text x="716" y="354" class="e">forwards every save</text>
   <path d="M412 290 V401 H556" class="flow" marker-end="url(#a)"/>

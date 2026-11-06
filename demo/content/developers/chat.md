@@ -13,7 +13,7 @@ import { UAG } from '@formio/uag-js';
 import '@formio/uag-js/uag-js.css';
 
 Formio.use(UAG('https://uag.example.com'));
-Formio.createChat(document.getElementById('chat'), 'https://forms.example.com/myproject/servicerequest');
+Formio.createChat(document.getElementById('chat'), 'https://forms.example.com/myproject/service-request');
 ```
 
 The UAG is the only backend. There is no model code in your application, no prompt, and no server of your own: each turn is the form's own chat operation on the UAG, [`{form}/agent/chat`](/developers/agent-api#chat), answered by one of the UAG's agent engines. The form never leaves the browser's hands. A formio.js form sits behind the chat, so the form's conditionals, calculations and validation apply as the person talks, and the submission is the form's own, saved through the UAG like any other `uag` form, where its [Run task](/developers/workflows) actions run.
@@ -54,10 +54,27 @@ With script tags:
 <div id="chat"></div>
 <script>
   Formio.use(FormioUAG.UAG('https://uag.example.com'));
-  Formio.createChat(document.getElementById('chat'), 'https://forms.example.com/myproject/servicerequest')
+  Formio.createChat(document.getElementById('chat'), 'https://forms.example.com/myproject/service-request')
     .then((chat) => chat.on('submitDone', (submission) => console.log('Saved', submission._id)));
 </script>
 ```
+
+Or load it from the UAG, which serves the `@formio/uag-js` it was installed with under `/uag-js/`. Load `uag.use.js` after formio.js: it registers itself with that UAG (the URL comes from the script's own `src`), with the UAG's plugin manifest and every module's component, so the page does not call `Formio.use`. `uag-js.css` holds the chat's styles and the modules' components' styles.
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.css">
+<link rel="stylesheet" href="https://uag.example.com/uag-js/uag-js.css">
+<script src="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.js"></script>
+<script src="https://uag.example.com/uag-js/uag.use.js"></script>
+
+<div id="chat"></div>
+<script>
+  Formio.createChat(document.getElementById('chat'), 'https://forms.example.com/myproject/service-request');
+</script>
+```
+
+`uag.use.js` registers the module with no other options. To pass options, load `index.js` (from jsDelivr or npm) as above and register `Formio.use(FormioUAG.UAG(url, options))` yourself, rather than registering again on top of `uag.use.js`; a module's components are then at `{uag}/uag-js/components/<type>.js` (and `.css`). See [JavaScript (formio.js)](/developers/renderer#get-it).
 
 Allow the application's origin in the UAG's `CORS` setting.
 
@@ -309,7 +326,7 @@ The conversation lives in the browser: the UAG stores nothing between turns. Wit
 A visitor who is not signed in has no Form.io token. Two ways to offer them a chat:
 
 - **Anonymous use.** Set [`uagAnonymous: "true"`](/developers/form-properties#uaganonymous) on the form, and let the Anonymous role create its submissions. The UAG then answers visitors directly, rate-limited per address and in total, together with the form's other anonymous agent operations (`AGENT_ANONYMOUS_RATE_LIMIT`, default 10 a minute per address, and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`, default 100). Every anonymous turn spends your model budget: set the limits for what you are prepared to pay, and a spend limit at your model provider.
-- **A relay of your own,** when you need more: a CAPTCHA, a daily budget, your own sessions. The relay checks what it must, then calls the UAG with a key the browser never sees. Either point only the turns at it with `chatUrl`, or register the relay's base URL as the UAG's URL (`Formio.use(UAG(relayUrl))`) and have it serve the UAG's paths for your form: the form (`{relay}/{formPath}`), its turns (`{relay}[/project/{id}]/form/{id}/agent/chat`) and its save (`{relay}[/project/{id}]/form/{id}/submission`). The [demo's relay](https://github.com/formio/uag/blob/v2.0.0-rc.5/demo/server/conversation.mjs) does the second, so the page's code is exactly an application's, and adds a bot check and a daily budget from each turn's `engine.usage`.
+- **A relay of your own,** when you need more: a CAPTCHA, a daily budget, your own sessions. The relay checks what it must, then calls the UAG with a key the browser never sees. Either point only the turns at it with `chatUrl`, or register the relay's base URL as the UAG's URL (`Formio.use(UAG(relayUrl))`) and have it serve the UAG's paths for your form: the form (`{relay}/{formPath}`), its turns (`{relay}[/project/{id}]/form/{id}/agent/chat`) and its save (`{relay}[/project/{id}]/form/{id}/submission`). The [demo's relay](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/server/conversation.mjs) does the second, so the page's code is exactly an application's, and adds a bot check and a daily budget from each turn's `engine.usage`.
 
 The UAG refuses project and admin keys on browser requests, so a key cannot be used from a page; see [Security](/developers/security#chat).
 
@@ -326,7 +343,7 @@ The UAG refuses project and admin keys on browser requests, so a key cannot be u
 | "This form is not available for chat." | The form is not tagged `uag`, or its definition has no `_id` (render it from its URL, or keep the `_id` Form.io returned). |
 | 404 "The form "…" does not exist or is not tagged "uag"." | The UAG has not seen the form as tagged yet: it re-reads the project every `PROJECT_TTL` seconds. Wait, or restart the UAG, after tagging a form. |
 | Every turn fails with 503 "No enabled engine can serve chat." | Enable an agent engine on the UAG (`UAG_ENGINES`). A decision engine alone cannot chat. |
-| 401 "Sign in to use this form's agent operations." | The visitor is not signed in and the form does not allow anonymous use. Sign them in, or set `uagAnonymous`. |
+| 401 "Sign in to use this form's agent operations and routes." | The visitor is not signed in and the form does not allow anonymous use. Sign them in, or set `uagAnonymous`. |
 | 403 on every turn | The user cannot create the form's submissions, or the form sets `uagChat: "false"`. |
 | 429 with `Retry-After` | A caller, anonymous or engine rate limit. The chat shows the UAG's message; the person can try again. |
 | The chat never offers to submit | A required field is one the chat cannot collect: the chat names it and opens the form. Or a value fails the form's validation: the reply says which. |

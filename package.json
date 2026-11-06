@@ -45,7 +45,7 @@
   "author": "Form.io Developers",
   "license": "MIT",
   "dependencies": {
-    "@formio/appserver": "^2.26.0",
+    "@formio/appserver": "^2.26.1",
     "@formio/core": "2.9.0",
     "@formio/uag-sdk": "^2.0.0-rc.7",
     "@modelcontextprotocol/sdk": "1.32.2",

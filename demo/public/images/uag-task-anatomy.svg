@@ -26,7 +26,7 @@
   <text x="510" y="48" text-anchor="middle" class="mono chip w">tags: ["uag"]</text>
 
   <!-- Input -->
-  <rect x="32" y="74" width="4" height="78" rx="2" fill="#f19d59"/>
+  <rect x="32" y="74" width="4" height="78" rx="2" fill="#8d99a8"/>
   <text x="48" y="88" class="lbl">Tell us what happened</text>
   <rect x="48" y="96" width="290" height="52" rx="6" class="input"/>
   <text x="58" y="116" class="ph">I rear-ended a car at the light on Main St</text>
@@ -65,20 +65,20 @@
   <rect x="356" y="348" width="172" height="22" rx="6" class="chipbg"/><text x="364" y="363" class="mono chip">uagAuthoritative: true</text>
 
   <!-- Value fields, outside the container, each flagged on its own -->
-  <rect x="32" y="396" width="4" height="48" rx="2" fill="#0079c0"/>
+  <rect x="32.75" y="396.75" width="4.5" height="46.5" rx="2" fill="#ffffff" stroke="#69b342" stroke-width="1.5"/>
   <text x="48" y="410" class="lbl">Date of loss</text>
   <rect x="48" y="418" width="180" height="26" rx="6" class="input"/>
   <text x="58" y="435" class="ph">yyyy-mm-dd</text>
   <rect x="356" y="420" width="110" height="22" rx="6" class="chipbg"/><text x="364" y="435" class="mono chip">uag: triage</text>
 
-  <rect x="32" y="456" width="4" height="52" rx="2" fill="#0079c0"/>
+  <rect x="32.75" y="456.75" width="4.5" height="50.5" rx="2" fill="#ffffff" stroke="#69b342" stroke-width="1.5"/>
   <text x="48" y="470" class="lbl">Where did it happen?</text>
   <rect x="48" y="478" width="290" height="28" rx="6" class="input"/>
   <rect x="356" y="481" width="110" height="22" rx="6" class="chipbg"/><text x="364" y="496" class="mono chip">uag: triage</text>
 
   <!-- Roles -->
   <rect x="604" y="20" width="376" height="64" rx="10" class="card"/>
-  <rect x="604" y="20" width="6" height="64" rx="3" fill="#f19d59"/>
+  <rect x="604" y="20" width="6" height="64" rx="3" fill="#8d99a8"/>
   <text x="624" y="45" class="lbl">Input <tspan class="mono xs">uagField: input</tspan></text>
   <text x="624" y="66" class="s">What the task reads. Without one, the submission.</text>
 
@@ -96,12 +96,12 @@
   <text x="634" y="261" class="mono chip" style="fill:#3f7a22">triage.claimType: "autoCollision"  0.94 confident</text>
 
   <rect x="604" y="288" width="376" height="104" rx="10" class="card"/>
-  <rect x="604" y="288" width="6" height="104" rx="3" fill="#0079c0"/>
+  <rect x="604.75" y="288.75" width="6" height="102.5" rx="3" fill="#ffffff" stroke="#69b342" stroke-width="1.5"/>
   <text x="624" y="313" class="lbl">Value fields <tspan class="s">→ agent engine</tspan></text>
   <text x="624" y="334" class="s">Dates, amounts, names, free text.</text>
   <text x="624" y="352" class="s">Written as a suggestion, never as confident.</text>
-  <rect x="624" y="362" width="340" height="22" rx="6" fill="#e6f3fb"/>
-  <text x="634" y="377" class="mono chip" style="fill:#005f96">lossDate: "2026-10-26"  suggested</text>
+  <rect x="624" y="362" width="340" height="22" rx="6" fill="#ffffff" stroke="#69b342" stroke-dasharray="4 3"/>
+  <text x="634" y="377" class="mono chip" style="fill:#3a4756">lossDate: "2026-10-26"  suggested</text>
 
   <rect x="604" y="404" width="376" height="116" rx="10" fill="#3a4756"/>
   <text x="624" y="430" class="lbl w">The UAG checks every answer</text>

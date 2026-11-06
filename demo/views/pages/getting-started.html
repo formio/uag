@@ -94,11 +94,19 @@
       ROOT_EMAIL: admin@example.com
       ROOT_PASSWORD: CHANGEME
       ADMIN_KEY: CHANGEME
+    healthcheck:
+      # The UAG loads the project at startup, so hold it back until Form.io answers.
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/').then(r =&gt; process.exit(r.ok ? 0 : 1)).catch(() =&gt; process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
 
   formio-uag:
     image: formio/uag:rc
     restart: always
-    depends_on: [formio]
+    depends_on:
+      formio:
+        condition: service_healthy
     ports:
       - "3200:3200"
     environment:
@@ -119,7 +127,7 @@ volumes:
               </div></div>
               <div class="step"><div>
                 <h3>Tag a form and connect</h3>
-                <p>Create a form in the portal, tag it <code>uag</code>, and connect an agent to <code>http://localhost:3200/mcp</code>. Everything stays on your machine. Conversation forms over MCP run here with no license. The <a href="/developers/chat">chat widget</a> needs no license either, but needs an agent engine: add <code>UAG_ENGINES: claude</code> and <code>CLAUDE_API_KEY</code> to the UAG. The Agent API's <code>extract</code>, <code>decide</code> and <code>generate</code>, workflows and Agentic Formflow need a <code>LICENSE_KEY</code> that includes the UAG, or a project on Form.io's hosted service (tab 1).</p>
+                <p>Create a form in the portal, tag it <code>uag</code>, and connect an agent to <code>http://localhost:3200/mcp</code>. Everything stays on your machine. Conversation forms over MCP run here with no license. The <a href="/developers/chat">chat widget</a> needs no license either, but needs an agent engine: add <code>UAG_ENGINES: claude</code> and <code>CLAUDE_API_KEY</code> to the UAG. The Agent API's <code>extract</code>, <code>decide</code> and <code>generate</code>, workflows, Agentic Formflow and the <a href="/developers/ai-document">AI Document</a> need a <code>LICENSE_KEY</code> that includes the UAG, or a project on Form.io's hosted service (tab 1).</p>
               </div></div>
             </div>
           </div>
@@ -128,7 +136,7 @@ volumes:
             <div class="steps">
               <div class="step"><div>
                 <h3>Get a license</h3>
-                <p>A self-hosted UAG serving a Form.io Enterprise project needs a Form.io license that includes the UAG, in <code>LICENSE_KEY</code>: an online license with UAG servers, or an offline license with the <code>uag</code> option. It is the only license the UAG needs, and covers the Agent API, "Agent: Run task" actions, their engines and the UAG's own database. <a href="/contact">Ask us for a trial.</a></p>
+                <p>A self-hosted UAG serving a Form.io Enterprise project needs a Form.io license that includes the UAG, in <code>LICENSE_KEY</code>: an online license with UAG servers, or an offline license with the <code>uag</code> option. It is the only license the UAG needs, and covers the Agent API, "Agent: Run task" actions, their engines, the AI Document and the UAG's own database. <a href="/contact">Ask us for a trial.</a></p>
               </div></div>
               <div class="step"><div>
                 <h3>Point the UAG at your project</h3>

@@ -12,7 +12,7 @@
  * Engines are found among the installed packages, so a custom image holds only
  * the engines it installs:
  *
- *   npm install @formio/uag @formio/uag-claude
+ *   npm install @formio/uag@rc @formio/uag-claude@rc
  *   UAG_ENGINES=claude CLAUDE_API_KEY=... npx uag
  */
 // Before anything else, so a module that reads the environment sees .env too.
@@ -42,7 +42,8 @@ async function start(uagModule) {
     // A module may be exported as a promise (an async module).
     const resolved = await uagModule;
     if (resolved) server.use(resolved);
-    // Then the plugins file: UAG_PLUGINS, or the image's /app/plugins/index.mjs.
+    // Then the plugins files: UAG_PLUGINS, or the image's /app/plugins (its
+    // index.mjs, or each add-on's folder under it).
     await usePluginFiles(server);
     const app = Express();
     // Behind a reverse proxy, its forwarded headers give the public URL (TRUST_PROXY).
@@ -52,9 +53,47 @@ async function start(uagModule) {
     // names; a misconfigured engine stops startup with its name in the error.
     app.use(await server.router());
     const port = process.env.PORT || 3200;
-    await new Promise((resolve) => app.listen(port, resolve));
+    const listener = await new Promise((resolve) => {
+        const started = app.listen(port, () => resolve(started));
+    });
+    stopOnSignals(server, listener);
     console.log(`Form.io UAG server running on port ${port}`);
     console.log(`Visit http://localhost:${port} to access the application`);
+}
+
+/**
+ * On SIGTERM or SIGINT, stop taking connections and destroy the server, which
+ * calls each module's `close` and each plugin's, then exit. A shutdown that
+ * takes longer than `timeoutMs` exits with 1.
+ */
+function stopOnSignals(server, listener, { signals = ['SIGTERM', 'SIGINT'], exit = (code) => process.exit(code), on = process, timeoutMs = 10000 } = {}) {
+    let stopping = false;
+    const stop = async (signal) => {
+        if (stopping) return;
+        stopping = true;
+        console.log(`Received ${signal}: stopping the UAG.`);
+        const timer = setTimeout(() => {
+            console.error(`The UAG did not stop within ${timeoutMs} ms.`);
+            exit(1);
+        }, timeoutMs);
+        if (timer.unref) timer.unref();
+        if (listener) listener.close();
+        let code = 0;
+        try {
+            await server.destroy();
+        }
+        catch (error) {
+            console.error('Failed to stop the UAG cleanly:', error);
+            code = 1;
+        }
+        clearTimeout(timer);
+        exit(code);
+    };
+    // Not once: a repeated signal (a terminal's Ctrl-C reaches the restarted
+    // process twice, from the terminal and from its parent) must not fall back
+    // to Node's default handler and end the shutdown early.
+    for (const signal of signals) on.on(signal, () => stop(signal));
+    return stop;
 }
 
 function fail(error) {
@@ -74,4 +113,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = { start, fail };
+module.exports = { start, fail, stopOnSignals };

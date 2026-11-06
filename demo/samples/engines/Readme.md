@@ -2,7 +2,7 @@
 
 <sub>[Form.io UAG](../../../README.md) &rsaquo; [Demo](../../README.md) &rsaquo; this page</sub>
 
-Compose overrides, each showing another way to run the [Agent API](https://ai.form.io/developers/engines)'s engines. Each one changes only the engines of a stack whose UAG service is named `formio-uag`, such as the [custom module sample](../custom-module) or your own. The [demo site](../../docker-compose.yml) itself runs JEV and Claude on an engine server, behind its flow proxy.
+Compose overrides, each showing another way to run the [Agent API](https://ai.form.io/developers/engines)'s engines. Each one changes only the engines of a stack whose UAG service is named `formio-uag`, such as the [custom module sample](../custom-module) or your own. The [demo site](../../docker-compose.yml) itself runs JEV and Claude inside the UAG; its [split overlay](../../docker-compose.split.yml) moves them to an engine server.
 
 Run one by adding it to the compose command, from your stack's folder:
 

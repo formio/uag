@@ -5,7 +5,7 @@ section: Operate
 order: 20
 ---
 
-The UAG is a long-lived HTTP server you deploy next to a Form.io project. It is not a stdio MCP server that a client spawns: deploy it, then point clients at its URL. This page covers how to run it, every setting it reads, how editions and licensing apply, and how to keep a deployment reproducible.
+The UAG is a long-lived HTTP server you deploy next to a Form.io project. It is not a stdio MCP server that a client spawns: deploy it, then point clients at its URL. This page covers how to run it, every setting an operator sets, how editions and licensing apply, and how to keep a deployment reproducible.
 
 > **Tip:** The [Agentic Coding Plugin](/developers/agentic-coding)'s `formio-uag` skill writes a Compose stack or Kubernetes manifest and an `.env.example` for your edition, with every secret left as a placeholder for your secret store.
 
@@ -15,7 +15,7 @@ The UAG is a long-lived HTTP server you deploy next to a Form.io project. It is 
 |---|---|---|
 | **Docker image** `formio/uag` | Almost always | Includes the UAG and every official engine (`jev`, `claude`, `openai`, `grok`, `gemini`). Listens on `PORT` (default 3200). |
 | **Docker Compose** | Running Form.io and the UAG together, or with an engine server | The samples are Compose stacks. |
-| **`npx uag`** | A Node.js host without Docker | Install `@formio/uag@rc` and the engine packages you need. Reads the same environment, plus `UAG_MODULE`. |
+| **`npx uag`** | A Node.js host without Docker | Install `@formio/uag@rc` and the engine packages you need. Reads the same environment, plus `UAG_MODULE` and `UAG_PLUGINS`. |
 | **Embedded in Express** | Your own Node.js application hosts the UAG | `new UAGServer(config)`; see [Node.js API](/developers/node-api). |
 
 Outside Docker, the UAG needs Node.js 22 or newer, and Node must run with `--no-node-snapshot` (the `uag` command adds it itself) because `isolated-vm`, which runs form logic, requires it.
@@ -30,11 +30,18 @@ docker run -d --name formio-uag --restart unless-stopped -p 3200:3200 \
   formio/uag:rc
 ```
 
-The image starts `node --no-node-snapshot index.js`, which loads the module in `/app/module`. Mount your own [module](/developers/modules) there to add forms, actions, tools and configuration:
+The image starts `node --no-node-snapshot index.js`, which loads the module in `/app/module`, then the plugins folder `/app/plugins` when it exists (or what `UAG_PLUGINS` names). Mount your own [module](/developers/modules) at `/app/module` to add forms, actions, tools and configuration, and a folder with an `index.mjs` of [plugins](/developers/plugins) in a folder under `/app/plugins` to add converters and document processes:
 
 ```bash
 docker run -v "$PWD/module:/app/module" ... formio/uag:rc
+docker run -v "$PWD/my-plugins:/app/plugins/my-plugins:ro" ... formio/uag:rc
 ```
+
+For AI Document, the `formio/uag-documents` add-on brings the plugins for you: it runs beside the UAG and copies its plugins folder into a volume the UAG mounts at `/app/plugins/documents`. Each add-on, and each folder of your own, is a folder under `/app/plugins`; the UAG loads them all. See [AI Document: Run it with Docker](/developers/ai-document#run-it-with-docker) and [Plugins: Add-ons](/developers/plugins#add-ons) for Compose, `docker run` and Kubernetes.
+
+Modules and plugins are trusted code: they run in the UAG process.
+
+On `SIGTERM` or `SIGINT` (`docker stop`, a Kubernetes pod being stopped, Ctrl-C), the image and the `uag` command stop taking connections, run each module's and each plugin's `close`, and exit with `0`. They exit with `1` if that fails or takes more than 10 seconds. Docker's own grace period is also 10 seconds, after which it kills the process, so raise it (`docker stop -t`, `stop_grace_period` in Compose) when a module's `close` takes long.
 
 ### Docker Compose
 
@@ -72,7 +79,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
 ```
 
-The project API key must exist before the UAG starts, which is why the [demo stack](https://github.com/formio/uag/tree/v2.0.0-rc.5/demo), self-hosted (`docker-compose.enterprise.yml`), starts Form.io, runs a setup job that creates the project and installs the key ([`server/setup.mjs`](https://github.com/formio/uag/blob/v2.0.0-rc.5/demo/server/setup.mjs)), and only then starts the UAG.
+The project API key must exist before the UAG starts, which is why the [demo stack](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo), self-hosted (`docker-compose.enterprise.yml`), starts Form.io, runs a setup job that creates the project and installs the key ([`server/setup.mjs`](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/server/setup.mjs)), and only then starts the UAG.
 
 To run engines in their own container, see [Engine server](/developers/engine-server).
 
@@ -155,11 +162,22 @@ The login form JSON endpoint the `/auth/authorize` page loads, such as `https://
 | `MONGO_CONFIG` | none | JSON options for the MongoDB driver. |
 | `TASK_RUN_RETENTION_DAYS` | `90` | Days a run record is kept. `0` keeps records forever. |
 | `CORS` | `true` | `true` allows every origin, `false` turns CORS off, and any other value is the allowed origin, or several separated by commas (`https://app.example.com,https://admin.example.com`). Restrict it before exposing the UAG. |
-| `MAX_BODY_SIZE` | `16mb` | Largest JSON request body the UAG accepts, the same as Form.io's. Bodies are parsed before authentication, so raise it only as far as the forms need. A form's agent operations take at most 5 MB whatever it is set to. |
+| `MAX_BODY_SIZE` | `16mb` | Largest JSON request body the UAG accepts, the same as Form.io's. Bodies are parsed before authentication, so raise it only as far as the forms need. A form's agent operations and module routes have their own, smaller limit, `AGENT_BODY_LIMIT`, within this one. |
+| `AGENT_BODY_LIMIT` | `5242880` (5 MB) | Largest request body, in bytes, of a form's agent operations (`{form}/agent/*`) and of module routes. `agentApi.bodyLimit` in a module's `config` takes precedence. A larger body is refused with `413` and `code: "payload_too_large"`, naming the limit. `MAX_BODY_SIZE` still applies first. |
 | `NODE_TLS_REJECT_UNAUTHORIZED` | unset | `0` to accept a self-signed `PROJECT` certificate. Never on a deployment reachable from outside. Turns off the hosted SaaS exemption. |
 | `DEBUG` | unset | Debug logging, for example `formio:*` or `formio:uag*`. |
+| `AUTHORIZE_HTML` | the built-in page | With `MCP_OAUTH`: the HTML of the `/auth/authorize` sign-in page itself (not a path), in place of the built-in one. Read once, at startup. A module's `config.auth.authAppHtml` takes precedence. See [The login page](/developers/modules#the-login-page). |
+
+### Modules, plugins and documents
+
+| Variable | Default | Description |
+|---|---|---|
 | `UAG_MODULE` | none | For the `uag` command only: a file or folder exporting a module. The Docker image loads `/app/module` instead. |
-| `MODULES_DISABLED` | none | Modules to leave out, by name, comma-separated (`ai-document`): for a module an image includes that you do not want. |
+| `MODULES_DISABLED` | none | Modules to leave out, by name, comma-separated (`ai-document`, the AI Document module the `formio/uag-documents` add-on brings): for a module you load but do not want. |
+| `UAG_PLUGINS` | `/app/plugins`, when it exists | The plugins the `uag` command and the image load after the module: a file (an ES module, `.mjs`, or CommonJS file exporting plugins, modules, or a list of both), a folder with an `index.mjs`, or a folder of such folders, one per add-on, loaded in name order. `off` loads none. See [Plugins](/developers/plugins#adding-plugins). An application that embeds the UAG calls `usePluginFiles(server)` itself. |
+| `PLUGINS_DISABLED` | none | Plugins to leave out, as `<type>:<name>`, comma-separated (`converter:image-pdf`). Also `config.plugins.disabled`. |
+| `DOCUMENTS_MAX_FILE_BYTES` | `26214400` (25 MB) | The largest uploaded file the `read_document` MCP tool reads, in bytes. `documents.maxFileBytes` in a module's `config` takes precedence. The AI Document module reads it too, beside its other `DOCUMENTS_*` settings: see [AI Document](/developers/ai-document#limits). |
+| `DOCUMENTS_MAX_IMAGE_PIXELS` | `50000000` | The largest PNG the built-in `image-pdf` converter takes, in pixels (width × height); a larger one is refused before it is decoded. Also `config.plugins.settings.converter['image-pdf'].maxPixels`. |
 
 ### Engines
 
@@ -171,7 +189,7 @@ None of these does anything until `UAG_ENGINES` names an engine. See [Engines](/
 | `UAG_ENGINE_<NAME>_<SETTING>` | One instance's setting, for example `UAG_ENGINE_FAST_MODEL=claude-haiku-5-5`. Takes precedence over the type's own variables. |
 | `UAG_ENGINE_PATH` | Absolute directories, separated by `:`, holding more engine packages (each with a `node_modules` folder). |
 | `TYPESAFE_API_KEY`, `TYPESAFE_MODEL`, `TYPESAFE_BASE_URL` | The `jev` engine. Pin `TYPESAFE_MODEL` to a dated version, such as `jev-1.13.0`. |
-| `CLAUDE_API_KEY` (or `ANTHROPIC_API_KEY`), `CLAUDE_MODEL`, `CLAUDE_EFFORT`, `CLAUDE_RESEARCH_EFFORT`, `CLAUDE_FALLBACKS` | The `claude` engine. `CLAUDE_MODEL` defaults to `claude-opus-5-5`; set it explicitly. |
+| `CLAUDE_API_KEY` (or `ANTHROPIC_API_KEY`), `CLAUDE_MODEL`, `CLAUDE_EFFORT`, `CLAUDE_RESEARCH_EFFORT`, `CLAUDE_FALLBACKS`, `CLAUDE_MAX_TOKENS` | The `claude` engine. `CLAUDE_MODEL` defaults to `claude-opus-5-5`; set it explicitly. `CLAUDE_MAX_TOKENS` is the most output tokens one request may produce (default `16000`, up to `128000`). |
 | `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_BASE_URL`, `OPENAI_STRUCTURED_OUTPUT` | The `openai` engine, which also reaches OpenAI-compatible servers such as Ollama. `OPENAI_MODEL` has no default. `OPENAI_API_KEY` is sent only to OpenAI itself; an instance with a `baseURL` elsewhere takes its key from `UAG_ENGINE_<NAME>_API_KEY`. |
 | `XAI_API_KEY`, `XAI_MODEL` | The `grok` engine. No default model. |
 | `GEMINI_API_KEY` (or `GOOGLE_API_KEY`), `GEMINI_MODEL` | The `gemini` engine. No default model. |
@@ -277,7 +295,7 @@ On a fresh database it writes its schema marker first, then creates its collecti
 
 ### The database's license
 
-Using the database needs a license that includes the UAG, on Open Source, Enterprise and Form.io's hosted service alike, unless the project and the database are both on development hosts (`localhost`, `*.localhost`, `lvh.me`, `*.lvh.me`, `*.local`). The [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.5/demo/samples/custom-module) names its services `formio.local` and `mongo.local` for that reason.
+Using the database needs a license that includes the UAG, on Open Source, Enterprise and Form.io's hosted service alike, unless the project and the database are both on development hosts (`localhost`, `*.localhost`, `lvh.me`, `*.lvh.me`, `*.local`). The [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo/samples/custom-module) names its services `formio.local` and `mongo.local` for that reason.
 
 Without the license, the UAG still starts, with the database features off. It creates and changes nothing in the database, closes the connection, and says why:
 
@@ -325,7 +343,7 @@ In that stage, forms and actions are read and saved through the UAG, which passe
 
 ## Image and version pinning
 
-The UAG and each engine package are versioned independently from 2.0.0. Pick a compatible set:
+From 2.0.0, the UAG and the packages released with it (the engines, the engine SDK and server, and `@formio/uag-js`) share one version. Install the same version of each. `@formio/uag-extras` is versioned on its own:
 
 | Package | Version | Compatible UAG | Notes |
 |---|---|---|---|
@@ -337,7 +355,8 @@ The UAG and each engine package are versioned independently from 2.0.0. Pick a c
 | `@formio/uag-grok` | 2.x | >= 2.0.0 | Built on `@formio/uag-openai`. No default model. |
 | `@formio/uag-gemini` | 2.x | >= 2.0.0 | Built on `@formio/uag-openai`. No default model. |
 | `@formio/uag-engines` | 2.x | >= 2.0.0 | The engine server. Docker image `formio/uag-engines`. |
-| `@formio/uag-js` | 2.x | >= 2.0.0 | The formio.js module, for the browser: saves `uag` forms through the UAG and adds Agent Input. Published on npm. |
+| `@formio/uag-js` | 2.x | >= 2.0.0 | The formio.js module, for the browser: saves `uag` forms through the UAG and adds Agent Input. Published on npm, and served by the UAG at `/uag-js/` (the image includes it). |
+| `@formio/uag-extras` | 1.x | >= 2.0.0-rc.7 | Versioned on its own: extras such as the AI Document module, document plugins and converters ([github.com/formio/uag-extras](https://github.com/formio/uag-extras)). Docker image `formio/uag-documents` (`:1`), an add-on that runs beside `formio/uag` and fills its plugins folder: see [AI Document](/developers/ai-document#run-it-with-docker). |
 | `@formio/uag-claude` | 1.3.x | 1.12.0 – 1.13.x | The retired Claude integration, deprecated. Against 2.0 only its direct commands work: its `agent_provide_data` webhooks need 1.x. |
 | `@formio/uag-claude` | 1.2.x | 1.10.0 – 1.11.x | The retired Claude integration. |
 
@@ -345,10 +364,10 @@ The UAG and each engine package are versioned independently from 2.0.0. Pick a c
 
 For a reproducible deployment:
 
-- **Pin image tags.** The samples use the `rc` channel tag, which moves to each new release candidate. Production should pin `formio/uag:<version>` (and `formio/uag-engines:<version>`, `formio/formio-enterprise:<version>`).
+- **Pin image tags.** The samples use the `rc` channel tag, which moves to each new release candidate. Production should pin `formio/uag:<version>` (and `formio/uag-engines:<version>`, `formio/formio-enterprise:<version>`). The `formio/uag-documents` add-on follows `@formio/uag-extras`'s versions: `:1` moves to each 1.x release; pin an exact one, such as `formio/uag-documents:1.0.0`.
 - **Pin models.** Set `CLAUDE_MODEL`, `TYPESAFE_MODEL` and the other model variables to specific versions. A new UAG release may change an engine's default, and answers differ between models. Run [`uag-eval`](/developers/evaluation) before changing one.
 - **Keep `@formio/appserver` current.** When embedding the UAG, it reaches `@formio/appserver-core` only through `@formio/appserver`, so there is one copy of it, which must be 2.26.0 or later; the UAG refuses to start with an older one, and says what to upgrade.
-- **Roll back** by pinning the previous image. Stored submissions are unaffected; UAG 1.x ignores the `metadata.uag.generated` provenance that 2.0 adds. See [MIGRATING-2.0.md](https://github.com/formio/uag/blob/v2.0.0-rc.5/MIGRATING-2.0.md) when upgrading from 1.x.
+- **Roll back** by pinning the previous image. Stored submissions are unaffected; UAG 1.x ignores the `metadata.uag.generated` provenance that 2.0 adds. See [MIGRATING-2.0.md](https://github.com/formio/uag/blob/v2.0.0-rc.8/MIGRATING-2.0.md) when upgrading from 1.x.
 
 ### A smaller image
 
@@ -359,7 +378,8 @@ FROM node:24-alpine AS build
 WORKDIR /app
 # isolated-vm, which runs form logic, compiles on install.
 RUN apk add --no-cache make python3 g++
-RUN npm install --omit=dev @formio/uag@rc @formio/uag-claude@rc
+# @formio/uag-js is what the UAG serves at /uag-js/ (uag.use.js, the portal script).
+RUN npm install --omit=dev @formio/uag@rc @formio/uag-claude@rc @formio/uag-js@rc
 
 FROM node:24-alpine
 WORKDIR /app
@@ -374,7 +394,7 @@ HEALTHCHECK --interval=15s --timeout=3s --start-period=60s --retries=3 \
 ENTRYPOINT ["node_modules/.bin/uag"]
 ```
 
-Naming an engine whose package is not installed stops startup with the package to install.
+Naming an engine whose package is not installed stops startup with the package to install. Without `@formio/uag-js`, the UAG answers `404` "@formio/uag-js is not installed with this UAG." on `/uag-js/uag.use.js`, `uag-js.css`, `portal.js` and `portal.css`; an application that embeds the UAG installs it beside `@formio/uag` for the same reason.
 
 ## Running more than one instance
 

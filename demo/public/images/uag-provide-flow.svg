@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 640" role="img" aria-labelledby="t d">
   <title id="t">Agent: Run task, after the save</title>
-  <desc id="d">Four lanes: the applicant's app, the UAG, the engines and the Form.io project. The app, whose project URL is the UAG, submits the form with the user's token. The UAG checks the token with Form.io and removes the fields the task owns from what the client sent, then forwards the create to Form.io, which saves the submission, runs its own actions and answers. The UAG answers the applicant with Form.io's response at once. In the background, the form's Agent: Run task action, set to run after the save, starts the task: the UAG loads the stored submission from Form.io and asks the engines at the same time; if a person saves meanwhile, the run starts again once on the new version. JEV decides the closed-set fields with a calibrated confidence, and Claude writes the empty value fields as suggestions, optionally researching with the task's read-only tools as the user who submitted. The UAG validates the answers and saves only what changed, as an update through the UAG, so the form's update actions run and one of them may start the next task; Form.io saves the update and runs its own actions.</desc>
+  <desc id="d">Four lanes: the applicant's app, the UAG, the engines and the Form.io project. The app, whose project URL is the UAG, submits the form with the user's token. The UAG checks the token with Form.io and removes the task's authoritative fields (uagAuthoritative) from what the client sent, then forwards the create to Form.io, which saves the submission, runs its own actions and answers. The UAG answers the applicant with Form.io's response at once. In the background, the form's Agent: Run task action, set to run after the save, starts the task: the UAG loads the stored submission from Form.io and asks the engines at the same time; if a person saves meanwhile, the run starts again once on the new version. JEV, when enabled, decides the closed-set fields with a calibrated confidence, and Claude writes the empty value fields as suggestions, optionally researching with the task's read-only tools as the user who submitted. The UAG validates the answers and saves only what changed, as an update through the UAG, so the form's update actions run and one of them may start the next task; Form.io saves the update and runs its own actions.</desc>
   <defs>
     <style>
       text { font-family: Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; fill: #0c141d; }
@@ -45,8 +45,8 @@
   <rect x="306" y="84" width="238" height="58" rx="9" class="uag"/>
   <circle cx="322" cy="101" r="9" fill="#69b342"/><text x="322" y="105" text-anchor="middle" class="n">1</text>
   <text x="338" y="105" class="t">Check the user and the data</text>
-  <text x="338" y="122" class="s">token checked with Form.io; fields</text>
-  <text x="338" y="136" class="s">the task owns are removed</text>
+  <text x="338" y="122" class="s">token checked with Form.io; the task's</text>
+  <text x="338" y="136" class="s">authoritative fields are removed</text>
 
   <!-- 2. Forward -->
   <rect x="306" y="154" width="238" height="44" rx="9" class="uag"/>
@@ -95,7 +95,7 @@
   <path d="M544 404 H592" class="flow" marker-end="url(#a)"/>
   <path d="M592 422 H548" class="back" marker-end="url(#b)"/>
   <rect x="596" y="382" width="218" height="54" rx="9" class="box"/>
-  <text x="608" y="401" class="t">JEV decides</text>
+  <text x="608" y="401" class="t">JEV decides <tspan class="s" style="font-weight:400">(when enabled)</tspan></text>
   <text x="608" y="417" class="s">an option for each closed-set</text>
   <text x="608" y="431" class="s">field, with a calibrated confidence</text>
   <path d="M544 462 H592" class="flow" marker-end="url(#a)"/>

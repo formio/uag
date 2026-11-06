@@ -63,7 +63,7 @@ export type Started = {
 };
 
 /** Start a Form.io stand-in and a UAG in front of it. */
-export async function start(options: { config?: any; modules?: any[]; forms?: Record<string, any>; actions?: Record<string, any> } = {}): Promise<Started> {
+export async function start(options: { config?: any; modules?: any[]; forms?: Record<string, any>; actions?: Record<string, any>; use?: (server: UAGServer) => unknown } = {}): Promise<Started> {
     const formio = new FakeFormio({ roles, forms: options.forms || { contact: contactForm }, actions: options.actions || {} });
     formio.secret = SECRET;
     await formio.start();
@@ -76,6 +76,7 @@ export async function start(options: { config?: any; modules?: any[]; forms?: Re
             ...(options.config || {})
         } as any);
         for (const module of options.modules || []) server.use(module);
+        await options.use?.(server);
         await server.initialize();
         app.use(await server.router());
     }
