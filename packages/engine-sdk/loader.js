@@ -223,4 +223,50 @@ async function loadEngines(instances, { types = {}, paths = [], env = process.en
     return loaded;
 }
 
-module.exports = { enginePaths, packageCandidates, resolveType, createEngine, loadEngines };
+/**
+ * Plan the given instances without creating them: resolve each type and its
+ * settings, and describe how each is created and how a failure to start reads
+ * (with secrets left out). For a host that has engines created elsewhere, such
+ * as Agentic Formflow's `startEngines`, which creates and wraps them.
+ */
+function planEngines(instances, { types = {}, paths = [], env = process.env, config = {}, apiVersion = ENGINE_API_VERSION } = {}) {
+    const resolved = instances.map((instance) => {
+        const found = resolveType(instance.type, { types, paths, apiVersion });
+        const name = instance.name || found.definition.name;
+        checkName(name);
+        return { ...found, name, options: instance.options || {} };
+    });
+    checkUnique(resolved);
+    checkVariables(resolved);
+    return resolved.map(({ definition, name, options, package: pkg, version }) => {
+        const label = `The "${name}" engine (type "${definition.name}")`;
+        const settings = resolveSettings(definition, name, options, env);
+        const secrets = secretValues(definition, settings, options);
+        return {
+            name,
+            type: definition.name,
+            title: definition.title,
+            kinds: [...definition.kinds],
+            ...(definition.version && { typeVersion: definition.version }),
+            ...(pkg && { package: pkg }),
+            ...(version && { version }),
+            definition,
+            args: {
+                name,
+                settings,
+                options,
+                config,
+                requireSetting: (key) => {
+                    if (settings[key] === undefined) throw missingSetting(definition, name, key);
+                    return settings[key];
+                },
+            },
+            failure: (err) => {
+                const message = redact(errorText(err), secrets);
+                return err instanceof EngineConfigError || (err && err.name === 'EngineConfigError') ? message : `${label} failed to start: ${message}`;
+            },
+        };
+    });
+}
+
+module.exports = { enginePaths, packageCandidates, resolveType, createEngine, loadEngines, planEngines };

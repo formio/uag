@@ -3,6 +3,7 @@ import { MongoClient } from 'mongodb';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { UAG_COLLECTIONS, UAG_SCHEMA_VERSION, UAGDatabase, UAGDatabaseError } from '../src/database';
 import { UAGServer } from '../src';
+import { servedProject } from './helpers/servedProject';
 
 /**
  * The UAG's own database: selected by name on the MONGO connection, checked
@@ -185,43 +186,26 @@ describe('UAG database', function () {
         });
     });
 
-    describe('license grace', () => {
-        it('creates the schema marker with its first write, even before the database is used', async () => {
-            const name = fresh();
-            const database = await connect(name);
-            expect(await database.inspect()).to.equal('fresh');
-            await database.licenseGrace().write(1234);
-            expect(await client.db(name).collection(UAG_COLLECTIONS.meta).findOne({ _id: 'schema' as any })).to.include({ app: 'formio-uag' });
-            expect(await (await connect(name)).inspect()).to.equal('ready');
-        });
 
-        it('records, reads and clears the start of a license server outage in uag-meta', async () => {
-            const name = fresh();
-            const database = await connect(name);
-            await database.bootstrap();
-            const grace = database.licenseGrace();
-            expect(await grace.read()).to.equal(undefined);
-            await grace.write(1234);
-            expect(await grace.read()).to.equal(1234);
-            expect(await (await connect(name)).licenseGrace().read()).to.equal(1234);
-            await grace.write(undefined);
-            expect(await grace.read()).to.equal(undefined);
-        });
-    });
 
     describe('startup', () => {
         const env = { ...process.env };
         afterEach(() => { process.env = { ...env }; });
 
         /** A loaded project whose license covers the database, or does not. */
-        const projectWith = (licensed: boolean) => ({
-            requireDatabaseLicense: () => {
-                if (!licensed) throw new Error('A database of this server\'s own (MONGO) needs a license that includes the UAG. No license is configured.');
-            }
-        });
+        // A project a UAG serves, with no license: on localhost, as the database is, it may use
+        // the database; on any other host it may not.
+        const served: { stop(): Promise<void> }[] = [];
+        afterEach(async () => { await Promise.all(served.splice(0).map((entry) => entry.stop())); });
+        const projectWith = async (allowed: boolean) => {
+            const entry = await servedProject(allowed ? 'localhost' : '127.0.0.1');
+            served.push(entry);
+            return entry.project;
+        };
 
         async function connected(name: string, mcpOAuth = false) {
-            process.env.MONGO = mongod.getUri();
+            // Named localhost.
+            process.env.MONGO = mongod.getUri().replace('127.0.0.1', 'localhost');
             process.env.UAG_DATABASE = name;
             if (mcpOAuth) process.env.MCP_OAUTH = 'true';
             else delete process.env.MCP_OAUTH;
@@ -244,7 +228,6 @@ describe('UAG database', function () {
             const server = await connected(name, true);
             opened.push(server.pendingDatabase);
             expect(await collections(name)).to.deep.equal([]);
-            expect(server.config.licenseGrace).to.have.property('read');
             expect(server.config.auth.authCodeStore).to.equal(undefined);
             expect(server.database).to.equal(undefined);
         });
@@ -253,22 +236,20 @@ describe('UAG database', function () {
             const name = fresh();
             const server = await connected(name, true);
             capture('log');
-            await server.enableDatabase(projectWith(true));
+            await server.enableDatabase(await projectWith(true));
             opened.push(server.database);
             expect(server.database.name).to.equal(name);
             expect(await collections(name)).to.deep.equal(['uag-authcodes', 'uag-meta', 'uag-taskruns']);
             expect(server.config.auth.authCodeStore).to.have.property('take');
-            expect(server.config.licenseGrace).to.have.property('read');
         });
 
         it('without the license, starts, writes nothing, and says its database features are off', async () => {
             const name = fresh();
             const server = await connected(name, true);
             const warn = capture('warn');
-            await server.enableDatabase(projectWith(false));
+            await server.enableDatabase(await projectWith(false));
             expect(await collections(name)).to.deep.equal([]);
             expect(server.database).to.equal(undefined);
-            expect(server.config.licenseGrace).to.equal(undefined);
             expect(server.config.auth.authCodeStore).to.equal(undefined);
             expect(warn[0]).to.contain('The database (MONGO) is not used').and.contain('needs a license');
             expect(warn[1]).to.contain('MCP_OAUTH is set, but remote MCP sign-in is off');
@@ -282,7 +263,6 @@ describe('UAG database', function () {
             const server: any = new UAGServer({ project: 'https://forms.example.com' } as any);
             const project: any = {
                 config: {},
-                ...projectWith(false),
                 agentRouter: () => require('express').Router(),
                 uagRouter: () => require('express').Router()
             };
@@ -311,19 +291,18 @@ describe('UAG database', function () {
             const warn = capture('warn');
             const server: any = new UAGServer({ project: 'http://localhost:3001' } as any);
             await server.connectDatabase();
-            await server.enableDatabase(projectWith(true));
+            await server.enableDatabase(await projectWith(true));
             expect(warn.join('\n')).to.contain('MCP_OAUTH is set, but remote MCP sign-in is off');
             expect(server.config.auth.authCodeStore).to.equal(undefined);
         });
 
-        it('says there is no grace period without the database', async () => {
+        it('says what is off without the database', async () => {
             delete process.env.MONGO;
             delete process.env.MCP_OAUTH;
             const log = capture('log');
             const server: any = new UAGServer({ project: 'http://localhost:3001' } as any);
             await server.connectDatabase();
-            expect(log[0]).to.contain('No database (MONGO)').and.contain('no grace period');
-            expect(server.config.licenseGrace).to.equal(undefined);
+            expect(log[0]).to.contain('No database (MONGO)').and.contain('remote MCP sign-in (MCP_OAUTH) is unavailable');
         });
     });
 });

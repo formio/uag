@@ -28,6 +28,9 @@ export type UAGModuleApiDeps = {
     registry(): PluginRegistry;
     /** The enabled engines: by name, and the agent engines in preference order. */
     engines(): { get(name: string): any; agent: any[] } | undefined;
+    /** Generate with an engine from the registry. */
+    generate(engine: any, request: any): Promise<any>;
+    /** Throw 403 license_required unless Agentic Formflow is allowed. */
     requireLicense(): Promise<void>;
     requireAccess?: ModuleApi['requireAccess'];
 };
@@ -46,6 +49,7 @@ export function serverDeps(projectOf: () => UAGProjectInterface | undefined): UA
             return plugins;
         },
         engines: () => project().formflowEngines(),
+        generate: (engine, request) => formflow(project()).engineGenerate(engine, request),
         requireLicense: () => formflow(project()).requireLicense(),
         // The Agent API's own check, so a module's refusals read as the agent operations' do.
         requireAccess: (auth, form, methods) => formflow(project()).requireAccess(auth, form as any, methods)
@@ -58,11 +62,11 @@ export function serverDeps(projectOf: () => UAGProjectInterface | undefined): UA
  */
 export function uagModuleApi(base: ModuleApi, deps: UAGModuleApiDeps): UAGModuleApi {
     const registry = deps.registry;
-    const requireLicense = deps.requireLicense;
+    const generate = deps.generate;
     const api: UAGModuleApi = {
         ...base,
         ...(deps.requireAccess && { requireAccess: deps.requireAccess }),
-        requireLicense,
+        requireLicense: deps.requireLicense,
         converters: {
             list: () => registry().list<Converter>('converter'),
             identify: (buffer, hint) => identify(buffer, hint, registry().list<Converter>('converter')),
@@ -85,15 +89,12 @@ export function uagModuleApi(base: ModuleApi, deps: UAGModuleApiDeps): UAGModule
                     const missing = needs.find((kind) => !engine || !readsOf(engine).includes(kind)) || needs[0] || 'text';
                     throw new FormflowError(503, name && !engine ? `The engine "${name}" is not enabled.` : `no enabled engine can read ${missing} documents`, 'no_engine');
                 }
-                // A handle, not the engine: generating always goes through the license check.
+                // A handle, not the engine.
                 return {
                     name: engine.name,
                     model: engine.model,
                     accepts: readsOf(engine),
-                    async generate(request: any) {
-                        await requireLicense();
-                        return engine.generate(request);
-                    }
+                    generate: (request: any) => generate(engine, request)
                 };
             }
         },

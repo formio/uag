@@ -246,7 +246,7 @@ describe('Chat: a turn', function () {
         expect(res.complete).to.equal(false);
         // The reply was rewritten once, knowing the email was not accepted.
         expect(fake.calls).to.have.length(2);
-        expect(fake.calls[1].request.fields.map((field: any) => field.path)).to.deep.equal([REPLY]);
+        expect(fake.calls[1].request.fields.map((field: any) => field.path)).to.deep.equal([REPLY, CONFIRMED]);
         expect(fake.calls[1].request.state.context['Not accepted (ask again for these)']).to.contain('Email');
         expect(res.reply).to.equal('That email does not look right. Could you type it again?');
     });

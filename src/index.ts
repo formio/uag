@@ -1,6 +1,6 @@
 import { Server, ServerModule } from '@formio/appserver';
-import type { LoadedModule, ModuleApi, ModuleRoute, ModuleRouteHandlers, ProjectInterface } from '@formio/appserver';
-import { formflow } from './formflow';
+import type { AuthCodeStore, LoadedModule, ModuleApi, ModuleRoute, ModuleRouteHandlers, ProjectInterface } from '@formio/appserver';
+import { formflow, useDatabase } from './formflow';
 import { Request, Response, Router } from 'express';
 import path from 'path';
 import { UAGProjectInterface } from './UAGProjectInterface';
@@ -11,7 +11,7 @@ import { loadUAGEngines } from './agent/engines';
 import { agentNotFound } from './agent/router';
 import { agentErrorShape, errorBody, isAgentApiRequest, requestIdOf } from './agent/errors';
 import { UAGDatabase } from './database';
-import { TaskRunStore } from './runs';
+import { OBJECT_IDS, TaskRunStore } from './runs';
 import { ActionLogRouter } from './actionLogs';
 import { taskRunner } from './runner';
 import { RunTaskAction, runTaskHooks } from './actions/runTask';
@@ -211,14 +211,12 @@ export class UAGServer extends Server {
    * Connect the UAG's own database before the project loads, and check it
    * without writing: a database the UAG may not use stops startup. It is used
    * (its collections created, its stores handed out) only once the license is
-   * known; see enableDatabase. Until then only the license check may write to
-   * it, to record a license server outage.
+   * known; see enableDatabase. Until then nothing writes to it.
    */
   protected async connectDatabase(): Promise<void> {
     const options = this.config.database;
     if (!options?.url) {
-      console.log('[formio-uag] No database (MONGO): runs after the save are kept in memory, remote MCP sign-in (MCP_OAUTH) is unavailable, ' +
-        'and the licensed features turn off at once, with no grace period, whenever the license server cannot be reached.');
+      console.log('[formio-uag] No database (MONGO): runs after the save are kept in memory, and remote MCP sign-in (MCP_OAUTH) is unavailable.');
       return;
     }
     if (this.database || this.pendingDatabase) return;
@@ -231,7 +229,6 @@ export class UAGServer extends Server {
       throw err;
     }
     this.pendingDatabase = database;
-    this.config.licenseGrace = database.licenseGrace();
   }
 
   /**
@@ -245,22 +242,26 @@ export class UAGServer extends Server {
     this.pendingDatabase = undefined;
     if (database) {
       let refusal = '';
+      let grant: { authCodeStore?: AuthCodeStore; taskRuns?: TaskRunStore } | undefined;
       try {
-        project.requireDatabaseLicense(this.config.database!.url);
+        grant = await useDatabase(project, {
+          url: this.config.database!.url,
+          authCodes: database.authCodeStore(),
+          taskRuns: { collection: database.taskRuns, ids: OBJECT_IDS, project: String(project.project?._id || '') }
+        });
       }
       catch (err: any) {
         refusal = err?.message || String(err);
       }
-      if (refusal) {
+      if (!grant) {
         console.warn(`[formio-uag] The database (MONGO) is not used: ${refusal} Runs after the save are kept in memory, and remote MCP sign-in (MCP_OAUTH) is off.`);
-        this.config.licenseGrace = undefined;
         await database.close().catch(() => {});
       }
       else {
         await database.bootstrap();
         this.database = database;
-        set(this.config, 'auth.authCodeStore', database.authCodeStore());
-        taskRunner(project).useStore(new TaskRunStore(database.taskRuns, String(project.project?._id || '')));
+        set(this.config, 'auth.authCodeStore', grant.authCodeStore);
+        if (grant.taskRuns) taskRunner(project).useStore(grant.taskRuns);
         console.log(`[formio-uag] Using the database "${database.name}": runs are recorded, and runs that act with an agent role survive a restart.` +
           (this.config.auth?.mcpOAuth ? ' Remote MCP sign-in (MCP_OAUTH) is on.' : ''));
       }

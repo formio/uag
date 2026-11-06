@@ -5,8 +5,8 @@ const debug = require('debug')('formio:uag:database');
 
 /**
  * The UAG's own database (MONGO, with the database named by UAG_DATABASE). It
- * holds only the UAG's state: authorization codes for remote MCP clients, the
- * start of a license server outage, and task-run records. Never submissions.
+ * holds only the UAG's state: authorization codes for remote MCP clients, and
+ * task-run records. Never submissions.
  *
  * Every collection the UAG uses is named `uag-*`, and nothing else in the
  * database is read or written, so the database may be shared. Before writing
@@ -25,7 +25,6 @@ export const UAG_COLLECTIONS = Object.freeze({
 const PREFIX = 'uag-';
 const APP = 'formio-uag';
 const SCHEMA_ID = 'schema';
-const LICENSE_ID = 'license';
 const RETENTION_INDEX = 'retention';
 const DEFAULT_RETENTION_DAYS = 90;
 // MongoDB's "Unauthorized" error.
@@ -226,23 +225,6 @@ export class UAGDatabase {
                 const found = await collection.findOneAndDelete({ _id: codeKey(code), expiresAt: { $gt: new Date() } });
                 const jwt = typeof found?.sealed === 'string' ? openToken(code, found.sealed) : null;
                 return jwt ? { jwt, codeChallenge: found!.codeChallenge } : null;
-            }
-        };
-    }
-
-    /** When the license server became unreachable, in `uag-meta`, so a restart neither begins nor extends the grace period. */
-    licenseGrace() {
-        const meta = this.meta;
-        const database = this;
-        return {
-            async read(): Promise<number | undefined> {
-                const found = await meta.findOne({ _id: LICENSE_ID });
-                return typeof found?.outageSince === 'number' ? found.outageSince : undefined;
-            },
-            async write(since?: number): Promise<void> {
-                // It may write before the license is known, so it never leaves uag-* collections without the marker.
-                await database.bootstrap();
-                await meta.updateOne({ _id: LICENSE_ID }, since === undefined ? { $unset: { outageSince: '' } } : { $set: { outageSince: since } }, { upsert: true });
             }
         };
     }

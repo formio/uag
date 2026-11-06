@@ -38,7 +38,7 @@ export type TestModuleOptions = {
     plugins?: any[];
     /** The engines `api.engines.select()` chooses from. */
     engines?: TestEngine[];
-    /** Whether Agentic Formflow is licensed (true): false makes `requireLicense` and engine handles refuse with 403. */
+    /** Whether Agentic Formflow is licensed (true): false makes `requireLicense` and engine handles' `generate` refuse with 403. */
     licensed?: boolean;
     /** Reads a stored file value that is not base64 (the test form reads those). */
     files?: (value: any, options: { component?: any; maxBytes?: number }) => Buffer | null | Promise<Buffer | null>;
@@ -123,11 +123,16 @@ export async function createTestModuleApi<Settings extends Record<string, any> =
     const requireLicense = async () => {
         if (!licensed) throw new FormflowError(403, 'Agentic Formflow requires a license (the test API was created with licensed: false).', 'license_required');
     };
+    const generate = async (engine: any, request: any) => {
+        await requireLicense();
+        return engine.generate(request);
+    };
     const engines = (options.engines || []).map((engine) => ({ kind: 'agent', model: engine.name, accepts: ['text'], ...engine }));
     const base = createBaseModuleApi(loaded, registry, { name: () => 'uag', version: () => UAG_VERSION, errorBody: uagErrorBody });
     const api = uagModuleApi(base, {
         registry: () => registry,
         engines: () => ({ get: (name: string) => engines.find((engine) => engine.name === name), agent: engines.filter((engine) => engine.kind === 'agent') }),
+        generate,
         requireLicense
     });
     const pluginTypes = typeof module.pluginTypes === 'function' ? module.pluginTypes(api) : (module.pluginTypes || []);

@@ -36,9 +36,22 @@ export const {
     isBinaryComponent,
     fileMeta,
     plainTextReader,
+    useDatabase,
+    startEngines,
+    CHAT_INSTRUCTIONS,
+    CHAT_REPLY,
+    CHAT_CONFIRMED,
+    CHAT_CHECK_TOOL,
+    LEASE_MS,
+    RENEW_MS,
+    MAX_ATTEMPTS,
 } = Formflow;
 
 export type AgentEngine = Formflow.AgentEngine;
+export type TaskRunStatus = Formflow.TaskRunStatus;
+export type CoreTaskRunRecord<Id> = Formflow.TaskRunRecord<Id>;
+export type CoreNewTaskRun<Id> = Formflow.NewTaskRun<Id>;
+export type CoreTaskRunStore<Id> = Formflow.TaskRunStore<Id>;
 export type CallerIdentity = Formflow.CallerIdentity;
 export type DecisionEngine = Formflow.DecisionEngine;
 export type DecisionRequest = Formflow.DecisionRequest;

@@ -48,7 +48,7 @@ The UAG's settings in that file:
       TRUST_PROXY: 1                # behind nginx
 ```
 
-`MCP_OAUTH` turns on the browser sign-in that `mcp-remote` and Claude's connectors use, and `MONGO` gives the UAG the database it keeps the sign-in codes in (a database named `uag` on the stack's MongoDB). A database needs a license that includes the UAG unless the project and the database are both on development hosts, so the compose file names Form.io and MongoDB `formio.local` and `mongo.local`. The UAG names its own address in the OAuth discovery documents from each request, here through nginx (`TRUST_PROXY`). `LOGIN_FORM` is the form the login page loads, here the module's employee login, so the people who sign in are records in the Employee resource.
+`MCP_OAUTH` turns on the browser sign-in that `mcp-remote` and Claude's connectors use, and `MONGO` gives the UAG the database it keeps the sign-in codes in (a database named `uag` on the stack's MongoDB). A database needs a license that includes the UAG, so set `LICENSE_KEY`. Without it the UAG starts with sign-in off and says why. The UAG names its own address in the OAuth discovery documents from each request, here through nginx (`TRUST_PROXY`). `LOGIN_FORM` is the form the login page loads, here the module's employee login, so the people who sign in are records in the Employee resource.
 
 At startup the UAG installs the module's template: the **Customer** and **Employee** resources (both tagged `uag`), an **Employee Login** form, and the **Manager** and **Employee** roles.
 
@@ -149,7 +149,7 @@ A remote connector is called by Anthropic's servers, not by your machine, so the
 1. Deploy the UAG behind TLS at a public URL, for example `https://uag.example.com`. With the sample's nginx layout, publish the nginx port.
 2. Make sure the OAuth discovery documents name that URL; the connector reads them and follows them. The UAG builds them from each request. Behind a proxy, set `TRUST_PROXY` and have the proxy pass `Host` and `X-Forwarded-Proto`, as the sample's nginx does; that gives `https` only when the proxy that talks to the UAG received HTTPS. When it did not (TLS ends at a load balancer or tunnel in front of nginx, which then reports `http`), set `BASE_URL=https://uag.example.com`. Check with `curl https://uag.example.com/.well-known/oauth-protected-resource`.
 3. Set `LOGIN_FORM` to a login form URL the user's browser can load at the public address, such as `https://uag.example.com/employee/login`.
-4. Keep `MCP_OAUTH=true` and `MONGO`. The UAG's database needs a license that includes the UAG unless the project and the database are both on development hosts, as `formio.local` and `mongo.local` are in the sample. Without a usable database the UAG starts with sign-in off and says so in its log. See [Deployment](/developers/deployment#the-database).
+4. Keep `MCP_OAUTH=true` and `MONGO`. The UAG's database needs a license that includes the UAG (`LICENSE_KEY`). Without a usable database the UAG starts with sign-in off and says so in its log. See [Deployment](/developers/deployment#the-database).
 5. In Claude, open **Settings → Connectors**, choose **Add custom connector**, and enter a name and the MCP URL, `https://uag.example.com/mcp`.
 
 ![Adding the UAG as a custom connector in Claude.](/images/claude-ai-add-connector.png)

@@ -15,8 +15,7 @@ services:
   mongo:
     image: mongo:7
     restart: always
-    # Development host names (*.local), so the UAG may use its database here without
-    # a license: the project and the database are both on development hosts.
+    # The UAG keeps MCP sign-in codes here; its database needs a license that includes the UAG (LICENSE_KEY below).
     networks:
       default:
         aliases: [mongo.local]
@@ -58,7 +57,9 @@ services:
       JWT_SECRET: CHANGEME
       LOGIN_FORM: http://localhost:3000/employee/login
       PROJECT_TTL: 10
-      # Sign-in for MCP clients (mcp-remote, Claude connectors), with its codes in the UAG's database.
+      # Sign-in for MCP clients (mcp-remote, Claude connectors), with its codes in the UAG's database,
+      # which needs a license that includes the UAG.
+      LICENSE_KEY: ${LICENSE_KEY:-}
       MCP_OAUTH: "true"
       MONGO: mongodb://mongo.local:27017
       UAG_DATABASE: uag

@@ -138,7 +138,7 @@ docker run -d --name formio-uag -p 3200:3200 \
 
 Hosted SaaS projects need no license: they run under Form.io's own license, as the Enterprise edition, and Agentic Formflow is allowed (`/agent/capabilities` reports `reason: "hosted"`). A license is needed only when you self-host Form.io Enterprise; see [Deployment](/developers/deployment#licensing).
 
-> **Note:** The exemption rests on the project's `https://*.form.io` certificate, so it is turned off by anything that weakens that proof: `NODE_TLS_REJECT_UNAUTHORIZED=0`, or extra certificate authorities (`NODE_EXTRA_CA_CERTS`, `NODE_USE_SYSTEM_CA`). It does not cover a database of the UAG's own (`MONGO`). The database needs a license that includes the UAG, unless the project and the database are both on development hosts (`localhost`, `*.local`); Compose service names such as `formio` and `mongo` are not, so without a license give both services a `*.local` network alias, or run them on `localhost`.
+> **Note:** A hosted project needs a license when `NODE_TLS_REJECT_UNAUTHORIZED=0`, `NODE_EXTRA_CA_CERTS` or `NODE_USE_SYSTEM_CA` is set. A database of the UAG's own (`MONGO`) needs a license that includes the UAG, unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`).
 
 In the commands below, a hosted project uses its own name in the `client_id` (`<project>-x-token`) and its API key as the secret: set `PROJECT_KEY` instead of `ADMIN_KEY`, send `-H "x-token: $PROJECT_KEY"` where a command sends `x-admin-key`, and where a step runs `docker compose up -d`, remove the container (`docker rm -f formio-uag`) and run the `docker run` command again with the new `-e` settings.
 

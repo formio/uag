@@ -151,20 +151,20 @@ The login form JSON endpoint the `/auth/authorize` page loads, such as `https://
 | `LICENSE_KEY` | none | The Form.io license. It must include the UAG (see [Licensing](#licensing)) for a self-hosted Enterprise project, and for Agentic Formflow outside a hosted SaaS project. Form.io Enterprise reads the same variable, so one license can serve both. |
 | `UAG_LICENSE` | none | Deprecated, with a startup notice; it works until UAG 3.0. A second license, checked before `LICENSE_KEY`, which is used when it is missing, unusable, or does not include the UAG for the endpoint. |
 | `LICENSE_REMOTE` | unset | `true` when the key is an offline (self-contained) license, so it is never sent to the license server. |
-| `LICENSE_SERVER` | `https://license.form.io` | The license server that validates other keys. |
+| `LICENSE_SERVER` | `https://license.form.io` | The license server that validates other keys: one of Form.io's (`https://*.form.io`). |
 
 ### Database, network and runtime
 
 | Variable | Default | Description |
 |---|---|---|
-| `MONGO` | none | The UAG's own database: run records for Action Logs, runs that survive a restart, remote MCP sign-in, and the license grace period. It holds only `uag-*` collections, never submissions, which stay in Form.io. Needs a license that includes the UAG, unless the project and the database are both on development hosts; without one, the UAG starts with these features off and says so. |
+| `MONGO` | none | The UAG's own database: run records for Action Logs, runs that survive a restart, and remote MCP sign-in. It holds only `uag-*` collections, never submissions, which stay in Form.io. Needs a license that includes the UAG, unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`); without one, the UAG starts with these features off and says so. |
 | `UAG_DATABASE` | `uag` | The database the UAG uses on the `MONGO` connection, selected by name, so `MONGO` can be the connection string Form.io uses. A database of its own is recommended. |
 | `MONGO_CONFIG` | none | JSON options for the MongoDB driver. |
 | `TASK_RUN_RETENTION_DAYS` | `90` | Days a run record is kept. `0` keeps records forever. |
 | `CORS` | `true` | `true` allows every origin, `false` turns CORS off, and any other value is the allowed origin, or several separated by commas (`https://app.example.com,https://admin.example.com`). Restrict it before exposing the UAG. |
 | `MAX_BODY_SIZE` | `16mb` | Largest JSON request body the UAG accepts, the same as Form.io's. Bodies are parsed before authentication, so raise it only as far as the forms need. A form's agent operations and module routes have their own, smaller limit, `AGENT_BODY_LIMIT`, within this one. |
 | `AGENT_BODY_LIMIT` | `5242880` (5 MB) | Largest request body, in bytes, of a form's agent operations (`{form}/agent/*`) and of module routes. `agentApi.bodyLimit` in a module's `config` takes precedence. A larger body is refused with `413` and `code: "payload_too_large"`, naming the limit. `MAX_BODY_SIZE` still applies first. |
-| `NODE_TLS_REJECT_UNAUTHORIZED` | unset | `0` to accept a self-signed `PROJECT` certificate. Never on a deployment reachable from outside. Turns off the hosted SaaS exemption. |
+| `NODE_TLS_REJECT_UNAUTHORIZED` | unset | `0` to accept a self-signed `PROJECT` certificate. Never on a deployment reachable from outside. A hosted project then needs a license. |
 | `DEBUG` | unset | Debug logging, for example `formio:*` or `formio:uag*`. |
 | `AUTHORIZE_HTML` | the built-in page | With `MCP_OAUTH`: the HTML of the `/auth/authorize` sign-in page itself (not a path), in place of the built-in one. Read once, at startup. A module's `config.auth.authAppHtml` takes precedence. See [The login page](/developers/modules#the-login-page). |
 
@@ -229,7 +229,7 @@ Running against a self-hosted Enterprise project and Agentic Formflow are licens
 
 **Which variable.** Put the license in `LICENSE_KEY`: Form.io Enterprise reads the same variable, so one Form.io license runs both. `UAG_LICENSE` still works, and is deprecated. With both set, a feature is on when either key grants it; `LICENSE_KEY` is only checked when `UAG_LICENSE` does not include the UAG for the endpoint, and the startup line names the key that licensed Agentic Formflow.
 
-**Running against a self-hosted Enterprise project.** The project needs a license that includes the UAG, and the license's endpoint allowlist must include `PROJECT`'s host. Development endpoints need none: `localhost`, `*.localhost`, `lvh.me`, `*.lvh.me`, `*.local` and `file:` URLs. A project that fails the check does not load, and the UAG exits saying why ("Endpoint ... is not allowed for this license", for example). Trial licenses carry such allowlists, which is why the demo stack's self-hosted overlay (`docker-compose.enterprise.yml`) names its Form.io service `api-server`.
+**Running against a self-hosted Enterprise project.** The project needs a license that includes the UAG, and the license's endpoint allowlist must include `PROJECT`'s host. A project on the UAG's own machine (`localhost`) needs none. A project that fails the check does not load, and the UAG exits saying why ("Endpoint ... is not allowed for this license", for example). Trial licenses carry such allowlists, which is why the demo stack's self-hosted overlay (`docker-compose.enterprise.yml`) names its Form.io service `api-server`.
 
 **Agentic Formflow.** The Agent API's `extract`, `decide` and `generate`, the "Agent: Run task" action, the `agent_decide` and `agent_provide` MCP tools and `uag-eval` need a license that includes the UAG for the project's endpoint (any license allows `localhost`), wherever the project runs. Without it they run only:
 
@@ -240,11 +240,11 @@ Conversation forms need no license: the MCP tools and a form's [chat](/developer
 
 Otherwise each Agentic Formflow request is refused with `403` and `code: "license_required"`. A Run task action that runs before the save refuses the submission the same way, so nothing is saved; one that runs after the save fails in the background, and the failure is logged. `GET /agent/capabilities` always answers with the current `edition` and `formflow.reason`.
 
-**The UAG's database** (`MONGO`) needs a license that includes the UAG on every edition, Form.io's hosted service included, unless the project and the database are both on development hosts. See [The database](#the-database).
+**The UAG's database** (`MONGO`) needs a license that includes the UAG on every edition, Form.io's hosted service included, unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`). See [The database](#the-database).
 
-**Hosted SaaS** projects need no license at all: they run under Form.io's own license, as the Enterprise edition. The exemption applies to `https` endpoints on `form.io` or its subdomains, and rests on the project's certificate, so it is off when anything weakens that proof (`NODE_TLS_REJECT_UNAUTHORIZED=0`, `NODE_EXTRA_CA_CERTS`, `NODE_USE_SYSTEM_CA`, the `--use-system-ca` or `--use-openssl-ca` flags). The UAG also confirms with the server (`GET /formio-config`) that it is the hosted service. Leave `LICENSE_KEY` and `UAG_LICENSE` unset there unless the UAG has a database of its own, which needs one: with a key set, the project must be on that key's endpoint allowlist, or it does not load.
+**Hosted SaaS** projects need no license at all: they run under Form.io's own license, as the Enterprise edition. This applies to `https` endpoints on `form.io` or its subdomains, and not while `NODE_TLS_REJECT_UNAUTHORIZED=0`, `NODE_EXTRA_CA_CERTS`, `NODE_USE_SYSTEM_CA`, `--use-system-ca` or `--use-openssl-ca` is set. Leave `LICENSE_KEY` and `UAG_LICENSE` unset there unless the UAG has a database of its own, which needs one: with a key set, the project must be on that key's endpoint allowlist, or it does not load.
 
-**How keys are validated.** An offline license is verified locally; set `LICENSE_REMOTE=true` for those. Any other key is validated with the Form.io license server. If the license server cannot be reached and the UAG has its database, the terms it last confirmed (or, before it ever answered, a provisional license) are trusted for 12 hours from the start of the outage. The database records when the outage began, so a restart neither begins nor extends the 12 hours; after that the licensed features turn off until the server answers again. Without the database there is no grace period: the licensed features turn off as soon as the license server cannot confirm the license, and an Enterprise project does not load until it can. The UAG checks online licenses again on its own schedule, so a revoked license is noticed without a restart.
+**How keys are validated.** An offline license is verified locally; set `LICENSE_REMOTE=true` for those. Any other key is validated with the Form.io license server. If the license server cannot be reached, the terms it last confirmed are trusted for 12 hours from that confirmation, while the UAG runs; after that the licensed features turn off until the server answers again, and an Enterprise project does not load until it can. A key it has never confirmed, and a restarted UAG, have no grace period. `LICENSE_SERVER` can name only Form.io's license servers (`https://*.form.io`). Online keys are not validated while `NODE_TLS_REJECT_UNAUTHORIZED=0`, `NODE_EXTRA_CA_CERTS` or `NODE_USE_SYSTEM_CA=1` is set; use an offline license there. The UAG checks online licenses again on its own schedule, so a revoked license is noticed without a restart.
 
 Contact [support@form.io](mailto:support@form.io) for a trial license.
 
@@ -257,7 +257,6 @@ The UAG needs no database to run: Form.io stores every submission, and the UAG f
 | Remote MCP sign-in (`MCP_OAUTH`), for claude.ai and Claude Desktop connectors and `mcp-remote` | Off. Local clients still use `/auth/token`. |
 | Run records, shown as [Action Logs](#connecting-the-enterprise-portal) in a connected portal stage | No record of task runs. Failures are only logged. |
 | Runs after the save that survive a restart (actions with an agent role) | Every run after the save is kept in memory, in the instance that received the submission, and is lost if it stops. |
-| The license grace period | None: the licensed features turn off as soon as the license server cannot confirm the license. |
 
 `GET /agent/capabilities` reports the first and third as `mcpOAuth` and `durableRuns`.
 
@@ -277,7 +276,7 @@ The UAG selects `UAG_DATABASE` by name on the `MONGO` connection, so the databas
 
 | Collection | Contents |
 |---|---|
-| `uag-meta` | The UAG's schema marker, and when the license server became unreachable. |
+| `uag-meta` | The UAG's schema marker. |
 | `uag-authcodes` | One-time authorization codes for remote MCP sign-in, stored by their SHA-256 hash, with the token each is exchanged for sealed with a key only the code gives, so the database holds neither a usable code nor a usable token. Each expires after 10 minutes. |
 | `uag-taskruns` | One record per Run task run: the form, submission, action, task, when it ran, its state, the engines and models that answered, the paths of the fields it wrote and cleared (never their values), any error, and the user it acted for (their id, roles and email). Never a token. Records are removed `TASK_RUN_RETENTION_DAYS` after they were created. |
 
@@ -295,7 +294,7 @@ On a fresh database it writes its schema marker first, then creates its collecti
 
 ### The database's license
 
-Using the database needs a license that includes the UAG, on Open Source, Enterprise and Form.io's hosted service alike, unless the project and the database are both on development hosts (`localhost`, `*.localhost`, `lvh.me`, `*.lvh.me`, `*.local`). The [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo/samples/custom-module) names its services `formio.local` and `mongo.local` for that reason.
+Using the database needs a license that includes the UAG, on Open Source, Enterprise and Form.io's hosted service alike, unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`). A Compose stack runs them in separate containers, so it needs the license, as in the [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo/samples/custom-module).
 
 Without the license, the UAG still starts, with the database features off. It creates and changes nothing in the database, closes the connection, and says why:
 
@@ -303,7 +302,7 @@ Without the license, the UAG still starts, with the database features off. It cr
 [formio-uag] The database (MONGO) is not used: A database of this server's own (MONGO) needs a license that includes ... Runs after the save are kept in memory, and remote MCP sign-in (MCP_OAUTH) is off.
 ```
 
-Until the license is known, the UAG only reads the database. The one exception is recording a license server outage for a configured license key.
+Until the license is known, the UAG only reads the database.
 
 ### Runs after the save
 

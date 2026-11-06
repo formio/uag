@@ -34,7 +34,7 @@ Remote MCP clients sign in through OAuth, which is now off unless you turn it on
 
 To upgrade a deployment that serves remote clients:
 
-1. Set `MONGO` (see below) and `MCP_OAUTH=true`, with a `LICENSE_KEY` that includes the UAG. A project and a database both on development hosts (`localhost`, `*.localhost`, `lvh.me`, `*.local`) need no license.
+1. Set `MONGO` (see below) and `MCP_OAUTH=true`, with a `LICENSE_KEY` that includes the UAG. When the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`), no license is needed.
 2. Behind a reverse proxy, set `TRUST_PROXY` (`true`, a number of hops, or the proxy's addresses) for a proxy you control, and remove `BASE_URL` unless the derived URL is wrong.
 3. Delete the "Authorization Codes" resource from the project. The UAG no longer reads or writes it.
 

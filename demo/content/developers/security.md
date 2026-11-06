@@ -144,7 +144,6 @@ The optional database (`MONGO`) holds only the UAG's own state, in collections n
 
 - authorization codes for remote MCP sign-in, by their SHA-256 hash, with their tokens sealed;
 - run records: the form, submission, task, state, engines, the paths of the fields written (never their values), any error, and the user acted for (id, roles and email). Never a token;
-- when the license server became unreachable.
 
 Give the `MONGO` user the `readWrite` role on `UAG_DATABASE` only. Run records name users and submissions, so treat the database as you treat Form.io's, and set `TASK_RUN_RETENTION_DAYS` to your retention policy. See [Deployment](/developers/deployment#the-database).
 

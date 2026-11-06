@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+Needs `@formio/appserver` 2.27.0 or later.
+
+### Added
+
+- `@formio/uag-sdk/loader`: `planEngines(instances, options)` resolves engine instances and their settings without creating them.
+
+### Changed
+
+- The license grace period lasts 12 hours from the license server's last confirmation, while the UAG runs; it does not continue after a restart, and `uag-meta` no longer holds an outage record.
+- The UAG's database needs a license that includes the UAG unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`). The custom module sample sets `LICENSE_KEY` for MCP sign-in.
+- `LICENSE_SERVER` accepts only Form.io's license servers (`https://*.form.io`). Online keys are not validated while `NODE_TLS_REJECT_UNAUTHORIZED=0`, `NODE_EXTRA_CA_CERTS` or `NODE_USE_SYSTEM_CA=1` is set; use an offline license (`LICENSE_REMOTE`) there.
+
 ## 2.0.0-rc.8
 
 Needs `@formio/appserver` 2.26.1 or later.

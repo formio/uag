@@ -84,7 +84,7 @@ Callers send the signed-in user's Form.io token (`x-jwt-token`), a portal team m
 | `BASE_URL` | Optional. The URL clients reach the UAG at, for the OAuth discovery documents remote MCP clients read. Derived from each request when unset. |
 | `TRUST_PROXY` | Express's `trust proxy` (`true`, a number of hops, or addresses). Set it behind a reverse proxy, so the UAG reads its public URL from the forwarded headers. |
 | `MCP_OAUTH` | `true` turns on OAuth sign-in for remote MCP clients (the `/auth/authorize` page, client registration and `/.well-known/*`). Needs `MONGO`, with its license; otherwise the UAG starts with it off and says why. `/auth/token` (`client_credentials`) and API keys work without it. |
-| `MONGO` | Optional. The UAG's own database, for run records, runs that survive a restart, remote MCP sign-in and the license grace period. Holds only `uag-*` collections, never submissions. Needs a license that includes the UAG, unless the project and the database are on development hosts. |
+| `MONGO` | Optional. The UAG's own database, for run records, runs that survive a restart, and remote MCP sign-in. Holds only `uag-*` collections, never submissions. Needs a license that includes the UAG, unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`). |
 | `UAG_DATABASE` | The database to use on the `MONGO` connection, selected by name. Default `uag`. |
 | `MONGO_CONFIG` | MongoDB driver options for `MONGO`, as JSON. |
 | `TASK_RUN_RETENTION_DAYS` | Days run records are kept. Default `90`; `0` keeps them forever. |
