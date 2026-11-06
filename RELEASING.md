@@ -40,7 +40,7 @@ To check them without releasing, run the workflow by hand: **Actions → Publish
 | MCP Registry (`server.json`) | published | skipped |
 | Deployment hook | production | test |
 
-A package or image already published at the version is skipped, so a failed run can be rerun.
+A failed run can be rerun ("Re-run failed jobs"): a package npm already has at the version is skipped, as is the `formio/uag-engines` image when Docker Hub has it; the `formio/uag` and `formio/uag-demo` images are built and pushed again. An image build that runs longer than 30 minutes fails instead of hanging: the arm64 half is built under QEMU, which can crash and hang.
 
 ## Deployment
 
