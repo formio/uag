@@ -19,7 +19,7 @@ Requests to the UAG carry the user's Form.io token (`x-jwt-token`), as formio.js
 
 ## AI Document
 
-The **AI Document** component (`uagdocument`) is a UAG module from [`@formio/uag-extras`](https://github.com/formio/uag-extras) (`npm install @formio/uag-extras@^1`), not from this package. A UAG that uses the module adds the component to its `/uag-js/uag.use.js`; an application with a bundler registers it after this package:
+The **AI Document** component (`uagdocument`) is a UAG module from [`@formio/uag-extras`](https://www.npmjs.com/package/@formio/uag-extras) (`npm install @formio/uag-extras@^1`), not from this package. A UAG that uses the module adds the component to its `/uag-js/uag.use.js`; an application with a bundler registers it after this package:
 
 ```js
 import aiDocument from '@formio/uag-extras/modules/ai-document/client';
