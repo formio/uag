@@ -42,7 +42,8 @@ async function start(uagModule) {
     // A module may be exported as a promise (an async module).
     const resolved = await uagModule;
     if (resolved) server.use(resolved);
-    // Then the plugins file: UAG_PLUGINS, or the image's /app/plugins/index.mjs.
+    // Then the plugins files: UAG_PLUGINS, or the image's /app/plugins (its
+    // index.mjs, or each add-on's folder under it).
     await usePluginFiles(server);
     const app = Express();
     // Behind a reverse proxy, its forwarded headers give the public URL (TRUST_PROXY).

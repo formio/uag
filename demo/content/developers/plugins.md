@@ -20,10 +20,16 @@ module.exports = {
 };
 ```
 
-From a plugins file: `UAG_PLUGINS` names an ES module (`.mjs`) or CommonJS file whose default export (or `plugins` export) is a plugin, a list of plugins, or nested lists; or a list mixing [modules](/developers/modules) and plugins, each module used in turn. Document plugins need the AI Document module, which defines their type. Without `UAG_PLUGINS`, the `uag` command and both UAG images, `formio/uag` and `formio/uag-documents`, load `/app/plugins/index.mjs` when it exists; `UAG_PLUGINS=off` loads none. In your own server, `usePluginFiles(server)` does the same (see [Node.js API](/developers/node-api#public-exports)). Relative imports in the file resolve from the file, and bare imports from the folder's own `node_modules`, then upward.
+From a plugins file: an ES module (`.mjs`) or CommonJS file whose default export (or `plugins` export) is a plugin, a list of plugins, or nested lists; or a list mixing [modules](/developers/modules) and plugins, each module used in turn. Document plugins need the AI Document module, which defines their type. The `uag` command and the `formio/uag` image load the plugins folder `/app/plugins` when it exists, or what `UAG_PLUGINS` names (`UAG_PLUGINS=off` loads none):
+
+- a file: that file;
+- a folder with an `index.mjs`: that file;
+- any other folder: the `index.mjs` of each folder in it, in name order, one per [add-on](#add-ons) (`node_modules` and folders whose name starts with `.` are skipped).
+
+In your own server, `usePluginFiles(server)` does the same (see [Node.js API](/developers/node-api#public-exports)). Relative imports in a file resolve from the file, and bare imports from its folder's own `node_modules`, then upward.
 
 ```js
-// /app/plugins/index.mjs: the image's module and plugins, plus your own
+// my-plugins/index.mjs: the AI Document module and the official plugins, plus your own
 import { UAGDocument } from '@formio/uag-extras/modules/ai-document';
 import Extract from '@formio/uag-extras/documents/extract';
 import Analyze from '@formio/uag-extras/documents/analyze';
@@ -33,7 +39,60 @@ import myConverter from './my-converter.mjs';
 export default [UAGDocument, Extract, Analyze, Translate, OfficeText, myConverter];
 ```
 
-The image's plugins come from `@formio/uag-extras`, the package of UAG extras (modules, actions, MCP tools, engine types, document plugins and converters) from Form.io and the community; it is installed in the image, and elsewhere with `npm install @formio/uag-extras@^1`. Its source is the [uag-extras repository](https://github.com/formio/uag-extras). Each extra is its own import, `@formio/uag-extras/<kind>/<name>`: its default export is a module for `server.use()`, and its plugin is a named export, for plugins files. A plugin that needs system binaries or npm packages the image does not have is added by building an image `FROM formio/uag-documents:rc`.
+These plugins come from `@formio/uag-extras`, the package of UAG extras (modules, actions, MCP tools, engine types, document plugins and converters) from Form.io and the community: `npm install @formio/uag-extras@^1` in the plugins folder. Its source is the [uag-extras repository](https://github.com/formio/uag-extras). Each extra is its own import, `@formio/uag-extras/<kind>/<name>`: its default export is a module for `server.use()`, and its plugin is a named export, for plugins files. In Docker, the [`formio/uag-documents` add-on](/developers/ai-document#run-it-with-docker) brings the AI Document module and these plugins, so your own folder beside it lists only yours (see [Add-ons](#add-ons)). A plugin that needs system packages (an OCR engine) needs them in the UAG's container: build an image `FROM formio/uag:<version>` that adds them with `apk add`, and mount or copy the plugins there.
+
+### Add-ons
+
+In Docker, each set of plugins is a folder of its own under `/app/plugins`, with its own `index.mjs` and `node_modules`. An add-on is an image that holds such a folder: run once, it copies the folder into the volume mounted at `/out`, replacing what the volume held, and exits. The UAG mounts each add-on's volume in its own folder, and a folder of your own beside them:
+
+```yaml
+services:
+  uag-documents:
+    image: formio/uag-documents:1
+    volumes:
+      - uag-documents:/out
+  uag-crm:                      # an example: any add-on is run the same way
+    image: example/uag-crm:1
+    volumes:
+      - uag-crm:/out
+
+  formio-uag:
+    image: formio/uag:rc
+    depends_on:
+      uag-documents:
+        condition: service_completed_successfully
+        restart: true
+      uag-crm:
+        condition: service_completed_successfully
+        restart: true
+    volumes:
+      - uag-documents:/app/plugins/documents:ro
+      - uag-crm:/app/plugins/crm:ro
+      - ./my-plugins:/app/plugins/my-plugins:ro
+
+volumes:
+  uag-documents:
+  uag-crm:
+```
+
+The UAG loads `/app/plugins/crm/index.mjs`, `/app/plugins/documents/index.mjs` and `/app/plugins/my-plugins/index.mjs`, in that order, each as it loads one plugins file, and logs each. They merge as modules do:
+
+- A plugin may use a plugin type another folder's module defines: your `document` plugins need the AI Document module, which the `uag-documents` add-on brings, so your folder need not list it.
+- A module two folders bring, of the same `name` and `version`, is used once. Two versions of it stop startup: `Two versions of the module ai-document are used: … Use one.`
+- Two folders that register the same plugin (`type:name`), plugin type, form route or component type stop startup, naming both files: `Plugin document:translate is registered twice: by /app/plugins/documents/index.mjs… and by /app/plugins/my-plugins/index.mjs`.
+- `PLUGINS_DISABLED` and `MODULES_DISABLED` leave out what you do not want from any of them.
+
+`restart: true` restarts the UAG when Compose runs a newer add-on, so `docker compose pull` and `docker compose up -d` upgrade it. To remove an add-on, delete its service, its `depends_on` entry, its mount and its volume. With `docker run`, run each add-on into its volume first (`docker run --rm -v uag-documents:/out formio/uag-documents:1`), then mount the volumes (`-v uag-documents:/app/plugins/documents:ro`). On Kubernetes, each add-on is an initContainer writing to its own `emptyDir` at `/out`, mounted at `/app/plugins/<name>` in the UAG's container. Loading folders under `/app/plugins` needs `formio/uag` 2.0.0-rc.8 or later.
+
+To ship your own plugins folder the same way, build an add-on of your own:
+
+```dockerfile
+FROM alpine:3
+COPY my-plugins /plugins
+CMD ["sh", "-c", "find /out -mindepth 1 -delete && cp -a /plugins/. /out/"]
+```
+
+Every add-on runs in the UAG process with its secrets: add only add-ons you trust (see [Security](/developers/security)).
 
 ### Settings and switching plugins off
 
@@ -84,7 +143,7 @@ The UAG registers the listed-only types itself: a plugin of one of them in a mod
 
 A document plugin is one JavaScript file: a plain object with a few fields and an async `process()`. The UAG does the rest: it turns each upload into a PDF or text (through the converters), chooses the engine, streams progress to the form, sanitizes what you return and shows it in the component. This walkthrough builds **Translate**: the form designer picks a language, and the person filling the form gets their upload back in it.
 
-The `formio/uag-documents` image ships this plugin as `@formio/uag-extras/documents/translate` (the same code, with more languages). Two plugins cannot share `document:translate`, so to run your own copy beside the image's, give yours another `name`, or leave the official one out of your plugins file.
+The `formio/uag-documents` add-on ships this plugin as `@formio/uag-extras/documents/translate` (the same code, with more languages). Two plugins cannot share `document:translate`, so to run your own copy beside the add-on's, give yours another `name`, or leave the official one out of your plugins file.
 
 ### 1. Write the plugin
 
@@ -182,27 +241,28 @@ Name the plugins file with `UAG_PLUGINS`:
 UAG_PLUGINS=./my-plugins/index.mjs npx uag
 ```
 
-Or, with the image, mount the folder at `/app/plugins`. Your `index.mjs` replaces the image's default, so list the module and the official plugins you want too (they stay installed in the image, so the imports resolve):
+With Docker, mount the folder beside the [`formio/uag-documents` add-on](/developers/ai-document#run-it-with-docker), in a folder of its own under `/app/plugins` (see [Add-ons](#add-ons)):
+
+```yaml
+    volumes:
+      - uag-documents:/app/plugins/documents:ro
+      - ./my-plugins:/app/plugins/my-plugins:ro
+```
+
+The add-on brings the AI Document module and its own `document:translate`, so beside it, list only your plugin, under another `name` (`name: 'my-translate'` in `translate.mjs`):
 
 ```js
-// my-plugins/index.mjs, mounted at /app/plugins
-import { UAGDocument } from '@formio/uag-extras/modules/ai-document';
-import Extract from '@formio/uag-extras/documents/extract';
-import Analyze from '@formio/uag-extras/documents/analyze';
-import OfficeText from '@formio/uag-extras/converters/office-text';
+// my-plugins/index.mjs, beside the add-on
 import translate from './translate.mjs';
-export default [UAGDocument, Extract, Analyze, OfficeText, translate];
+export default [translate];
 ```
 
-```bash
-docker run -p 3200:3200 --env-file .env -v "$PWD/my-plugins:/app/plugins:ro" formio/uag-documents:rc
-```
-
-At startup the UAG logs where it loaded the plugins from, and a notice that `document` plugins are experimental:
+At startup the UAG logs each plugins file it loaded, and a notice that `document` plugins are experimental:
 
 ```
-[formio-uag] Plugins and modules loaded from /app/plugins/index.mjs.
-[plugins] document:translate (from /app/plugins/index.mjs[4]) uses the experimental "document" plugin type: …
+[formio-uag] Plugins and modules loaded from /app/plugins/documents/index.mjs.
+[formio-uag] Plugins loaded from /app/plugins/my-plugins/index.mjs.
+[plugins] document:my-translate (from /app/plugins/my-plugins/index.mjs) uses the experimental "document" plugin type: …
 ```
 
 A plugin of the wrong shape stops startup, naming it and the problem (see [Startup](#startup)). `GET {project}/plugins` lists it once it is installed.
@@ -218,8 +278,8 @@ The UAG reads its plugins once, at startup: restart it after you change one.
 | What you see | Why |
 |---|---|
 | Startup stops: `no plugin type "document"` | The AI Document module is not in use: add `UAGDocument` from `@formio/uag-extras/modules/ai-document` into your plugins file or module. |
-| Startup stops: `Plugin document:translate is registered twice` | Your plugin and `@formio/uag-extras/documents/translate` share a name: rename yours, or leave the official one out. |
-| `The AI Document "…" is misconfigured: its process "translate" is not installed or not available.` | The UAG serving the form did not load your plugins file: check `UAG_PLUGINS` or the mount, and the startup log. |
+| Startup stops: `Plugin document:translate is registered twice` | Your plugin and `@formio/uag-extras/documents/translate` (in the add-on, or your own list) share a name: rename yours, or leave the official one out. The message names both files. |
+| `The AI Document "…" is misconfigured: its process "translate" is not installed or not available.` | The UAG serving the form did not load your plugins file: check `UAG_PLUGINS` or the mount (a folder under `/app/plugins`, holding `index.mjs`), and the startup log. |
 | `The AI Document "…" is misconfigured: pick a language to translate into` | Your `validateSettings` refused the component's settings. |
 | `The AI Document "…" is misconfigured: it has no instructions.` | The component's instructions are empty. |
 | `"notice.docx" is application/vnd.openxmlformats-officedocument.wordprocessingml.document, which no installed converter brings to the "translate" process.` | No converter turns that file type into a PDF or text: add `@formio/uag-extras/converters/office-text` for Word and Excel (with its peer dependencies, `mammoth`, `node-html-markdown` and `exceljs`). |

@@ -30,12 +30,14 @@ docker run -d --name formio-uag --restart unless-stopped -p 3200:3200 \
   formio/uag:rc
 ```
 
-The image starts `node --no-node-snapshot index.js`, which loads the module in `/app/module`, then the plugins file `/app/plugins/index.mjs` when it exists (or the file `UAG_PLUGINS` names). Mount your own [module](/developers/modules) at `/app/module` to add forms, actions, tools and configuration, and a folder with an `index.mjs` of [plugins](/developers/plugins) at `/app/plugins` to add converters and document processes:
+The image starts `node --no-node-snapshot index.js`, which loads the module in `/app/module`, then the plugins folder `/app/plugins` when it exists (or what `UAG_PLUGINS` names). Mount your own [module](/developers/modules) at `/app/module` to add forms, actions, tools and configuration, and a folder with an `index.mjs` of [plugins](/developers/plugins) in a folder under `/app/plugins` to add converters and document processes:
 
 ```bash
 docker run -v "$PWD/module:/app/module" ... formio/uag:rc
-docker run -v "$PWD/my-plugins:/app/plugins:ro" ... formio/uag:rc
+docker run -v "$PWD/my-plugins:/app/plugins/my-plugins:ro" ... formio/uag:rc
 ```
+
+For AI Document, the `formio/uag-documents` add-on brings the plugins for you: it runs beside the UAG and copies its plugins folder into a volume the UAG mounts at `/app/plugins/documents`. Each add-on, and each folder of your own, is a folder under `/app/plugins`; the UAG loads them all. See [AI Document: Run it with Docker](/developers/ai-document#run-it-with-docker) and [Plugins: Add-ons](/developers/plugins#add-ons) for Compose, `docker run` and Kubernetes.
 
 Modules and plugins are trusted code: they run in the UAG process.
 
@@ -171,8 +173,8 @@ The login form JSON endpoint the `/auth/authorize` page loads, such as `https://
 | Variable | Default | Description |
 |---|---|---|
 | `UAG_MODULE` | none | For the `uag` command only: a file or folder exporting a module. The Docker image loads `/app/module` instead. |
-| `MODULES_DISABLED` | none | Modules to leave out, by name, comma-separated (`ai-document`, the `formio/uag-documents` image's AI Document): for a module an image includes that you do not want. |
-| `UAG_PLUGINS` | `/app/plugins/index.mjs`, when it exists | The plugins file the `uag` command and the image load after the module: an ES module (`.mjs`) or CommonJS file exporting plugins, modules, or a list of both. `off` loads none. See [Plugins](/developers/plugins). An application that embeds the UAG calls `usePluginFiles(server)` itself. |
+| `MODULES_DISABLED` | none | Modules to leave out, by name, comma-separated (`ai-document`, the AI Document module the `formio/uag-documents` add-on brings): for a module you load but do not want. |
+| `UAG_PLUGINS` | `/app/plugins`, when it exists | The plugins the `uag` command and the image load after the module: a file (an ES module, `.mjs`, or CommonJS file exporting plugins, modules, or a list of both), a folder with an `index.mjs`, or a folder of such folders, one per add-on, loaded in name order. `off` loads none. See [Plugins](/developers/plugins#adding-plugins). An application that embeds the UAG calls `usePluginFiles(server)` itself. |
 | `PLUGINS_DISABLED` | none | Plugins to leave out, as `<type>:<name>`, comma-separated (`converter:image-pdf`). Also `config.plugins.disabled`. |
 | `DOCUMENTS_MAX_FILE_BYTES` | `26214400` (25 MB) | The largest uploaded file the `read_document` MCP tool reads, in bytes. `documents.maxFileBytes` in a module's `config` takes precedence. The AI Document module reads it too, beside its other `DOCUMENTS_*` settings: see [AI Document](/developers/ai-document#limits). |
 | `DOCUMENTS_MAX_IMAGE_PIXELS` | `50000000` | The largest PNG the built-in `image-pdf` converter takes, in pixels (width × height); a larger one is refused before it is decoded. Also `config.plugins.settings.converter['image-pdf'].maxPixels`. |
@@ -354,7 +356,7 @@ From 2.0.0, the UAG and the packages released with it (the engines, the engine S
 | `@formio/uag-gemini` | 2.x | >= 2.0.0 | Built on `@formio/uag-openai`. No default model. |
 | `@formio/uag-engines` | 2.x | >= 2.0.0 | The engine server. Docker image `formio/uag-engines`. |
 | `@formio/uag-js` | 2.x | >= 2.0.0 | The formio.js module, for the browser: saves `uag` forms through the UAG and adds Agent Input. Published on npm, and served by the UAG at `/uag-js/` (the image includes it). |
-| `@formio/uag-extras` | 1.x | >= 2.0.0-rc.7 | Versioned on its own: extras such as the AI Document module, document plugins and converters ([github.com/formio/uag-extras](https://github.com/formio/uag-extras)). Docker image `formio/uag-documents`, the UAG with them. |
+| `@formio/uag-extras` | 1.x | >= 2.0.0-rc.7 | Versioned on its own: extras such as the AI Document module, document plugins and converters ([github.com/formio/uag-extras](https://github.com/formio/uag-extras)). Docker image `formio/uag-documents` (`:1`), an add-on that runs beside `formio/uag` and fills its plugins folder: see [AI Document](/developers/ai-document#run-it-with-docker). |
 | `@formio/uag-claude` | 1.3.x | 1.12.0 – 1.13.x | The retired Claude integration, deprecated. Against 2.0 only its direct commands work: its `agent_provide_data` webhooks need 1.x. |
 | `@formio/uag-claude` | 1.2.x | 1.10.0 – 1.11.x | The retired Claude integration. |
 
@@ -362,7 +364,7 @@ From 2.0.0, the UAG and the packages released with it (the engines, the engine S
 
 For a reproducible deployment:
 
-- **Pin image tags.** The samples use the `rc` channel tag, which moves to each new release candidate. Production should pin `formio/uag:<version>` (and `formio/uag-engines:<version>`, `formio/uag-documents:<version>`, `formio/formio-enterprise:<version>`).
+- **Pin image tags.** The samples use the `rc` channel tag, which moves to each new release candidate. Production should pin `formio/uag:<version>` (and `formio/uag-engines:<version>`, `formio/formio-enterprise:<version>`). The `formio/uag-documents` add-on follows `@formio/uag-extras`'s versions: `:1` moves to each 1.x release; pin an exact one, such as `formio/uag-documents:1.0.0`.
 - **Pin models.** Set `CLAUDE_MODEL`, `TYPESAFE_MODEL` and the other model variables to specific versions. A new UAG release may change an engine's default, and answers differ between models. Run [`uag-eval`](/developers/evaluation) before changing one.
 - **Keep `@formio/appserver` current.** When embedding the UAG, it reaches `@formio/appserver-core` only through `@formio/appserver`, so there is one copy of it, which must be 2.26.0 or later; the UAG refuses to start with an older one, and says what to upgrade.
 - **Roll back** by pinning the previous image. Stored submissions are unaffected; UAG 1.x ignores the `metadata.uag.generated` provenance that 2.0 adds. See [MIGRATING-2.0.md](https://github.com/formio/uag/blob/v2.0.0-rc.8/MIGRATING-2.0.md) when upgrading from 1.x.

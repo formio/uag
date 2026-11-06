@@ -469,7 +469,7 @@ The service applies the same license check, permissions, routing, validation and
 | `AgentRouter(project, authenticate)` | function | The router for `GET /agent/capabilities` on its own. |
 | `FormAgentRouter(project, credentials)`, `agentCredentials(project)`, `agentNotFound(project)` | functions | A form's agent operations (`agent/extract`, `agent/decide`, `agent/generate`, `agent/chat`), mounted on each form's routes; the credential check they run behind; and the `404` for an agent operation of a form the project does not have. |
 | `definePlugin(plugin)`, `definePluginType(type)`, `PluginRegistry`, `loadPluginFile(path)`, `PLUGIN_NAME`, `Plugin`, `PluginType`, `PluginEntry` | functions, class, types | The plugin framework, from `@formio/appserver-core`. `server.plugins` is the server's registry. See [Plugins](/developers/plugins). |
-| `usePluginFiles(server, env?)`, `pluginsFile(env?)`, `DEFAULT_PLUGINS_FILE` | functions, constant | Load the plugins file `UAG_PLUGINS` names (or `/app/plugins/index.mjs` when it exists), as the `uag` command does after the module. |
+| `usePluginFiles(server, env?)`, `pluginFiles(env?)`, `pluginFilesIn(path)`, `DEFAULT_PLUGINS_DIR` | functions, constant | Load the plugins files `UAG_PLUGINS` names (or those in `/app/plugins` when it exists), as the `uag` command does after the module, and return the files loaded; the files a setting or a path gives, in load order; and `/app/plugins`. See [Plugins](/developers/plugins#adding-plugins). |
 | `Converter`, `DocumentPlugin`, `DocumentContext`, `DocumentResult`, `DocumentFile`, `Issue` | types | The `converter` and `document` plugin contracts (experimental in 2.0). |
 | `BUILT_IN_CONVERTERS`, `identify(buffer, hint, converters?)`, `ConverterRoutes`, `runConverter` | values, functions | Converters: the built-in ones, byte-based identification, converter routes and conversion. Modules reach them through `api.converters`. |
 | `UAGModule`, `UAGModuleApi`, `UAGModuleRequest`, `UAGModuleRoute`, `ModuleForm`, `ModuleComponent`, `GeneratingEngine` | types | The module API and its types. See [Modules](/developers/modules#the-module-api). |
@@ -494,7 +494,7 @@ UAG_ENGINES=claude CLAUDE_API_KEY=... npx uag
 - loads `.env` from the working directory first, so a module that reads the environment sees it too;
 - restarts itself with `--no-node-snapshot` when that flag is in neither the command line nor `NODE_OPTIONS`, forwarding `SIGINT`, `SIGTERM` and `SIGHUP` and exiting with the child's code;
 - requires `UAG_MODULE`, resolved against the working directory, and passes it to `server.use()` (a module exported as a promise is awaited first);
-- then loads the plugins file: the one `UAG_PLUGINS` names (`off` turns it off), or else `/app/plugins/index.mjs` when it exists (see `usePluginFiles` in [Public exports](#public-exports));
+- then loads the plugins files: those `UAG_PLUGINS` names (`off` turns it off), or else those in `/app/plugins` when it exists, its `index.mjs` or each add-on folder's (see `usePluginFiles` in [Public exports](#public-exports));
 - sets Express's `trust proxy` from `TRUST_PROXY`, when it is set;
 - listens on `PORT` (default `3200`);
 - prints the error and exits with code 1 when startup fails;

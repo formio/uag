@@ -9,7 +9,7 @@ The marketing and demo site for the Form.io Universal Agent Gateway, published a
   - **Conversation Forms** (`/examples/conversation`): a chat whose questions come entirely from a form.
   - **Agentic Workflow** (`/examples/workflow`): a college application reviewed by two chained agents, with no human in the loop.
   - **Agentic Formflow** (`/examples/formflow`): a claims wizard that chooses its own pages and fills itself in from a description.
-  - **AI Document** (`/examples/documents`): a lease review whose AI Document components copy an uploaded lease's key clauses word for word into a field, check the copy, and summarize the lease. It needs the AI Document module and the document plugins in the UAG (the `formio/uag-documents:rc` image, or a `UAG_PLUGINS` file that lists them).
+  - **AI Document** (`/examples/documents`): a lease review whose AI Document components copy an uploaded lease's key clauses word for word into a field, check the copy, and summarize the lease. It needs the AI Document module and the document plugins in the UAG's plugins folder: in Docker, the `formio/uag-documents:1` add-on brings them, run beside `formio/uag` with its volume mounted at `/app/plugins/documents`; with `yarn demo:local`, set `UAG_PLUGINS` to a plugins file that lists them. `deploy/docker-compose.yml` runs the add-on; the Compose stack in this folder (`docker-compose.yml` and its overlays) runs neither, so there the demo answers that its process is not installed.
 - **Developers** (`/developers`): the technical documentation, from how the UAG works to the engine SDK.
 - **Contact Us** (`/contact`): the hosted Form.io contact form.
 

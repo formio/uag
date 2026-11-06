@@ -7,7 +7,7 @@ order: 48
 
 The **AI Document** component (`uagdocument`) lets the people filling a form drop files and get AI-generated content from them: an exact extraction, a summary, an assessment. The form designer picks a **process** (a document plugin) and writes the instructions; converters bring each file to what the AI engine reads (PDF or text). Files upload to the form's own storage; the submission holds the file references and the result, never file bytes from the UAG. The [lease review example](/examples/documents) shows it at work.
 
-AI Document is a [module](/developers/modules#settings-routes-and-components): it comes with `@formio/uag-extras/modules/ai-document`, which brings the component, the process route and the `document` plugin type, and the plugins it runs come from the document extras of `@formio/uag-extras` or your own (see [Plugins](/developers/plugins)). The `formio/uag-documents:rc` image has all of them. In your own server, after `npm install @formio/uag-extras@^1`:
+AI Document is a [module](/developers/modules#settings-routes-and-components): it comes with `@formio/uag-extras/modules/ai-document`, which brings the component, the process route and the `document` plugin type, and the plugins it runs come from the document extras of `@formio/uag-extras` or your own (see [Plugins](/developers/plugins)). With Docker, the `formio/uag-documents` add-on brings all of them to the `formio/uag` image (see [Run it with Docker](#run-it-with-docker)). In your own server, after `npm install @formio/uag-extras@^1`:
 
 ```js
 import { UAGDocument } from '@formio/uag-extras/modules/ai-document';
@@ -59,9 +59,39 @@ In this release the UAG neither signs results nor checks AI Document values when
 
 ## For the operator
 
-```bash
-docker run -p 3200:3200 --env-file .env formio/uag-documents:rc
+`formio/uag-documents` is an add-on that runs beside the `formio/uag` image; it does not contain the UAG. It holds a plugins folder: an `index.mjs` that loads the AI Document module (`module:ai-document`), the `extract`, `analyze` and `translate` document plugins and the `office-text` converter (Word and Excel files), and a `node_modules` with `@formio/uag-extras` and the converter's libraries. It copies that folder into its own volume and exits; the UAG mounts that volume in a folder under `/app/plugins` and loads it at startup with any other add-ons (see [Plugins: Add-ons](/developers/plugins#add-ons)). The extras use the UAG's own `@formio/uag` and `zod`. It needs `formio/uag` 2.0.0-rc.8 or later. Its tags follow `@formio/uag-extras`: `formio/uag-documents:1` (the newest 1.x), or an exact version such as `formio/uag-documents:1.0.0`.
+
+### Run it with Docker
+
+```yaml
+services:
+  uag-documents:
+    image: formio/uag-documents:1
+    volumes:
+      - uag-documents:/out
+
+  formio-uag:
+    image: formio/uag:rc
+    depends_on:
+      uag-documents:
+        condition: service_completed_successfully
+        restart: true
+    volumes:
+      - uag-documents:/app/plugins/documents:ro
+    environment:
+      # ...the UAG's usual settings
+
+volumes:
+  uag-documents:
 ```
+
+- The add-on runs once at each `docker compose up`: it replaces what its volume holds with its folder and exits with `0`. Do not give it `restart: always`.
+- `condition: service_completed_successfully` keeps the UAG from starting before the files are there; the volume is how they reach it.
+- To upgrade, run `docker compose pull` and `docker compose up -d`. With `restart: true`, Compose stops the UAG, runs the newer add-on, then starts the UAG on its files.
+- Without Compose: `docker volume create uag-documents`, then `docker run --rm -v uag-documents:/out formio/uag-documents:1`, then run `formio/uag` with `-v uag-documents:/app/plugins/documents:ro`.
+- On Kubernetes, run the add-on as an initContainer that writes to an `emptyDir` volume mounted at `/out`, and mount that `emptyDir` at `/app/plugins/documents` (read-only) in the UAG's container.
+- Other add-ons and your own plugins go in folders of their own beside it (see [Plugins: Add-ons](/developers/plugins#add-ons)). A document plugin of your own uses the `document` type this add-on's module defines.
+- `MODULES_DISABLED=ai-document` turns the module off, and `PLUGINS_DISABLED` (`document:translate`, say) one of its plugins.
 
 ### Limits
 

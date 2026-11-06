@@ -254,7 +254,7 @@ A hosted project needs a license after all when the UAG weakens the proof that i
 ## Extending the UAG
 
 - **Modules** add MCP tools, override the built-in tools and their response templates, add form actions (the UAG runs a module's own actions; Form.io runs its own), and ship a project template of forms and resources that the UAG installs. A module can also add routes on every form, formio.js components (served in the UAG's `/uag-js/uag.use.js`), plugins, and settings of its own. Mount one over `/app/module` in the container, or name it in `UAG_MODULE` for the `uag` command. See [Modules](https://ai.form.io/developers/modules), [`module/Readme.md`](./module/Readme.md) and the [Claude Desktop example](./demo/samples/custom-module).
-- **Plugins** add capabilities of a known type, such as converters that read more file types and the document processes an AI Document runs. List them in a module, or in a plugins file: the one `UAG_PLUGINS` names, or `/app/plugins/index.mjs` in the image. Plugins and modules are trusted code: they run in the UAG process. See [Plugins](https://ai.form.io/developers/plugins) and [AI Document](https://ai.form.io/developers/ai-document).
+- **Plugins** add capabilities of a known type, such as converters that read more file types and the document processes an AI Document runs. List them in a module, or in a plugins file: the one `UAG_PLUGINS` names, or in the image, one per folder under `/app/plugins`, where add-ons such as `formio/uag-documents` put theirs. Plugins and modules are trusted code: they run in the UAG process. See [Plugins](https://ai.form.io/developers/plugins) and [AI Document](https://ai.form.io/developers/ai-document).
 - **Node.js.** Embed the UAG in an Express application, or run it with `npx uag`:
 
 ```js
@@ -324,7 +324,7 @@ The full table, with the Agent API's errors: [Troubleshooting](https://ai.form.i
 | [`@formio/uag-sdk`](./packages/engine-sdk) | 2.x | ≥ 2.0.0 | Engine contract version 1, remote engine protocol version 1. |
 | [`@formio/uag-engines`](./packages/engine-server), image `formio/uag-engines` | 2.x | ≥ 2.0.0 | The engine server. |
 | [`@formio/uag-js`](./packages/uag-js) | 2.x | ≥ 2.0.0 | The formio.js module: saves `uag` forms through the UAG, adds Agent Input, and renders forms as a chat. Runs in the browser; the UAG also serves it at `/uag-js/`. |
-| [`@formio/uag-extras`](https://github.com/formio/uag-extras), image `formio/uag-documents` | 1.x | ≥ 2.0.0-rc.7 | Versioned on its own: the AI Document module, document plugins and converters (`npm install @formio/uag-extras@^1`). The image is the UAG with them (`formio/uag-documents:rc`). |
+| [`@formio/uag-extras`](https://github.com/formio/uag-extras), image `formio/uag-documents` | 1.x | ≥ 2.0.0-rc.7 | Versioned on its own: the AI Document module, document plugins and converters (`npm install @formio/uag-extras@^1`). The image is an add-on that runs beside `formio/uag` and fills its plugins folder (`formio/uag-documents:1`): see [AI Document](https://ai.form.io/developers/ai-document#run-it-with-docker). |
 | `@formio/uag-claude` | 1.3.x | 1.12.0 – 1.13.x | The retired Claude integration (against 2.0, only its direct commands). Security fixes only; see [MIGRATING-2.0.md](./MIGRATING-2.0.md). |
 
 `@formio/uag-claude` 2.x is the Claude *engine*, not the 1.x integration; pin `@formio/uag-claude@^1` if you still install the integration. Upgrading from 1.x: [MIGRATING-2.0.md](./MIGRATING-2.0.md).

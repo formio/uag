@@ -421,7 +421,7 @@ Start from the samples in the [uag-extras repository](https://github.com/formio/
 
 A **module** customizes your UAG deployment: it is the one place you wire the server — your project template, form actions, MCP tools, hooks, interface overrides, and which plugins to load. A **plugin** is one capability of a known type — "convert Word documents to PDF", "extract a document's exact text" — that describes itself, so operators can enable it and form builders can select and configure it. Modules can bring plugins; plugins never change how the server itself works.
 
-A module lists its plugins in `plugins`, and any plugin types it defines in `pluginTypes`. They are added to the UAG's one plugin registry in the order modules are used, and never merged with each other. A plugins file (`UAG_PLUGINS`, or `/app/plugins/index.mjs` in the image) adds more the same way. See [Plugins](/developers/plugins).
+A module lists its plugins in `plugins`, and any plugin types it defines in `pluginTypes`. They are added to the UAG's one plugin registry in the order modules are used, and never merged with each other. Plugins files (`UAG_PLUGINS`, or each folder under `/app/plugins` in the image) add more the same way, and a plugin may use a type another of them defines. See [Plugins](/developers/plugins).
 
 ```js
 module.exports = {

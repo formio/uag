@@ -4,6 +4,15 @@
 
 Needs `@formio/appserver` 2.26.1 or later.
 
+### Added
+
+- **Add-ons**: the plugins folder `/app/plugins` (or a folder `UAG_PLUGINS` names) may hold a folder per add-on, each with its own `index.mjs` and `node_modules`; without an `index.mjs` of its own, the UAG loads each folder's, in name order. They merge as modules do: a module two of them bring is used once, a plugin may use a type another defines, and two that register the same plugin, plugin type, route or component stop startup, naming both files. A folder with an `index.mjs` still loads that file alone. See the Plugins page.
+
+### Changed
+
+- `formio/uag-documents` is now an add-on that runs beside `formio/uag`: it copies the AI Document module and the document extras into a volume, which the UAG mounts at `/app/plugins/documents`; it no longer contains the UAG. Its tags follow `@formio/uag-extras` (`formio/uag-documents:1`). See the AI Document page.
+- Node API: `usePluginFiles(server, env?)` returns the files it loaded (a list); `pluginFiles(env?)`, `pluginFilesIn(path)` and `DEFAULT_PLUGINS_DIR` replace `pluginsFile` and `DEFAULT_PLUGINS_FILE`.
+
 ### Fixed
 
 - `AUTHORIZE_HTML` replaces the sign-in page for remote MCP clients; the published `@formio/appserver-core` ignored it before 2.26.1.

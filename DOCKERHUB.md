@@ -116,7 +116,7 @@ Callers send the signed-in user's Form.io token (`x-jwt-token`), a portal team m
 | `CLAUDE_FALLBACKS` | `default` re-runs a refused request on a fallback model server-side; `off` disables that. |
 | `NODE_TLS_REJECT_UNAUTHORIZED` | Set to `0` only when `PROJECT` is an HTTPS URL with a self-signed or otherwise untrusted certificate, which is common for local and internal deployments. Never set it on a deployment reachable from outside your network — it disables certificate verification for all outbound requests. |
 
-To customize the image, mount a [module](https://ai.form.io/developers/modules) at `/app/module` (forms, MCP tools, actions, settings), and a plugins file at `/app/plugins/index.mjs` (or name one with `UAG_PLUGINS`; `off` loads none) for converters and other [plugins](https://ai.form.io/developers/plugins). Full list of variables: https://ai.form.io/developers/deployment#environment-variables.
+To customize the image, mount a [module](https://ai.form.io/developers/modules) at `/app/module` (forms, MCP tools, actions, settings), and folders of [plugins](https://ai.form.io/developers/plugins) under `/app/plugins`, each with an `index.mjs` (`-v ./my-plugins:/app/plugins/my-plugins:ro`; or name a file or folder with `UAG_PLUGINS`; `off` loads none), for converters and other plugins. Add-ons such as `formio/uag-documents` fill such a folder through a volume. Full list of variables: https://ai.form.io/developers/deployment#environment-variables.
 
 Treat every key, secret, and license as sensitive: supply them through an `.env` file or your platform's secret store rather than inline in a committed file.
 
@@ -129,7 +129,7 @@ Forms and resources are cached and refreshed on the `PROJECT_TTL` interval, so a
 - Documentation: https://ai.form.io/developers · Source: https://github.com/formio/uag/tree/v2.0.0-rc.8
 - Live demos of conversation forms, agentic workflows and Agentic Formflow: https://ai.form.io/examples (source: https://github.com/formio/uag/tree/v2.0.0-rc.8/demo)
 - Engine server image, for running engines in their own container: https://hub.docker.com/r/formio/uag-engines
-- The UAG with the AI Document module and the document extras of `@formio/uag-extras`: https://hub.docker.com/r/formio/uag-documents (`formio/uag-documents:rc`)
+- AI Document add-on, which runs beside this image and fills its plugins folder with the AI Document module and the document extras of `@formio/uag-extras`: https://hub.docker.com/r/formio/uag-documents (`formio/uag-documents:1`); see https://ai.form.io/developers/ai-document#run-it-with-docker
 - MCP server for building and managing Form.io forms from a coding agent: https://hub.docker.com/r/formio/mcp
 - Agentic Coding Plugin, so your coding agent can tag forms, deploy the UAG and wire applications to it: https://github.com/formio/ai (`npx skills add formio/ai`)
 - License: MIT

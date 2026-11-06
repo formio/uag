@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 450" role="img" aria-labelledby="t d">
   <title id="t">The demo site's Compose stack</title>
-  <desc id="d">A visitor reaches your load balancer over HTTPS, which sends plain HTTP to the site, the only published service. On the stack's private network, the site calls the UAG through the flow proxy it runs inside it, for the Agent API (the chat's turns and the claim's extraction), the AI Document's document/process calls on the lease review, and the saves of the chat's requests, the workflow's applications and the claims, and shows each visitor their own calls in the flow viewer. The UAG runs the JEV and Claude engines inside it and calls the JEV and Claude APIs; for the AI Document demo it also needs the AI Document module and its document plugins, which the formio/uag-documents:rc image carries; the site calls no model itself. The UAG reads the demo's project on Form.io's hosted service, https://uag.form.io, and forwards every save to it; the site reads forms and applications from it directly with the project key. Nothing calls back into the stack.</desc>
+  <desc id="d">A visitor reaches your load balancer over HTTPS, which sends plain HTTP to the site, the only published service. On the stack's private network, the site calls the UAG through the flow proxy it runs inside it, for the Agent API (the chat's turns and the claim's extraction), the AI Document's document/process calls on the lease review, and the saves of the chat's requests, the workflow's applications and the claims, and shows each visitor their own calls in the flow viewer. The UAG runs the JEV and Claude engines inside it and calls the JEV and Claude APIs; for the AI Document demo it also needs the AI Document module and its document plugins in its plugins folder, which the formio/uag-documents add-on fills when it runs beside the UAG; the site calls no model itself. The UAG reads the demo's project on Form.io's hosted service, https://uag.form.io, and forwards every save to it; the site reads forms and applications from it directly with the project key. Nothing calls back into the stack.</desc>
   <defs>
     <style>
       text { font-family: Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; fill: #0c141d; }
@@ -59,8 +59,8 @@
   <rect x="710" y="174" width="82" height="54" rx="8" class="chip"/>
   <text x="751" y="196" text-anchor="middle" class="s" style="font-weight:600;fill:#0c141d">Claude</text>
   <text x="751" y="213" text-anchor="middle" class="s" style="font-size:10.5px">engine</text>
-  <text x="705" y="248" text-anchor="middle" class="s" style="font-size:10.5px">and, for AI Document, its module and the</text>
-  <text x="705" y="262" text-anchor="middle" class="s" style="font-size:10.5px">plugins (formio/uag-documents:rc)</text>
+  <text x="705" y="248" text-anchor="middle" class="s" style="font-size:10.5px">and, for AI Document, a plugins folder</text>
+  <text x="705" y="262" text-anchor="middle" class="s" style="font-size:10.5px">(the formio/uag-documents add-on)</text>
 
   <!-- site -> UAG -->
   <path d="M504 170 H596" class="flow" marker-end="url(#a)"/>
