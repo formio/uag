@@ -1,0 +1,108 @@
+{
+  "capabilities": {
+    "status": 200,
+    "body": {
+      "engines": [
+        {
+          "name": "triage",
+          "kind": "decision",
+          "model": "stub-decision-1",
+          "type": "stub-decision"
+        },
+        {
+          "name": "check",
+          "kind": "decision",
+          "model": "stub-decision-1",
+          "type": "stub-decision"
+        },
+        {
+          "name": "stub-agent",
+          "kind": "agent",
+          "model": "stub-agent-1",
+          "type": "stub-agent"
+        }
+      ],
+      "operations": {
+        "extract": {
+          "available": true,
+          "engines": [
+            "check",
+            "triage",
+            "stub-agent"
+          ]
+        },
+        "decide": {
+          "available": true,
+          "engines": [
+            "check",
+            "triage"
+          ]
+        },
+        "generate": {
+          "available": true,
+          "engines": [
+            "stub-agent"
+          ]
+        },
+        "chat": {
+          "available": true,
+          "engines": [
+            "stub-agent"
+          ]
+        }
+      },
+      "edition": "enterprise",
+      "formflow": {
+        "licensed": true,
+        "allowed": true,
+        "reason": "licensed"
+      },
+      "durableRuns": false,
+      "mcpOAuth": false
+    }
+  },
+  "decide": {
+    "tasks": [
+      "triage"
+    ],
+    "data": {
+      "notes": "Urgent: the order never arrived.",
+      "priority": "high"
+    },
+    "fields": {
+      "priority": {
+        "path": "priority",
+        "status": "confident",
+        "engine": "check",
+        "model": "stub-decision-1",
+        "calibrated": true,
+        "reason": "confidence 0.90 ≥ threshold 0.5",
+        "value": "high",
+        "confidence": 0.8999999999999999,
+        "task": "triage"
+      }
+    },
+    "errors": [],
+    "excluded": [
+      {
+        "path": "name",
+        "reason": "not requested",
+        "task": "triage"
+      },
+      {
+        "path": "summary",
+        "reason": "not requested",
+        "task": "triage"
+      }
+    ],
+    "engines": [
+      {
+        "kind": "decision",
+        "task": "triage",
+        "engine": "check",
+        "model": "stub-decision-1",
+        "attempts": []
+      }
+    ]
+  }
+}
