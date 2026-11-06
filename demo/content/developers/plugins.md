@@ -39,7 +39,7 @@ import myConverter from './my-converter.mjs';
 export default [UAGDocument, Extract, Analyze, Translate, OfficeText, myConverter];
 ```
 
-These plugins come from `@formio/uag-extras`, the package of UAG extras (modules, actions, MCP tools, engine types, document plugins and converters) from Form.io and the community: `npm install @formio/uag-extras@^1` in the plugins folder. Its source is the [uag-extras repository](https://github.com/formio/uag-extras). Each extra is its own import, `@formio/uag-extras/<kind>/<name>`: its default export is a module for `server.use()`, and its plugin is a named export, for plugins files. In Docker, the [`formio/uag-documents` add-on](/developers/ai-document#run-it-with-docker) brings the AI Document module and these plugins, so your own folder beside it lists only yours (see [Add-ons](#add-ons)). A plugin that needs system packages (an OCR engine) needs them in the UAG's container: build an image `FROM formio/uag:<version>` that adds them with `apk add`, and mount or copy the plugins there.
+These plugins come from `@formio/uag-extras`, the package of UAG extras (modules, actions, MCP tools, engine types, document plugins and converters) from Form.io and the community: `npm install @formio/uag-extras@^1` in the plugins folder. See [`@formio/uag-extras` on npm](https://www.npmjs.com/package/@formio/uag-extras). Each extra is its own import, `@formio/uag-extras/<kind>/<name>`: its default export is a module for `server.use()`, and its plugin is a named export, for plugins files. In Docker, the [`formio/uag-documents` add-on](/developers/ai-document#run-it-with-docker) brings the AI Document module and these plugins, so your own folder beside it lists only yours (see [Add-ons](#add-ons)). A plugin that needs system packages (an OCR engine) needs them in the UAG's container: build an image `FROM formio/uag:<version>` that adds them with `apk add`, and mount or copy the plugins there.
 
 ### Add-ons
 
@@ -316,7 +316,7 @@ export default definePlugin({
 
 Files are identified from their bytes (the name and the browser's type are hints only), so a converter's `detect` is how a new format gets its type. The built-in converters are `pdf-text` (a PDF's text layer, per page), `text` (text, Markdown, CSV, JSON, HTML as Markdown, XML; UTF-8, UTF-16, and Latin-1 or Windows-1252 for files named as text) and `image-pdf` (PNG and JPEG as a one-page PDF; a PNG over 50 megapixels is refused before it is decoded; its operator setting `maxPixels`, `config.plugins.settings.converter['image-pdf'].maxPixels` or `DOCUMENTS_MAX_IMAGE_PIXELS` (default 50000000), changes that). A file that converts to no text, such as an image or a scan, is refused with the converter's reason when it is read as text.
 
-The sample converter, `examples/converter-sample/` in the [uag-extras repository](https://github.com/formio/uag-extras), is the starting point, and that repository is where to share one: in a clone of it, `npm run new -- converters <name>` starts a converter from the sample, with its manifest, README and a test, and a contract test loads the samples into a UAG build.
+The sample converter, `examples/converter-sample/` in the `@formio/uag-extras` source repository, is the starting point, and that repository is where to share one: in a clone of it, `npm run new -- converters <name>` starts a converter from the sample, with its manifest, README and a test, and a contract test loads the samples into a UAG build.
 
 ## Writing a document plugin
 
