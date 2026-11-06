@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-Needs `@formio/appserver` 2.27.0 or later.
+Needs `@formio/appserver` and `@formio/appserver-core` 2.26.2 or later.
 
 ### Added
 
