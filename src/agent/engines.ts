@@ -1,7 +1,7 @@
 import path from 'path';
 import { engineInstances } from '@formio/uag-sdk';
 import type { EngineTypeDefinition } from '@formio/uag-sdk';
-import { enginePaths, loadEngines } from '@formio/uag-sdk/loader';
+import { enginePaths, planEngines } from '@formio/uag-sdk/loader';
 import { Formflow } from '@formio/appserver';
 import { EngineRegistry } from '../formflow';
 import { RemoteEngine } from './remote';
@@ -26,28 +26,23 @@ export function engineTypesOf(registry: EngineRegistry | undefined): LoadedEngin
     return (registry && loadedTypes.get(registry)) || [];
 }
 
-/**
- * Enable the engines the configuration names (`engines`), or else
- * `UAG_ENGINES`. Each type is resolved from the configuration's `engineTypes`,
- * then the built-in types, then installed packages; nothing named means no
- * engines. Any problem stops startup with the instance named.
- */
 export async function loadUAGEngines(
     config: Record<string, any> = {},
     env: Record<string, string | undefined> = process.env
 ): Promise<EngineRegistry> {
-    const loaded = await loadEngines(engineInstances(config, env), {
+    const loaded = planEngines(engineInstances(config, env), {
         types: { ...BUILT_IN_ENGINES, ...(config.engineTypes || {}) },
         paths: enginePaths(UAG_ROOT, env),
         env,
         config,
         apiVersion: Formflow.ENGINE_API_VERSION,
     });
-    const registry = Formflow.engineRegistry(loaded);
+    // Agentic Formflow creates the engines from the plans.
+    const registry = await Formflow.startEngines(loaded as any);
     const types = new Map<string, LoadedEngineType>();
     for (const entry of loaded as any[]) {
-        const type = types.get(entry.type) || { name: entry.type, title: entry.title || entry.type, version: entry.typeVersion || entry.version, kinds: entry.kinds || [entry.engine.kind], instances: [] as string[] };
-        type.instances.push(entry.engine.name);
+        const type = types.get(entry.type) || { name: entry.type, title: entry.title || entry.type, version: entry.typeVersion || entry.version, kinds: entry.kinds, instances: [] as string[] };
+        type.instances.push(entry.name);
         types.set(entry.type, type);
     }
     loadedTypes.set(registry, [...types.values()]);

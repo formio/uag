@@ -378,7 +378,7 @@ A module gets one `api`, version 1, in its routes, `initialize`, `close`, a func
 | `requireLicense()` | Throws 403 `license_required` unless Agentic Formflow is allowed. |
 | `files.read(form, value, auth, { maxBytes, component, signal })` | A stored file value's bytes, read with the caller's credentials and the file component's storage check (a value pointing elsewhere is refused before any fetch). |
 | `converters.identify/route/accept/run/list` | File types from their bytes, the converter route to the representations a plugin reads, and running it. |
-| `engines.select({ name, needs })` | An engine that generates and reads what is needed, as `{ name, model, accepts, generate(request) }`: its `generate` checks the license first. Throws 503 `no_engine` when no enabled engine fits. Modules never get the engine itself. |
+| `engines.select({ name, needs })` | An engine that generates and reads what is needed, as `{ name, model, accepts, generate(request) }`. Its `generate` answers 403 `license_required` unless Agentic Formflow is allowed. Throws 503 `no_engine` when no enabled engine fits. Modules never get the engine itself. |
 | `stream(req, res, run, { heartbeatMs })` | Answers with what `run` returns, as JSON or as server-sent progress events (above). |
 | `callerKey(req)` | A key per caller, for limits: the user, the token or the key, and for anonymous callers their address. |
 | `markdown.sanitize/fromHtml`, `pdf.pageCount`, `forms.componentAt/componentByKey`, `errors.create/is` | Helpers. |
@@ -1000,8 +1000,7 @@ services:
   mongo:
     image: mongo
     restart: always
-    # Development host names (*.local): the project and the UAG's database are both
-    # on development hosts, so the UAG may use its database without a license.
+    # The UAG's database (MCP sign-in) needs a license that includes the UAG (LICENSE_KEY).
     networks:
       default:
         aliases: [mongo.local]

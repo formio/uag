@@ -1,7 +1,16 @@
 import { expect } from 'chai';
 import http from 'http';
 import { AddressInfo } from 'net';
-import { loadUAGEngines } from '../../src/agent/engines';
+import { BUILT_IN_ENGINES, UAG_ROOT, loadUAGEngines } from '../../src/agent/engines';
+import { engineInstances } from '@formio/uag-sdk';
+import { enginePaths, planEngines } from '@formio/uag-sdk/loader';
+
+/** The engines themselves, created from their plans: these tests call the remote engine type directly. */
+async function engineInstancesOf(config: Record<string, any>, env: Record<string, string | undefined>) {
+    const plans = planEngines(engineInstances(config, env), { types: { ...BUILT_IN_ENGINES, ...(config.engineTypes || {}) }, paths: enginePaths(UAG_ROOT, env), env, config });
+    const engines: any[] = await Promise.all(plans.map((plan) => plan.definition.create(plan.args)));
+    return { get: (name: string) => engines.find((engine) => engine.name === name) };
+}
 import { withRequestId } from '../../src/agent/requestId';
 
 const KEY = 'k'.repeat(16) + 'engine-server-key';
@@ -129,7 +138,7 @@ describe('Remote engine type', () => {
         it('serves decisions through the engine server, with the same answers', async () => {
             const answers = { 'choice:type': { type: 'choice', choice: 'Theft', probabilities: { Theft: 0.9, Fire: 0.1 }, confidence: 0.8 } };
             const { url, seen } = await engineServer((_seen, res) => json(res, 200, { protocol: 1, model: 'jev-1.13.1', answers, usage: { inputTokens: 40, outputTokens: 2 } }));
-            const registry = await loadUAGEngines(config, env(url));
+            const registry = await engineInstancesOf(config, env(url));
             const questions = { 'choice:type': { type: 'choice' as const, instructions: 'Which?', options: { Theft: null, Fire: null } } };
             const result = await (registry.get('jev') as any).decide({ state, questions });
             expect(result).to.deep.equal({ model: 'jev-1.13.1', answers, usage: { inputTokens: 40, outputTokens: 2 } });
@@ -140,7 +149,7 @@ describe('Remote engine type', () => {
 
         it('sends the engine server key and no Form.io credential or scoped token for plain extraction', async () => {
             const { url, seen } = await engineServer((_seen, res) => json(res, 200, { protocol: 1, model: 'claude-opus-5-5', values: { location: 'Main Street' } }));
-            const registry = await loadUAGEngines(config, env(url, { PROJECT_KEY: 'project-key-value', ADMIN_KEY: 'admin-key-value' }));
+            const registry = await engineInstancesOf(config, env(url, { PROJECT_KEY: 'project-key-value', ADMIN_KEY: 'admin-key-value' }));
             const result = await (registry.get('claude') as any).extract({ instructions: 'Fill fields', state, fields: [{ path: 'location' }], schema: { type: 'object', properties: { location: { type: 'string' } } }, scopedToken: 'unused-for-extraction' });
             expect(result.values).to.deep.equal({ location: 'Main Street' });
             const request = seen[seen.length - 1];
@@ -155,7 +164,7 @@ describe('Remote engine type', () => {
         it('sends research tools, the iteration limit and the scoped token, and reports the server\'s tool calls', async () => {
             const toolCalls = [{ name: 'find_submissions', isError: false }, { name: 'get_forms', isError: true }];
             const { url, seen } = await engineServer((_seen, res) => json(res, 200, { protocol: 1, model: 'claude-opus-5-5', values: {}, toolCalls }));
-            const registry = await loadUAGEngines(config, env(url));
+            const registry = await engineInstancesOf(config, env(url));
             const tools = [{ name: 'find_submissions', description: 'Find', inputSchema: { type: 'object' } }];
             const result = await (registry.get('claude') as any).extract({ instructions: 'Research', state, fields: [], schema: { type: 'object', properties: {} }, tools, maxIterations: 4, scopedToken: 'scoped.jwt.token', callTool: async () => ({ content: [] }) });
             expect(result.toolCalls).to.deep.equal(toolCalls);
@@ -169,7 +178,7 @@ describe('Remote engine type', () => {
             const { url, seen } = await engineServer((entry, res) => json(res, 200, entry.url.endsWith('/decide')
                 ? { protocol: 1, model: 'jev-1.13.0', answers: {} }
                 : { protocol: 1, model: 'claude-opus-5-5', values: {} }));
-            const registry = await loadUAGEngines(config, env(url));
+            const registry = await engineInstancesOf(config, env(url));
             const tools = [{ name: 'find_submissions', description: 'Find', inputSchema: { type: 'object' } }];
             const before = seen.length;
             await withRequestId('demo.ab12cd.x9Y-z_1:2', async () => {
@@ -184,7 +193,7 @@ describe('Remote engine type', () => {
 
         it('sends no request id that is not a short token, and none outside a request', async () => {
             const { url, seen } = await engineServer((_seen, res) => json(res, 200, { protocol: 1, model: 'claude-opus-5-5', values: {} }));
-            const engine: any = (await loadUAGEngines(config, env(url))).get('claude');
+            const engine: any = (await engineInstancesOf(config, env(url))).get('claude');
             const request = { instructions: '', state, fields: [], schema: {} };
             const before = seen.length;
             for (const unsafe of ['x'.repeat(129), 'a b', 'id\r\nX-Injected: 1', '<script>', '']) {
@@ -200,7 +209,7 @@ describe('Remote engine type', () => {
 
         it('refuses research without a scoped token, without calling the engine server', async () => {
             const { url, seen } = await engineServer();
-            const registry = await loadUAGEngines(config, env(url));
+            const registry = await engineInstancesOf(config, env(url));
             const before = seen.length;
             const err: any = await refusal((registry.get('claude') as any).extract({ instructions: 'Research', state, fields: [], schema: {}, tools: [{ name: 'get_forms', description: 'List', inputSchema: {} }], maxIterations: 2 }));
             expect(err.message).to.include('JWT_SECRET');
@@ -210,7 +219,7 @@ describe('Remote engine type', () => {
 
         it('tells callers the engine server could not be reached, without saying where it is', async () => {
             const { url } = await engineServer();
-            const engine: any = (await loadUAGEngines(config, env(url))).get('claude');
+            const engine: any = (await engineInstancesOf(config, env(url))).get('claude');
             await new Promise((resolve) => { servers[0].closeAllConnections(); servers.pop()!.close(resolve); });
             const err: any = await refusal(engine.extract({ instructions: '', state, fields: [], schema: {} }));
             expect(err.message).to.equal('The engine server could not be reached.');
@@ -220,7 +229,7 @@ describe('Remote engine type', () => {
         it('passes on an error the engine server marks safe to show, and only the status otherwise', async () => {
             let reply: any = { protocol: 1, error: 'This server speaks remote engine protocol 2; the request used protocol 1.', expose: true };
             const { url } = await engineServer((_seen, res) => json(res, 400, reply));
-            const engine: any = (await loadUAGEngines(config, env(url))).get('claude');
+            const engine: any = (await engineInstancesOf(config, env(url))).get('claude');
             const request = { instructions: '', state, fields: [], schema: {} };
             expect((await refusal(engine.extract(request))).message).to.equal(reply.error);
             reply = { protocol: 1, error: 'Anthropic said: invalid x-api-key sk-ant-123', expose: false };
@@ -231,13 +240,13 @@ describe('Remote engine type', () => {
 
         it('fails as an engine error when an answer breaks the protocol', async () => {
             const { url } = await engineServer((_seen, res) => json(res, 200, { protocol: 2, model: 'x', values: {} }));
-            const engine: any = (await loadUAGEngines(config, env(url))).get('claude');
+            const engine: any = (await engineInstancesOf(config, env(url))).get('claude');
             expect((await refusal(engine.extract({ instructions: '', state, fields: [], schema: {} }))).message).to.include('did not follow the remote engine protocol');
         });
 
         it('aborts the request when the engine\'s timeout elapses', async () => {
             const { url, seen } = await engineServer(() => { /* never answers */ });
-            const engine: any = (await loadUAGEngines(config, env(url))).get('claude');
+            const engine: any = (await engineInstancesOf(config, env(url))).get('claude');
             const err = await refusal(engine.extract({ instructions: '', state, fields: [], schema: {}, signal: AbortSignal.timeout(50) }));
             expect(err.name).to.equal('TimeoutError');
             await new Promise((resolve) => setTimeout(resolve, 50));
@@ -267,7 +276,7 @@ describe('Remote engine type: generate', () => {
             (_seen, res) => json(res, 200, { protocol: 1, text: '# Done', model: 'writer-1', stopReason: 'max_tokens', usage: { inputTokens: 3, outputTokens: 2 } }),
             (_seen, res) => json(res, 200, WRITER)
         );
-        const writer: any = (await loadUAGEngines(config, writerEnv(url))).get('writer');
+        const writer: any = (await engineInstancesOf(config, writerEnv(url))).get('writer');
         let progress = 0;
         const response = await writer.generate({
             instructions: 'Summarize.',
@@ -285,7 +294,7 @@ describe('Remote engine type: generate', () => {
 
     it('refuses PDFs over documents.maxTotalBytes before sending anything', async () => {
         const { url, seen } = await engineServer(undefined, (_seen, res) => json(res, 200, WRITER));
-        const writer: any = (await loadUAGEngines({ ...config, documents: { maxTotalBytes: 10 } }, writerEnv(url))).get('writer');
+        const writer: any = (await engineInstancesOf({ ...config, documents: { maxTotalBytes: 10 } }, writerEnv(url))).get('writer');
         const err = await refusal(writer.generate({ instructions: 'x', format: 'text', attachments: [{ kind: 'pdf', data: pdf, label: 'a.pdf' }] }));
         expect(err.message).to.include('exceed 10 bytes');
         expect(seen.some((entry) => entry.url.endsWith('/generate'))).to.equal(false);

@@ -251,9 +251,9 @@ Optionally, the UAG has a MongoDB database of its own (`MONGO`, with the databas
 |---|---|---|
 | `uag-taskruns` | A record of each Run task run: its task, status, the engines that answered and the paths it wrote (never the values) | Run records in the project's Action Logs and, for actions with an agent role, runs after the save that survive a restart and are taken by one replica at a time |
 | `uag-authcodes` | Authorization codes for remote MCP clients, stored by their SHA-256 hash, with their tokens sealed | OAuth sign-in for remote MCP clients (`MCP_OAUTH`) |
-| `uag-meta` | The database's schema version, and when a license server outage began | The startup check, and the 12-hour license grace period |
+| `uag-meta` | The database's schema version | The startup check |
 
-Using the database needs a license that includes the UAG, unless the project and the database are both on development hosts. Without it, the UAG still starts, with these features off, and says why. See [Deployment](/developers/deployment).
+Using the database needs a license that includes the UAG, unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`). Without it, the UAG still starts, with these features off, and says why. See [Deployment](/developers/deployment).
 
 ## A complete example
 

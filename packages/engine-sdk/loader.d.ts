@@ -53,3 +53,15 @@ export declare function createEngine(definition: EngineTypeDefinition, options: 
 
 /** Resolve, configure and create each instance. Any problem stops loading, with the instance named. */
 export declare function loadEngines(instances: EngineInstanceSpec[], options?: LoadOptions): Promise<LoadedEngine[]>;
+
+/** One instance planned but not created: what creating it takes, and how a failure to start reads. */
+export type PlannedEngine = Omit<LoadedEngine, 'engine'> & {
+    name: string;
+    kinds: ('decision' | 'agent')[];
+    definition: EngineTypeDefinition;
+    args: { name: string; settings: Record<string, any>; options: Record<string, any>; config: Record<string, any>; requireSetting(key: string): any };
+    failure(err: unknown): string;
+};
+
+/** Resolve and configure each instance without creating it, for a host that creates engines elsewhere. */
+export declare function planEngines(instances: EngineInstanceSpec[], options?: LoadOptions): PlannedEngine[];

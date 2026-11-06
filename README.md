@@ -246,10 +246,10 @@ Engines run inside the UAG, or on an [engine server](./packages/engine-server) (
 | MCP and conversation forms, on a self-hosted Form.io Enterprise project | A Form.io license that includes the UAG, in `LICENSE_KEY` (development hostnames such as `localhost` excepted) |
 | Agentic workflows and Agentic Formflow (the Agent API's `extract`, `decide` and `generate`, the **Agent: Run task** action, the `agent_decide` and `agent_provide` tools, `uag-eval`) on a self-hosted project, Open Source or Enterprise | A Form.io license that includes the UAG, in `LICENSE_KEY` |
 | The same on a project on Form.io's hosted service (`https://*.form.io`) | Nothing, as the project runs under Form.io's license; except `uag-eval`, which runs offline and needs `LICENSE_KEY` |
-| The UAG's own database (`MONGO`), and with it remote MCP sign-in (`MCP_OAUTH`), on any project | A Form.io license that includes the UAG, unless the project and the database are both on development hosts (`localhost`, `*.localhost`, `lvh.me`, `*.local`) |
+| The UAG's own database (`MONGO`), and with it remote MCP sign-in (`MCP_OAUTH`), on any project | A Form.io license that includes the UAG, unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`) |
 | The Agent API, Run task and `uag-eval` with only the stub engines (`UAG_ENGINES=stub-decision,stub-agent`), to try them out | Nothing. The `agent_decide` and `agent_provide` tools still need a license or a hosted project. |
 
-A hosted project needs a license after all when the UAG weakens the proof that it is talking to form.io: `NODE_TLS_REJECT_UNAUTHORIZED=0`, or extra certificate authorities. Without a license, `MONGO` is not used: the UAG starts with its database features off and says why. Unlicensed requests get `403` with `code: "license_required"`, and `GET /agent/capabilities` always reports the edition and why. `UAG_LICENSE` is deprecated in favour of `LICENSE_KEY`, and still read until UAG 3.0. Details: [Deployment → Licensing](https://ai.form.io/developers/deployment#licensing).
+A hosted project needs a license when `NODE_TLS_REJECT_UNAUTHORIZED=0`, `NODE_EXTRA_CA_CERTS` or `NODE_USE_SYSTEM_CA` is set. Without a license, `MONGO` is not used: the UAG starts with its database features off and says why. Unlicensed requests get `403` with `code: "license_required"`, and `GET /agent/capabilities` always reports the edition and why. `UAG_LICENSE` is deprecated in favour of `LICENSE_KEY`, and still read until UAG 3.0. Details: [Deployment → Licensing](https://ai.form.io/developers/deployment#licensing).
 
 ## Extending the UAG
 
@@ -289,7 +289,7 @@ A local client has no browser, so it exchanges a key for a token at the UAG's `/
 | `PROJECT` | **Required.** How the UAG reaches Form.io: the Open Source server's URL, or an Enterprise or hosted project's endpoint. A container-to-container address is fine. |
 | `ADMIN_KEY` or `PROJECT_KEY` | **Required.** `ADMIN_KEY` for Open Source; a project API key (**Project Settings → API Keys**) for Enterprise or hosted. Setting `PROJECT_KEY` is what makes the UAG treat `PROJECT` as an Enterprise project. |
 | `JWT_SECRET` | **Required.** Signs the tokens the UAG issues. The same as the Form.io Enterprise server's lets an agent act on users' behalf (see [Project setup for agents](https://ai.form.io/developers/project-setup)). |
-| `MONGO`, `UAG_DATABASE` | Optional. The UAG's own database (default name `uag`; it can share Form.io's MongoDB), for run records in Action Logs, runs that survive a restart, remote MCP sign-in and the license grace period. It holds only `uag-*` collections, never submissions. Needs a license. |
+| `MONGO`, `UAG_DATABASE` | Optional. The UAG's own database (default name `uag`; it can share Form.io's MongoDB), for run records in Action Logs, runs that survive a restart, and remote MCP sign-in. It holds only `uag-*` collections, never submissions. Needs a license. |
 | `MCP_OAUTH` | `true` turns on OAuth sign-in for remote MCP clients. Needs `MONGO`. |
 | `TRUST_PROXY` | Optional. Set behind a reverse proxy, so the UAG reads its public URL from the forwarded headers. `BASE_URL`, also optional, overrides that URL. |
 | `PORTAL_SECRET` | Enterprise. Lets a portal stage connect to the UAG, so you can add Run task actions there. |

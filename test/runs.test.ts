@@ -8,8 +8,10 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { ProjectInterface } from '@formio/appserver';
 import { UAGServer } from '../src';
 import { TaskRunJob, TaskRunner, TaskRunOutcome, taskRunner } from '../src/runner';
-import { LEASE_MS, MAX_ATTEMPTS, TaskRunRecord, TaskRunStore } from '../src/runs';
+import { LEASE_MS, MAX_ATTEMPTS, OBJECT_IDS, TaskRunRecord, TaskRunStore } from '../src/runs';
+import { useDatabase } from '../src/formflow';
 import { FakeFormio } from './helpers/fakeFormio';
+import { servedProject } from './helpers/servedProject';
 import { requireTestLicense, TEST_LICENSE } from './agent/fixtures';
 
 http.globalAgent = new http.Agent({ keepAlive: false });
@@ -36,6 +38,13 @@ describe('Run task records', function () {
     });
 
     const collection = () => client.db(`runs${++counter}`).collection<TaskRunRecord>('uag-taskruns');
+
+    // A project this UAG serves on localhost, as the database is, so no license is needed.
+    let development: Awaited<ReturnType<typeof servedProject>>;
+    before(async () => { development = await servedProject('localhost'); });
+    after(async () => { await development?.stop(); });
+    const storeOf = async (runs: Collection<TaskRunRecord>, project?: string): Promise<TaskRunStore> =>
+        (await useDatabase(development.project, { url: 'mongodb://localhost:27017/runs', taskRuns: { collection: runs, ids: OBJECT_IDS, project } })).taskRuns!;
     const run = (overrides: Partial<TaskRunRecord> = {}): any => ({
         project: 'project1', form: 'form1', formName: 'application', submission: 'sub1', action: 'Admissions',
         task: 'admissions', answer: 'task', handler: 'after', method: 'create', durable: true,
@@ -45,7 +54,7 @@ describe('Run task records', function () {
     describe('the store', () => {
         it('lets one replica take a pending run', async () => {
             const runs = collection();
-            const [one, two] = [new TaskRunStore(runs), new TaskRunStore(runs)];
+            const [one, two] = [await storeOf(runs), await storeOf(runs)];
             await one.add(run());
             const claimed = await Promise.all([one.claim(), two.claim(), one.claim(), two.claim()]);
             expect(claimed.filter(Boolean)).to.have.length(1);
@@ -54,7 +63,7 @@ describe('Run task records', function () {
 
         it('lets another replica take a run whose lease ran out, and ignores the first replica\'s result', async () => {
             const runs = collection();
-            const [first, second] = [new TaskRunStore(runs), new TaskRunStore(runs)];
+            const [first, second] = [await storeOf(runs), await storeOf(runs)];
             const id = await first.add(run());
             await first.claim();
             expect(await second.claim()).to.equal(null);
@@ -68,7 +77,7 @@ describe('Run task records', function () {
 
         it('gives a run up after it lost its replica too many times', async () => {
             const runs = collection();
-            const store = new TaskRunStore(runs);
+            const store = await storeOf(runs);
             const id = await store.add(run());
             let now = Date.now();
             for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
@@ -81,8 +90,8 @@ describe('Run task records', function () {
 
         it('takes only its own project\'s runs from a database UAGs of other projects share', async () => {
             const runs = collection();
-            const other = new TaskRunStore(runs, 'project2');
-            const own = new TaskRunStore(runs, 'project1');
+            const other = await storeOf(runs, 'project2');
+            const own = await storeOf(runs, 'project1');
             const id = await own.add(run());
             expect(await other.claim()).to.equal(null);
             let now = Date.now();
@@ -99,7 +108,7 @@ describe('Run task records', function () {
 
         it('lists no records for a limit of 0, still counting them', async () => {
             const runs = collection();
-            const store = new TaskRunStore(runs, 'project1');
+            const store = await storeOf(runs, 'project1');
             await store.add(run());
             await store.add(run());
             expect(await store.list({ project: 'project1' }, 0)).to.deep.equal({ items: [], total: 2 });
@@ -108,7 +117,7 @@ describe('Run task records', function () {
 
         it('never takes a run that is not durable', async () => {
             const runs = collection();
-            const store = new TaskRunStore(runs);
+            const store = await storeOf(runs);
             await store.add(run({ durable: false, status: 'running' } as any));
             await store.add(run({ durable: false }));
             expect(await store.claim(new Date(Date.now() + LEASE_MS * 10))).to.equal(null);
@@ -137,7 +146,7 @@ describe('Run task records', function () {
             const runner = new StubRunner(project);
             let open!: () => void;
             runner.gate = new Promise((resolve) => { open = resolve; });
-            runner.useStore(new TaskRunStore(runs));
+            runner.useStore(await storeOf(runs));
             await runner.enqueue(job({ agentRole: 'agent' }));
             const recorded = await runs.findOne({});
             expect(recorded).to.include({ durable: true, task: 'admissions', agentRole: 'agent' });
@@ -151,9 +160,9 @@ describe('Run task records', function () {
         it('resumes a run a stopped replica recorded', async () => {
             const runs = collection();
             // The replica that recorded the run stopped before running it.
-            await new TaskRunStore(runs).add(run());
+            await (await storeOf(runs)).add(run());
             const runner = new StubRunner(project);
-            runner.useStore(new TaskRunStore(runs));
+            runner.useStore(await storeOf(runs));
             await runner.idle();
             runner.stop();
             expect(runner.executed).to.have.length(1);
@@ -164,10 +173,10 @@ describe('Run task records', function () {
 
         it('runs a run once when two replicas sweep at the same time', async () => {
             const runs = collection();
-            await new TaskRunStore(runs).add(run());
+            await (await storeOf(runs)).add(run());
             const [one, two] = [new StubRunner(project), new StubRunner(project)];
-            one.useStore(new TaskRunStore(runs));
-            two.useStore(new TaskRunStore(runs));
+            one.useStore(await storeOf(runs));
+            two.useStore(await storeOf(runs));
             await Promise.all([one.idle(), two.idle()]);
             one.stop();
             two.stop();
@@ -177,7 +186,7 @@ describe('Run task records', function () {
         it('records a run without an agent role, keeping it and the caller\'s token out of the queue', async () => {
             const runs = collection();
             const runner = new StubRunner(project);
-            runner.useStore(new TaskRunStore(runs));
+            runner.useStore(await storeOf(runs));
             const caller: any = { token: 'the-callers-token', clone() { return this; } };
             await runner.enqueue(job({ caller }));
             await runner.idle();
@@ -285,7 +294,7 @@ describe('Run task records', function () {
             formio.submissions[res.body._id].data.admitted = undefined;
             await runs.insertOne({ ...(await runs.findOne({}))!, _id: new ObjectId(), status: 'pending', attempts: 0, owner: undefined, created: new Date(), modified: new Date() } as any);
             const replica = new TaskRunner(server.uagProject!);
-            replica.useStore(new TaskRunStore(runs));
+            replica.useStore(await storeOf(runs));
             await replica.idle();
             replica.stop();
             expect(formio.forwarded('PUT')).to.have.length(puts + 1);

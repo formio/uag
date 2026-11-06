@@ -81,7 +81,7 @@ A token from OAuth sign-in wraps the user's Form.io login token, so neither it n
 
 Remote MCP clients discover the UAG's authorization server and run the standard OAuth 2.0 authorization code flow with PKCE (`S256`). The user signs in with the project's own login form, so whatever authentication the project uses (Form.io accounts, SAML, OIDC, custom) applies.
 
-This sign-in is off by default. Turn it on with `MCP_OAUTH=true`, and give the UAG its own database (`MONGO`), where it keeps the one-time authorization codes. Using the database needs a license that includes the UAG, unless the project and the database are both on development hosts (`localhost`, `*.localhost`, `lvh.me`, `*.local`); see [Deployment](/developers/deployment#the-database). Without a usable database the UAG starts with OAuth sign-in off and says why in its log, the endpoints below other than `POST /auth/token` answer `404`, and `GET /agent/capabilities` reports `mcpOAuth: false`.
+This sign-in is off by default. Turn it on with `MCP_OAUTH=true`, and give the UAG its own database (`MONGO`), where it keeps the one-time authorization codes. Using the database needs a license that includes the UAG, unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`); see [Deployment](/developers/deployment#the-database). Without a usable database the UAG starts with OAuth sign-in off and says why in its log, the endpoints below other than `POST /auth/token` answer `404`, and `GET /agent/capabilities` reports `mcpOAuth: false`.
 
 ```sequence
 participants: MCP client, Browser, UAG*, Form.io

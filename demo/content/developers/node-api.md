@@ -132,7 +132,7 @@ The UAG's router mounts the project routes and an admin passthrough, then `/mcp`
 6. Lists the plugins: the built-in converters, the engines named in `config.engines` (or else `UAG_ENGINES`), and the MCP tools. An engine that is not installed, has a missing setting or a duplicate name stops startup, with the instance named in the error.
 7. Starts the plugins, then calls each module's `initialize`.
 8. Mounts `/uag-js/*`, `/agent/capabilities` and the Action Logs, ahead of the project routes.
-9. With a database, uses it when the license includes the UAG (or the project and the database are both on development hosts): creates its collections and turns on run records, durable runs and, with `MCP_OAUTH`, remote MCP sign-in. Otherwise it leaves the database untouched, closes it, and logs why those features are off.
+9. With a database, uses it when the license includes the UAG (or the UAG, the project and the database all run on one machine): creates its collections and turns on run records, durable runs and, with `MCP_OAUTH`, remote MCP sign-in. Otherwise it leaves the database untouched, closes it, and logs why those features are off.
 10. Logs the edition (Open Source or Enterprise) and whether Agentic Formflow is licensed.
 11. Returns an Express `Router` with the routes below.
 
@@ -196,7 +196,7 @@ The constructor checks that the `@formio/appserver-core` that `@formio/appserver
 | `projects` | `string[]` | `PROJECTS`, comma-separated | More project endpoints to load. The UAG serves the first project loaded (`uagProject`); leave this unset. |
 | `license` | `string` | `UAG_LICENSE` | A license checked before `LICENSE_KEY`, which is always read too: a feature is on when either grants it. Prefer `LICENSE_KEY`. A license that includes the UAG enables Agentic Formflow and covers running against an Enterprise project. |
 | `licenseRemote` | `boolean \| string` | `LICENSE_REMOTE` | `true` when the key is an offline (self-contained) license, verified locally: the license server is never contacted. Other keys are validated with the license server. |
-| `licenseServer` | `string` | `LICENSE_SERVER`, else the built-in license server | The license server's URL. |
+| `licenseServer` | `string` | `LICENSE_SERVER`, else the built-in license server | The license server's URL: one of Form.io's (`https://*.form.io`). |
 | `submissionProxy` | `boolean \| string` | `true` | Where submissions go. `true` forwards them to the project's own submission API; a URL forwards them there. The UAG always runs in proxy mode: it stores no submissions, and runs only its own actions and modules' actions, never Form.io's. |
 | `processAsClient` | `boolean` | `true` | Evaluate form logic as a client would (the `processAsClient` flag in the evaluation context). |
 | `ttl` | `number` (seconds) | `PROJECT_TTL`, else `900` | How often the project is re-read for changed forms and actions. `0` means never: only a restart picks up changes. |
@@ -244,8 +244,7 @@ The UAG needs no database: submissions stay in Form.io. With one of its own, set
 
 - a record of every Run task run, shown in the project's Action Logs in a portal stage connected to the UAG;
 - runs after the save that survive a restart, for actions with an agent role, taken by one replica at a time;
-- OAuth sign-in for remote MCP clients (`MCP_OAUTH`), with authorization codes stored by their hash;
-- a 12-hour grace period, across restarts, when the license server cannot be reached. Without the database there is none.
+- OAuth sign-in for remote MCP clients (`MCP_OAUTH`), with authorization codes stored by their hash.
 
 | Setting | Variable | Default | Meaning |
 |---|---|---|---|
@@ -254,7 +253,7 @@ The UAG needs no database: submissions stay in Form.io. With one of its own, set
 | `database.config` | `MONGO_CONFIG` | none | MongoDB driver options, as JSON or an object. |
 | `database.retentionDays` | `TASK_RUN_RETENTION_DAYS` | `90` | Days a run record is kept. `0` keeps records forever. |
 
-The UAG reads and writes only collections named `uag-*` (`uag-meta`, `uag-authcodes`, `uag-taskruns`), never submissions. Using the database needs a license that includes the UAG, unless the project and the database are both on development hosts (`localhost`, `*.localhost`, `lvh.me`, `*.lvh.me`, `*.local`), on every edition, including projects on Form.io's hosted service. Without the license the UAG starts, writes nothing to the database, and logs which features are off. `server.database` is the database once it is in use; `GET /agent/capabilities` reports `durableRuns` and `mcpOAuth`.
+The UAG reads and writes only collections named `uag-*` (`uag-meta`, `uag-authcodes`, `uag-taskruns`), never submissions. Using the database needs a license that includes the UAG, unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`), on every edition, including projects on Form.io's hosted service. Without the license the UAG starts, writes nothing to the database, and logs which features are off. `server.database` is the database once it is in use; `GET /agent/capabilities` reports `durableRuns` and `mcpOAuth`.
 
 ## server.destroy()
 
