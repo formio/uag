@@ -72,7 +72,23 @@
       var usage = engine.usage ? (Number(engine.usage.inputTokens || 0) + Number(engine.usage.outputTokens || 0)) : 0;
       return [name, engine.model, ms, usage ? usage.toLocaleString() + ' tokens' : ''].filter(Boolean).join(' · ');
     }).filter(Boolean);
-    return parts.length ? 'engines: ' + parts.join('; ') : '';
+    if (parts.length) return 'engines: ' + parts.join('; ');
+    return documentSummary(body);
+  }
+
+  /** An AI Document result's engine, plugin and files, from its meta (`{ result: { meta } }`). */
+  function documentSummary(body) {
+    var meta = body.meta || (body.result && typeof body.result === 'object' ? body.result.meta : null);
+    if (!meta || typeof meta !== 'object' || !(meta.engine || meta.plugin)) return '';
+    var files = (Array.isArray(meta.files) ? meta.files : []).map(function (file) {
+      var route = Array.isArray(file.route) && file.route.length ? ' via ' + file.route.join(', ') : '';
+      return (file.name || 'a file') + route;
+    });
+    return [
+      meta.engine ? 'engines: ' + [meta.engine, meta.model].filter(Boolean).join(' · ') : '',
+      meta.plugin ? 'plugin ' + meta.plugin : '',
+      files.join('; '),
+    ].filter(Boolean).join(' · ');
   }
 
   var counter = 0;

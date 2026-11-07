@@ -109,9 +109,21 @@ function* textFiles(dir) {
     }
 }
 
-/** Secrets from the environment that appear in the build, as `NAME in file`. */
-export function leakedSecrets(dir, env = process.env) {
-    const secrets = Object.entries(env).filter(([name, value]) => isSecretName(name) && typeof value === 'string' && value.length >= 8);
+/** The site's own sources, whose text the build may publish as it is. */
+const SOURCE_DIRS = ['content', 'views', 'public', 'lib', 'module'];
+
+/**
+ * Secrets from the environment that appear in the build, as `NAME in file`. A
+ * value the site's sources under `root` already contain (a word in the docs, say)
+ * is not one: it is not the environment that puts it there.
+ */
+export function leakedSecrets(dir, env = process.env, root = null) {
+    let secrets = Object.entries(env).filter(([name, value]) => isSecretName(name) && typeof value === 'string' && value.length >= 8);
+    if (root && secrets.length) {
+        const sources = SOURCE_DIRS.map((name) => path.join(root, name)).filter((source) => fs.existsSync(source))
+            .flatMap((source) => [...textFiles(source)].map((file) => fs.readFileSync(file, 'utf8')));
+        secrets = secrets.filter(([, value]) => !sources.some((text) => text.includes(value)));
+    }
     const found = [];
     for (const file of textFiles(dir)) {
         const text = fs.readFileSync(file, 'utf8');
@@ -139,7 +151,7 @@ export function build(config = readConfig(), env = process.env) {
         // The workflow demo's sample applicants.
         fs.writeFileSync(path.join(temp, 'apps/workflow/applicants.json'), JSON.stringify(PROFILES, null, 2));
 
-        const leaks = leakedSecrets(temp, env);
+        const leaks = leakedSecrets(temp, env, config.root);
         if (leaks.length) {
             const shown = leaks.slice(0, 5).join(', ') + (leaks.length > 5 ? `, and ${leaks.length - 5} more` : '');
             throw new Error(`The build contains secrets from the environment: ${shown}.`);

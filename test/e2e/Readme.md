@@ -15,7 +15,7 @@ yarn test:e2e
 | Docker (with `docker compose`) | Spins up Form.io OSS + MongoDB for layers 1 and 3 |
 | `CLAUDE_API_KEY` env var (or in the root `.env`) | Real Claude API calls in layer 3. Suites that need it are skipped when it is not set. |
 | A built `lib/` (`yarn build`) | The UAG server is booted from the compiled output |
-| Chromium for Playwright (`npx playwright install chromium`, once) | The browser suites (`layer1.demo-conversation`, `layer1.demo-formflow`, `layer1.demo-unlicensed`, `layer3.demo-stack`). They are skipped, with that command, when it is not installed. |
+| Chromium for Playwright (`npx playwright install chromium`, once) | The browser suites (`layer1.demo-conversation`, `layer1.demo-formflow`, `layer1.demo-documents`, `layer1.demo-unlicensed`, `layer3.demo-stack`). They are skipped, with that command, when it is not installed. |
 | Internet access | The demo site's pages load formio.js, Bootstrap and fonts from CDNs, so the browser suites need it |
 
 Optional:
@@ -27,6 +27,7 @@ Optional:
 | `E2E_UAG_LICENSE` | unset | A `UAG_LICENSE` with the `uag` feature for `formio.e2e.test`. Runs the licensed cases in `layer1.agent-license`; they are pending without it. Keep it in the gitignored `.env`. |
 | `E2E_UAG_IMAGE`, `E2E_ENGINES_IMAGE` | unset | For `layer3.demo-stack`: a release's published images (both, such as `formio/uag:2.0.0-rc.1`), pulled and run instead of images built from this tree. Add `E2E_PLATFORM=linux/amd64` to run them as amd64 on an arm64 machine (MongoDB and Form.io keep their own platform). |
 | `E2E_FORMIO_LICENSE` | unset | A Form.io Enterprise `LICENSE_KEY`, for `layer3.demo-stack`. Set `E2E_FORMIO_LICENSE_REMOTE=true` when it is an offline (self-contained) license; otherwise the server keeps logging `License not found` and the setup job cannot log in. |
+| `FORMIO_TEST_URL` | unset | A Form.io Enterprise deployment that is already running, with its portal (such as `https://form.test`), for `layer3.demo-stack` (and the demo recordings) to run on instead of starting one. Needs `FORMIO_TEST_EMAIL` and `FORMIO_TEST_PASSWORD` (a portal account that may create projects and teams), `FORMIO_TEST_UAG_LICENSE` (a license with the UAG that allows the deployment's subdomains (`*.form.test`); `FORMIO_TEST_UAG_LICENSE_REMOTE=true` for an offline one), `CLAUDE_API_KEY` and `TYPESAFE_API_KEY`. The suite works in a project of its own, `uag-e2e-demo`, and deletes it, and the accounts and teams it made, after. |
 | `E2E_CORE_BUNDLE` | unset | Path to a locally built appserver-core `build/server.js`, bind-mounted into the UAG container `layer3.demo-stack` starts, to check a core change before it is published. |
 | `E2E_LOCAL_CORE`, `E2E_LOCAL_APPSERVER` | unset | Paths to a built appserver-core's `build/` folder and a built appserver repository. Together, they build the UAG image `layer3.demo-stack` (and the demo recordings) start against those unpublished versions, which the UAG needs when it uses APIs the published ones lack. |
 | `E2E_HOSTED_PROJECT_URL`, `E2E_HOSTED_PROJECT_KEY` | unset | For `layer3.getting-started`: a project on Form.io's hosted service with the demo's `claim` form, such as https://uag.form.io, and an API key of it. |
@@ -221,6 +222,13 @@ agents, so the workflow needs no webhooks and runs on Open Source.
   shown. For "Car stolen": the theft steps and no injury step. And the example
   page, with each `/agent/extract` call and the engines that answered in the
   flow log.
+- *AI Document, without the add-on* (`layer1.demo-documents.e2e.mjs`): the
+  lease review loads for a guest, and, since this UAG has no AI Document
+  module, the page says the process is not installed instead of an upload that
+  does nothing. The upload itself is in `layer3.demo-stack`: the sample lease
+  sent to each of its three AI Documents (the `formio/uag-documents` add-on, with
+  Claude), each settled, the engine and plugin in the flow log, and the review
+  saved through the UAG with the copied clauses.
 - *Unlicensed* (`layer1.demo-unlicensed.e2e.mjs`): with no license, the chat
   still works, the Agent API refuses the formflow demo's extraction
   (`license_required`), and the page says the demo is not supported, with what

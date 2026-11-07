@@ -52,7 +52,7 @@ describe('Demo site build', function () {
     describe('the build', function () {
         let out;
         let config;
-        const env = { DEMO_UAG_URL: 'https://uag.example.com', FORMIO_PROJECT_URL: 'https://uag.form.io', NODE_ENV: 'production' };
+        const env = { DEMO_UAG_URL: 'https://uag.build-test.example', FORMIO_PROJECT_URL: 'https://uag.form.io', NODE_ENV: 'production' };
 
         before(function () {
             this.timeout(60000);
@@ -75,10 +75,10 @@ describe('Demo site build', function () {
         });
 
         it('gives every page and demo app the UAG and the project, and leaves no template unfilled', function () {
-            expect(read('examples/conversation/index.html')).to.include('data-uag-url="https://uag.example.com"').and.include('data-project-url="https://uag.form.io"');
+            expect(read('examples/conversation/index.html')).to.include('data-uag-url="https://uag.build-test.example"').and.include('data-project-url="https://uag.form.io"');
             for (const app of ['conversation', 'formflow', 'documents', 'workflow']) {
                 const html = read(`apps/${app}/index.html`);
-                expect(html, app).to.include('<script src="https://uag.example.com/uag-js/uag.use.js"');
+                expect(html, app).to.include('<script src="https://uag.build-test.example/uag-js/uag.use.js"');
                 expect(html, app).to.include('data-production="true"');
                 expect(html, app).to.not.match(/\{\{/);
             }
@@ -106,10 +106,15 @@ describe('Demo site build', function () {
 
         it('fails, and leaves the last build in place, when a secret from the environment would be published', function () {
             const before = read('index.html');
-            // A "secret" whose value appears in every page: the UAG's host name.
-            expect(() => build(config, { ...env, SOME_API_KEY: 'uag.example.com' })).to.throw(/SOME_API_KEY/);
+            // A "secret" whose value appears in every page, from the environment: the UAG's host name.
+            expect(() => build(config, { ...env, SOME_API_KEY: 'uag.build-test.example' })).to.throw(/SOME_API_KEY/);
             expect(read('index.html')).to.equal(before);
             expect(fs.readdirSync(out).filter((name) => name.includes('.tmp-'))).to.deep.equal([]);
+        });
+
+        it('does not take text the site\'s own sources contain for a secret', function () {
+            // The name the docs give the UAG, as a password might also be.
+            expect(() => build(config, { ...env, SOME_PASSWORD: 'Universal Agent Gateway' })).to.not.throw();
         });
     });
 

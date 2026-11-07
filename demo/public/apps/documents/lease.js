@@ -12,7 +12,8 @@
   const $ = (selector) => document.querySelector(selector);
   await DemoApp.ready();
 
-  const LABELS = { leaseClauses: 'Key clauses', leaseSummary: 'Summary', leaseTranslation: 'Translation' };
+  const LABELS = { leaseClauses: 'Key clauses', leaseSummary: 'Summary', leaseTranslation: 'Translation', setup: 'AI Document' };
+  const NOT_INSTALLED = 'This UAG does not have the AI Document process installed (the formio/uag-documents add-on, or UAG_PLUGINS).';
   const formio = new Formio(DemoApp.formUrl('lease-review'));
   const definitionLoaded = formio.loadForm();
   let builder = null;
@@ -58,6 +59,13 @@
     $('[data-activity-empty]').hidden = true;
   }
 
+  // The AI Document component comes from the UAG's AI Document module, with
+  // uag.use.js; without the module, formio.js does not know it, and an upload
+  // would do nothing at all.
+  if (!(Formio.Components && Formio.Components.components && Formio.Components.components.uagdocument)) {
+    line('setup', NOT_INSTALLED, 'error');
+  }
+
   const started = new Map();
 
   form.on('uagDocumentStart', (event) => {
@@ -87,9 +95,7 @@
 
   form.on('uagDocumentError', (event) => {
     const missing = /not installed|no such (plugin|process)|unknown (plugin|process)/i.test(event.error || '');
-    line(event.path, missing
-      ? 'This UAG does not have the AI Document process installed (the formio/uag-documents add-on, or UAG_PLUGINS).'
-      : (event.error || 'Processing failed.'), 'error');
+    line(event.path, missing ? NOT_INSTALLED : (event.error || 'Processing failed.'), 'error');
   });
 
   /* ---------- Save ---------- */

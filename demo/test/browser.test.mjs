@@ -84,6 +84,11 @@ describe('Demo site browser scripts', function () {
             ] })).to.equal('engines: jev · 180 ms; claude · claude-sonnet-5-5 · 2.4 s · 1,234 tokens');
             expect(window.UAGFlowLog.engineSummary({ engine: { name: 'agent' } })).to.equal('engines: agent');
             expect(window.UAGFlowLog.engineSummary({})).to.equal('');
+            // An AI Document result names its engine, plugin and how each file was read, in its meta.
+            expect(window.UAGFlowLog.engineSummary({ path: 'leaseClauses', result: { status: 'ok', meta: {
+                plugin: 'extract@1.0.0', engine: 'claude', model: 'claude-sonnet-5-5',
+                files: [{ name: 'lease.pdf', route: ['pdf-text@2.0.0'], pages: 3 }],
+            } } })).to.equal('engines: claude · claude-sonnet-5-5 · plugin extract@1.0.0 · lease.pdf via pdf-text@2.0.0');
         });
 
         it('reads an event stream as it arrives, and leaves the caller the whole of it', async function () {

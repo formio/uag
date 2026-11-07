@@ -80,6 +80,10 @@ export const builderComponent = (d, key) => d.page.locator(`.builder-component:h
 /** Open a builder component's settings at a tab (`API` shows its custom properties). */
 export async function openSettings(d, key, tab = 'API') {
     const component = builderComponent(d, key);
+    // Scroll it to the upper part of the page first: near the bottom, the
+    // builder's Save bar covers the buttons that hovering shows.
+    const top = await component.evaluate((el) => window.scrollY + el.getBoundingClientRect().top - window.innerHeight * 0.25);
+    if (Math.abs(top - await d.page.evaluate(() => window.scrollY)) > 40) await d.scrollTo(Math.max(0, top));
     await d.moveTo(component, { offset: { x: 0, y: -10 } });
     await d.click(component.locator('[ref="editComponent"]').first(), { after: 900 });
     await d.click(d.page.locator('.formio-dialog').getByText(tab, { exact: true }).first(), { after: 600 });

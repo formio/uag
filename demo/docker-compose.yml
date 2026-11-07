@@ -8,6 +8,11 @@
 # name (uag.ai.form.io) behind your load balancer, which ends TLS, and set
 # DEMO_SITE_ORIGIN to the site's origin, the only one its CORS allows.
 #
+# Beside it, the AI Document add-on (formio/uag-documents) fills the volume the
+# UAG mounts at /app/plugins/documents with the AI Document module and the
+# document plugins, which the AI Document demo (/examples/documents) needs; it
+# runs at each "up" and exits.
+#
 # The project's forms are not created here: the UAG uses the forms already in
 # the project (module/project.json is their template; scripts/setup.mjs imports it).
 #
@@ -30,15 +35,27 @@ name: uag-demo
 x-uag-image: &uag-image ${UAG_IMAGE:-formio/uag:demo}
 
 services:
+  # Runs once at each "up" and exits; no restart policy.
+  uag-documents:
+    image: ${UAG_DOCUMENTS_IMAGE:-formio/uag-documents:1}
+    volumes:
+      - uag-documents:/out
+
   formio-uag:
     build: { context: .., dockerfile: Dockerfile }
     image: *uag-image
     restart: always
+    depends_on:
+      uag-documents:
+        condition: service_completed_successfully
+        restart: true
     ports:
       # Bound to this machine only by default. Set UAG_BIND to the private address
       # your load balancer reaches.
       - "${UAG_BIND:-127.0.0.1}:${UAG_PORT:-3200}:3200"
     volumes:
+      # The AI Document module and the document plugins, from the add-on.
+      - uag-documents:/app/plugins/documents:ro
       # The demo's rate limits (uag-module/index.js).
       - ./uag-module:/app/module:ro
     environment:
@@ -63,3 +80,6 @@ services:
       TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:?set TYPESAFE_API_KEY in .env}
       CLAUDE_API_KEY: ${CLAUDE_API_KEY:?set CLAUDE_API_KEY in .env}
       CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-5-5}
+
+volumes:
+  uag-documents:

@@ -99,7 +99,8 @@ export async function startEnterpriseDemo({ site = SITE, portal = PORTAL, uag = 
             CLAUDE_API_KEY: settings.CLAUDE_API_KEY,
             ...(settings.CLAUDE_MODEL && { CLAUDE_MODEL: settings.CLAUDE_MODEL }),
             ...deployment,
-            DEMO_SITE_ORIGIN: originsOf(site),
+            // The site, and the portal, which calls the UAG to connect a stage to it.
+            DEMO_SITE_ORIGIN: `${originsOf(site)},${originsOf(portal)}`,
             UAG_IMAGE: IMAGE,
         },
         override: [
@@ -179,12 +180,24 @@ export async function startEnterpriseDemo({ site = SITE, portal = PORTAL, uag = 
  * Create a stage of the demo project and connect it to the UAG, as a person
  * would in the portal: Staging, Connect to an On-Premise Environment, the
  * UAG's root URL and PORTAL_SECRET, subdirectory paths, and the UAG's project.
+ * `name` is the stage's name, which is its path on the deployment.
  * Resolves to the stage's project id.
  */
-export async function connectUagStage(env, { title = 'UAG Gateway', project = 'UAG Demo' } = {}) {
+export async function connectUagStage(env, { title = 'UAG Gateway', name = title.toLowerCase().replace(/[^a-z0-9]/g, ''), project = 'UAG Demo' } = {}) {
     const browser = await chromium.launch();
+    const problems = [];
     try {
         const page = await browser.newPage({ viewport: { width: 1280, height: 880 } });
+        // What the portal's calls to the UAG met, for the failure message.
+        page.on('requestfailed', (request) => {
+            if (request.url().startsWith(env.uag)) problems.push(`${request.method()} ${request.url()}: ${request.failure()?.errorText}`);
+        });
+        page.on('response', (response) => {
+            if (response.url().startsWith(env.uag) && response.status() >= 400) problems.push(`${response.request().method()} ${response.url()}: ${response.status()}`);
+        });
+        page.on('console', (message) => {
+            if (message.type() === 'error') problems.push(`console: ${message.text()}`);
+        });
         await page.goto(env.portal, { waitUntil: 'networkidle' });
         await page.fill('input[name="data[email]"]', env.email);
         await page.fill('input[name="data[password]"]', env.password);
@@ -195,7 +208,7 @@ export async function connectUagStage(env, { title = 'UAG Gateway', project = 'U
         await page.locator('text=+ Create Stage').first().click();
         await page.selectOption('select[name=copyFrom]', { index: 1 });
         await page.fill('input[name=title]', title);
-        await page.fill('input[name=name]', title.toLowerCase().replace(/[^a-z0-9]/g, ''));
+        await page.fill('input[name=name]', name);
         const live = /#\/project\/([0-9a-f]{24})/.exec(page.url())?.[1];
         await page.locator('button, .btn', { hasText: 'Add Stage' }).first().click();
         // The portal moves to the new stage's forms.
@@ -223,7 +236,10 @@ export async function connectUagStage(env, { title = 'UAG Gateway', project = 'U
     catch (error) {
         const shot = path.join(os.tmpdir(), 'uag-recordings', 'stage-failure.png');
         await browser.contexts()[0]?.pages()[0]?.screenshot({ path: shot }).catch(() => {});
-        error.message += `\nThe portal at the failure: ${shot}`;
+        // Node prints the stack, which already holds the message: add to both.
+        const more = `\nThe portal at the failure: ${shot}${problems.length ? `\nIn the portal:\n  ${problems.slice(-10).join('\n  ')}` : '\nThe portal\'s calls to the UAG met no error.'}`;
+        error.message += more;
+        if (error.stack) error.stack = error.stack.replace(/\n\s+at /, `${more}\n    at `);
         throw error;
     }
     finally {
