@@ -350,7 +350,7 @@ describe('Layer 3: the Getting Started guides, as documented', function () {
             }, { timeoutMs: 300000, describe: () => stack.logs('formio-enterprise') });
             // A project named `yourproject` with the demo's forms (the claim form among them) and the
             // key, made with Form.io's admin key. Retried while Form.io finishes starting.
-            await waitUntil(() => exec(process.execPath, [path.join(repoRoot, 'demo/server/setup.mjs')], {
+            await waitUntil(() => exec(process.execPath, [path.join(repoRoot, 'demo/scripts/setup.mjs')], {
                 env: { ...process.env, FORMIO_SERVER: FORMIO, FORMIO_PROJECT_NAME: 'yourproject', FORMIO_PROJECT_TITLE: 'Your Project', ...secrets },
                 timeout: 300000,
             }), { timeoutMs: 300000, intervalMs: 5000, describe: () => stack.logs('formio-enterprise') });

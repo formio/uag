@@ -45,12 +45,12 @@
               <a href="/apps/workflow/" target="_blank" rel="noopener">Open full screen ↗</a>
             </div>
             <div class="demo-gate" data-demo-gate hidden>
-              <div><h3>Start the live demo</h3><p>This demo calls a real model. Please confirm you are human first.</p><div data-turnstile></div></div>
+              <div><h3>Start the live demo</h3><p>This demo calls a real model. Starting it signs you in as a temporary guest of the demo's project; what you enter is deleted after a day.</p><button type="button" class="btn btn-primary btn-small" data-demo-start>Start the live demo</button></div>
             </div>
             {{{demoUnsupported}}}
-            <iframe title="Agentic workflow demo" data-demo-frame data-requires="formflow" data-src="/apps/workflow/" hidden></iframe>
+            <iframe title="Agentic workflow demo" data-demo-frame data-src="/apps/workflow/" hidden></iframe>
           </div>
-          <div data-flow data-scopes="application,sum" data-intro="The application is saved through the UAG. Its Run task actions ask the engines, which may research with read-only tools, and the UAG saves their results. Only your applications are shown." data-intro-inside="The application is saved through the UAG. Its Run task actions then run inside the UAG, after the save: they ask the engines and save the results, so this panel shows the save, and the decision appears in the application once the agents finish. Only your applications are shown." data-empty="Nothing yet. Submit an application: the save and the engine calls will appear here." data-empty-inside="Nothing yet. Submit an application and its save will appear here."></div>
+          <div data-flow data-intro="This page saves the application through the UAG and then reads it back as the guest who owns it. The Run task actions run inside the UAG after the save, so each stage appears here as the page sees the application change." data-empty="Nothing yet. Submit an application: the save and the engine calls will appear here." data-empty-inside="Nothing yet. Submit an application and its save will appear here."></div>
         </div>
       </div>
     </section>
@@ -119,5 +119,7 @@
         <div class="hero-actions"><a class="btn btn-light" href="/examples/formflow">Agentic Formflow <span class="arrow"></span></a></div>
       </div>
     </section>
+    <script src="/js/flow-log.js?v={{assetVersion}}"></script>
+    <script src="/js/guest.js?v={{assetVersion}}"></script>
     <script src="/js/flow-panel.js?v={{assetVersion}}"></script>
     <script src="/js/demo.js?v={{assetVersion}}"></script>

@@ -2,8 +2,13 @@
  * Lantern Mutual claim intake: renders the `claim` wizard, attaches Agent
  * Input from @formio/uag-js, and shows what the agent is doing as it reads the
  * description: the steps it adds, the fields it is filling, and how long it took.
+ *
+ * The form loads from the project and @formio/uag-js (from the UAG's
+ * /uag-js/uag.use.js) sends its Agent API calls and its save to the UAG, with
+ * the visitor's Form.io token, as in any application.
  */
 (async function () {
+  await DemoApp.ready();
   const $ = (selector) => document.querySelector(selector);
 
   // Pages every claim has. The others are added by triage.
@@ -43,8 +48,7 @@
     { label: 'Suspicious claim', policyNumber: 'AUTO-9902-6614', lossDescription: 'My car got damaged at some point last week, I think on Tuesday, or maybe it was Thursday night. It was either parked at the mall or at home, I am not sure. There is a big dent and some glass is broken. I just bought the policy last week. I need the money as fast as possible, can you just send cash today?' }
   ];
 
-  const definition = await (await fetch('/api/formflow/form')).json();
-  const form = await Formio.createForm($('#claim'), definition, {
+  const form = await Formio.createForm($('#claim'), DemoApp.formUrl('claim'), {
     noAlerts: true,
     buttonSettings: { showCancel: false },
     language: 'en',
@@ -52,14 +56,12 @@
   });
   form.nosubmit = true;
 
-  // The demo's backend relays the claim form's agent operations to the UAG,
-  // behind its own budget and bot check: /api/formflow/agent/extract.
+  // Agent Input, with this page's options: the UAG reads the description when the
+  // claimant continues, and its answers drive the steps and progress shown here.
   const agent = FormioUAG.UAG.attach(form, {
-    formUrl: '/api/formflow',
     trigger: 'next',
     // Uncertain values must be checked (changed, or ticked as right) before Continue or Submit.
     requireReview: true,
-    fetch: demoFetch,
     onStart,
     onResult,
     onDone
@@ -432,28 +434,23 @@
     const button = $('#claim .btn-wizard-nav-submit');
     if (button) button.firstChild.nodeValue = 'Submitting your claim ';
     try {
-      const response = await fetch('/api/formflow/claims', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: submission.data })
-      });
-      const saved = await response.json();
-      if (!response.ok) throw new Error(describeFailure(response.status, saved));
+      // Saved through the UAG: the claim's triage task checks its decisions before the save.
+      const saved = await form.formio.saveSubmission({ data: submission.data });
       form.emit('submitDone', submission);
       showConfirmation(saved);
     }
     catch (err) {
       form.emit('submitError', err);
-      submitError.textContent = err.message;
+      submitError.textContent = describeFailure(err);
       submitError.hidden = false;
       if (button) button.firstChild.nodeValue = 'Submit claim ';
     }
   });
 
-  function describeFailure(status, body) {
-    const details = (body && body.details) || [];
+  function describeFailure(err) {
+    const details = (err && err.details) || [];
     if (details.length) return 'Your claim was not submitted. ' + details.map((detail) => detail.message).join(' ');
-    return 'Your claim was not submitted (the server answered ' + status + '). Try again, or call 1-800-555-0199.';
+    return 'Your claim was not submitted (' + ((err && (err.message || err.error)) || err || 'no answer') + '). Try again, or call 1-800-555-0199.';
   }
 
   function showConfirmation(saved) {
@@ -516,18 +513,6 @@
     paintFields();
     updateSteps();
   });
-  // The demo's limits (the human check, rate limits, the daily budget) answer
-  // with a code; the example page around this frame explains them.
-  async function demoFetch(url, init) {
-    const response = await fetch(url, init);
-    if ([403, 429, 503].includes(response.status) && window.parent !== window) {
-      response.clone().json().then((body) => {
-        if (body && body.code) window.parent.postMessage({ type: 'uag-demo', code: body.code, error: body.error }, location.origin);
-      }).catch(() => {});
-    }
-    return response;
-  }
-
   // No inline handlers: the site's Content-Security-Policy refuses them.
   document.querySelector('[data-print]')?.addEventListener('click', () => window.print());
   addExamples();

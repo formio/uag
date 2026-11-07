@@ -31,12 +31,12 @@
               <a href="/apps/formflow/" target="_blank" rel="noopener">Open full screen ↗</a>
             </div>
             <div class="demo-gate" data-demo-gate hidden>
-              <div><h3>Start the live demo</h3><p>This demo calls real models. Please confirm you are human first.</p><div data-turnstile></div></div>
+              <div><h3>Start the live demo</h3><p>This demo calls real models. Starting it signs you in as a temporary guest of the demo's project; what you enter is deleted after a day.</p><button type="button" class="btn btn-primary btn-small" data-demo-start>Start the live demo</button></div>
             </div>
             {{{demoUnsupported}}}
-            <iframe title="Agentic Formflow demo" data-demo-frame data-requires="formflow" data-src="/apps/formflow/" hidden></iframe>
+            <iframe title="Agentic Formflow demo" data-demo-frame data-src="/apps/formflow/" hidden></iframe>
           </div>
-          <div data-flow data-scopes="claim" data-intro="One extract call per read of your description: the decision engine answers first, the agent engine follows, both through the UAG." data-intro-inside="One extract call per read of your description. The decision and agent engines run inside the UAG; the result says how long each took." data-empty="Nothing yet. Pick an example under the description and press Continue."></div>
+          <div data-flow data-intro="Each read of your description is one call from this page to the claim form's agent/extract on the UAG, streamed back as each engine answers. The engines run inside the UAG." data-empty="Nothing yet. Pick an example under the description and press Continue."></div>
         </div>
       </div>
     </section>
@@ -85,5 +85,7 @@ Formio.createForm(el, 'https://forms.example.com/myproject/claim');</code></pre>
         <div class="hero-actions"><a class="btn btn-light" href="/developers">Developer docs <span class="arrow"></span></a><a class="btn btn-outline-light" href="/developers/agentic-coding">Agentic Coding Plugin</a></div>
       </div>
     </section>
+    <script src="/js/flow-log.js?v={{assetVersion}}"></script>
+    <script src="/js/guest.js?v={{assetVersion}}"></script>
     <script src="/js/flow-panel.js?v={{assetVersion}}"></script>
     <script src="/js/demo.js?v={{assetVersion}}"></script>

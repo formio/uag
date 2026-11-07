@@ -1,5 +1,7 @@
 node_modules/
 lib/
+# The demo site's build-time modules are source, not build output.
+!demo/lib/
 dist/
 .DS_Store
 .claude

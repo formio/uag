@@ -1,8 +1,10 @@
+import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
-import { spawnNode, waitForHttp } from './proc.mjs';
-import { startStack, FORMIO_URL, UAG_URL, ADMIN_KEY } from './stack.mjs';
+import { spawnNode } from './proc.mjs';
+import { startStack, FORMIO_URL, UAG_URL } from './stack.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '../../..');
@@ -10,11 +12,9 @@ const require = createRequire(import.meta.url);
 
 export const ENGINE_SERVER_URL = 'http://127.0.0.1:3311';
 export const ENGINE_CALLS_PORT = 3312;
-export const FLOW_URL = 'http://127.0.0.1:3251';
 export const SITE_URL = 'http://127.0.0.1:3420';
-export const FLOW_KEY = 'uag-e2e-flow-key';
 export const ENGINE_SERVER_KEY = 'uag-e2e-engine-server-key-0123456789abcdef';
-export const DEMO_FORMS = ['serviceRequest', 'application', 'sum', 'claim'];
+export const DEMO_FORMS = ['serviceRequest', 'application', 'sum', 'claim', 'leaseReview', 'guest', 'guestRegister'];
 
 /** The demo's project template, as the e2e module installs it. */
 export const demoTemplate = () => JSON.parse(JSON.stringify(require('../../../demo/module/project.json')));
@@ -35,34 +35,40 @@ async function waitFor(check, what, timeoutMs = 30000) {
 }
 
 /**
- * The demo site as it runs in production, on the open-source e2e stack:
+ * The demo site as it ships, on the open-source e2e stack: the static build
+ * (demo/scripts/build.mjs), served as CloudFront serves it, whose pages call
+ * the UAG and the project from the browser, as each visitor's guest user.
  *
- *   site (demo/server) ─▶ uag-flow (demo/flow) ─▶ UAG ─▶ uag-flow ─▶ engine server
- *                                                 │                      │
- *                                     Form.io OSS ◀┘   research (/mcp) ◀─┘
+ *   browser ─▶ site (static files)
+ *      │
+ *      ├─▶ Form.io OSS (the forms)
+ *      └─▶ UAG ─▶ engine server  (guest registration, agent calls, saves)
+ *           │         │
+ *           └─▶ Form.io OSS ◀─ research (/mcp)
  *
- * The UAG serves the demo's own template (E2E_TEMPLATE=demo); both engines run
- * on the real engine server package, hosting the scripted e2e engines; and
- * every call passes through the flow proxy, so the flow viewer can be checked.
- * The site saves applications and claims through the UAG, whose "Agent: Run
- * task" actions run the agents, so the workflow runs on Open Source as it does
- * on Enterprise.
+ * The UAG serves the demo's own template (E2E_TEMPLATE=demo), allows the site's
+ * origin (CORS), and runs both engines on the real engine server package,
+ * hosting the scripted e2e engines. Applications and claims are saved through
+ * the UAG, whose "Agent: Run task" actions run the agents, so the workflow runs
+ * on Open Source as it does on Enterprise.
  *
- * `siteEnv` adds environment variables for the site, such as ANTHROPIC_BASE_URL.
- * `realEngines` (`{ decision: 'jev', agent: 'claude' }`) hosts those installed
- * engine types on the engine server instead of the scripted ones, configured
- * from the environment (TYPESAFE_API_KEY, CLAUDE_API_KEY), as the demo
- * recordings use it.
+ * `siteEnv` adds build settings (lib/config.mjs). `realEngines`
+ * (`{ decision: 'jev', agent: 'claude' }`) hosts those installed engine types on
+ * the engine server instead of the scripted ones, configured from the
+ * environment (TYPESAFE_API_KEY, CLAUDE_API_KEY), as the demo recordings use it.
  */
 export async function startDemoStack({ siteEnv = {}, uagEnv = {}, realEngines = null } = {}) {
     const processes = [];
     let stack = null;
+    let site = null;
+    const out = fs.mkdtempSync(path.join(os.tmpdir(), 'uag-demo-site-'));
     const stop = async () => {
+        if (site) await site.close();
         for (const proc of processes.reverse()) await proc.kill();
         if (stack) await stack.stop();
+        fs.rmSync(out, { recursive: true, force: true });
     };
     try {
-
         const decisionEngine = realEngines ? realEngines.decision : 'e2e-decision';
         const agentEngine = realEngines ? realEngines.agent : 'e2e-agent';
         const engines = spawnNode(realEngines ? path.join(repoRoot, 'packages/engine-server/bin/uag-engines.js') : path.join(here, 'engineServerEntry.cjs'), {
@@ -72,68 +78,48 @@ export async function startDemoStack({ siteEnv = {}, uagEnv = {}, realEngines = 
                 E2E_CALLS_PORT: String(ENGINE_CALLS_PORT),
                 UAG_ENGINES: `${decisionEngine},${agentEngine}`,
                 UAG_ENGINE_SERVER_KEY: ENGINE_SERVER_KEY,
-                // Research goes through the flow proxy too.
-                UAG_SERVER: FLOW_URL,
+                UAG_SERVER: UAG_URL,
                 ADMIN_KEY: '', PROJECT_KEY: '', JWT_SECRET: '',
             },
         });
         processes.push(engines);
         await waitFor(() => fetch(`${ENGINE_SERVER_URL}/health`, { headers: { Authorization: `Bearer ${ENGINE_SERVER_KEY}` } }).then((r) => r.ok), `the engine server\n${engines.getOutput()}`);
 
-        const flow = spawnNode(path.join(repoRoot, 'demo/flow/proxy.mjs'), {
-            env: { PORT: new URL(FLOW_URL).port, UAG_URL, ENGINES_URL: ENGINE_SERVER_URL, FLOW_KEY },
-        });
-        processes.push(flow);
-        await waitForHttp(`${FLOW_URL}/flow/health`);
-
         stack = await startStack({
             forms: DEMO_FORMS,
             uagEnv: {
                 E2E_TEMPLATE: 'demo',
+                // The site's origin, by either name a browser may use for it.
+                CORS: `${SITE_URL},${SITE_URL.replace('127.0.0.1', 'localhost')}`,
                 UAG_ENGINES: 'decide:remote,agent:remote',
-                UAG_ENGINE_DECIDE_URL: FLOW_URL,
+                UAG_ENGINE_DECIDE_URL: ENGINE_SERVER_URL,
                 UAG_ENGINE_DECIDE_KEY: ENGINE_SERVER_KEY,
                 UAG_ENGINE_DECIDE_ENGINE: decisionEngine,
-                UAG_ENGINE_AGENT_URL: FLOW_URL,
+                UAG_ENGINE_AGENT_URL: ENGINE_SERVER_URL,
                 UAG_ENGINE_AGENT_KEY: ENGINE_SERVER_KEY,
                 UAG_ENGINE_AGENT_ENGINE: agentEngine,
                 ...uagEnv,
             },
         });
 
-        const site = spawnNode(path.join(repoRoot, 'demo/server/index.mjs'), {
-            cwd: path.join(repoRoot, 'demo'),
+        const { serveSite } = await import('../../../demo/scripts/serve.mjs');
+        site = await serveSite({
+            port: new URL(SITE_URL).port,
             env: {
-                PORT: new URL(SITE_URL).port,
                 DEMO_PUBLIC_URL: SITE_URL,
-                DEMO_SECRET: 'uag-e2e-demo-secret',
+                DEMO_OUT: out,
                 FORMIO_PROJECT_URL: FORMIO_URL,
-                ADMIN_KEY,
-                PROJECT_KEY: '',
-                UAG_URL: FLOW_URL,
-                FLOW_URL,
-                FLOW_KEY,
-                CLAUDE_API_KEY: 'scripted',
-                // The spend guard is tested on its own; the suites run without a cap.
-                DEMO_DAILY_BUDGET: '0',
-                DEMO_DAILY_NETWORK_BUDGET: '0',
-                // Every visitor in the suites comes from this machine.
-                DEMO_SESSIONS_PER_NETWORK: '10000',
-                DEMO_STREAMS_PER_NETWORK: '1000',
-                DEMO_LIMITS: JSON.stringify({ chat: {}, extract: {}, submit: {} }),
-                DEMO_RETENTION_HOURS: '0',
-                TURNSTILE_SITE_KEY: '', TURNSTILE_SECRET_KEY: '',
+                DEMO_UAG_URL: UAG_URL,
+                // Form.io Open Source has one project, at its root, which the UAG serves at its own.
+                DEMO_UAG_PROJECT_PATH: '',
                 ...siteEnv,
             },
         });
-        processes.push(site);
-        await waitFor(() => fetch(`${SITE_URL}/health`).then((r) => r.ok), `the demo site\n${site.getOutput()}`);
 
         return {
             stop,
             uag: stack.uag,
             site,
-            flow,
             engines,
             engineCalls: async () => (await fetch(`http://127.0.0.1:${ENGINE_CALLS_PORT}`)).json(),
         };
@@ -145,57 +131,69 @@ export async function startDemoStack({ siteEnv = {}, uagEnv = {}, realEngines = 
 }
 
 /**
- * A visitor of the demo site: a cookie jar over fetch, so a suite can act as
- * one visitor (or two), as a browser would.
+ * A guest of the demo's project, signed in as the site signs in each visitor
+ * (js/guest.js): a registration on the project's guest/register form, through
+ * the UAG, with generated credentials, which answers with the guest's token.
+ * `json()` then calls the UAG with that token, as the site's pages do.
+ * `uagUrl` is the project's URL on the UAG; it defaults to the open-source e2e
+ * stack's.
  */
-export function visitor() {
-    let cookie = '';
+export async function guest({ uagUrl = UAG_URL } = {}) {
+    const email = `guest-${Math.random().toString(16).slice(2)}@guest.invalid`;
+    const password = `${Math.random().toString(36).slice(2)}A1!${Math.random().toString(36).slice(2)}`;
+    const registered = await fetch(`${uagUrl}/guest/register/submission`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { email, password } }),
+    });
+    const token = registered.headers.get('x-jwt-token');
+    const user = await registered.json().catch(() => null);
+    if (!registered.ok || !token) throw new Error(`Guest registration answered ${registered.status}: ${JSON.stringify(user)}`);
     async function request(pathname, { method = 'GET', body, headers = {} } = {}) {
-        const response = await fetch(`${SITE_URL}${pathname}`, {
+        return fetch(`${uagUrl}${pathname}`, {
             method,
-            headers: { ...(cookie && { cookie }), ...(body !== undefined && { 'Content-Type': 'application/json' }), ...headers },
+            headers: { 'x-jwt-token': token, ...(body !== undefined && { 'Content-Type': 'application/json' }), ...headers },
             body: body === undefined ? undefined : JSON.stringify(body),
         });
-        const set = response.headers.get('set-cookie');
-        if (set) cookie = set.split(';')[0];
-        return response;
     }
     return {
+        token,
+        user,
         request,
         async json(pathname, options) {
             const response = await request(pathname, options);
-            return { status: response.status, body: await response.json().catch(() => null), headers: response.headers };
-        },
-        /** This visitor's flow events, read from the stream for `ms`. */
-        async flowEvents(ms = 1500) {
-            const abort = new AbortController();
-            const events = [];
-            const timer = setTimeout(() => abort.abort(), ms);
+            const text = await response.text();
+            let parsed = text;
             try {
-                const response = await request('/api/flow/stream', { headers: { Accept: 'text/event-stream' } }).catch(() => null);
-                if (!response) return events;
-                const decoder = new TextDecoder();
-                let pending = '';
-                const reader = response.body.getReader();
-                abort.signal.addEventListener('abort', () => reader.cancel().catch(() => {}));
-                for (;;) {
-                    const { done, value } = await reader.read().catch(() => ({ done: true }));
-                    if (done) break;
-                    pending += decoder.decode(value, { stream: true });
-                    let index;
-                    while ((index = pending.indexOf('\n\n')) >= 0) {
-                        const frame = pending.slice(0, index);
-                        pending = pending.slice(index + 2);
-                        if (/^event:/m.test(frame)) continue;
-                        const data = frame.split('\n').filter((line) => line.startsWith('data:')).map((line) => line.slice(5).trim()).join('');
-                        if (data) events.push(JSON.parse(data));
-                    }
-                }
+                parsed = JSON.parse(text);
             }
-            finally {
-                clearTimeout(timer);
+            catch {
+                // Not JSON.
             }
-            return events;
+            return { status: response.status, body: parsed, headers: response.headers };
         },
     };
+}
+
+/**
+ * Opens an example page in `page` and starts its live demo, as a visitor does:
+ * "Start the live demo" signs them in as a guest and loads the demo's frame.
+ * Resolves to the frame's locator.
+ */
+export async function startExample(page, name, { site = SITE_URL } = {}) {
+    await page.goto(`${site}/examples/${name}`);
+    const start = page.locator('[data-demo-start]');
+    await start.or(page.locator('[data-demo-frame]:not([hidden])')).first().waitFor();
+    if (await start.isVisible()) await start.click();
+    await page.locator('[data-demo-frame]:not([hidden])').waitFor();
+    return page.frameLocator('iframe[data-demo-frame]');
+}
+
+/** The runs the example page's flow log shows, oldest first: `{ title, labels, text }` each. */
+export async function flowLog(page) {
+    return page.locator('[data-flow] .flow-run').evaluateAll((runs) => runs.map((run) => ({
+        title: run.querySelector('.flow-run-head span')?.textContent || '',
+        labels: [...run.querySelectorAll('.flow-label')].map((el) => el.textContent),
+        text: run.innerText,
+    })).reverse());
 }

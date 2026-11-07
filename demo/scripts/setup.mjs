@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Provisions the demo's project. Run once per deploy, before the UAG starts
- * (the `setup` service in docker-compose.yml does this). Two ways:
+ * (the `setup` job in docker-compose.enterprise.yml, and `yarn demo:local`, do
+ * this). Two ways:
  *
  * A project on Form.io's hosted service (the default, `https://uag.form.io`),
  * or any project that already exists: FORMIO_PROJECT_URL and PROJECT_KEY, an
@@ -17,8 +18,7 @@
  * ADMIN_PASS instead.
  *   - Creates the project from module/project.json when it does not exist, and
  *     otherwise imports it again, as above.
- *   - Makes sure PROJECT_KEY is one of its API keys, so the UAG and the demo
- *     site can both use it.
+ *   - Makes sure PROJECT_KEY is one of its API keys, so the UAG can use it.
  *
  * The template holds no key or address: its agents run in the UAG, as
  * "Agent: Run task" actions on submissions the demo saves through it.
@@ -27,7 +27,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_PROJECT_URL } from './config.mjs';
+import { DEFAULT_PROJECT_URL } from '../lib/config.mjs';
 
 const env = process.env;
 const SERVER = (env.FORMIO_SERVER || '').replace(/\/+$/, '');

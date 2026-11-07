@@ -19,7 +19,14 @@ const { engineTypes } = require('./engines');
 // The demo site's claim form and its actions, so the Agent API suite exercises
 // the same form the Agentic Formflow demo ships.
 const fnol = require('../../../demo/module/project.json');
-template.forms = { ...template.forms, claim: fnol.forms.claim, incident, routing };
+// The Agent API suites save claims as an anonymous browser would; the demo lets
+// only its guests (a role this template does not have) create them.
+const claim = JSON.parse(JSON.stringify(fnol.forms.claim));
+claim.submissionAccess = (claim.submissionAccess || [])
+    .map((permission) => ({ ...permission, roles: permission.roles.filter((role) => role !== 'guest') }))
+    .filter((permission) => permission.type !== 'create_all');
+claim.submissionAccess.push({ type: 'create_all', roles: ['administrator', 'anonymous'] });
+template.forms = { ...template.forms, claim, incident, routing };
 const save = (form) => ({ ...fnol.actions['claim:save'], form });
 template.actions = {
     ...template.actions,

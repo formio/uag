@@ -5,8 +5,12 @@ import path from 'path';
 import { PROFILES } from '../../demo/module/applicants.mjs';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
+import os from 'os';
 import { IMAGE, buildLocalImage, exampleStack, repoRoot, waitUntil } from './helpers/exampleStack.mjs';
 import { launchBrowser } from './helpers/browser.mjs';
+import { guest, startExample, flowLog } from './helpers/demoStack.mjs';
+import { serveSite } from '../../demo/scripts/serve.mjs';
+import { settled } from '../../demo/module/applicants.mjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -19,31 +23,33 @@ const ADMIN_EMAIL = 'admin@example.com';
 const REQUIRED = ['E2E_FORMIO_LICENSE', 'CLAUDE_API_KEY', 'TYPESAFE_API_KEY'];
 const UAG_LICENSE = process.env.E2E_DEMO_UAG_LICENSE || process.env.E2E_EXAMPLE_UAG_LICENSE;
 // A release's published images, instead of images built from this tree, to check what
-// was shipped: E2E_UAG_IMAGE, E2E_DEMO_IMAGE and E2E_ENGINES_IMAGE (all three), such as
+// was shipped: E2E_UAG_IMAGE and E2E_ENGINES_IMAGE (both), such as
 // formio/uag:2.0.0-rc.1. E2E_PLATFORM (such as linux/amd64) runs the UAG's own services
 // on that platform, to check another architecture; MongoDB and Form.io keep theirs.
-const PUBLISHED = { uag: process.env.E2E_UAG_IMAGE, demo: process.env.E2E_DEMO_IMAGE, engines: process.env.E2E_ENGINES_IMAGE };
+const PUBLISHED = { uag: process.env.E2E_UAG_IMAGE, engines: process.env.E2E_ENGINES_IMAGE };
 const published = Object.values(PUBLISHED).some(Boolean);
 if (published && !Object.values(PUBLISHED).every(Boolean)) {
-    throw new Error('Set all of E2E_UAG_IMAGE, E2E_DEMO_IMAGE and E2E_ENGINES_IMAGE, or none.');
+    throw new Error('Set both E2E_UAG_IMAGE and E2E_ENGINES_IMAGE, or neither.');
 }
-const IMAGES = published ? PUBLISHED : { uag: IMAGE, demo: 'formio/uag-demo:e2e-local', engines: 'formio/uag-engines:e2e-local' };
+const IMAGES = published ? PUBLISHED : { uag: IMAGE, engines: 'formio/uag-engines:e2e-local' };
 const PLATFORM = process.env.E2E_PLATFORM || '';
 const onPlatform = PLATFORM ? [`    platform: ${PLATFORM}`] : [];
 
 /**
- * Layer 3: the demo site as it ships, self-hosted. Its own docker-compose.yml
- * with docker-compose.enterprise.yml (Enterprise Form.io, the setup job) and
- * docker-compose.split.yml (the engine server with JEV and Claude, and the flow
- * proxy as its own service, so the viewer shows each engine call), the UAG
- * built from this tree and the site runs under its own Compose project name, with an override that changes only the published ports, the
- * UAG's image, and the name the UAG reaches the project by: the Form.io
- * service gets the alias `formio.e2e.test`, the endpoint the test license
- * allows, and the UAG loads the project by its ID URL there (Enterprise
- * Form.io reads a dotted host as a project subdomain). Everything is driven
- * through the site, as a visitor would: a real conversation (the UAG's agent/chat), real Run task actions and
- * engines settling two applicants, and the claims wizard triaged in a browser.
- * With E2E_UAG_IMAGE, E2E_DEMO_IMAGE and E2E_ENGINES_IMAGE it runs a release's
+ * Layer 3: the demo as it ships, self-hosted. The demo's own docker-compose.yml
+ * (the UAG) with docker-compose.enterprise.yml (Enterprise Form.io, the setup
+ * job) and docker-compose.split.yml (the engine server with JEV and Claude),
+ * the UAG built from this tree, under its own Compose project name, with an
+ * override that changes only the published ports, the UAG's image, and the name
+ * the UAG reaches the project by: the Form.io service gets the alias
+ * `formio.e2e.test`, the endpoint the test license allows, and the UAG loads the
+ * project by its ID URL there (Enterprise Form.io reads a dotted host as a
+ * project subdomain). The static site is built for that UAG and project and
+ * served here, as CloudFront serves it. Everything is driven as a visitor's
+ * browser would: a guest of the project, a real conversation (the UAG's
+ * agent/chat), real Run task actions and engines settling two applicants, and
+ * the claims wizard triaged in a browser, with each engine's summary in the
+ * flow log. With E2E_UAG_IMAGE and E2E_ENGINES_IMAGE it runs a release's
  * published images instead of building this tree.
  * This is the release check for the demo; it is skipped unless
  * E2E_FORMIO_LICENSE, E2E_DEMO_UAG_LICENSE (or E2E_EXAMPLE_UAG_LICENSE),
@@ -59,26 +65,11 @@ describe('Layer 3: the demo site, as it ships', function () {
     this.timeout(2400000);
 
     let stack;
-    let cookie = '';
-
-    async function site(pathname, { method = 'GET', body } = {}) {
-        const response = await fetch(`${SITE}${pathname}`, {
-            method,
-            headers: { ...(cookie && { cookie }), ...(body !== undefined && { 'Content-Type': 'application/json' }) },
-            body: body === undefined ? undefined : JSON.stringify(body),
-        });
-        const set = response.headers.get('set-cookie');
-        if (set) cookie = set.split(';')[0];
-        const text = await response.text();
-        let json = null;
-        try {
-            json = JSON.parse(text);
-        }
-        catch {
-            json = text;
-        }
-        return { status: response.status, body: json };
-    }
+    let site;
+    let visitor;
+    let out = '';
+    // A guest of the project, as the site signs each visitor in, calling the UAG under the project's name.
+    const asGuest = () => guest({ uagUrl: `${UAG}/demo` });
 
     before(async function () {
         const missing = [...REQUIRED.filter((name) => !process.env[name]), ...(UAG_LICENSE ? [] : ['E2E_DEMO_UAG_LICENSE'])];
@@ -111,16 +102,9 @@ describe('Layer 3: the demo site, as it ships', function () {
                 ENGINE_SERVER_KEY: secret(),
                 TYPESAFE_API_KEY: process.env.TYPESAFE_API_KEY,
                 CLAUDE_API_KEY: process.env.CLAUDE_API_KEY,
-                FLOW_KEY: secret(),
-                DEMO_SECRET: secret(),
-                DEMO_PORT: '3430',
-                DEMO_PUBLIC_URL: SITE,
-                DEMO_DAILY_BUDGET: '0',
-                DEMO_DAILY_NETWORK_BUDGET: '0',
-                // The suite is a scripted visitor; Turnstile is tested on its own.
-                DEMO_REQUIRE_TURNSTILE: 'false',
+                // The site's origin, by either name a browser may use for it.
+                DEMO_SITE_ORIGIN: `${SITE},${SITE.replace('127.0.0.1', 'localhost')}`,
                 UAG_IMAGE: IMAGES.uag,
-                DEMO_IMAGE: IMAGES.demo,
                 ENGINES_IMAGE: IMAGES.engines,
             },
             override: [
@@ -137,7 +121,7 @@ describe('Layer 3: the demo site, as it ships', function () {
                 '    pull_policy: never',
                 // The UAG's own database, on Form.io's MongoDB: remote MCP sign-in and run records.
                 '    networks: [default, db]',
-                '    ports:',
+                '    ports: !override',
                 `      - "127.0.0.1:${new URL(UAG).port}:3200"`,
                 '    environment:',
                 `      PORTAL_SECRET: ${portalSecret}`,
@@ -150,11 +134,7 @@ describe('Layer 3: the demo site, as it ships', function () {
                     '    volumes:',
                     `      - ${path.resolve(process.env.E2E_CORE_BUNDLE)}:/app/node_modules/@formio/appserver-core/server.js:ro`,
                 ] : []),
-                '  site:',
-                ...onPlatform,
-                '    ports: !override',
-                `      - "127.0.0.1:${new URL(SITE).port}:8080"`,
-                ...(PLATFORM ? ['setup', 'uag-flow', 'uag-engines'].flatMap((service) => [`  ${service}:`, ...onPlatform]) : []),
+                ...(PLATFORM ? ['uag-engines'].flatMap((service) => [`  ${service}:`, ...onPlatform]) : []),
                 '',
             ].join('\n'),
         });
@@ -167,7 +147,7 @@ describe('Layer 3: the demo site, as it ships', function () {
         }
         else {
             await buildLocalImage();
-            await stack.compose('build', 'setup', 'uag-engines');
+            await stack.compose('build', 'uag-engines');
         }
         await stack.compose('up', '-d', '--wait', 'mongo', 'api-server');
         await stack.compose('run', '--rm', 'setup').catch(async (error) => {
@@ -178,23 +158,41 @@ describe('Layer 3: the demo site, as it ships', function () {
         expect(projectId, 'the setup job created no project').to.be.a('string');
         await fs.appendFile(stack.envFile, `E2E_PROJECT_URL='http://formio.e2e.test:3000/project/${projectId}'\n`);
         await stack.compose('up', '-d');
-        // Up once the site serves the chat's form.
+        // Up once the UAG serves the chat's form.
         await waitUntil(async () => {
-            const { status, body } = await site('/api/conversation/uag/service-request');
-            if (status !== 200 || body?.name !== 'serviceRequest') throw new Error(`form: ${JSON.stringify(body)}`);
-        }, { timeoutMs: 600000, describe: async () => `${await stack.logs('formio-uag')}\n${await stack.logs('site')}` });
+            const response = await fetch(`${UAG}/demo/service-request`, { headers: { 'x-token': projectKey } });
+            const body = response.ok ? await response.json() : null;
+            if (body?.name !== 'serviceRequest') throw new Error(`form: ${JSON.stringify(body)}`);
+        }, { timeoutMs: 600000, describe: async () => stack.logs('formio-uag') });
+        // The static site, built for this UAG and project.
+        out = await fs.mkdtemp(path.join(os.tmpdir(), 'uag-e2e-demo-site-'));
+        site = await serveSite({
+            port: new URL(SITE).port,
+            env: { DEMO_PUBLIC_URL: SITE, DEMO_OUT: out, FORMIO_PROJECT_URL: `${FORMIO}/demo`, DEMO_UAG_URL: UAG, DEMO_UAG_PROJECT_PATH: '/demo' },
+        });
+        visitor = await asGuest();
     });
 
     after(async function () {
+        if (site) await site.close();
         if (stack) await stack.down();
+        if (out) await fs.rm(out, { recursive: true, force: true });
     });
 
-    it('serves every page', async function () {
-        for (const pathname of ['/', '/getting-started', '/examples', '/examples/conversation', '/examples/workflow', '/examples/formflow', '/faq', '/contact', '/developers', '/developers/agent-api']) {
-            const { status, body } = await site(pathname);
-            expect(status, pathname).to.equal(200);
-            expect(body, pathname).to.not.include('data-license-notice');
+    it('serves every page, and a 404 for a page it does not have', async function () {
+        for (const pathname of ['/', '/getting-started', '/examples', '/examples/conversation', '/examples/workflow', '/examples/formflow', '/examples/documents', '/faq', '/contact', '/developers', '/developers/agent-api']) {
+            const response = await fetch(`${SITE}${pathname}`);
+            expect(response.status, pathname).to.equal(200);
+            expect(await response.text(), pathname).to.include(`data-uag-url="${UAG}"`);
         }
+        expect((await fetch(`${SITE}/no-such-page`)).status).to.equal(404);
+    });
+
+    it('lets the site call the UAG from the browser, and no other origin', async function () {
+        const allowed = await fetch(`${UAG}/demo/service-request`, { method: 'OPTIONS', headers: { Origin: SITE, 'Access-Control-Request-Method': 'GET', 'Access-Control-Request-Headers': 'x-jwt-token' } });
+        expect(allowed.headers.get('access-control-allow-origin')).to.equal(SITE);
+        const other = await fetch(`${UAG}/demo/service-request`, { method: 'OPTIONS', headers: { Origin: 'https://evil.example.com', 'Access-Control-Request-Method': 'GET' } });
+        expect(other.headers.get('access-control-allow-origin')).to.not.equal('https://evil.example.com');
     });
 
     it('lets an OAuth client find every authorization endpoint from the root, as Claude connectors do', async function () {
@@ -236,16 +234,16 @@ describe('Layer 3: the demo site, as it ships', function () {
             'Yes, please submit it.',
             'Yes. Submit.',
         ];
-        const form = await site('/api/conversation/uag/service-request');
+        const form = await visitor.json('/service-request');
         expect(form.status).to.equal(200);
-        const chatPath = `/api/conversation/uag/form/${form.body._id}/agent/chat`;
+        const chatPath = `/form/${form.body._id}/agent/chat`;
         const messages = [];
         const transcript = [];
         let data = {};
         let last = null;
         for (const message of turns) {
             messages.push({ role: 'user', content: message });
-            const { status, body } = await site(chatPath, { method: 'POST', body: { messages, data } });
+            const { status, body } = await visitor.json(chatPath, { method: 'POST', body: { messages, data } });
             expect(status, JSON.stringify(body)).to.equal(200);
             messages.push({ role: 'assistant', content: body.reply });
             transcript.push(`USER: ${message}`, `ASSISTANT: ${body.reply}`, `PATCH: ${JSON.stringify(body.patch)}`);
@@ -258,24 +256,26 @@ describe('Layer 3: the demo site, as it ships', function () {
         expect(last.confirmed, debug).to.equal(true);
         expect(data, debug).to.include({ fullName: 'Marcus Webb', email: 'marcus.webb@example.com', category: 'internet', urgency: 'high' });
         expect(data.serviceAddress, debug).to.include('12 Elm Street');
-        // The page then submits the form, through the UAG.
-        const saved = await site(`/api/conversation/uag/form/${form.body._id}/submission`, { method: 'POST', body: { data } });
+        // The page then submits the form, through the UAG, as the guest.
+        const saved = await visitor.json(`/form/${form.body._id}/submission`, { method: 'POST', body: { data } });
         expect(saved.status, JSON.stringify(saved.body)).to.equal(201);
         expect(saved.body.data).to.include({ fullName: 'Marcus Webb' });
     });
 
     it('declines the weak applicant, awards the strong one, and then stops', async function () {
+        // Each applicant is a guest of their own, as two visitors of the site would be.
         async function apply(profile) {
-            const { status, body } = await site('/api/workflow/applications', { method: 'POST', body: { data: PROFILES[profile] } });
+            const applicant = await asGuest();
+            const { status, body } = await applicant.json('/application/submission', { method: 'POST', body: { data: PROFILES[profile] } });
             expect(status, JSON.stringify(body)).to.equal(201);
             const deadline = Date.now() + 300000;
             let read;
             do {
                 await new Promise((resolve) => setTimeout(resolve, 5000));
-                read = await site(`/api/workflow/applications/${body.id}`);
-            } while (!read.body.settled && Date.now() < deadline);
-            if (!read.body.settled) throw new Error(`The ${profile} applicant did not settle: ${JSON.stringify(read.body)}\n${await stack.logs('formio-uag')}`);
-            return read.body;
+                read = await applicant.json(`/application/submission/${body._id}`);
+            } while (!settled(read.body.data || {}) && Date.now() < deadline);
+            if (!settled(read.body.data || {})) throw new Error(`The ${profile} applicant did not settle: ${JSON.stringify(read.body)}\n${await stack.logs('formio-uag')}`);
+            return { applicant, id: body._id, modified: read.body.modified, result: read.body.data };
         }
         const [weak, strong] = await Promise.all([apply('weak'), apply('strong')]);
         expect(weak.result).to.include({ status: 'declined', decision: 'declined' });
@@ -283,11 +283,13 @@ describe('Layer 3: the demo site, as it ships', function () {
         expect(strong.result).to.include({ status: 'scholarshipEvaluation', decision: 'acceptedWithScholarship' });
         expect(strong.result.awardLevel).to.be.oneOf(['fullRide', 'roomBoard25', 'supplemental25', 'reward1000']);
         expect(strong.result.financeRationale).to.be.a('string').and.not.equal('');
+        // Neither applicant may read the other's application.
+        expect((await weak.applicant.json(`/application/submission/${strong.id}`)).status).to.be.oneOf([401, 403, 404]);
 
         // The finance task's own save must not start another round.
         await new Promise((resolve) => setTimeout(resolve, 30000));
-        expect((await site(`/api/workflow/applications/${weak.id}`)).body.modified).to.equal(weak.modified);
-        expect((await site(`/api/workflow/applications/${strong.id}`)).body.modified).to.equal(strong.modified);
+        expect((await weak.applicant.json(`/application/submission/${weak.id}`)).body.modified).to.equal(weak.modified);
+        expect((await strong.applicant.json(`/application/submission/${strong.id}`)).body.modified).to.equal(strong.modified);
     });
 
     it('lists each agent run in Action Logs, beside Form.io\'s own entries', async function () {
@@ -425,11 +427,10 @@ describe('Layer 3: the demo site, as it ships', function () {
         ];
 
         for (const claim of CASES) {
-            it(`triages "${claim.example}" and adds its steps, with every leg in the flow viewer`, async function () {
+            it(`triages "${claim.example}" and adds its steps, with both engines in the flow log`, async function () {
                 const page = await browser.page();
                 page.setDefaultTimeout(120000);
-                await page.goto(`${SITE}/examples/formflow`);
-                const frame = page.frameLocator('iframe[data-demo-frame]');
+                const frame = await startExample(page, 'formflow', { site: SITE });
                 await frame.locator('#examples button', { hasText: claim.example }).click();
                 await frame.locator('#claim .btn-wizard-nav-next').click();
                 // The fill line settles once both engines have answered, or the read failed. At the
@@ -446,10 +447,10 @@ describe('Layer 3: the demo site, as it ships', function () {
                 const debug = JSON.stringify({ titles, activity });
                 expect(titles, debug).to.include.members(claim.steps);
                 expect(titles.filter((title) => claim.absent.includes(title)), debug).to.deep.equal([]);
-                // JEV and Claude both answered through the engine server, and the viewer shows it.
-                const labels = await page.locator('[data-flow] .flow-label').allTextContents();
-                expect(labels.some((label) => /^jev decide$/.test(label)), labels.join(', ')).to.equal(true);
-                expect(labels.some((label) => /^claude extract$/.test(label)), labels.join(', ')).to.equal(true);
+                // JEV and Claude both answered, through the engine server, and the flow log says so.
+                const runs = await flowLog(page);
+                const text = runs.filter((run) => run.title.startsWith('/agent/extract')).map((run) => run.text).join('\n');
+                expect(text, JSON.stringify(runs)).to.match(/engines: .*jev/).and.match(/claude/);
                 expect(page.errors).to.deep.equal([]);
             });
         }
