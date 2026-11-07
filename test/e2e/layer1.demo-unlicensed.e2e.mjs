@@ -1,14 +1,15 @@
 import { expect } from 'chai';
 import { launchBrowser } from './helpers/browser.mjs';
-import { startDemoStack, visitor, SITE_URL } from './helpers/demoStack.mjs';
+import { startDemoStack, guest, startExample } from './helpers/demoStack.mjs';
 
 /**
  * Layer 1: the demo site against a Form.io Open Source server and an unlicensed
  * UAG, on this machine. Conversation forms need no license, so the chat (the
- * UAG's agent/chat, answered by the scripted agent engine) works;
- * Agentic Formflow (the workflow and formflow demos) needs a UAG license or a
- * project on Form.io's hosted service, so those demos say so instead of
- * failing part way, and the Agent API refuses them. No credentials needed.
+ * UAG's agent/chat, answered by the scripted agent engine) works; Agentic
+ * Formflow (the workflow, formflow and AI Document demos) needs a license that
+ * includes the UAG or a project on Form.io's hosted service, so the UAG refuses
+ * it, and the pages say so, with what a local run needs, instead of failing
+ * part way. No credentials needed.
  */
 describe('Layer 1: the demo site, Open Source and unlicensed', function () {
     this.timeout(300000);
@@ -28,23 +29,11 @@ describe('Layer 1: the demo site, Open Source and unlicensed', function () {
         if (browser) await browser.close();
     });
 
-    it('reports Agentic Formflow as not supported', async function () {
-        const { body } = await visitor().json('/api/status');
-        expect(body.formflow).to.deep.equal({ supported: false, reason: 'unlicensed', edition: 'open-source' });
-    });
-
-    it('says on every example page that a license is needed to run the demos locally', async function () {
-        for (const pathname of ['/examples', '/examples/conversation', '/examples/workflow', '/examples/formflow']) {
-            const html = await (await fetch(`${SITE_URL}${pathname}`)).text();
-            expect(html, pathname).to.include('data-license-notice="unlicensed"').and.include('You need a UAG license to run these demos on your own machine.');
-        }
-    });
-
     it('keeps conversation forms working: the form\'s chat needs no license', async function () {
-        const chat = visitor();
-        const form = await chat.json('/api/conversation/uag/service-request');
+        const visitor = await guest();
+        const form = await visitor.json('/service-request');
         expect(form.status).to.equal(200);
-        const { status, body } = await chat.json(`/api/conversation/uag/form/${form.body._id}/agent/chat`, {
+        const { status, body } = await visitor.json(`/form/${form.body._id}/agent/chat`, {
             method: 'POST',
             body: { messages: [{ role: 'user', content: 'Full Name: Marcus Webb' }], data: {} },
         });
@@ -53,36 +42,34 @@ describe('Layer 1: the demo site, Open Source and unlicensed', function () {
         expect(body.reply).to.match(/^RECORDED fullName/);
     });
 
-    it('refuses the Agent API the demos would call', async function () {
-        const { status, body } = await visitor().json('/api/formflow/agent/extract', { method: 'POST', body: { data: { lossDescription: 'My car was stolen.' } } });
+    it('refuses the Agent API the formflow demo calls', async function () {
+        const visitor = await guest();
+        const form = await visitor.json('/claim');
+        expect(form.status).to.equal(200);
+        const { status, body } = await visitor.json(`/form/${form.body._id}/agent/extract`, { method: 'POST', body: { data: { lossDescription: 'My car was stolen.' } } });
         expect(status).to.equal(403);
         expect(body.code).to.equal('license_required');
     });
 
-    for (const [path, title] of [['/examples/workflow', 'Agentic Workflow'], ['/examples/formflow', 'Agentic Formflow']]) {
-        it(`says "${title}" is not supported without a license or SaaS project, and loads no demo`, async function () {
-            const page = await browser.page();
-            await page.goto(`${SITE_URL}${path}`);
-            const panel = page.locator('[data-demo-unsupported]');
-            await panel.waitFor();
-            expect(await panel.locator('h3').textContent()).to.equal('Not supported without a license or SaaS project');
-            expect(await page.locator('iframe[data-demo-frame]').getAttribute('src')).to.equal(null);
-            expect(page.errors).to.deep.equal([]);
-        });
-    }
-
-    it('says so on the demo apps opened on their own, too', async function () {
-        for (const app of ['/apps/workflow/', '/apps/formflow/']) {
-            const page = await browser.page();
-            await page.goto(`${SITE_URL}${app}`);
-            await page.getByRole('alert').filter({ hasText: 'Not supported without a license or SaaS project' }).waitFor();
-        }
+    it('says the formflow demo is not supported without a license or SaaS project, with what a local run needs', async function () {
+        const page = await browser.page();
+        const frame = await startExample(page, 'formflow');
+        await frame.locator('#examples button', { hasText: 'Car stolen' }).click();
+        await frame.locator('#claim .btn-wizard-nav-next').click();
+        const panel = page.locator('[data-demo-unsupported]');
+        await panel.waitFor();
+        expect(await panel.locator('h3').textContent()).to.equal('Not supported without a license or SaaS project');
+        expect(await page.locator('iframe[data-demo-frame]').isVisible()).to.equal(false);
+        await page.locator('[data-license-notice]').waitFor();
+        expect(await page.locator('[data-license-notice]').textContent()).to.include('the UAG needs a license that includes the UAG');
+        expect(page.errors).to.deep.equal([]);
     });
 
-    it('keeps the conversation demo page live', async function () {
+    it('keeps the conversation demo page live, with no notice', async function () {
         const page = await browser.page();
-        await page.goto(`${SITE_URL}/examples/conversation`);
-        await page.frameLocator('iframe[data-demo-frame]').locator('.uag-chat__message--assistant', { hasText: 'I can open a service request' }).waitFor();
+        const frame = await startExample(page, 'conversation');
+        await frame.locator('.uag-chat__message--assistant', { hasText: 'I can open a service request' }).waitFor();
         expect(await page.locator('[data-demo-unsupported]').count()).to.equal(0);
+        expect(await page.locator('[data-license-notice]').isVisible()).to.equal(false);
     });
 });

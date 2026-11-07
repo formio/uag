@@ -1,0 +1,43 @@
+name: Demo retention
+
+# Every hour, deletes what visitors left in the demo's project (ai.form.io) once
+# it is a day old: the demo forms' submissions and the guest accounts
+# (demo/scripts/retention.mjs). Runs only when the repository variable
+# DEMO_RETENTION_ENABLED is "true", so it starts at the site's cut-over.
+#
+#   vars.DEMO_FORMIO_PROJECT_URL  the project (default https://uag.form.io)
+#   secrets.DEMO_PROJECT_KEY      an API key of it
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demo-retention
+  cancel-in-progress: false
+
+jobs:
+  purge:
+    if: vars.DEMO_RETENTION_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      # No dependencies: the script uses Node's own fetch.
+      - name: Delete visitors' data older than a day
+        run: node demo/scripts/retention.mjs
+        env:
+          FORMIO_PROJECT_URL: ${{ vars.DEMO_FORMIO_PROJECT_URL || 'https://uag.form.io' }}
+          PROJECT_KEY: ${{ secrets.DEMO_PROJECT_KEY }}
+          DEMO_RETENTION_HOURS: "24"

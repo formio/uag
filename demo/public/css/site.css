@@ -283,7 +283,7 @@ a:hover .arrow::after, .btn:hover .arrow::after, a.arrow:hover::after { transfor
 .how li strong { display: block; color: var(--ink); font-size: 16px; margin-bottom: 4px; }
 .how { padding: 0; margin: 0; }
 
-/* Flow viewer --------------------------------------------------------- */
+/* Flow log ------------------------------------------------------------ */
 .flow { background: var(--char-darker); color: #c4ccd6; border-radius: 12px; overflow: hidden; border: 1px solid #1a2028; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; height: 812px; position: sticky; top: calc(var(--header) + 16px); }
 .flow-head { padding: 16px 18px 12px; border-bottom: 1px solid #2c3540; }
 .flow-head h3 { color: #fff; font-size: 15px; margin: 0; display: flex; align-items: center; gap: 8px; letter-spacing: -0.01em; }

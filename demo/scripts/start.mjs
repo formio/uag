@@ -1,21 +1,22 @@
 #!/usr/bin/env node
 /**
- * `yarn demo:start`: the demo site on its own, reading demo/.env.local (as before).
+ * `yarn demo:start`: the static site on its own, built from demo/.env.local and
+ * rebuilt on every change (scripts/serve.mjs --watch), against whatever UAG it
+ * names (DEMO_UAG_URL).
  *
  * `yarn demo:start <port>`: the whole demo on this machine, self-hosted on
  * Form.io Enterprise, from the root .env. Starting at <port> on 127.0.0.1:
  *
- *   <port>      the demo site, with all three examples
- *   <port> + 1  Form.io Enterprise and its portal
- *   <port> + 2  the UAG, built from this checkout
+ *   <port>      the demo site, with all four examples
+ *   <port> + 1  Form.io Enterprise and its portal, where the site's guests register
+ *   <port> + 2  the UAG, built from this checkout, which the site's pages call
  *
- * It builds the images, starts Form.io (MongoDB, the API server and portal),
+ * It builds the UAG's image, starts Form.io (MongoDB, the API server and portal),
  * imports the demo's roles, forms and actions into a new project (the setup
- * job), starts the UAG on that project with its own database, the engine server
- * (JEV and Claude), the flow proxy and the site, and connects a portal stage,
- * "UAG Gateway", to the UAG, so "Agent: Run task" opens in the portal. Each
- * start is fresh: keys and passwords are random, and Ctrl+C removes the stack
- * and its data.
+ * job), starts the UAG on that project with JEV and Claude inside it, builds the
+ * site for them and serves it, and connects a portal stage, "UAG Gateway", to
+ * the UAG, so "Agent: Run task" opens in the portal. Each start is fresh: keys
+ * and passwords are random, and Ctrl+C removes the stack and its data.
  *
  * Needs Docker, and in the root .env: LICENSE_KEY (a Form.io Enterprise
  * license; the UAG uses it too, unless UAG_LICENSE gives one of its own, and
@@ -38,8 +39,8 @@ const root = path.resolve(here, '../..');
 const arg = process.argv[2];
 
 if (arg === undefined) {
-    // The site alone, exactly as `node demo/server/index.mjs`.
-    const site = spawn(process.execPath, [path.join(root, 'demo/server/index.mjs')], { stdio: 'inherit' });
+    // The site alone, exactly as `node demo/scripts/serve.mjs --watch`.
+    const site = spawn(process.execPath, [path.join(root, 'demo/scripts/serve.mjs'), '--watch'], { stdio: 'inherit' });
     site.on('exit', (code, signal) => process.exit(signal ? 1 : code ?? 0));
     for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => site.kill(signal));
 }
@@ -66,7 +67,7 @@ async function startStack(value) {
 
     const url = (port) => `http://127.0.0.1:${port}`;
     const ports = { site: url(seed), portal: url(seed + 1), uag: url(seed + 2) };
-    console.log(`[demo:start] Starting the demo on ${ports.site} (Form.io on ${ports.portal}, the UAG on ${ports.uag}). The first start builds the images and takes several minutes.`);
+    console.log(`[demo:start] Starting the demo on ${ports.site} (Form.io on ${ports.portal}, the UAG on ${ports.uag}). The first start builds the UAG's image and takes several minutes.`);
 
     let env;
     try {
@@ -100,6 +101,7 @@ async function startStack(value) {
         `    Conversation forms ${env.site}/examples/conversation`,
         `    Agentic Workflow   ${env.site}/examples/workflow`,
         `    Agentic Formflow   ${env.site}/examples/formflow`,
+        `    AI Document        ${env.site}/examples/documents`,
         `  Form.io portal       ${env.portal}`,
         `    Sign in as         ${env.email}`,
         `    Password           ${env.password}${env.generated.includes('ADMIN_PASS') ? '   (generated; set ADMIN_PASS in .env to choose it)' : '   (ADMIN_PASS, from .env)'}`,
@@ -110,7 +112,7 @@ async function startStack(value) {
             ? `Generated for this start: ${env.generated.filter((name) => name !== 'ADMIN_PASS').join(', ')}. Set any of them in .env to keep it.`
             : '',
         formflow && !formflow.allowed
-            ? `Agentic Formflow is off in the UAG (${formflow.reason}), so the workflow and formflow demos will not run. Its license (UAG_LICENSE, else LICENSE_KEY) must include the UAG and allow the endpoint formio.e2e.test.`
+            ? `Agentic Formflow is off in the UAG (${formflow.reason}), so the workflow, formflow and AI Document demos will not run. Its license (UAG_LICENSE, else LICENSE_KEY) must include the UAG and allow the endpoint formio.e2e.test.`
             : '',
         '',
         'Ctrl+C stops it and removes its data.',

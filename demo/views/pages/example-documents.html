@@ -31,12 +31,12 @@
               <a href="/apps/documents/" target="_blank" rel="noopener">Open full screen ↗</a>
             </div>
             <div class="demo-gate" data-demo-gate hidden>
-              <div><h3>Start the live demo</h3><p>This demo calls real models. Please confirm you are human first.</p><div data-turnstile></div></div>
+              <div><h3>Start the live demo</h3><p>This demo calls real models. Starting it signs you in as a temporary guest of the demo's project; what you enter is deleted after a day.</p><button type="button" class="btn btn-primary btn-small" data-demo-start>Start the live demo</button></div>
             </div>
             {{{demoUnsupported}}}
-            <iframe title="AI Document demo" data-demo-frame data-requires="formflow" data-src="/apps/documents/" hidden></iframe>
+            <iframe title="AI Document demo" data-demo-frame data-src="/apps/documents/" hidden></iframe>
           </div>
-          <div data-flow data-scopes="lease-review" data-intro="One process call per upload: the UAG converts the lease, runs the document plugin on it, and streams its progress back." data-intro-inside="One process call per upload. The plugin and the engine run inside the UAG; the call streams its progress, then the result." data-empty="Nothing yet. Upload a lease, or download the sample lease and upload it."></div>
+          <div data-flow data-intro="Each upload is one call from this page to the UAG's document/process, streaming its progress and then the result. The plugin and the engine run inside the UAG." data-empty="Nothing yet. Upload a lease, or download the sample lease and upload it."></div>
         </div>
       </div>
     </section>
@@ -83,5 +83,7 @@ Formio.createForm(el, 'https://forms.example.com/myproject/lease-review');</code
         <div class="hero-actions"><a class="btn btn-light" href="/developers">Developer docs <span class="arrow"></span></a><a class="btn btn-outline-light" href="/developers/agentic-coding">Agentic Coding Plugin</a></div>
       </div>
     </section>
+    <script src="/js/flow-log.js?v={{assetVersion}}"></script>
+    <script src="/js/guest.js?v={{assetVersion}}"></script>
     <script src="/js/flow-panel.js?v={{assetVersion}}"></script>
     <script src="/js/demo.js?v={{assetVersion}}"></script>

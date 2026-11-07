@@ -53,7 +53,7 @@ A person talks to Claude, ChatGPT or your own chat app, and the agent fills in a
 
 ### Agentic workflows
 
-An application saves a submission through the UAG; an **Agent: Run task** action runs the form's task after the save and saves the result, which can start the next task. [Try it](https://ai.form.io/examples/workflow) · [source](./demo/server/workflow.mjs) · build it with [Workflows](https://ai.form.io/developers/workflows) · [prompt for your coding agent](https://github.com/formio/ai/blob/main/examples/agents/admissions-workflow.md).
+An application saves a submission through the UAG; an **Agent: Run task** action runs the form's task after the save and saves the result, which can start the next task. [Try it](https://ai.form.io/examples/workflow) · [source](./demo/public/apps/workflow/workflow.js) · build it with [Workflows](https://ai.form.io/developers/workflows) · [prompt for your coding agent](https://github.com/formio/ai/blob/main/examples/agents/admissions-workflow.md).
 
 ![The admissions criteria and the Run task actions in the portal; an applicant submits; the admissions agent scores the application and its save starts the finance agent, which picks the award.](./demo/public/images/demo-workflow.gif)
 
@@ -63,7 +63,7 @@ A person describes what happened, and the form fills itself in: decisions choose
 
 ![A policyholder describes a collision; JEV adds the wizard's steps in milliseconds, Claude prefills dates, places and names as suggestions, and the claim is submitted.](./demo/public/images/demo-formflow.gif)
 
-One deployment can serve all three. Conversation forms run on Form.io Open Source with no license; the other two need a license or a hosted project (see [License](#license)). The whole demo site, with its forms and a flow viewer that shows every call the agents make, is in [`demo/`](./demo); these recordings are made from it by [`demo/recordings`](./demo/recordings).
+One deployment can serve all three. Conversation forms run on Form.io Open Source with no license; the other two need a license or a hosted project (see [License](#license)). The whole demo site, static pages that call the UAG straight from the browser, with a flow log of every call they make, is in [`demo/`](./demo); these recordings are made from it by [`demo/recordings`](./demo/recordings).
 
 ## Quickstart
 

@@ -2,8 +2,8 @@
  * The site's pages: HTML fragments in views/pages, wrapped in views/layout.html.
  *
  * Templates use `{{name}}` (escaped) and `{{{name}}}` (raw), with dotted paths
- * into the values passed in (`{{links.portal}}`). Templates are read once at
- * startup, or on every request when DEMO_RELOAD is set, for editing.
+ * into the values passed in (`{{links.portal}}`). Templates are read once per
+ * build (see scripts/build.mjs).
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -60,6 +60,11 @@ export function siteValues(config, page, extra = {}) {
     return {
         site: { url: config.publicUrl, year: new Date().getFullYear() },
         links: config.links,
+        // What the live demos call: the UAG, the project's URL on it, and the project itself.
+        uag: config.uag,
+        projectUrl: config.projectUrl,
+        formioBaseUrl: config.formioBaseUrl,
+        production: config.production ? 'true' : 'false',
         formioJsVersion: config.formioJsVersion,
         assetVersion: config.assetVersion,
         page: { ...page, fullTitle, canonical: `${config.publicUrl}${page.route}`, bodyClass: `page-${page.view}` },

@@ -79,7 +79,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
 ```
 
-The project API key must exist before the UAG starts, which is why the [demo stack](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo), self-hosted (`docker-compose.enterprise.yml`), starts Form.io, runs a setup job that creates the project and installs the key ([`server/setup.mjs`](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/server/setup.mjs)), and only then starts the UAG.
+The project API key must exist before the UAG starts, which is why the [demo stack](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo), self-hosted (`docker-compose.enterprise.yml`), starts Form.io, runs a setup job that creates the project and installs the key ([`scripts/setup.mjs`](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/scripts/setup.mjs)), and only then starts the UAG.
 
 To run engines in their own container, see [Engine server](/developers/engine-server).
 

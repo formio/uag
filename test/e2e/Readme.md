@@ -25,7 +25,7 @@ Optional:
 | `E2E_CLAUDE_MODEL` | the Claude engine's own default | Override the Claude model used by `layer3.agent-engines`, `layer3.conversational` and `layer3.conversational-invalid` |
 | `TYPESAFE_API_KEY` | unset | Adds the JEV engine to `layer3.agent-engines`, when its SDK is installed |
 | `E2E_UAG_LICENSE` | unset | A `UAG_LICENSE` with the `uag` feature for `formio.e2e.test`. Runs the licensed cases in `layer1.agent-license`; they are pending without it. Keep it in the gitignored `.env`. |
-| `E2E_UAG_IMAGE`, `E2E_DEMO_IMAGE`, `E2E_ENGINES_IMAGE` | unset | For `layer3.demo-stack`: a release's published images (all three, such as `formio/uag:2.0.0-rc.1`), pulled and run instead of images built from this tree. Add `E2E_PLATFORM=linux/amd64` to run them as amd64 on an arm64 machine (MongoDB and Form.io keep their own platform). |
+| `E2E_UAG_IMAGE`, `E2E_ENGINES_IMAGE` | unset | For `layer3.demo-stack`: a release's published images (both, such as `formio/uag:2.0.0-rc.1`), pulled and run instead of images built from this tree. Add `E2E_PLATFORM=linux/amd64` to run them as amd64 on an arm64 machine (MongoDB and Form.io keep their own platform). |
 | `E2E_FORMIO_LICENSE` | unset | A Form.io Enterprise `LICENSE_KEY`, for `layer3.demo-stack`. Set `E2E_FORMIO_LICENSE_REMOTE=true` when it is an offline (self-contained) license; otherwise the server keeps logging `License not found` and the setup job cannot log in. |
 | `E2E_CORE_BUNDLE` | unset | Path to a locally built appserver-core `build/server.js`, bind-mounted into the UAG container `layer3.demo-stack` starts, to check a core change before it is published. |
 | `E2E_LOCAL_CORE`, `E2E_LOCAL_APPSERVER` | unset | Paths to a built appserver-core's `build/` folder and a built appserver repository. Together, they build the UAG image `layer3.demo-stack` (and the demo recordings) start against those unpublished versions, which the UAG needs when it uses APIs the published ones lack. |
@@ -175,34 +175,42 @@ is installed again when the next UAG starts (`TEMPLATE_SYNC=boot`).
 need `E2E_UAG_LICENSE`, and the browser tests need Chromium): the [demo site](../../demo) as it runs in production, on the
 open-source stack (`helpers/demoStack.mjs`). `E2E_TEMPLATE=demo` installs the
 demo's own `module/project.json`; both engines run on the real engine server
-package, hosting the scripted engines; every call passes through the demo's
-flow proxy (`demo/flow/proxy.mjs`); and the site itself (`demo/server`) runs
-in front, driven as a visitor would, with a cookie (`visitor()`). The site saves
-applications and claims through the UAG, whose "Agent: Run task" actions run
-the agents, so the workflow needs no webhooks and runs on Open Source.
+package, hosting the scripted engines; the UAG allows the site's origin
+(`CORS`); and the static site is built for that UAG and project
+(`demo/scripts/build.mjs`) and served as CloudFront serves it. The suites act
+as the site's visitors do: as guests of the project (`guest()`, which registers
+on its `guest/register` form), calling the UAG with the guest's token, and in a
+browser that clicks "Start the live demo" (`startExample()`). Applications and
+claims are saved through the UAG, whose "Agent: Run task" actions run the
+agents, so the workflow needs no webhooks and runs on Open Source.
 
-- *Agentic workflow* (`layer1.demo-workflow.e2e.mjs`): applications submitted
-  through the site. The scripted agent follows the criteria, so the sample
+- *Guests* (`layer1.demo-guests.e2e.mjs`): registration answers a token for a
+  user with the guest role and never the password's hash; the guest resource
+  refuses a guest made without the register form, and lists no guests to a
+  guest; the UAG refuses anonymous agent calls on every demo form; and a guest
+  reads back its own applications only.
+- *Agentic workflow* (`layer1.demo-workflow.e2e.mjs`): applications saved
+  through the UAG as a guest. The scripted agent follows the criteria, so the sample
   applicants (`demo/module/applicants.mjs`) always land the same way: weak
   declined, average accepted, strong accepted with a scholarship and then
   awarded a full ride by the finance task, which the admissions task's update
   starts only for the strong one. It also checks that the chain stops, that a
   save through the UAG keeps the agents' values and runs no task, that the
-  browser cannot pre-fill the agents' fields, the `sum` smoke test, that the
-  flow viewer shows the applicant the engine calls of both tasks (under the
-  request id of their submission), and that another visitor can read neither
-  the application nor its runs.
+  browser cannot pre-fill the agents' fields, the `sum` smoke test, that
+  another guest cannot read the application, and, in a browser, the page
+  submitting a sample applicant and showing each task in the flow log.
 - *Conversation form* (`layer1.demo-conversation.e2e.mjs`): the page embeds
   the service request form with `Formio.createChat`, and each turn is the UAG's
   `{form}/agent/chat`, answered by the scripted agent engine's chat turns (no
-  model key). It checks that the site serves only the chat's form, the fields
-  the UAG offers the engine, values taken from `Label: value` pairs, an invalid
-  email refused with the form's own validation message and a reply rewritten
-  to say so, completion and confirmation, the submission saved in Form.io
-  through the UAG, an injected value for a field a person may not set dropped,
-  each turn in the flow viewer as `/agent/chat`, and message limits; and, in
-  the browser, the chat page (with the form behind it) and the example page
-  around it, its embed link and the flow viewer.
+  model key). It checks the fields the UAG offers the engine, values taken
+  from `Label: value` pairs, an invalid email refused with the form's own
+  validation message and a reply rewritten to say so, completion and
+  confirmation, the submission saved in Form.io through the UAG as the guest,
+  an injected value for a field a person may not set dropped, and an overlong
+  message refused before any engine is called; and, in the browser, the
+  example page (the guest's sign-in and each turn in the flow log, with the
+  engine that answered, and no password in it), the form behind the chat, and
+  the app opened full screen.
 - *Agentic Formflow, in a browser* (`layer1.demo-formflow.e2e.mjs`): the claims
   wizard and the scripted engines, using the page's own "Try an example"
   buttons. For "Rear-ended, neck pain": the rail's triage, the steps added and
@@ -211,11 +219,19 @@ the agents, so the workflow needs no webhooks and runs on Open Source.
   description is read again, and the wizard completed, with the claim saved
   through the UAG (so its Run task action re-decides triage) and its number
   shown. For "Car stolen": the theft steps and no injury step. And the example
-  page, with the extraction's engine legs in the flow viewer.
+  page, with each `/agent/extract` call and the engines that answered in the
+  flow log.
+- *Unlicensed* (`layer1.demo-unlicensed.e2e.mjs`): with no license, the chat
+  still works, the Agent API refuses the formflow demo's extraction
+  (`license_required`), and the page says the demo is not supported, with what
+  a local run needs, while the conversation page shows no notice.
 
 The demo site's own unit tests (`demo/test`, run by `yarn test`) cover the
-spend guard, sessions, flow ownership, the chat's form filter, templating, and
-that every page and docs link resolves.
+build (every page written, no template left unfilled, no `/api` call, no
+secret published), the Content-Security-Policy and clean URLs CloudFront
+serves against the local server's, retention, the flow log's redaction and
+event streams, the guest's sign-in and expiry, templating, and that every page
+and docs link resolves.
 
 **uag-eval** (`cli.uag-eval.e2e.mjs`, no Docker, no credentials): the
 evaluation command's report and JSON output against the stub decision engine,
@@ -249,20 +265,23 @@ change the applicant's GPA.
 `E2E_FORMIO_LICENSE`, `E2E_DEMO_UAG_LICENSE`, `CLAUDE_API_KEY` and
 `TYPESAFE_API_KEY`, and Chromium; several minutes): the release check for the
 demo. It builds this tree as `formio/uag:e2e-local` and starts the demo's own
-`docker-compose.yml` with its `docker-compose.enterprise.yml` overlay (Enterprise Form.io, the setup job) and
-`docker-compose.split.yml` overlay (the engine server with JEV and Claude, and the flow proxy as its own
-service, so the viewer shows each engine call), with the UAG and the site under the Compose
-project `uag-e2e-demo`, with the site on 127.0.0.1:3430. Inside the network, an
-OAuth client's discovery chain from `/mcp` (the challenge, both metadata
-documents, and the authorize, token and register endpoints they name) must
-resolve at the root for the Enterprise project. Through the site: a
-scripted customer talks to the form's chat (the UAG's `agent/chat`, answered
-by Claude) until the form is complete and confirmed, with the category and
-urgency mapped to the form's options, and the request is saved through the UAG; Run task actions and
-Claude decline the weak applicant and award the strong one, and then stop
-changing either; and in a browser, the claims wizard's collision, stolen car
-and burst pipe examples are triaged as their kind of claim, with their steps
-added and no others, and the JEV and Claude legs shown in the flow viewer.
+`docker-compose.yml` (the UAG) with its `docker-compose.enterprise.yml` overlay
+(Enterprise Form.io, the setup job) and `docker-compose.split.yml` overlay (the
+engine server with JEV and Claude), under the Compose project `uag-e2e-demo`,
+and serves the static site built for them on 127.0.0.1:3430. It checks every
+page and the 404, that the UAG answers browsers from the site's origin only,
+and, inside the network, an OAuth client's discovery chain from `/mcp` (the
+challenge, both metadata documents, and the authorize, token and register
+endpoints they name) at the root for the Enterprise project. As guests of the
+project: a scripted customer talks to the form's chat (the UAG's
+`agent/chat`, answered by Claude) until the form is complete and confirmed,
+with the category and urgency mapped to the form's options, and the request is
+saved through the UAG; Run task actions and Claude decline one guest's weak
+applicant and award another's strong one, neither guest can read the other's
+application, and then neither changes; and in a browser, the claims wizard's
+collision, stolen car and burst pipe examples are triaged as their kind of
+claim, with their steps added and no others, and JEV and Claude both named in
+the flow log's engine summaries.
 
 **Layer 3 — the Getting Started guides, as documented** (`layer3.getting-started.e2e.mjs`,
 `yarn test:getting-started`; a few minutes): the release gate for the page most

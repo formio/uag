@@ -96,7 +96,7 @@ export async function exampleStack({ project, dir, env = {}, envFile, files = []
         },
         /** Tears the stack down, volumes included. */
         async down() {
-            await compose('down', '-v').catch((error) => console.log(`    Teardown of ${project} failed: ${error.message}`));
+            await compose('down', '-v', '--remove-orphans').catch((error) => console.log(`    Teardown of ${project} failed: ${error.message}`));
             await fs.rm(work, { recursive: true, force: true });
         },
     };

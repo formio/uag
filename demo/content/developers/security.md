@@ -225,7 +225,7 @@ Enabling an engine sends submission data to its provider: TypeSafe for `jev`, An
 - When it must be public for remote MCP clients, terminate TLS in front of it, publish only `/mcp`, `/auth` and `/.well-known` (as the custom module sample's nginx does), and make sure the OAuth documents name that HTTPS URL (`TRUST_PROXY` behind the proxy, or `BASE_URL`). Leave `MCP_OAUTH` off when no remote client needs it. That list is for MCP clients alone: applications whose browsers use the UAG also need the routes they call (a `uag` form's submissions, `{form}/agent/*` and module routes) and `/uag-js/*`.
 - Restrict `CORS`, which defaults permissively for local development, to the origins that call the Agent API from browsers.
 - Never set `NODE_TLS_REJECT_UNAUTHORIZED=0` on a deployment reachable from outside your network; it disables certificate checks for every outbound request.
-- Keep engine servers and the flow viewer on private networks, and never publish their ports. The flow viewer has no authentication and shows submission data.
+- Keep engine servers on private networks, and never publish their ports.
 
 **Identity and permissions**
 

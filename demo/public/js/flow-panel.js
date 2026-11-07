@@ -1,25 +1,23 @@
-// The flow viewer: every leg of the visitor's own agentic runs, live.
+// The flow log: every call the demo on this page makes, live, as the browser
+// sees it. Events come from js/flow-log.js, which records the demo frame's own
+// requests to the UAG and to Form.io and posts them here (same origin only);
+// nothing is sent to or read from a server. Request and response events of one
+// call share a reqId; calls that belong together share a run.
 //
-// Events come from /api/flow/stream, which carries only this visitor's runs.
-// Each run is one X-Request-Id shared by all its legs: the call into the UAG,
-// what the UAG asked each engine, the engine's research calls back into /mcp,
-// and the save. Request and response events of one leg share a reqId.
-//
-// When the engines run inside the UAG (the stream's hello says `engines: "inside"`),
-// the UAG's calls to them never cross the network, so they have no legs, and the map
-// shows only what can be seen: your app, the UAG and Form.io. Each Agent API call's
-// summary still says which engines answered and how fast.
+// The engines run inside the UAG, so their calls never reach the browser: the
+// map shows what it can see (your app, the UAG and Form.io), and each Agent API
+// call's summary says which engines answered, how fast, and the tokens they used.
 (function () {
   var HIDDEN = /^(notification|notifications\/.*|stream|ping)$/;
   var NODES = {
-    app: { x: 4, y: 26, label: 'Your app', sub: 'web + server' },
+    app: { x: 4, y: 26, label: 'Your app', sub: 'in the browser' },
     formio: { x: 104, y: 84, label: 'Form.io', sub: 'forms + data' },
     uag: { x: 104, y: 26, label: 'UAG', sub: 'gateway' },
     engines: { x: 204, y: 26, label: 'Engines', sub: 'engine server' },
     models: { x: 304, y: 26, label: 'Models', sub: 'JEV · Claude' },
   };
   var EDGES = {
-    'app-uag': 'M76 44 H104', 'formio-uag': 'M140 84 V62', 'uag-formio': 'M150 62 V84',
+    'app-uag': 'M76 44 H104', 'app-formio': 'M40 62 V102 H104', 'formio-uag': 'M140 84 V62', 'uag-formio': 'M150 62 V84',
     'uag-engines': 'M176 44 H204', 'engines-models': 'M276 44 H304', 'engines-uag': 'M204 52 H176',
   };
 
@@ -31,7 +29,7 @@
   }
 
   // The map's nodes and edges when the engines run inside the UAG: no engine or model boxes.
-  var INSIDE = { nodes: ['app', 'uag', 'formio'], edges: ['app-uag', 'formio-uag', 'uag-formio'], width: 180 };
+  var INSIDE = { nodes: ['app', 'uag', 'formio'], edges: ['app-uag', 'app-formio', 'formio-uag', 'uag-formio'], width: 180 };
 
   function mapSvg(inside) {
     var nodes = inside ? INSIDE.nodes : Object.keys(NODES);
@@ -57,13 +55,19 @@
     if (event.kind === 'agent') return ['agent api', 'agent'];
     if (event.kind === 'engine') return ['engine', 'engine'];
     if (event.kind === 'mcp') return [run.engine ? 'research' : 'mcp tool', 'mcp'];
-    if (event.kind === 'auth') return ['auth', 'auth'];
+    if (event.kind === 'auth') return ['sign in', 'auth'];
+    if (event.kind === 'task') return ['task', 'engine'];
+    if (event.kind === 'formio') return ['form.io', 'other'];
     if (/\/submission/.test(event.path || '')) return ['save', 'save'];
     return ['http', 'other'];
   }
 
   function edgesFor(event, run) {
     if (event.kind === 'engine') return ['uag-engines', 'engines-models'];
+    // A guest registers through the UAG, which forwards it to Form.io; forms load from Form.io.
+    if (event.kind === 'auth') return ['app-uag', 'uag-formio'];
+    if (event.kind === 'formio') return ['app-formio'];
+    if (event.kind === 'task') return ['uag-formio'];
     if (event.kind === 'mcp') return run.engine ? ['engines-uag'] : ['app-uag'];
     if (event.kind === 'agent') return ['app-uag'];
     if (/\/submission/.test(event.path || '')) return ['app-uag', 'uag-formio'];
@@ -92,8 +96,11 @@
     if (first.kind === 'agent') {
       return '/agent/' + first.operation + (first.task ? ' · ' + first.task : '');
     }
-    if (first.kind === 'mcp' || first.kind === 'auth') return 'Chat turn';
-    if (/\/submission/.test(first.path || '')) return 'Save through the UAG';
+    if (first.kind === 'auth') return 'Guest sign-in';
+    if (first.kind === 'task') return first.title || first.label || 'Task';
+    if (first.kind === 'formio') return 'Form.io';
+    if (first.kind === 'mcp') return 'Chat turn';
+    if (/\/submission/.test(first.path || '')) return first.method === 'GET' ? 'Read through the UAG' : 'Save through the UAG';
     return first.label || 'Run';
   }
 
@@ -179,7 +186,7 @@
       if (run.hidden) { run.box.remove(); return; }
       if (empty.parentNode && run.box.parentNode) empty.remove();
       if (event.kind === 'engine') run.engine = true;
-      if (!run.first && event.phase === 'request') run.first = event;
+      if (!run.first && (event.phase === 'request' || event.kind === 'task')) run.first = event;
       run.headTitle.textContent = runTitle(run);
       var time = new Date(Date.parse(event.ts) || Date.now());
       run.headMeta.textContent = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -225,31 +232,31 @@
     }
 
     clear.addEventListener('click', function () {
-      fetch('/api/flow/clear', { method: 'POST' });
       runs = {}; legs = {}; total = 0;
       list.innerHTML = '';
       list.appendChild(empty);
       count.textContent = '0 calls';
     });
 
-    var source;
-    function connect() {
-      source = new EventSource('/api/flow/stream');
-      source.addEventListener('hello', function (message) {
-        var hello = JSON.parse(message.data);
-        live.classList.toggle('on', !!hello.enabled);
-        if (hello.engines === 'inside' && !inside) enginesInside();
-        if (!hello.enabled) empty.textContent = 'The flow viewer is not connected on this deployment.';
-      });
-      source.onmessage = function (message) {
-        try { handle(JSON.parse(message.data)); } catch (e) { /* skip */ }
-      };
-      source.onerror = function () { live.classList.remove('on'); };
-      source.onopen = function () { live.classList.add('on'); };
+    // The browser sees only your app, the UAG and Form.io.
+    enginesInside();
+    live.classList.add('on');
+    function fromFrame(message) {
+      if (message.origin !== location.origin || !message.data || message.data.type !== 'uag-flow') return;
+      try { handle(message.data.event); } catch (e) { /* skip */ }
     }
-    // The stream replays this visitor's buffered events on connect, so start clean.
-    connect();
-    return { close: function () { source && source.close(); } };
+    function fromPage(event) {
+      try { handle(event.detail); } catch (e) { /* skip */ }
+    }
+    window.addEventListener('message', fromFrame);
+    window.addEventListener('uag-flow', fromPage);
+    return {
+      handle: handle,
+      close: function () {
+        window.removeEventListener('message', fromFrame);
+        window.removeEventListener('uag-flow', fromPage);
+      },
+    };
   }
 
   window.UAGFlow = { mount: mount };

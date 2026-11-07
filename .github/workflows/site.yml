@@ -1,0 +1,92 @@
+name: Publish demo site
+
+# Builds the demo site (demo/, ai.form.io) as static files and publishes them to
+# the S3 bucket behind its CloudFront distribution (demo/deploy/site.yml). Runs
+# for each version tag, as the UAG's own release does, and by hand (Actions,
+# Publish demo site, Run workflow).
+#
+# The deploy job runs in the GitHub environment "demo-site", which the stack's
+# deploy role trusts (GitHub OIDC; no AWS key is stored). That environment holds:
+#   vars.DEMO_UAG_URL               the UAG the site embeds (https://uag.ai.form.io)
+#   vars.DEMO_SITE_BUCKET           the stack's BucketName output
+#   vars.DEMO_SITE_DISTRIBUTION_ID  its DistributionId output
+#   vars.DEMO_SITE_ROLE_ARN         its DeployRoleArn output
+#   vars.DEMO_DOMAIN                optional; ai.form.io by default
+on:
+  push:
+    tags: ["v[0-9]*", "[0-9]*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demo-site
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: demo-site
+    permissions:
+      contents: read
+      id-token: write
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      # The site's build needs only its own workspace's dependencies.
+      - name: Install dependencies
+        run: yarn workspaces focus @formio/uag-demo
+
+      - name: Build the site
+        env:
+          NODE_ENV: production
+          DEMO_UAG_URL: ${{ vars.DEMO_UAG_URL }}
+          DEMO_DOMAIN: ${{ vars.DEMO_DOMAIN || 'ai.form.io' }}
+        run: |
+          set -euo pipefail
+          if [ -z "$DEMO_UAG_URL" ]; then echo "Set the variable DEMO_UAG_URL in the demo-site environment."; exit 1; fi
+          # Each publish gets new asset URLs (?v=), so browsers never mix two builds.
+          export DEMO_ASSET_VERSION="$(jq -r .version demo/package.json)-${GITHUB_SHA::7}"
+          yarn demo:build
+
+      - name: Sign in to AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.DEMO_SITE_ROLE_ARN }}
+          aws-region: us-east-1
+
+      # Assets first and pages last, so no published page names an asset not yet
+      # uploaded; files the build no longer has are removed at the end.
+      - name: Publish to S3
+        env:
+          BUCKET: ${{ vars.DEMO_SITE_BUCKET }}
+        run: |
+          set -euo pipefail
+          DEST="s3://${BUCKET}"
+          # Scripts and stylesheets: every page names them with ?v=, so they may be kept for good.
+          aws s3 sync demo/dist "$DEST" --exclude '*' --include '*.js' --include '*.css' \
+            --cache-control 'public, max-age=31536000, immutable'
+          # Images, recordings, sample files.
+          aws s3 sync demo/dist "$DEST" --exclude '*.html' --exclude '*.json' --exclude '*.js' --exclude '*.css' \
+            --cache-control 'public, max-age=86400'
+          # Pages and data: revalidated on every load.
+          aws s3 sync demo/dist "$DEST" --exclude '*' --include '*.html' --include '*.json' \
+            --cache-control 'no-cache'
+          aws s3 sync demo/dist "$DEST" --delete
+
+      - name: Invalidate CloudFront
+        env:
+          DISTRIBUTION_ID: ${{ vars.DEMO_SITE_DISTRIBUTION_ID }}
+        run: aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" --paths '/*'

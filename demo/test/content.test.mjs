@@ -2,8 +2,8 @@ import { expect } from 'chai';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Docs, SECTIONS, parseFrontMatter, slugify } from '../server/docs.mjs';
-import { PAGES } from '../server/pages.mjs';
+import { Docs, SECTIONS, parseFrontMatter, slugify } from '../lib/docs.mjs';
+import { PAGES } from '../lib/pages.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const docs = new Docs(path.join(root, 'content/developers'));
@@ -19,7 +19,6 @@ function links(html) {
 /** Whether a site path is a page, or a file in public/. */
 function exists(pathname) {
     if (routes.has(pathname.replace(/\/$/, '') || '/')) return true;
-    if (pathname.startsWith('/renderer/')) return fs.existsSync(path.join(root, '..', 'packages', 'uag-js', pathname.slice('/renderer/'.length)));
     const file = path.join(root, 'public', pathname);
     return fs.existsSync(file) && (fs.statSync(file).isFile() || fs.existsSync(path.join(file, 'index.html')));
 }

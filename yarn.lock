@@ -318,9 +318,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@formio/appserver-core@npm:^2.26.3":
-  version: 2.26.3
-  resolution: "@formio/appserver-core@npm:2.26.3"
+"@formio/appserver-core@npm:^2.26.4":
+  version: 2.26.4
+  resolution: "@formio/appserver-core@npm:2.26.4"
   dependencies:
     "@formio/core": "npm:2.9.0"
     "@formio/node-fetch-http-proxy": "npm:^1.2.0"
@@ -345,15 +345,15 @@ __metadata:
     resolve: "npm:^1.22.14"
     statuses: "npm:^2.0.2"
     xss: "npm:^1.0.17"
-  checksum: 10c0/d798f480ef7185861957542e58ad8fbd7ea0f023a6d7eaf0adab205d09c5ce07a5de5b712ebe510f73b9a54c0ce9e95a7165574771be33cd96618183ed173a5f
+  checksum: 10c0/b937afb8b1b246f1a87a3b77806552db024bbcaa1c3f49e85f5ce6acb8ed63afd0f0375550c2064aa2e7d968eeb4a558eec0573c268bf8588d33b1a7b0e5567b
   languageName: node
   linkType: hard
 
-"@formio/appserver@npm:^2.26.3":
-  version: 2.26.3
-  resolution: "@formio/appserver@npm:2.26.3"
+"@formio/appserver@npm:^2.26.4":
+  version: 2.26.4
+  resolution: "@formio/appserver@npm:2.26.4"
   dependencies:
-    "@formio/appserver-core": "npm:^2.26.3"
+    "@formio/appserver-core": "npm:^2.26.4"
     "@formio/core": "npm:2.9.0"
     async: "npm:^3.2.6"
     bcryptjs: "npm:^3.0.3"
@@ -363,7 +363,7 @@ __metadata:
     jsonwebtoken: "npm:^9.0.3"
     lodash: "npm:^4.18.1"
     mongodb: "npm:^7.8.0"
-  checksum: 10c0/d370d829505188ce956b3e7c51dc9e7f42dd953cad7376caca7a3cde20023e7ff506d9f091c7ba3fb22dbb9acfa957c9afb38b90a5b9ef9f47a3daeaa9220cd2
+  checksum: 10c0/46c62f0e8837f3fd26ff61f2699eeae7a8de05b51e237becbf4e722f8cbd5824f61a4f59cb9a9307fdf2314761ad02f26ded8eb88e157a9ab5bc75bee69b48a9
   languageName: node
   linkType: hard
 
@@ -470,7 +470,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@formio/uag-demo@workspace:demo"
   dependencies:
-    express: "npm:^5.3.0"
     marked: "npm:18.1.2"
   languageName: unknown
   linkType: soft
@@ -567,7 +566,7 @@ __metadata:
   resolution: "@formio/uag@workspace:."
   dependencies:
     "@anthropic-ai/sdk": "npm:^1.3.0"
-    "@formio/appserver": "npm:^2.26.3"
+    "@formio/appserver": "npm:^2.26.4"
     "@formio/core": "npm:2.9.0"
     "@formio/js": "npm:5.7.0"
     "@formio/uag-sdk": "npm:^2.0.0-rc.9"
