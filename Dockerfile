@@ -18,8 +18,6 @@ COPY engines/claude/package.json engines/claude/
 COPY engines/openai/package.json engines/openai/
 COPY engines/grok/package.json engines/grok/
 COPY engines/gemini/package.json engines/gemini/
-# Not released (MAI is in preview): only its manifest, which the lockfile lists.
-COPY engines/mai/package.json engines/mai/
 # The demo site is a workspace too; its manifest is in the lockfile.
 COPY demo/package.json demo/
 RUN apk upgrade --no-cache && apk add --no-cache make python3 g++ git && corepack enable && yarn install --immutable

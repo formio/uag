@@ -18,6 +18,3 @@ test
 engines/*/test
 packages/*/test
 packages/engine-server/Dockerfile*
-# Not released (MAI is in preview): only its manifest, which the lockfile lists.
-engines/mai/*
-!engines/mai/package.json

@@ -428,8 +428,6 @@ Gemini has no decision API, so decision fields routed to it are answered as extr
 
 > **Note:** For Grok, Gemini and any agent engine that sends data to a hosted model, each request sends the provider the task's criteria, its input (or, without one, the whole submission except the fields being answered), its `uagContext` values, today's date, and, for a task that researches, what its tools return.
 
-The repository also holds an `mai` engine for Microsoft's MAI models on Microsoft Foundry. It is not released: it is not published to npm or included in the images.
-
 ## Recipes
 
 Each recipe is a Docker Compose override for a stack whose UAG service is named `formio-uag` and runs its engines inside the UAG, such as the [custom module sample](../../samples/custom-module). On a self-hosted project, as in these samples, every engine but the stubs needs a license that includes the UAG (a project on Form.io's hosted service needs none), so each sample file also passes `LICENSE_KEY` from `.env` to the UAG (left out of the excerpts below). Run one from that stack's folder:

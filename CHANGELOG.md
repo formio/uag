@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Removed
+
+- The MAI engine (`engines/mai`, `@formio/uag-mai`), which was never released.
+
 ### Fixed
 
 - A run after the save that acts with an agent role, recorded while the UAG was already looking for runs, starts at once. It could wait up to a minute for the next look.

@@ -1,7 +1,7 @@
 /**
  * The OpenAI-compatible core of the UAG's agent engines: structured extraction
  * and research over a chat completions API, shared by `@formio/uag-openai` and
- * the provider packages built on it (Grok and Gemini; MAI, not yet released).
+ * the provider packages built on it (Grok and Gemini).
  *
  *   const { openAICompatible } = require('@formio/uag-openai/compatible');
  *   module.exports = openAICompatible({
