@@ -32,6 +32,7 @@
     "release": "node scripts/release.mjs",
     "release:version": "node scripts/set-version.mjs",
     "dev": "tsx --no-node-snapshot index.js",
+    "demo:build": "node demo/scripts/build.mjs",
     "demo:dev": "node --no-node-snapshot demo/scripts/dev.mjs",
     "demo:local": "node --no-node-snapshot demo/scripts/local.mjs",
     "demo:start": "node --no-node-snapshot demo/scripts/start.mjs",
@@ -45,7 +46,7 @@
   "author": "Form.io Developers",
   "license": "MIT",
   "dependencies": {
-    "@formio/appserver": "^2.26.3",
+    "@formio/appserver": "^2.26.4",
     "@formio/core": "2.9.0",
     "@formio/uag-sdk": "^2.0.0-rc.9",
     "@modelcontextprotocol/sdk": "1.32.2",

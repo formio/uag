@@ -1,14 +1,17 @@
 /**
  * The demo, self-hosted on Form.io Enterprise with its portal, for the
- * recordings that show the Enterprise form builder and project settings.
+ * recordings that show the Enterprise form builder and project settings, and
+ * for `yarn demo:start <port>`.
  *
- * It is the stack the layer 3 demo suite runs (test/e2e/layer3.demo-stack):
- * the demo's own docker-compose.yml with docker-compose.enterprise.yml and
- * docker-compose.split.yml, the UAG built from this tree, and the engine server
- * with JEV and Claude, plus
- * PORTAL_ENABLED=1. Needs E2E_FORMIO_LICENSE (a Form.io Enterprise
- * license), E2E_DEMO_UAG_LICENSE or E2E_EXAMPLE_UAG_LICENSE (one that includes
- * the UAG for formio.e2e.test), CLAUDE_API_KEY and TYPESAFE_API_KEY.
+ * The demo's own docker-compose.yml with docker-compose.enterprise.yml (Form.io
+ * Enterprise and the setup job), the UAG built from this tree with JEV and
+ * Claude inside it, and PORTAL_ENABLED=1; Form.io and the UAG are published, so
+ * the browser can reach both, as the static site's pages need. The site is
+ * built for them and served on this machine (scripts/serve.mjs). Needs
+ * LICENSE_KEY (a Form.io Enterprise license; E2E_FORMIO_LICENSE), a UAG
+ * license that allows formio.e2e.test (UAG_LICENSE, E2E_DEMO_UAG_LICENSE or
+ * E2E_EXAMPLE_UAG_LICENSE, else LICENSE_KEY), CLAUDE_API_KEY and
+ * TYPESAFE_API_KEY.
  *
  * After it starts, a portal stage, "UAG Gateway", is connected to the UAG as an
  * on-premise environment (the UAG's PORTAL_SECRET), so the portal can open the
@@ -22,10 +25,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { chromium } from 'playwright';
 import { IMAGE, buildLocalImage, exampleStack, repoRoot, waitUntil } from '../../test/e2e/helpers/exampleStack.mjs';
+import { serveSite } from '../scripts/serve.mjs';
 
 export const SITE = 'http://127.0.0.1:3430';
 export const PORTAL = 'http://127.0.0.1:3431';
-/** The UAG, published so the portal can connect a stage to it as a remote environment. */
+/** The UAG, published so the site's pages can call it and the portal can connect a stage to it. */
 export const UAG = 'http://127.0.0.1:3432';
 /** The portal administrator, unless `ADMIN_EMAIL` says otherwise. */
 export const ADMIN_EMAIL = 'admin@example.com';
@@ -55,7 +59,10 @@ export function enterpriseMissing(settings = process.env) {
  * Each is taken from `settings` when set there, and is otherwise random for
  * this start.
  */
-export const DEPLOYMENT_SETTINGS = ['ADMIN_PASS', 'FORMIO_ADMIN_KEY', 'PROJECT_KEY', 'DB_SECRET', 'FORMIO_JWT_SECRET', 'UAG_JWT_SECRET', 'PORTAL_SECRET', 'ENGINE_SERVER_KEY', 'FLOW_KEY', 'DEMO_SECRET'];
+export const DEPLOYMENT_SETTINGS = ['ADMIN_PASS', 'FORMIO_ADMIN_KEY', 'PROJECT_KEY', 'DB_SECRET', 'FORMIO_JWT_SECRET', 'UAG_JWT_SECRET', 'PORTAL_SECRET'];
+
+/** The origins a browser may give a local site: by 127.0.0.1 and by localhost. */
+export const originsOf = (url) => [new URL(url).origin, new URL(url).origin.replace('127.0.0.1', 'localhost')].join(',');
 
 /**
  * Starts the stack. `site`, `portal` and `uag` are the URLs it is published at
@@ -81,7 +88,7 @@ export async function startEnterpriseDemo({ site = SITE, portal = PORTAL, uag = 
     const stack = await exampleStack({
         project,
         dir: path.join(repoRoot, 'demo'),
-        files: ['docker-compose.enterprise.yml', 'docker-compose.split.yml'],
+        files: ['docker-compose.enterprise.yml'],
         env: {
             LICENSE_KEY: licenses.formio,
             LICENSE_REMOTE: settings.LICENSE_REMOTE || settings.E2E_FORMIO_LICENSE_REMOTE || '',
@@ -92,14 +99,9 @@ export async function startEnterpriseDemo({ site = SITE, portal = PORTAL, uag = 
             CLAUDE_API_KEY: settings.CLAUDE_API_KEY,
             ...(settings.CLAUDE_MODEL && { CLAUDE_MODEL: settings.CLAUDE_MODEL }),
             ...deployment,
-            DEMO_PORT: new URL(site).port,
-            DEMO_PUBLIC_URL: site,
-            DEMO_DAILY_BUDGET: '0',
-            DEMO_DAILY_NETWORK_BUDGET: '0',
-            DEMO_REQUIRE_TURNSTILE: 'false',
+            // The site, and the portal, which calls the UAG to connect a stage to it.
+            DEMO_SITE_ORIGIN: `${originsOf(site)},${originsOf(portal)}`,
             UAG_IMAGE: IMAGE,
-            DEMO_IMAGE: 'formio/uag-demo:e2e-local',
-            ENGINES_IMAGE: 'formio/uag-engines:e2e-local',
         },
         override: [
             'services:',
@@ -112,7 +114,7 @@ export async function startEnterpriseDemo({ site = SITE, portal = PORTAL, uag = 
             '  formio-uag:',
             '    build: !reset null',
             '    pull_policy: never',
-            '    ports:',
+            '    ports: !override',
             `      - "127.0.0.1:${new URL(uag).port}:3200"`,
             '    environment:',
             '      PROJECT: ${E2E_PROJECT_URL:-http://api-server:3000/demo}',
@@ -121,15 +123,18 @@ export async function startEnterpriseDemo({ site = SITE, portal = PORTAL, uag = 
                 '    volumes:',
                 `      - ${path.resolve(process.env.E2E_CORE_BUNDLE)}:/app/node_modules/@formio/appserver-core/server.js:ro`,
             ] : []),
-            '  site:',
-            '    ports: !override',
-            `      - "127.0.0.1:${new URL(site).port}:8080"`,
             '',
         ].join('\n'),
     });
+    const out = await fs.mkdtemp(path.join(os.tmpdir(), `${project}-site-`));
+    let served = null;
+    const stop = async () => {
+        if (served) await served.close();
+        await stack.down();
+        await fs.rm(out, { recursive: true, force: true });
+    };
     try {
         await buildLocalImage();
-        await stack.compose('build', 'setup', 'uag-engines');
         await stack.compose('up', '-d', '--wait', 'mongo', 'api-server');
         await stack.compose('run', '--rm', 'setup');
         const { _id: projectId } = await (await fetch(`${portal}/demo`, { headers: { 'x-token': projectKey } })).json();
@@ -139,22 +144,33 @@ export async function startEnterpriseDemo({ site = SITE, portal = PORTAL, uag = 
         await fs.appendFile(stack.envFile, `E2E_PROJECT_URL='http://formio.e2e.test:3000/project/${projectId}'\n`);
         await stack.compose('up', '-d');
         await waitUntil(async () => {
-            const response = await fetch(`${site}/api/conversation/uag/service-request`);
+            const response = await fetch(`${uag}/demo/service-request`, { headers: { 'x-token': projectKey } });
             const body = response.ok ? await response.json() : null;
             if (body?.name !== 'serviceRequest') throw new Error(`form: ${JSON.stringify(body)}`);
-        }, { timeoutMs: 600000, describe: async () => `${await stack.logs('formio-uag')}\n${await stack.logs('site')}` });
+        }, { timeoutMs: 600000, describe: async () => stack.logs('formio-uag') });
+        // The site, built for this stack: guests register at the project, and the pages call the UAG.
+        served = await serveSite({
+            port: new URL(site).port,
+            env: {
+                DEMO_PUBLIC_URL: site,
+                DEMO_OUT: out,
+                FORMIO_PROJECT_URL: `${portal}/demo`,
+                DEMO_UAG_URL: uag,
+                DEMO_UAG_PROJECT_PATH: '/demo',
+            },
+        });
     }
     catch (error) {
-        await stack.down();
+        await stop();
         throw error;
     }
-    const env = { site, portal, uag, portalSecret, projectKey, email: adminEmail, password: adminPass, generated, stop: () => stack.down() };
+    const env = { site, portal, uag, portalSecret, projectKey, email: adminEmail, password: adminPass, generated, stop };
     if (!connectStage) return env;
     try {
         env.uagStage = await connectUagStage(env);
     }
     catch (error) {
-        await stack.down();
+        await stop();
         throw error;
     }
     return env;
@@ -164,12 +180,24 @@ export async function startEnterpriseDemo({ site = SITE, portal = PORTAL, uag = 
  * Create a stage of the demo project and connect it to the UAG, as a person
  * would in the portal: Staging, Connect to an On-Premise Environment, the
  * UAG's root URL and PORTAL_SECRET, subdirectory paths, and the UAG's project.
+ * `name` is the stage's name, which is its path on the deployment.
  * Resolves to the stage's project id.
  */
-export async function connectUagStage(env, { title = 'UAG Gateway', project = 'UAG Demo' } = {}) {
+export async function connectUagStage(env, { title = 'UAG Gateway', name = title.toLowerCase().replace(/[^a-z0-9]/g, ''), project = 'UAG Demo' } = {}) {
     const browser = await chromium.launch();
+    const problems = [];
     try {
         const page = await browser.newPage({ viewport: { width: 1280, height: 880 } });
+        // What the portal's calls to the UAG met, for the failure message.
+        page.on('requestfailed', (request) => {
+            if (request.url().startsWith(env.uag)) problems.push(`${request.method()} ${request.url()}: ${request.failure()?.errorText}`);
+        });
+        page.on('response', (response) => {
+            if (response.url().startsWith(env.uag) && response.status() >= 400) problems.push(`${response.request().method()} ${response.url()}: ${response.status()}`);
+        });
+        page.on('console', (message) => {
+            if (message.type() === 'error') problems.push(`console: ${message.text()}`);
+        });
         await page.goto(env.portal, { waitUntil: 'networkidle' });
         await page.fill('input[name="data[email]"]', env.email);
         await page.fill('input[name="data[password]"]', env.password);
@@ -180,7 +208,7 @@ export async function connectUagStage(env, { title = 'UAG Gateway', project = 'U
         await page.locator('text=+ Create Stage').first().click();
         await page.selectOption('select[name=copyFrom]', { index: 1 });
         await page.fill('input[name=title]', title);
-        await page.fill('input[name=name]', title.toLowerCase().replace(/[^a-z0-9]/g, ''));
+        await page.fill('input[name=name]', name);
         const live = /#\/project\/([0-9a-f]{24})/.exec(page.url())?.[1];
         await page.locator('button, .btn', { hasText: 'Add Stage' }).first().click();
         // The portal moves to the new stage's forms.
@@ -208,7 +236,10 @@ export async function connectUagStage(env, { title = 'UAG Gateway', project = 'U
     catch (error) {
         const shot = path.join(os.tmpdir(), 'uag-recordings', 'stage-failure.png');
         await browser.contexts()[0]?.pages()[0]?.screenshot({ path: shot }).catch(() => {});
-        error.message += `\nThe portal at the failure: ${shot}`;
+        // Node prints the stack, which already holds the message: add to both.
+        const more = `\nThe portal at the failure: ${shot}${problems.length ? `\nIn the portal:\n  ${problems.slice(-10).join('\n  ')}` : '\nThe portal\'s calls to the UAG met no error.'}`;
+        error.message += more;
+        if (error.stack) error.stack = error.stack.replace(/\n\s+at /, `${more}\n    at `);
         throw error;
     }
     finally {

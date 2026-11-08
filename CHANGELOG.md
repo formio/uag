@@ -2,7 +2,7 @@
 
 ## 2.0.0-rc.9
 
-Needs `@formio/appserver` 2.26.3 or later.
+Needs `@formio/appserver` 2.26.4 or later.
 
 ### Added
 
@@ -13,6 +13,10 @@ Needs `@formio/appserver` 2.26.3 or later.
 - The license grace period lasts 12 hours from the license server's last confirmation, while the UAG runs; it does not continue after a restart, and `uag-meta` no longer holds an outage record.
 - The UAG's database needs a license that includes the UAG unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`). The custom module sample sets `LICENSE_KEY` for MCP sign-in.
 - `LICENSE_SERVER` accepts only Form.io's license servers (`https://*.form.io`). Online keys are not validated while `NODE_TLS_REJECT_UNAUTHORIZED=0`, `NODE_EXTRA_CA_CERTS` or `NODE_USE_SYSTEM_CA=1` is set; use an offline license (`LICENSE_REMOTE`) there.
+
+### Fixed
+
+- A form with a password field, such as a register form, saved through the UAG while it forwards submissions to Form.io: the password reaches Form.io as entered, so Form.io hashes it and the form's Login action can sign the user in. It was hashed first, and Form.io refused the save.
 
 ## 2.0.0-rc.8
 

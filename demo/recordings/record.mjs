@@ -7,7 +7,8 @@
  *
  * Conversation forms record on the e2e Open Source stack; the workflow and
  * formflow recordings show the Enterprise portal, so they record on the demo
- * self-hosted on Form.io Enterprise (enterprise.mjs). Each stack runs real
+ * self-hosted on Form.io Enterprise (enterprise.mjs), or, with FORMIO_TEST_URL,
+ * on an Enterprise deployment that is already running (deployed.mjs). Each stack runs real
  * engines (JEV and Claude, from the root .env) and is started and stopped here,
  * unless the RECORD_* variables in README.md name running ones. Writes
  * demo/public/images/demo-<name>.gif.
@@ -71,6 +72,12 @@ async function enterprise() {
             uagStage: process.env.RECORD_ENTERPRISE_STAGE,
             stop: async () => {},
         };
+    }
+    if (process.env.FORMIO_TEST_URL) {
+        const { startDeployedDemo, deployedMissing } = await import('./deployed.mjs');
+        requireEnv(deployedMissing());
+        console.log(`Starting the demo on ${process.env.FORMIO_TEST_URL} (a few minutes: it builds the UAG image) ...`);
+        return startDeployedDemo();
     }
     const { startEnterpriseDemo, enterpriseMissing } = await import('./enterprise.mjs');
     requireEnv(enterpriseMissing());

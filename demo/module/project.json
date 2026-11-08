@@ -20,9 +20,104 @@
       "description": "A role for Anonymous Users.",
       "admin": false,
       "default": true
+    },
+    "guest": {
+      "title": "Guest",
+      "description": "A visitor of the demo site, registered on guestRegister. Deleted after a day.",
+      "admin": false,
+      "default": false
     }
   },
-  "resources": {},
+  "resources": {
+    "guest": {
+      "title": "Guest",
+      "type": "resource",
+      "name": "guest",
+      "path": "guest",
+      "tags": [],
+      "settings": {},
+      "access": [
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator"
+          ]
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": []
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "administrator"
+          ]
+        }
+      ],
+      "components": [
+        {
+          "type": "email",
+          "key": "email",
+          "label": "Email",
+          "input": true,
+          "validate": {
+            "required": true
+          },
+          "unique": true
+        },
+        {
+          "type": "password",
+          "key": "password",
+          "label": "Password",
+          "input": true,
+          "protected": true,
+          "persistent": true,
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "button",
+          "key": "submit",
+          "label": "Submit",
+          "input": true,
+          "action": "submit"
+        }
+      ]
+    }
+  },
   "forms": {
     "serviceRequest": {
       "title": "Service Request",
@@ -177,7 +272,8 @@
           "roles": [
             "administrator",
             "authenticated",
-            "anonymous"
+            "anonymous",
+            "guest"
           ]
         }
       ],
@@ -204,6 +300,12 @@
           "type": "delete_all",
           "roles": [
             "administrator"
+          ]
+        },
+        {
+          "type": "create_own",
+          "roles": [
+            "guest"
           ]
         }
       ]
@@ -702,7 +804,8 @@
           "roles": [
             "administrator",
             "anonymous",
-            "authenticated"
+            "authenticated",
+            "guest"
           ]
         },
         {
@@ -738,7 +841,8 @@
         {
           "type": "create_own",
           "roles": [
-            "authenticated"
+            "authenticated",
+            "guest"
           ]
         },
         {
@@ -750,7 +854,8 @@
         {
           "type": "read_own",
           "roles": [
-            "authenticated"
+            "authenticated",
+            "guest"
           ]
         },
         {
@@ -762,7 +867,8 @@
         {
           "type": "update_own",
           "roles": [
-            "authenticated"
+            "authenticated",
+            "guest"
           ]
         },
         {
@@ -866,7 +972,8 @@
           "roles": [
             "administrator",
             "authenticated",
-            "anonymous"
+            "anonymous",
+            "guest"
           ]
         }
       ],
@@ -904,7 +1011,8 @@
           "roles": [
             "administrator",
             "authenticated",
-            "anonymous"
+            "anonymous",
+            "guest"
           ]
         },
         {
@@ -927,12 +1035,13 @@
       "submissionAccess": [
         {
           "type": "create_own",
-          "roles": []
+          "roles": [
+            "guest"
+          ]
         },
         {
           "type": "create_all",
           "roles": [
-            "anonymous",
             "administrator"
           ]
         },
@@ -2160,11 +2269,55 @@
           "roles": [
             "administrator",
             "authenticated",
-            "anonymous"
+            "anonymous",
+            "guest"
           ]
         }
       ],
-      "submissionAccess": [],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": [
+            "guest"
+          ]
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "administrator"
+          ]
+        }
+      ],
       "submissionRevisions": "",
       "revisions": "original",
       "esign": {},
@@ -2379,6 +2532,88 @@
           "disableOnInvalid": true
         }
       ]
+    },
+    "guestRegister": {
+      "title": "Guest Register",
+      "type": "form",
+      "name": "guestRegister",
+      "path": "guest/register",
+      "tags": [],
+      "settings": {},
+      "access": [
+        {
+          "type": "read_all",
+          "roles": [
+            "anonymous",
+            "administrator"
+          ]
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": [
+            "anonymous"
+          ]
+        },
+        {
+          "type": "create_all",
+          "roles": []
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": []
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": []
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": []
+        }
+      ],
+      "components": [
+        {
+          "type": "email",
+          "key": "email",
+          "label": "Email",
+          "input": true,
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "password",
+          "key": "password",
+          "label": "Password",
+          "input": true,
+          "protected": true,
+          "persistent": true,
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "button",
+          "key": "submit",
+          "label": "Submit",
+          "input": true,
+          "action": "submit"
+        }
+      ]
     }
   },
   "actions": {
@@ -2534,6 +2769,74 @@
       "handler": [
         "before"
       ]
+    },
+    "guest:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "guest",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    },
+    "guest:role": {
+      "title": "Role Assignment",
+      "name": "role",
+      "form": "guest",
+      "priority": 1,
+      "method": [
+        "create"
+      ],
+      "handler": [
+        "after"
+      ],
+      "settings": {
+        "association": "new",
+        "type": "add",
+        "role": "guest"
+      }
+    },
+    "guestRegister:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "guestRegister",
+      "priority": 11,
+      "method": [
+        "create"
+      ],
+      "handler": [
+        "before"
+      ],
+      "settings": {
+        "resource": "guest",
+        "fields": {
+          "email": "email",
+          "password": "password"
+        }
+      }
+    },
+    "guestRegister:login": {
+      "title": "Login",
+      "name": "login",
+      "form": "guestRegister",
+      "priority": 2,
+      "method": [
+        "create"
+      ],
+      "handler": [
+        "before"
+      ],
+      "settings": {
+        "resources": [
+          "guest"
+        ],
+        "username": "email",
+        "password": "password"
+      }
     }
   },
   "access": [

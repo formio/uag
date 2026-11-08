@@ -32,11 +32,11 @@
               <a href="/apps/conversation/" target="_blank" rel="noopener">Open full screen ↗</a>
             </div>
             <div class="demo-gate" data-demo-gate hidden>
-              <div><h3>Start the live demo</h3><p>This demo calls a real model. Please confirm you are human first.</p><div data-turnstile></div></div>
+              <div><h3>Start the live demo</h3><p>This demo calls a real model. Starting it signs you in as a temporary guest of the demo's project; what you enter is deleted after a day.</p><button type="button" class="btn btn-primary btn-small" data-demo-start>Start the live demo</button></div>
             </div>
             <iframe title="Conversation form demo" data-demo-frame data-src="/apps/conversation/" hidden></iframe>
           </div>
-          <div data-flow data-scopes="service-request" data-intro="Each chat turn is one run: the form's agent/chat on the UAG, and the agent engine it asked." data-intro-inside="Each chat turn is one run: the form's agent/chat on the UAG. The agent engine runs inside the UAG, so it answers as part of the turn." data-empty="Nothing yet. Send a message and each turn will appear here."></div>
+          <div data-flow data-intro="Each chat turn is one call from this page to the form's agent/chat on the UAG. The engine runs inside the UAG; each call's summary says which engine answered, how fast, and the tokens it used." data-empty="Nothing yet. Send a message and each turn will appear here."></div>
         </div>
       </div>
     </section>
@@ -75,7 +75,10 @@
 
 &lt;div id="chat"&gt;&lt;/div&gt;
 &lt;script&gt;
-  // A form tagged uag. On a public page it also needs uagAnonymous: see the Chat widget guide.
+  // A form tagged uag, and your signed-in user's Form.io token (this demo signs each
+  // visitor in as a guest). A public page without sign-in uses uagAnonymous instead:
+  // see the Chat widget guide.
+  Formio.setToken(userToken);
   Formio.use(FormioUAG.UAG('https://uag.example.com'));
   Formio.createChat(
     document.getElementById('chat'),
@@ -91,5 +94,7 @@
         <div class="hero-actions"><a class="btn btn-light" href="/examples/workflow">Agentic Workflow <span class="arrow"></span></a></div>
       </div>
     </section>
+    <script src="/js/flow-log.js?v={{assetVersion}}"></script>
+    <script src="/js/guest.js?v={{assetVersion}}"></script>
     <script src="/js/flow-panel.js?v={{assetVersion}}"></script>
     <script src="/js/demo.js?v={{assetVersion}}"></script>

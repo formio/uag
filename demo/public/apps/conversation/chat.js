@@ -2,25 +2,11 @@
 // Formio.createChat, exactly as an application embeds it. The conversation runs
 // in the UAG (the form's agent/chat operation); this page never names a field.
 //
-// This demo's UAG is on a private network, so the UAG's URL and the form's URL
-// here are the demo server's stand-ins for them (demo/server/conversation.mjs),
-// which add its bot check and daily budget. In your application, they are your
-// UAG's URL and the form's URL.
+// @formio/uag-js came from the UAG (<script src="{UAG}/uag-js/uag.use.js">) and
+// registered itself; js/demo-app.js pointed formio.js at the project and gave it
+// the visitor's token. Everything below is what your application would write.
 (async function () {
-  const UAG_URL = location.origin + '/api/conversation/uag';
-  const FORM_URL = UAG_URL + '/service-request';
-
-  // When the demo's guard refuses a turn (the bot check, the budget), the
-  // example page around this frame says why.
-  async function demoFetch(url, init) {
-    const response = await fetch(url, init);
-    if ([403, 429, 503].includes(response.status) && window.parent !== window) {
-      response.clone().json().then((body) => {
-        if (body && body.code) window.parent.postMessage({ type: 'uag-demo', code: body.code, error: body.error }, location.origin);
-      }).catch(() => {});
-    }
-    return response;
-  }
+  await DemoApp.ready();
 
   function showReceipt(submission) {
     const receipt = document.getElementById('receipt');
@@ -42,10 +28,7 @@
     receipt.hidden = false;
   }
 
-  Formio.use(FormioUAG.UAG(UAG_URL));
-
-  const chat = await Formio.createChat(document.getElementById('chat'), FORM_URL, {
-    fetch: demoFetch,
+  const chat = await Formio.createChat(document.getElementById('chat'), DemoApp.formUrl('service-request'), {
     greeting: 'Hi! I can open a service request for you. What\'s going on?',
     suggestions: [
       'My internet has been down since last night',
@@ -62,9 +45,5 @@
 
   // The saved request, as Form.io stored it.
   chat.on('submitDone', showReceipt);
-  // A new conversation starts the demo's length limit again.
-  chat.on('chatReset', () => {
-    document.getElementById('receipt').hidden = true;
-    fetch('/api/conversation/reset', { method: 'POST' }).catch(() => {});
-  });
+  chat.on('chatReset', () => { document.getElementById('receipt').hidden = true; });
 })();

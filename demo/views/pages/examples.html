@@ -1,10 +1,9 @@
     <section class="page-hero">
       <div class="container">
         <h1>Live demos of Agentic Forms.</h1>
-        <p class="lede mb-0">Each demo runs on Form.io and the UAG on this site. Try one, then open the flow viewer beside it to see every call the agents made. Most also link the prompt that builds them in your own project.</p>
+        <p class="lede mb-0">Each demo is a static page that calls the UAG straight from your browser, as a temporary guest of the demo's Form.io project. Try one, and watch the flow log beside it list every call the page makes. Most also link the prompt that builds them in your own project.</p>
       </div>
     </section>
-{{{licenseNotice}}}
 
     <section class="section-tight">
       <div class="container" style="display:grid;gap:28px">
@@ -116,15 +115,15 @@
     <section class="section section-dark">
       <div class="container split">
         <div>
-          <h2>Watch every agent call.</h2>
-          <p>Every demo has a live view of its own runs: the call into the UAG and the validated save. When the engines run on an engine server (<code>docker-compose.split.yml</code>), it also shows what the UAG asked each engine and the read-only research an engine did through MCP, with one request id tying every leg together.</p>
+          <h2>Watch every call the page makes.</h2>
+          <p>Every demo has a flow log beside it, recorded in your browser: each call the page makes to the UAG, from signing in to the validated save, with which engines answered, how fast, and how many tokens they used. There is no server of the site's own in between: what you see is what your application would send.</p>
           <ul class="checks">
-            <li>You see only your own runs.</li>
-            <li>Each run shows the submission or Agent API call and the save, and, with an engine server, the engine call and any research.</li>
-            <li>Click a step to see what was sent and what came back.</li>
+            <li>It runs in your browser and sends nothing anywhere.</li>
+            <li>Each Agent API call shows the engines that answered; the workflow shows each task's result as the page reads it back.</li>
+            <li>Click a step to see what was sent and what came back, with passwords and tokens removed.</li>
           </ul>
         </div>
-        <figure class="figure frame" style="border-color:#2c3540"><a class="image-link" href="/images/flow-viewer.png" target="_blank" rel="noopener"><img src="/images/flow-viewer.png" alt="The agentic workflow demo beside its flow viewer: the application saved through the UAG, then the engine calls of the admissions and finance tasks, each with the fields it answered." loading="lazy"></a></figure>
+        <figure class="figure frame" style="border-color:#2c3540"><a class="image-link" href="/images/flow-log.png" target="_blank" rel="noopener"><img src="/images/flow-log.png" alt="The agentic workflow demo beside its flow log: the guest's sign-in, the application saved through the UAG, the reads that follow it, and the results of the admissions and finance tasks." loading="lazy"></a></figure>
       </div>
     </section>
 
@@ -132,7 +131,7 @@
       <div class="container">
         <div class="section-head center">
           <h2>Every demo is open source.</h2>
-          <p>The whole site, with its forms, demo back ends and flow viewer, is one Docker Compose stack in the UAG repository; the AI Document demo also needs the AI Document module and the document plugins in its UAG (see the demo's README). The Agentic Coding Plugin has a prompt that builds the conversation, workflow and formflow demos in your own project.</p>
+          <p>The whole site is static files in the UAG repository, with the forms' template and the one service it needs, the UAG; the AI Document demo also needs the AI Document module and the document plugins in its UAG (see the demo's README). The Agentic Coding Plugin has a prompt that builds the conversation, workflow and formflow demos in your own project.</p>
         </div>
         <div class="hero-actions" style="justify-content:center"><a class="btn btn-primary" href="{{links.source}}/demo" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="/images/icons.svg#github"/></svg>View the demo source</a><a class="btn btn-outline" href="{{links.plugin}}/tree/main/examples/agents" target="_blank" rel="noopener">Build them with your coding agent</a></div>
       </div>

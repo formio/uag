@@ -3,7 +3,11 @@
 #
 #   docker compose -f docker-compose.yml -f docker-compose.enterprise.yml up -d --build
 #
-#   api-server  Form.io Enterprise, holding the `demo` project. Private.
+# The site's guests register at the project, so browsers must reach Form.io as
+# well as the UAG: publish api-server too (behind TLS), and build the site with
+# FORMIO_PROJECT_URL set to the project's public URL.
+#
+#   api-server  Form.io Enterprise, holding the `demo` project. Unpublished here.
 #   mongo       its database, on a network only Form.io reaches.
 #   setup       a one-shot job that creates the project from module/project.json
 #               (or imports it again into one that exists) and installs PROJECT_KEY,
@@ -53,10 +57,13 @@ services:
       timeout: 5s
       retries: 60
 
+  # scripts/setup.mjs needs nothing but Node.js and this folder.
   setup:
-    build: { context: .., dockerfile: demo/Dockerfile }
-    image: ${DEMO_IMAGE:-formio/uag-demo:latest}
-    command: ["node", "server/setup.mjs"]
+    image: ${NODE_IMAGE:-node:24-alpine}
+    working_dir: /demo
+    volumes:
+      - ./:/demo:ro
+    command: ["node", "scripts/setup.mjs"]
     restart: "no"
     depends_on:
       api-server: { condition: service_healthy }
@@ -77,13 +84,6 @@ services:
       LICENSE_KEY: ${LICENSE_KEY}
       # Deprecated. Only when LICENSE_KEY does not include the UAG.
       UAG_LICENSE: ${UAG_LICENSE:-}
-
-  site:
-    depends_on:
-      setup: { condition: service_completed_successfully }
-    environment:
-      FORMIO_PROJECT_URL: http://api-server:3000/demo
-      FORMIO_PROJECT_NAME: demo
 
 volumes:
   mongo-data:

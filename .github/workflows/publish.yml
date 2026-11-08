@@ -229,20 +229,6 @@ jobs:
             formio/uag:${{ steps.version.outputs.channel }}
             formio/uag:${{ steps.version.outputs.version }}
 
-      ### Publish the demo site image (formio/uag-demo), at the UAG's version.
-      - name: Build and push formio/uag-demo
-        timeout-minutes: 30
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: demo/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          provenance: true
-          tags: |
-            formio/uag-demo:${{ steps.version.outputs.channel }}
-            formio/uag-demo:${{ steps.version.outputs.version }}
-
       ### Publish the engine server image (formio/uag-engines).
       # Built only when Docker Hub does not have its package's version yet.
       - name: Check whether the engine server image needs publishing
@@ -317,7 +303,7 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           BODY=$(jq -n --arg environment "$TARGET" --arg version "$VERSION" --arg tag "$GITHUB_REF_NAME" --arg commit "$GITHUB_SHA" \
             '{environment: $environment, version: $version, tag: $tag, commit: $commit,
-              images: {uag: "formio/uag:\($version)", demo: "formio/uag-demo:\($version)"}}')
+              images: {uag: "formio/uag:\($version)"}}')
           curl -fsS --retry 3 -X POST "$URL" -H 'Content-Type: application/json' \
             ${TOKEN:+-H "Authorization: Bearer $TOKEN"} -d "$BODY"
           echo "Asked the ${TARGET} environment to deploy ${VERSION}."

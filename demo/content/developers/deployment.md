@@ -79,7 +79,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
 ```
 
-The project API key must exist before the UAG starts, which is why the [demo stack](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo), self-hosted (`docker-compose.enterprise.yml`), starts Form.io, runs a setup job that creates the project and installs the key ([`server/setup.mjs`](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/server/setup.mjs)), and only then starts the UAG.
+The project API key must exist before the UAG starts, which is why the [demo stack](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo), self-hosted (`docker-compose.enterprise.yml`), starts Form.io, runs a setup job that creates the project and installs the key ([`scripts/setup.mjs`](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/scripts/setup.mjs)), and only then starts the UAG.
 
 To run engines in their own container, see [Engine server](/developers/engine-server).
 
@@ -331,7 +331,7 @@ Running against Form.io Enterprise (self-hosted or hosted) adds controls that ma
 
 The UAG adds an action of its own, "Agent: Run task", which Form.io Enterprise does not know. On an ordinary stage the portal asks Form.io for an action's settings form, so Run task opens as a blank page (Form.io answers `400 Action not found`). Connect a stage of the project to the UAG instead, as an on-premise environment, and the portal asks the UAG:
 
-1. Set `PORTAL_SECRET` on the UAG to a long random secret, and make the UAG reachable from the browser that runs the portal.
+1. Set `PORTAL_SECRET` on the UAG to a long random secret, and make the UAG reachable from the browser that runs the portal. The portal calls the UAG from that browser: when `CORS` names origins, include the portal's (`https://portal.example.com`), and serve the UAG over HTTPS when the portal is, since the portal does not connect a page served over HTTPS to an HTTP address.
 2. In the portal, create a stage (**Stage → Create Stage**, empty), then open **Staging → Connect to an On-Premise Environment**.
 3. Enter the UAG's root URL and the same secret, choose **Subdirectories** as the project path type, and **Continue**.
 4. Choose the UAG's project and **Connect Stage**.

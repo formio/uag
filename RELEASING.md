@@ -35,12 +35,12 @@ To check them without releasing, run the workflow by hand: **Actions → Publish
 | Where | Release (`2.0.0`) | Prerelease (`2.0.0-rc.2`) |
 |---|---|---|
 | npm, every public package | dist-tag `latest` | dist-tag `rc` (the word before the first dot) |
-| `formio/uag`, `formio/uag-demo` | `:2.0.0` and `:latest` | `:2.0.0-rc.2` and `:rc` |
+| `formio/uag` | `:2.0.0` and `:latest` | `:2.0.0-rc.2` and `:rc` |
 | `formio/uag-engines` | `:2.0.0` and `:latest` | `:2.0.0-rc.2` and `:rc` |
 | MCP Registry (`server.json`) | published | skipped |
 | Deployment hook | production | test |
 
-A failed run can be rerun ("Re-run failed jobs"): a package npm already has at the version is skipped, as is the `formio/uag-engines` image when Docker Hub has it; the `formio/uag` and `formio/uag-demo` images are built and pushed again. An image build that runs longer than 30 minutes fails instead of hanging: the arm64 half is built under QEMU, which can crash and hang.
+A failed run can be rerun ("Re-run failed jobs"): a package npm already has at the version is skipped, as is the `formio/uag-engines` image when Docker Hub has it; the `formio/uag` image is built and pushed again. An image build that runs longer than 30 minutes fails instead of hanging: the arm64 half is built under QEMU, which can crash and hang.
 
 ## Deployment
 
@@ -59,11 +59,11 @@ The hook receives a `POST` with JSON:
   "version": "2.0.0-rc.1",
   "tag": "v2.0.0-rc.1",
   "commit": "<sha>",
-  "images": { "uag": "formio/uag:2.0.0-rc.1", "demo": "formio/uag-demo:2.0.0-rc.1" }
+  "images": { "uag": "formio/uag:2.0.0-rc.1" }
 }
 ```
 
-To deploy, set `UAG_IMAGE` and `DEMO_IMAGE` to those images in the stack's `.env` and run `docker compose pull && docker compose up -d` with [`demo/docker-compose.yml`](demo/docker-compose.yml).
+To deploy the demo's UAG, set `UAG_IMAGE` to that image in the stack's `.env` and run `docker compose pull && docker compose up -d` with [`demo/docker-compose.yml`](demo/docker-compose.yml). The demo site itself is static files, published by its own workflow ([`site.yml`](.github/workflows/site.yml); see [demo/README.md](demo/README.md#hosting)).
 
 ## A new package
 

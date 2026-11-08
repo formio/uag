@@ -1,19 +1,17 @@
-// The live demo frame on each example page: shows the human check when the
-// deployment uses Turnstile, says so when today's demo budget is spent, and
-// otherwise loads the demo app into its frame.
+// The live demo frame on each example page. The demo starts when the visitor
+// asks for it ("Start the live demo"), which registers them as a guest of the
+// demo's project (js/guest.js); a visitor who is already a guest goes straight
+// in. The flow log beside the frame shows every call the demo makes
+// (js/flow-log.js, js/flow-panel.js).
 (function () {
   var frame = document.querySelector('[data-demo-frame]');
   if (!frame) return;
   var gate = document.querySelector('[data-demo-gate]');
+  var start = document.querySelector('[data-demo-start]');
   var notice = document.querySelector('[data-demo-notice]');
-  var widget = document.querySelector('[data-turnstile]');
   var unsupported = document.querySelector('[data-demo-unsupported]');
-
-  function load() {
-    if (gate) gate.hidden = true;
-    frame.hidden = false;
-    if (!frame.src) frame.src = frame.getAttribute('data-src');
-  }
+  var license = document.querySelector('[data-license-notice]');
+  var production = (document.body.dataset.production || '') === 'true';
 
   function say(text) {
     if (!notice) return;
@@ -21,69 +19,73 @@
     notice.hidden = false;
   }
 
-  // Messages from the demo apps: errors the visitor should see outside the frame.
+  function load() {
+    if (gate) gate.hidden = true;
+    frame.hidden = false;
+    if (!frame.src) frame.src = frame.getAttribute('data-src');
+  }
+
+  function showGate() {
+    frame.hidden = true;
+    frame.removeAttribute('src');
+    if (gate) gate.hidden = false;
+    if (start) {
+      start.disabled = false;
+      start.textContent = start.getAttribute('data-label') || start.textContent;
+    }
+  }
+
+  // Messages from the demo apps: what the visitor should see outside the frame.
   window.addEventListener('message', function (event) {
     if (event.origin !== location.origin || !event.data || event.data.type !== 'uag-demo') return;
-    if (event.data.code === 'verification_required') location.reload();
-    else if (event.data.code === 'budget_exhausted') say(event.data.error);
+    var code = event.data.code;
+    if (code === 'guest_expired') {
+      showGate();
+      say('Your guest session ended. Start the demo again to continue.');
+    }
+    else if (code === 'license_required') {
+      // Only a UAG run on your own machine, without a license or a hosted project.
+      if (unsupported) unsupported.hidden = false;
+      frame.hidden = true;
+      if (license && !production) license.hidden = false;
+    }
+    else if (code === 'unavailable') {
+      say(production
+        ? 'The live demo is temporarily unavailable. Please try again in a few minutes.'
+        : 'No UAG answered at ' + (document.body.dataset.uagUrl || 'the configured URL') + '. Start one, or build the site with DEMO_UAG_URL pointing at yours.');
+    }
+    else if (event.data.error) {
+      say(event.data.error);
+    }
   });
 
-  // The flow viewer opens only once /api/status has answered: that request starts
-  // the visitor's session, so the stream and the demo share it. Opened at the same
-  // moment, two cookieless requests would start two sessions.
-  var flowMounted = false;
-  function mountFlow() {
-    var flow = document.querySelector('[data-flow]');
-    if (flowMounted || !flow || !window.UAGFlow) return;
-    flowMounted = true;
+  var flow = document.querySelector('[data-flow]');
+  if (flow && window.UAGFlow) {
     window.UAGFlow.mount(flow, {
+      title: flow.getAttribute('data-title') || undefined,
       intro: flow.getAttribute('data-intro') || undefined,
       introInside: flow.getAttribute('data-intro-inside') || undefined,
       empty: flow.getAttribute('data-empty') || undefined,
       emptyInside: flow.getAttribute('data-empty-inside') || undefined,
-      scopes: (flow.getAttribute('data-scopes') || '').split(',').filter(Boolean),
     });
   }
 
-  fetch('/api/status').then(function (response) {
-    return response.json().then(function (status) { return { ok: response.ok, status: status }; });
-  }).then(function (answer) {
-    var status = answer.status;
-    // Refused (too many new visitors from one network): say why, and start nothing that would be refused too.
-    if (!answer.ok) {
-      say(status.error || 'The live demo is not available right now. Please try again in a few minutes.');
-      return;
-    }
-    mountFlow();
-    // The workflow and formflow demos need Agentic Formflow: a license or a hosted project.
-    if (frame.getAttribute('data-requires') === 'formflow' && status.formflow && !status.formflow.supported) {
-      if (unsupported) unsupported.hidden = false;
-      return;
-    }
-    if (!status.available) {
-      say('The live demo has reached its limit for today and resets at midnight UTC. You can still read how it works below, or run the UAG yourself.');
-    }
-    if (!status.turnstileSiteKey || status.verified) return load();
-    gate.hidden = false;
-    window.onTurnstileLoad = function () {
-      window.turnstile.render(widget, {
-        sitekey: status.turnstileSiteKey,
-        callback: function (token) {
-          fetch('/api/session/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: token }),
-          }).then(function (response) {
-            if (response.ok) load();
-            else say('We could not confirm that. Please reload the page and try again.');
-          });
-        },
-      });
-    };
-    var script = document.createElement('script');
-    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit';
-    script.async = true;
-    document.head.appendChild(script);
-  }).catch(function () { mountFlow(); load(); });
-
+  if (window.UAGDemoGuest && window.UAGDemoGuest.token()) {
+    load();
+    return;
+  }
+  showGate();
+  if (!start) return;
+  start.setAttribute('data-label', start.textContent);
+  start.addEventListener('click', function () {
+    start.disabled = true;
+    start.textContent = 'Starting…';
+    if (notice) notice.hidden = true;
+    window.UAGDemoGuest.start().then(load, function () {
+      showGate();
+      say(production
+        ? 'The live demo could not start. Please try again in a few minutes.'
+        : 'Could not register a guest at ' + (document.body.dataset.projectUrl || 'the project') + '. Import module/project.json into it (it has the guestRegister form), and check the project URL the site was built with.');
+    });
+  });
 })();

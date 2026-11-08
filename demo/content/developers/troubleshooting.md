@@ -17,7 +17,7 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 | Which engines are on, and is Agentic Formflow allowed? | `GET /agent/capabilities` with a bearer token, or with `x-token`/`x-admin-key` from a server. |
 | What did a request do? | Every Agent API response carries `X-Request-Id`. Search the UAG log for it. Set `DEBUG=formio:*` for detail. |
 | What did a task run do? | With the database, open Action Logs in a portal stage connected to the UAG (classic portal). Without it, search the UAG log for `Run task "<task>" failed`. To see each field's `reason`, send the submission's data to the form's `{form}/agent/decide` or `{form}/agent/generate` with the task and `overwrite: true`; nothing is saved. |
-| What is an agentic run doing right now? | Put the [flow viewer](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo/flow) in front of the UAG and engine server. |
+| What is an agentic run doing right now? | Send an `X-Request-Id` with the submission: the UAG passes it to the engines for every run the submission starts, so a logging proxy in front of the UAG and the engine server, or their logs, can follow one run's legs. |
 
 ## Startup
 
@@ -180,7 +180,7 @@ More on [Chat widget](/developers/chat#troubleshooting).
 |---|---|
 | A remote engine fails with `401` | The UAG's `UAG_ENGINE_<NAME>_KEY` does not match the engine server's `UAG_ENGINE_SERVER_KEY`. |
 | Startup says the engine server "does not host an engine named ..." | The instance name differs from the engine's name on the server. Set `UAG_ENGINE_<NAME>_ENGINE`. |
-| No engine events appear in the flow viewer | The engines run inside the UAG, so no engine call passes through the proxy, or `UAG_ENGINE_<NAME>_URL` does not point at the proxy. |
+| A logging proxy shows no engine calls | The engines run inside the UAG, so no engine call passes through the proxy, or `UAG_ENGINE_<NAME>_URL` does not point at the proxy. |
 | A researching extract shows no `/mcp` calls | The engine server cannot reach the UAG (check its `UAG_SERVER`), or the engine called no tool. |
 | An engine server's `/mcp` request returns `401` | Its scoped token expired (research ran past `agentApi.research.timeout`, 2 minutes by default), or it was issued for another project. Or the caller has no identity to research with: anonymous visitors and portal team members below team admin cannot research through an engine server, and a signed-in user's Form.io token that has since expired is refused. |
 | A tool call in research is refused | The model called a tool the task does not list in `uagTools`. Add it to the task if it is needed and read-only. |

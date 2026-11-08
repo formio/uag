@@ -8,25 +8,29 @@
  *   yarn demo:local                               # http://localhost:8080
  *
  * In order, it:
- *   1. imports the demo's forms and actions (module/project.json) into the
- *      project, as the deployed stack's setup job does (DEMO_TEMPLATE_SYNC=off
- *      skips it),
+ *   1. imports the demo's roles, forms and actions (module/project.json) into
+ *      the project, as the deployed stack's setup job does
+ *      (DEMO_TEMPLATE_SYNC=off skips it),
  *   2. starts the UAG from this checkout's lib/, on the project, with the JEV
- *      and Claude engines in-process,
- *   3. starts the flow proxy in front of it, for the flow viewer,
- *   4. starts the site, through the flow proxy.
+ *      and Claude engines in-process, allowing the site's origin (CORS),
+ *   3. builds the static site for that UAG and project and serves it, rebuilding
+ *      on every change to the site's sources.
  *
- * A hosted project needs no license. The Agentic Workflow demo's agents run in
- * this UAG, on the applications the site saves through it, so nothing has to
- * reach this machine from the internet. Ctrl+C stops everything.
+ * The site's pages register each visitor as a guest of the project and call the
+ * UAG from the browser, as they do in production. A hosted project needs no
+ * license. The Agentic Workflow demo's agents run in this UAG, on the
+ * applications the pages save through it, so nothing has to reach this machine
+ * from the internet. Ctrl+C stops everything.
  */
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import net from 'node:net';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_PROJECT_URL, formflowSupported } from '../server/config.mjs';
+import { DEFAULT_PROJECT_URL, formflowSupported } from '../lib/config.mjs';
+import { serveSite, watchSite } from './serve.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const demo = path.resolve(here, '..');
@@ -57,16 +61,16 @@ if (sync && projectUrl === DEPLOYED_PROJECT) {
         'Use a project or stage of your own, or set DEMO_TEMPLATE_SYNC=off to run against it as it is.');
 }
 
-const ports = { uag: env.UAG_PORT || '3200', flow: env.FLOW_PORT || '3250', site: env.DEMO_PORT || '8080' };
-for (const [name, setting] of [['site', 'DEMO_PORT'], ['uag', 'UAG_PORT'], ['flow', 'FLOW_PORT']]) {
+const ports = { uag: env.UAG_PORT || '3200', site: env.DEMO_PORT || '8080' };
+for (const [name, setting] of [['site', 'DEMO_PORT'], ['uag', 'UAG_PORT']]) {
     if (!await portFree(ports[name])) {
         fail(`Port ${ports[name]} is in use (another demo, or something else). Stop it, or set ${setting} in demo/.env.local to another port.`);
     }
 }
 const uagUrl = `http://localhost:${ports.uag}`;
-const flowUrl = `http://localhost:${ports.flow}`;
 const siteUrl = (env.DEMO_PUBLIC_URL || `http://localhost:${ports.site}`).replace(/\/+$/, '');
-const flowKey = randomBytes(24).toString('hex');
+// The site's origin, by either name a browser may use for it.
+const siteOrigins = [new URL(siteUrl).origin, new URL(siteUrl).origin.replace('localhost', '127.0.0.1')].join(',');
 
 const children = [];
 function run(name, script, childEnv, { wait = false } = {}) {
@@ -93,9 +97,11 @@ function run(name, script, childEnv, { wait = false } = {}) {
 }
 
 let stopping = false;
+const cleanups = [];
 function stop(code = 0) {
     if (stopping) return;
     stopping = true;
+    for (const cleanup of cleanups) cleanup();
     for (const child of children) if (child.exitCode === null) child.kill('SIGTERM');
     setTimeout(() => process.exit(code), 500);
 }
@@ -128,7 +134,7 @@ async function waitFor(check, what, timeoutMs = 120_000) {
 
 if (sync) {
     console.log(`[demo:local] Importing the demo's forms into ${projectUrl} ...`);
-    await run('setup', path.join(demo, 'server/setup.mjs'), { FORMIO_PROJECT_URL: projectUrl, FORMIO_SERVER: '' }, { wait: true })
+    await run('setup', path.join(demo, 'scripts/setup.mjs'), { FORMIO_PROJECT_URL: projectUrl, FORMIO_SERVER: '' }, { wait: true })
         .catch((err) => fail(err.message));
 }
 
@@ -139,33 +145,31 @@ run('uag', path.join(root, 'index.js'), {
     UAG_ENGINES: env.UAG_ENGINES || 'jev,claude',
     // The project key is the only Form.io credential; never the repository's ADMIN_KEY.
     ADMIN_KEY: '',
+    // Browsers may call it from the site only.
+    CORS: siteOrigins,
 });
 const capabilities = await waitFor(async () => {
     const response = await fetch(`${uagUrl}/agent/capabilities`, { headers: { 'x-token': env.PROJECT_KEY }, signal: AbortSignal.timeout(5000) });
     return response.ok && response.json();
 }, 'The UAG');
 
-run('flow', path.join(demo, 'flow/proxy.mjs'), {
-    PORT: ports.flow,
-    UAG_URL: uagUrl,
-    // The engines run inside the UAG here, so there is no engine server to show.
-    ENGINES_URL: 'http://127.0.0.1:9',
-    FLOW_KEY: flowKey,
-});
-await waitFor(async () => (await fetch(`${flowUrl}/flow/health`, { signal: AbortSignal.timeout(5000) })).ok, 'The flow proxy');
-
-run('site', path.join(demo, 'server/index.mjs'), {
-    PORT: ports.site,
+// The site, built for this UAG and project, and rebuilt on every change.
+const out = fs.mkdtempSync(path.join(os.tmpdir(), 'uag-demo-local-'));
+cleanups.push(() => fs.rmSync(out, { recursive: true, force: true }));
+const siteEnv = {
     DEMO_PUBLIC_URL: siteUrl,
+    DEMO_OUT: out,
     FORMIO_PROJECT_URL: projectUrl,
-    UAG_URL: flowUrl,
-    FLOW_URL: flowUrl,
-    FLOW_KEY: flowKey,
-    // The engines run in the UAG unless UAG_ENGINES names remote ones, so the viewer says so.
-    FLOW_ENGINES: /:remote\b/.test(env.UAG_ENGINES || '') ? 'remote' : 'inside',
-    NODE_ENV: '',
-});
-await waitFor(async () => (await fetch(`http://localhost:${ports.site}/health`, { signal: AbortSignal.timeout(5000) })).ok, 'The site');
+    DEMO_UAG_URL: uagUrl,
+    ...(env.FORMIO_PROJECT_NAME && { DEMO_UAG_PROJECT_PATH: `/${env.FORMIO_PROJECT_NAME}` }),
+};
+try {
+    await serveSite({ port: ports.site, env: siteEnv });
+}
+catch (error) {
+    fail(`The site did not build: ${error.message}`);
+}
+cleanups.push(watchSite(siteEnv));
 
 const reason = capabilities?.formflow?.reason;
 const formflow = formflowSupported(capabilities);
@@ -173,5 +177,6 @@ console.log(`
 [demo:local] The demo is running at ${siteUrl}
 [demo:local] Project:  ${projectUrl}
 [demo:local] UAG:      ${uagUrl} (${capabilities?.edition || 'unknown'} edition; Agentic Formflow ${formflow ? `enabled, ${reason}` : `not enabled (${reason || 'unknown'}): the examples will say a license is needed`})
+[demo:local] The site is rebuilt when its pages, docs or scripts change; reload to see it.
 [demo:local] Press Ctrl+C to stop.
 `);

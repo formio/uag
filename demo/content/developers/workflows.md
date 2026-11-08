@@ -248,7 +248,7 @@ A run reads, saves and creates submissions at Form.io with one of two identities
 
 Either way, a run never uses the UAG's own project API key, and the task's engines research with the identity of the user who submitted, never the agent role. [Project setup for agents](/developers/project-setup) walks through the roles, permissions and secret an agent role needs.
 
-The demo site's server submits applications with the project's API key, so its runs act as administrator. It runs on Form.io's hosted service, which does not share its secret, so its actions name no agent role.
+The [demo site](/examples/workflow) saves each application from the browser as the visitor's guest user, so its runs act as that guest: the guest may create and update its own applications, and the task's fields are `uagAuthoritative`, so only the run may set them. It runs on Form.io's hosted service, which does not share its secret, so its actions name no agent role.
 
 ## Letting the task research
 
@@ -279,7 +279,7 @@ A run after the save is otherwise invisible: the response does not wait, and the
 - **Action Logs**, with the database: one entry per run (above).
 - **The UAG's log.** A failed run is logged with its task, submission and error. With `DEBUG=formio:uag:runner`, every run is logged with the number of fields it saved, or `nothing changed`.
 - **The provenance** in the submission's `metadata.uag`: which engine decided or generated each field, with what confidence, and when. See [Reconciliation and provenance](/developers/concepts#reconciliation-and-provenance).
-- **The flow viewer.** The [flow viewer sample](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo/flow) is a small logging proxy in front of the UAG that shows every leg live: the submission, what the UAG asks each engine on an engine server, and every research tool call. Send an `X-Request-Id` with the submission: the UAG passes it to the engines for every run the submission starts, chained runs included, so all the legs share it.
+- **The request id.** Send an `X-Request-Id` with the submission: the UAG passes it to the engines for every run the submission starts, chained runs included, so a logging proxy in front of the UAG and an engine server, or their logs, can group all the legs of one submission.
 
 To see what the engines answer for some data without saving anything, call the stateless [Agent API](/developers/agent-api) with the same form and task.
 

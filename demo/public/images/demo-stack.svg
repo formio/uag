@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 450" role="img" aria-labelledby="t d">
-  <title id="t">The demo site's Compose stack</title>
-  <desc id="d">A visitor reaches your load balancer over HTTPS, which sends plain HTTP to the site, the only published service. On the stack's private network, the site calls the UAG through the flow proxy it runs inside it, for the Agent API (the chat's turns and the claim's extraction), the AI Document's document/process calls on the lease review, and the saves of the chat's requests, the workflow's applications and the claims, and shows each visitor their own calls in the flow viewer. The UAG runs the JEV and Claude engines inside it and calls the JEV and Claude APIs; for the AI Document demo it also needs the AI Document module and its document plugins in its plugins folder, which the formio/uag-documents add-on fills when it runs beside the UAG; the site calls no model itself. The UAG reads the demo's project on Form.io's hosted service, https://uag.form.io, and forwards every save to it; the site reads forms and applications from it directly with the project key. Nothing calls back into the stack.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 430" role="img" aria-labelledby="t d">
+  <title id="t">The demo site: static pages that call the UAG</title>
+  <desc id="d">A visitor's browser loads the site's static pages from CloudFront, which reads them from a private S3 bucket. When the visitor starts a demo, the page registers a guest user at the demo's Form.io project, https://uag.form.io, and keeps the guest's token; the page also loads its forms from the project. With that token, the page calls the UAG directly: it loads @formio/uag-js from the UAG, calls the Agent API (the chat's turns, the claim's extraction, the lease's document processing), and saves the chat's requests, the workflow's applications and the claims through it. The UAG allows the site's origin only, runs the JEV and Claude engines inside it and calls their APIs, and forwards every save to the project with the guest's token, where the Agent: Run task actions' results are saved too. A scheduled job deletes guests and their submissions after a day. The site has no server of its own.</desc>
   <defs>
     <style>
       text { font-family: Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; fill: #0c141d; }
@@ -11,78 +11,87 @@
       .e { font-size: 11px; fill: #3f7a22; font-weight: 600; }
       .g { font-size: 11px; fill: #566073; }
       .w { fill: #fff; }
-      .wm { fill: #c9d2dc; }
       .card { fill: #fff; stroke: #d7dde5; stroke-width: 1.2; }
+      .zone { fill: #f6f8fa; stroke: #e0e5ec; stroke-width: 1; }
+      .dark { fill: #2c3540; }
       .chip { fill: #f1f4f7; stroke: #d7dde5; stroke-width: 1; }
-      .chip-dark { fill: #4a5b6e; }
       .flow { stroke: #69b342; stroke-width: 2.2; fill: none; }
+      .soft { stroke: #9aa6b4; stroke-width: 1.6; fill: none; stroke-dasharray: 5 4; }
     </style>
     <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#69b342"/></marker>
+    <marker id="b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9aa6b4"/></marker>
   </defs>
-  <rect x="1" y="1" width="998" height="448" rx="18" fill="#fff" stroke="#e0e5ec"/>
+  <rect x="1" y="1" width="998" height="428" rx="18" fill="#fff" stroke="#e0e5ec"/>
 
-  <!-- Outside -->
-  <rect x="20" y="146" width="96" height="58" rx="10" class="card"/>
-  <text x="68" y="172" text-anchor="middle" class="h">Visitor</text>
-  <text x="68" y="190" text-anchor="middle" class="s">a browser</text>
-  <path d="M118 175 H148" class="flow" marker-end="url(#a)"/>
-  <text x="133" y="166" text-anchor="middle" class="e">HTTPS</text>
+  <!-- The site -->
+  <rect x="24" y="24" width="300" height="132" rx="14" class="zone"/>
+  <text x="44" y="48" class="lab">THE SITE · STATIC FILES</text>
+  <rect x="44" y="62" width="120" height="74" rx="10" class="card"/>
+  <text x="104" y="92" text-anchor="middle" class="h">S3</text>
+  <text x="104" y="110" text-anchor="middle" class="s">private bucket</text>
+  <text x="104" y="125" text-anchor="middle" class="s mono">yarn demo:build</text>
+  <path d="M166 99 H186" class="soft" marker-end="url(#b)"/>
+  <rect x="188" y="62" width="120" height="74" rx="10" class="card"/>
+  <text x="248" y="92" text-anchor="middle" class="h">CloudFront</text>
+  <text x="248" y="110" text-anchor="middle" class="s">ai.form.io</text>
+  <text x="248" y="125" text-anchor="middle" class="s">CSP, clean URLs</text>
 
-  <rect x="152" y="138" width="112" height="74" rx="10" class="card"/>
-  <text x="208" y="164" text-anchor="middle" class="h">Load balancer</text>
-  <text x="208" y="182" text-anchor="middle" class="s">yours, routes every</text>
-  <text x="208" y="197" text-anchor="middle" class="s">path to the site</text>
-  <path d="M266 175 H318" class="flow" marker-end="url(#a)"/>
-  <text x="296" y="166" text-anchor="end" class="e">HTTP</text>
+  <!-- Browser -->
+  <rect x="24" y="200" width="300" height="206" rx="14" class="dark"/>
+  <text x="44" y="226" class="lab" style="fill:#8d99a8">THE VISITOR'S BROWSER</text>
+  <text x="44" y="252" class="h w">The demo pages</text>
+  <text x="44" y="274" class="s" style="fill:#c9d2dc">formio.js, and @formio/uag-js</text>
+  <text x="44" y="290" class="s" style="fill:#c9d2dc">loaded from the UAG</text>
+  <rect x="44" y="306" width="260" height="34" rx="8" fill="#3a4654"/>
+  <text x="58" y="327" class="g" style="fill:#e6ebf0">guest token · <tspan class="mono">Formio.setToken()</tspan></text>
+  <rect x="44" y="350" width="260" height="38" rx="8" fill="#3a4654"/>
+  <text x="58" y="366" class="g" style="fill:#e6ebf0">flow log: each call the page makes,</text>
+  <text x="58" y="381" class="g" style="fill:#e6ebf0">with the engines that answered</text>
+  <path d="M248 138 V196" class="flow" marker-end="url(#a)"/>
+  <text x="240" y="172" text-anchor="end" class="e">pages, scripts</text>
 
-  <!-- Private network -->
-  <rect x="300" y="24" width="540" height="290" rx="14" fill="#f8fafb" stroke="#3a4756" stroke-width="1.4" stroke-dasharray="6 4"/>
-  <text x="318" y="46" class="lab">COMPOSE STACK · PRIVATE NETWORK</text>
+  <!-- The UAG -->
+  <rect x="452" y="200" width="300" height="206" rx="14" class="zone"/>
+  <text x="472" y="226" class="lab">THE UAG · UAG.AI.FORM.IO</text>
+  <rect x="472" y="240" width="260" height="70" rx="10" class="card"/>
+  <text x="486" y="264" class="h">Universal Agent Gateway</text>
+  <text x="486" y="283" class="s">CORS: the site's origin only</text>
+  <text x="486" y="299" class="s">per-guest rate limits</text>
+  <rect x="472" y="322" width="124" height="34" rx="8" class="chip"/>
+  <text x="534" y="343" text-anchor="middle" class="g">JEV engine</text>
+  <rect x="608" y="322" width="124" height="34" rx="8" class="chip"/>
+  <text x="670" y="343" text-anchor="middle" class="g">Claude engine</text>
+  <text x="472" y="384" class="s">Agent: Run task, after each save</text>
 
-  <rect x="322" y="96" width="180" height="150" rx="10" fill="#3a4756"/>
-  <text x="412" y="122" text-anchor="middle" class="h w">site</text>
-  <text x="412" y="142" text-anchor="middle" class="s wm">pages, docs, the</text>
-  <text x="412" y="157" text-anchor="middle" class="s wm">demos' back ends</text>
-  <rect x="340" y="174" width="144" height="54" rx="8" class="chip-dark"/>
-  <text x="412" y="196" text-anchor="middle" class="s w" style="font-weight:600">flow proxy</text>
-  <text x="412" y="213" text-anchor="middle" class="s wm" style="font-size:10.5px">logs each call it makes</text>
-  <text x="412" y="268" text-anchor="middle" class="g">the only published</text>
-  <text x="412" y="282" text-anchor="middle" class="g">service (DEMO_PORT)</text>
+  <path d="M326 262 H448" class="flow" marker-end="url(#a)"/>
+  <text x="387" y="252" text-anchor="middle" class="e">Agent API, saves</text>
+  <text x="387" y="280" text-anchor="middle" class="g">as the guest</text>
 
-  <rect x="600" y="96" width="210" height="176" rx="10" class="card"/>
-  <text x="705" y="122" text-anchor="middle" class="h">formio-uag</text>
-  <text x="705" y="142" text-anchor="middle" class="s">the UAG, built from</text>
-  <text x="705" y="157" text-anchor="middle" class="s">this repository</text>
-  <rect x="618" y="174" width="82" height="54" rx="8" class="chip"/>
-  <text x="659" y="196" text-anchor="middle" class="s" style="font-weight:600;fill:#0c141d">JEV</text>
-  <text x="659" y="213" text-anchor="middle" class="s" style="font-size:10.5px">engine</text>
-  <rect x="710" y="174" width="82" height="54" rx="8" class="chip"/>
-  <text x="751" y="196" text-anchor="middle" class="s" style="font-weight:600;fill:#0c141d">Claude</text>
-  <text x="751" y="213" text-anchor="middle" class="s" style="font-size:10.5px">engine</text>
-  <text x="705" y="248" text-anchor="middle" class="s" style="font-size:10.5px">and, for AI Document, a plugins folder</text>
-  <text x="705" y="262" text-anchor="middle" class="s" style="font-size:10.5px">(the formio/uag-documents add-on)</text>
-
-  <!-- site -> UAG -->
-  <path d="M504 170 H596" class="flow" marker-end="url(#a)"/>
-  <text x="550" y="132" text-anchor="middle" class="e">saves,</text>
-  <text x="550" y="146" text-anchor="middle" class="e mono" style="font-size:10px">…/agent/*,</text>
-  <text x="550" y="160" text-anchor="middle" class="e mono" style="font-size:8.5px">…/document/process</text>
+  <!-- Form.io -->
+  <rect x="452" y="24" width="300" height="132" rx="14" class="zone"/>
+  <text x="472" y="48" class="lab">FORM.IO · UAG.FORM.IO</text>
+  <rect x="472" y="62" width="260" height="74" rx="10" class="card"/>
+  <text x="486" y="86" class="h">The demo's project</text>
+  <text x="486" y="105" class="s">the demos' forms, and guests:</text>
+  <text x="486" y="121" class="s mono">guest/register</text>
+  <path d="M300 214 C 380 170, 400 120, 468 104" class="flow" marker-end="url(#a)"/>
+  <text x="362" y="104" text-anchor="middle" class="e">sign in as a guest,</text>
+  <text x="362" y="119" text-anchor="middle" class="e">load the forms</text>
+  <path d="M602 236 V140" class="flow" marker-end="url(#a)"/>
+  <text x="610" y="190" class="e">saves, with</text>
+  <text x="610" y="205" class="e">the guest's token</text>
 
   <!-- Models -->
-  <rect x="870" y="134" width="110" height="82" rx="10" class="card"/>
-  <text x="925" y="160" text-anchor="middle" class="h">Model APIs</text>
-  <text x="925" y="179" text-anchor="middle" class="s">TypeSafe JEV,</text>
-  <text x="925" y="194" text-anchor="middle" class="s">Anthropic Claude</text>
-  <path d="M812 175 H866" class="flow" marker-end="url(#a)"/>
+  <rect x="820" y="296" width="156" height="74" rx="10" class="card"/>
+  <text x="898" y="322" text-anchor="middle" class="h">Model APIs</text>
+  <text x="898" y="340" text-anchor="middle" class="s">TypeSafe (JEV)</text>
+  <text x="898" y="355" text-anchor="middle" class="s">Anthropic (Claude)</text>
+  <path d="M754 339 H816" class="flow" marker-end="url(#a)"/>
 
-  <!-- Hosted project -->
-  <rect x="560" y="370" width="420" height="62" rx="10" class="card"/>
-  <text x="580" y="396" class="h">uag.form.io</text>
-  <text x="580" y="416" class="s">The demo's project on Form.io's hosted service.</text>
-  <path d="M705 274 V366" class="flow" marker-end="url(#a)"/>
-  <text x="716" y="340" class="e">reads the project,</text>
-  <text x="716" y="354" class="e">forwards every save</text>
-  <path d="M412 290 V401 H556" class="flow" marker-end="url(#a)"/>
-  <text x="400" y="372" text-anchor="end" class="e">reads forms and applications</text>
-  <text x="400" y="386" text-anchor="end" class="e">directly, with the project key</text>
+  <!-- Retention -->
+  <rect x="820" y="62" width="156" height="74" rx="10" class="card"/>
+  <text x="898" y="88" text-anchor="middle" class="h">Retention</text>
+  <text x="898" y="106" text-anchor="middle" class="s">hourly GitHub job:</text>
+  <text x="898" y="121" text-anchor="middle" class="s">deletes after a day</text>
+  <path d="M818 99 H756" class="soft" marker-end="url(#b)"/>
 </svg>

@@ -1,11 +1,13 @@
 // The applicant's side of the agentic workflow demo.
 //
 // The page renders the applicant's part of the application form, submits it,
-// and then only reads the submission back. Everything in between happens on
-// the server, configured in the form itself: the site saves the application
-// through the UAG, whose "Agent: Run task" action has an engine score it against
-// the criteria after the save, the UAG saves the results as an update, and on
-// the scholarship track that update starts the finance task's action.
+// and then only reads the submission back. Everything in between happens in the
+// UAG, configured in the form itself: the save goes through the UAG (formio.js
+// sends it there, through @formio/uag-js), whose "Agent: Run task" action has an
+// engine score the application against the criteria after the save; the UAG
+// saves the results as an update, and on the scholarship track that update
+// starts the finance task's action. The visitor's guest token can read only the
+// applications it submitted.
 (function () {
   var AGENT_PANELS = ['workflow', 'agentAdmissionsReview', 'agentScholarshipReview'];
   var SCORES = [
@@ -13,14 +15,23 @@
     ['leadershipScore', 'Leadership'], ['serviceScore', 'Service'], ['essaysScore', 'Essays'],
   ];
   var EXPECT = { strong: 'Likely: scholarship track', average: 'Likely: accepted', weak: 'Likely: declined' };
-  var POLL_MS = 2500;
+  var POLL_MS = 1500;
   var POLL_LIMIT_MS = 4 * 60 * 1000;
+  // On a UAG run locally, how long before the page says why the agents may not answer.
+  var LOCAL_HINT_MS = 45 * 1000;
+  var LOCAL_HINT = 'The agents have not answered. If this UAG runs on your machine, it needs a license that includes the UAG, or a project on Form.io\'s hosted service, to run Agentic Formflow.';
 
   var definition = null;
   var labels = {};
   var profiles = {};
   var form = null;
   var poller = null;
+  var formio = null;
+  // A run is settled when it is declined or accepted, or on the scholarship
+  // track with an award chosen (module/applicants.mjs, `settled`).
+  function settled(data) {
+    return ['declined', 'accepted'].indexOf(data.status) >= 0 || (data.status === 'scholarshipEvaluation' && !!data.awardLevel);
+  }
 
   function $(selector) { return document.querySelector(selector); }
 
@@ -29,9 +40,6 @@
     window.scrollTo(0, 0);
   }
 
-  function tellParent(body) {
-    if (window.parent !== window) window.parent.postMessage({ type: 'uag-demo', code: body.code, error: body.error }, location.origin);
-  }
 
   function walk(components, visit) {
     (components || []).forEach(function (component) {
@@ -42,10 +50,13 @@
   }
 
   function load() {
-    return Promise.all([
-      fetch('/api/workflow/form').then(function (r) { return r.json(); }),
-      fetch('/api/workflow/applicants').then(function (r) { return r.json(); }),
-    ]).then(function (results) {
+    return DemoApp.ready().then(function () {
+      formio = new Formio(DemoApp.formUrl('application'));
+      return Promise.all([
+        formio.loadForm(),
+        fetch('applicants.json').then(function (r) { return r.json(); }),
+      ]);
+    }).then(function (results) {
       definition = results[0];
       profiles = results[1];
       walk(definition.components, function (component) {
@@ -107,24 +118,16 @@
   function submit(data) {
     var error = $('[data-form-error]');
     error.hidden = true;
-    fetch('/api/workflow/applications', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: data }),
-    }).then(function (response) {
-      return response.json().then(function (body) {
-        if (!response.ok) {
-          error.textContent = body.error || 'The application was not accepted.';
-          error.hidden = false;
-          if (form) form.emit('submitError');
-          tellParent(body);
-          return;
-        }
-        startStatus(body.id, data);
-      });
-    }).catch(function () {
-      error.textContent = 'Could not reach the demo server. Please try again.';
+    // formio.js saves it; @formio/uag-js sends the save to the UAG, so the form's Run task actions run.
+    formio.saveSubmission({ data: data }).then(function (saved) {
+      startStatus(saved._id, data);
+    }).catch(function (err) {
+      var details = (err && err.details) || [];
+      error.textContent = details.length
+        ? 'The application was not accepted. ' + details.map(function (d) { return d.message; }).join(' ')
+        : 'The application was not accepted (' + ((err && (err.message || err.error)) || err || 'no answer') + ').';
       error.hidden = false;
+      if (form) form.emit('submitError');
     });
   }
 
@@ -158,20 +161,52 @@
     clearInterval(poller);
     // This application's poller: an answer that arrives after another application
     // has replaced it on the screen is dropped.
+    // Read back from the UAG as the guest who owns it, as @formio/uag-js would
+    // address it ({uag}/project/{id}/form/{id}). One row in the flow log for all
+    // the reads, and a row for each stage the reads see change.
+    var url = DemoApp.settings.uagUrl + (definition.project ? '/project/' + definition.project : '') + '/form/' + definition._id + '/submission/' + encodeURIComponent(id);
+    var reads = 0;
+    var hinted = false;
+    var seen = { status: 'submitted' };
     var mine = poller = setInterval(function () {
       if (Date.now() - started > POLL_LIMIT_MS) {
         clearInterval(mine);
-        $('[data-status-lede]').textContent = 'The agents are taking longer than usual. The review continues in the background; check back in a minute.';
+        $('[data-status-lede]').textContent = DemoApp.settings.production === 'true'
+          ? 'The agents are taking longer than usual. The review continues in the background; check back in a minute.'
+          : LOCAL_HINT;
         return;
+      }
+      // Without a license a save still succeeds, and no agent runs: say so early, and keep reading.
+      if (!hinted && DemoApp.settings.production !== 'true' && !seen.decision && Date.now() - started > LOCAL_HINT_MS) {
+        hinted = true;
+        $('[data-status-lede]').textContent = LOCAL_HINT;
       }
       if (waiting) return;
       waiting = true;
-      fetch('/api/workflow/applications/' + encodeURIComponent(id)).then(function (r) { return r.json(); }).then(function (body) {
-        if (poller !== mine) return;
-        if (body.result) render(body);
-        if (body.settled) clearInterval(mine);
+      reads++;
+      UAGFlowLog.fetch(url, { headers: { 'x-jwt-token': UAGDemoGuest.token() || '' } }, {
+        reqId: 'read-' + id, run: 'read-' + id, label: 'GET the application, as its owner', summary: 'read ' + reads + (reads === 1 ? ' time' : ' times'),
+      }).then(function (r) { return r.ok ? r.json() : null; }).then(function (submission) {
+        if (poller !== mine || !submission) return;
+        var data = submission.data || {};
+        note(id, seen, data);
+        render({ result: data });
+        if (settled(data)) clearInterval(mine);
       }).then(done, done);
     }, POLL_MS);
+  }
+
+  /** A flow log row for each change the reads see: what the UAG's Run task actions saved. */
+  function note(id, seen, data) {
+    if (data.decision && data.decision !== seen.decision) {
+      UAGFlowLog.note({ run: 'stage-' + id + '-admissions', title: 'Run task: admissions', label: 'admissions saved: ' + label('decision', data.decision), summary: 'status ' + data.status + (data.overallScore !== undefined ? ' · overall score ' + data.overallScore : '') });
+    }
+    if (data.awardLevel && data.awardLevel !== seen.awardLevel) {
+      UAGFlowLog.note({ run: 'stage-' + id + '-finance', title: 'Run task: finance', label: 'finance saved: ' + label('awardLevel', data.awardLevel), summary: 'started by the update that saved the admissions results' });
+    }
+    seen.decision = data.decision;
+    seen.awardLevel = data.awardLevel;
+    seen.status = data.status;
   }
 
   function render(body) {

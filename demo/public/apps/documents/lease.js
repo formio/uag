@@ -3,20 +3,19 @@
  * Document component from @formio/uag-js, and shows what each AI Document is
  * doing as the UAG processes the uploaded lease.
  *
- * The component is registered with this site as its "UAG" (/api/documents/uag):
- * the site relays its calls to the UAG behind the demo's budget and bot check.
- * An application of your own registers the UAG's URL instead.
+ * The component comes with @formio/uag-js from the UAG (/uag-js/uag.use.js
+ * registers it with the UAG's ai-document module), and processes each upload at
+ * the UAG's `{form}/document/process` with the visitor's Form.io token, as in
+ * any application.
  */
 (async function () {
   const $ = (selector) => document.querySelector(selector);
+  await DemoApp.ready();
 
-  // The AI Document component comes from the UAG's ai-document feature (the page loads
-  // it, relayed); Formio.use(UAG(url)) gives it the client: the installed plugins from
-  // {url}/plugins, and processing at {url}/.../document/process.
-  Formio.use(FormioUAG.UAG(location.origin + '/api/documents/uag', { agentInput: false, fetch: demoFetch }));
-
-  const LABELS = { leaseClauses: 'Key clauses', leaseSummary: 'Summary', leaseTranslation: 'Translation' };
-  const definitionLoaded = fetch('/api/documents/form').then((response) => response.json());
+  const LABELS = { leaseClauses: 'Key clauses', leaseSummary: 'Summary', leaseTranslation: 'Translation', setup: 'AI Document' };
+  const NOT_INSTALLED = 'This UAG does not have the AI Document process installed (the formio/uag-documents add-on, or UAG_PLUGINS).';
+  const formio = new Formio(DemoApp.formUrl('lease-review'));
+  const definitionLoaded = formio.loadForm();
   let builder = null;
 
   // The tabs work while the form is still loading.
@@ -60,6 +59,13 @@
     $('[data-activity-empty]').hidden = true;
   }
 
+  // The AI Document component comes from the UAG's AI Document module, with
+  // uag.use.js; without the module, formio.js does not know it, and an upload
+  // would do nothing at all.
+  if (!(Formio.Components && Formio.Components.components && Formio.Components.components.uagdocument)) {
+    line('setup', NOT_INSTALLED, 'error');
+  }
+
   const started = new Map();
 
   form.on('uagDocumentStart', (event) => {
@@ -88,7 +94,8 @@
   });
 
   form.on('uagDocumentError', (event) => {
-    line(event.path, event.error || 'Processing failed.', 'error');
+    const missing = /not installed|no such (plugin|process)|unknown (plugin|process)/i.test(event.error || '');
+    line(event.path, missing ? NOT_INSTALLED : (event.error || 'Processing failed.'), 'error');
   });
 
   /* ---------- Save ---------- */
@@ -98,27 +105,22 @@
   form.on('submit', async (submission) => {
     submitError.hidden = true;
     try {
-      const response = await demoFetch('/api/documents/reviews', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: submission.data })
-      });
-      const saved = await response.json();
-      if (!response.ok) throw new Error(describeFailure(response.status, saved));
+      // Saved through the UAG, like every save of a form tagged `uag`.
+      const saved = await formio.saveSubmission({ data: submission.data });
       form.emit('submitDone', submission);
       showConfirmation(saved);
     }
     catch (err) {
       form.emit('submitError', err);
-      submitError.textContent = err.message;
+      submitError.textContent = describeFailure(err);
       submitError.hidden = false;
     }
   });
 
-  function describeFailure(status, body) {
-    const details = (body && body.details) || [];
+  function describeFailure(err) {
+    const details = (err && err.details) || [];
     if (details.length) return 'The review was not saved. ' + details.map((detail) => detail.message).join(' ');
-    return 'The review was not saved (' + ((body && body.error) || 'the server answered ' + status) + ').';
+    return 'The review was not saved (' + ((err && (err.message || err.error)) || err || 'no answer') + ').';
   }
 
   /** The saved submission, with each file's base64 content shortened. */
@@ -158,17 +160,4 @@
     });
   }
 
-  /* ---------- The demo's limits ---------- */
-
-  // The site answers 403 (not verified), 429 (too fast) and 503 (the day's budget is spent)
-  // with a code the page around this frame turns into a message.
-  async function demoFetch(url, init) {
-    const response = await fetch(url, init);
-    if ([403, 429, 503].includes(response.status) && window.parent !== window) {
-      response.clone().json().then((body) => {
-        if (body && body.code) window.parent.postMessage({ type: 'uag-demo', code: body.code, error: body.error }, location.origin);
-      }).catch(() => {});
-    }
-    return response;
-  }
 })();

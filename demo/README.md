@@ -5,186 +5,86 @@
 The marketing and demo site for the Form.io Universal Agent Gateway, published at **[ai.form.io](https://ai.form.io)**:
 
 - **Product** (`/`) and **Getting Started** (`/getting-started`): what the UAG is, and how to run it yourself.
-- **Examples** (`/examples`): four live demos, each with a flow viewer beside it showing every call the agents make.
+- **Examples** (`/examples`): four live demos, each with a flow log beside it showing every call the page makes to the UAG.
   - **Conversation Forms** (`/examples/conversation`): a chat whose questions come entirely from a form.
   - **Agentic Workflow** (`/examples/workflow`): a college application reviewed by two chained agents, with no human in the loop.
   - **Agentic Formflow** (`/examples/formflow`): a claims wizard that chooses its own pages and fills itself in from a description.
-  - **AI Document** (`/examples/documents`): a lease review whose AI Document components copy an uploaded lease's key clauses word for word into a field, check the copy, and summarize the lease. It needs the AI Document module and the document plugins in the UAG's plugins folder: in Docker, the `formio/uag-documents:1` add-on brings them, run beside `formio/uag` with its volume mounted at `/app/plugins/documents`; with `yarn demo:local`, set `UAG_PLUGINS` to a plugins file that lists them. `deploy/docker-compose.yml` runs the add-on; the Compose stack in this folder (`docker-compose.yml` and its overlays) runs neither, so there the demo answers that its process is not installed.
+  - **AI Document** (`/examples/documents`): a lease review whose AI Document components copy an uploaded lease's key clauses word for word into a field, check the copy, and summarize the lease. It needs the AI Document module and the document plugins in the UAG's plugins folder: in Docker, the `formio/uag-documents:1` add-on brings them, run beside `formio/uag` with its volume mounted at `/app/plugins/documents`; with `yarn demo:local`, set `UAG_PLUGINS` to a plugins file that lists them. Without them, the demo answers that its process is not installed.
 - **Developers** (`/developers`): the technical documentation, from how the UAG works to the engine SDK.
 - **Contact Us** (`/contact`): the hosted Form.io contact form.
 
-Everything runs as one Docker Compose stack of two services, on the demo's project on Form.io's hosted service, **`https://uag.form.io`**. Only the site is published; the UAG stays on the stack's private network, which is the deployment the site itself recommends. A hosted project needs no license.
+## How it works
 
-![The demo's Compose stack: the site is the only published service; the UAG stays on the private network.](./public/images/demo-stack.svg)
+The site is **static files**, and the demos are what any application embedding the UAG would write: the pages load `@formio/uag-js` from the UAG (`<script src="{UAG}/uag-js/uag.use.js">`), load their forms from the demo's Form.io project, and call the UAG straight from the browser with a Form.io user token. There is no server of the site's own.
 
-| Service | What it is |
+![The demo: static files on S3 and CloudFront; the browser signs in at the Form.io project and calls the UAG directly.](./public/images/demo-stack.svg)
+
+| Part | What it is |
 |---|---|
-| `site` | This folder's server (`server/`): the pages, the docs, the demos' back ends, and the flow viewer. It runs the flow proxy (`flow/proxy.mjs`), a logging reverse proxy, in front of the UAG inside it, so every call a demo makes can be shown to the visitor who made it. Plain HTTP on `DEMO_PORT`. |
-| `formio-uag` | The UAG, built from this repository, with the JEV and Claude engines and their keys inside it. |
+| The site | `yarn demo:build` renders every page and doc (`views/`, `content/developers/`) and copies the assets and demo apps (`public/`) into `dist/`. In production it is an S3 bucket behind CloudFront ([`deploy/site.yml`](./deploy/site.yml)). |
+| The project | The demo's project on Form.io's hosted service, **`https://uag.form.io`**, built from [`module/project.json`](./module/project.json): the demos' forms, and the `guest` role, resource and register form. |
+| The UAG | One service, published at its own host name (`uag.ai.form.io`), with the JEV and Claude engines inside it ([`docker-compose.yml`](./docker-compose.yml)). A hosted project needs no license. |
 
-**The project's forms.** The stack uses the forms already in the project; it does not create or change them. `module/project.json` is their template: import it into a new project (the portal's Import Template, or `node server/setup.mjs` with `FORMIO_PROJECT_URL` and `PROJECT_KEY`) before the first start. Keep the forms' paths and keys, such as `serviceRequest`, `application` and `claim`, and their "Agent: Run task" actions: the pages address them by name.
+**Guests.** A visitor who clicks **Start the live demo** is registered as a guest of the project ([`public/js/guest.js`](./public/js/guest.js)): the page posts generated credentials to the project's `guest/register` form through the UAG, which forwards them to Form.io as it forwards any save; the form's Save, Role Assignment and Login actions create a `guest` user and answer with its token. The page keeps only the token, in `localStorage`, until it expires, and gives it to formio.js (`Formio.setToken`), exactly as an application gives it its signed-in user's token. Nothing about guests is in the UAG: it forwards a registration like any other submission, and then sees an ordinary Form.io user, with that user's permissions.
 
-**The engines on their own server.** `docker-compose.split.yml` adds the engine server (`packages/engine-server`, `uag-engines`) with JEV and Claude and their keys, so the UAG holds no model keys, and runs the flow proxy as its own service (`uag-flow`) in front of both, so the flow viewer also shows what the UAG asked each engine and the engines' research calls. It needs `ENGINE_SERVER_KEY` and `FLOW_KEY` as well:
+**What a guest may do.** Create its own submissions of the demos' forms, and read and update its own applications (the workflow reads back the agents' results, and the "Agent: Run task" actions save them as the guest). It cannot read anyone else's submissions, or any guest. No demo form opens to anonymous visitors (`uagAnonymous` is off everywhere), so an Agent API call without a token is refused.
 
-```bash
-docker compose -f docker-compose.yml -f docker-compose.split.yml up -d --build
-```
+**The workflow's agents.** The page saves each application through the UAG, and the form's "Agent: Run task" actions run the admissions and finance tasks there, after the save, so nothing calls in from Form.io. The page reads the application back as its owner until both tasks have saved their results.
 
-**The workflow's agents.** The site saves each application through the UAG, and the form's "Agent: Run task" actions run the admissions and finance tasks there, after the save, so nothing calls in from Form.io. Each run carries the visitor's request id, so the flow viewer shows it.
+**The flow log.** Beside each demo, [`public/js/flow-log.js`](./public/js/flow-log.js) records the calls the page itself makes to the UAG and the project (it wraps `fetch`, which formio.js and `@formio/uag-js` use), with each response's status and time, and for Agent API calls which engines answered, how fast and with how many tokens. Passwords and tokens are replaced with `[redacted]` before anything is shown, and bodies are cut to 4 KB. It sends nothing anywhere. The UAG's own calls to Form.io and to the engines are not shown: the page cannot see them.
 
-**Self-hosted instead.** `docker-compose.enterprise.yml` adds Form.io Enterprise and MongoDB to the stack and holds the project there, with a one-shot setup job (`server/setup.mjs`) that creates the project from `module/project.json` (or imports it again into one that exists) and installs `PROJECT_KEY`. That needs Form.io's `LICENSE_KEY`, which the UAG reads too, so it must include the UAG and allow `api-server:3000` (or add a `UAG_LICENSE`, deprecated, that does), and the settings marked "self-hosted" in `.env.example`:
+## Hosting
 
-```bash
-docker compose -f docker-compose.yml -f docker-compose.enterprise.yml up -d --build
-```
-
-## Deploying it
+**The UAG.** From this folder, with `.env` filled in from [`.env.example`](./.env.example):
 
 ```bash
-cd demo
-cp .env.example .env        # fill in every value marked "required"
 docker compose up -d --build
 ```
 
-Then point your load balancer or reverse proxy at `DEMO_BIND:DEMO_PORT` (127.0.0.1:8080 by default; set `DEMO_BIND` to the private address the load balancer reaches) for `ai.form.io`, terminating TLS there. If your load balancer adds more than one `X-Forwarded-For` entry (some cloud load balancers and CDNs do), raise `TRUST_PROXY` to match, or every visitor shares one rate limit. The site sends `Strict-Transport-Security` when its public URL is `https`, reads visitor IPs from `X-Forwarded-For` through `TRUST_PROXY` hops, and serves its live streams (`/api/flow/stream`, `/api/formflow/agent/extract`, `/api/documents/uag/.../document/process`) as server-sent events: turn off response buffering for those paths, and allow long-lived responses (a few minutes).
+Or, with released images and every setting written in the file, [`deploy/docker-compose.yml`](./deploy/docker-compose.yml), which also runs the AI Document add-on. Put your load balancer in front of it for its host name (TLS ends there), and set `DEMO_SITE_ORIGIN` (`CORS`) to the site's origin, `https://ai.form.io`: the UAG answers browsers from that origin only. [`uag-module/`](./uag-module/index.js) gives every guest per-minute limits on chat, extraction and document processing, and all guests together a limit on Claude calls, per UAG instance (`DEMO_RATE_LIMITS` replaces them).
 
-The images build from this repository (`docker compose build`). To deploy released images instead, set `UAG_IMAGE`, `ENGINES_IMAGE` and `DEMO_IMAGE` in `.env` and run `docker compose pull`.
+**The site.** [`deploy/site.yml`](./deploy/site.yml) is a CloudFormation stack, deployed once in `us-east-1`: a private S3 bucket that only its CloudFront distribution reads, a CloudFront function that serves `<path>/index.html` for `<path>`, the site's `404.html` for anything else, a response headers policy with the Content-Security-Policy (which allows the UAG's origin, a stack parameter), and a deploy role for GitHub Actions.
 
-`PROJECT_KEY` is an API key of `https://uag.form.io`, made in the project's settings (API Keys). To run the stack on another hosted project, set `FORMIO_PROJECT_URL` and its key; the project's name is read from its subdomain (`FORMIO_PROJECT_NAME` overrides it).
+```bash
+aws cloudformation deploy --region us-east-1 --stack-name uag-demo-site \
+  --template-file demo/deploy/site.yml --capabilities CAPABILITY_NAMED_IAM \
+  --parameter-overrides DomainName=ai.form.io CertificateArn=<an ACM certificate in us-east-1> \
+    UagOrigin=https://uag.ai.form.io
+```
 
-## Run it over HTTPS locally
+Point the domain at the stack's `DistributionDomainName` output. Then create a GitHub environment, `demo-site`, with the variables `DEMO_UAG_URL` (`https://uag.ai.form.io`), `DEMO_SITE_BUCKET`, `DEMO_SITE_DISTRIBUTION_ID` and `DEMO_SITE_ROLE_ARN` (the stack's outputs). [`.github/workflows/site.yml`](../.github/workflows/site.yml) then builds and publishes the site on every version tag, and when run by hand: scripts and styles first (kept for good: every page names them with `?v=`), then the pages (revalidated on every load), then removes what the build no longer has, and invalidates the distribution. The deploy role trusts that environment only, through GitHub's OIDC; no AWS key is stored.
 
-To try a deployment on your own machine as it will run behind a load balancer, at its own name over HTTPS, add `docker-compose.https.yml`. It puts [Caddy](https://caddyserver.com) in front of the site with a certificate authority of its own (`https/Caddyfile`), which streams the live demos' events unbuffered and sets `X-Forwarded-For`, as your load balancer should.
+**The project.** Import `module/project.json` into it before the first deploy: the portal's Import Template, or `FORMIO_PROJECT_URL=... PROJECT_KEY=... yarn workspace @formio/uag-demo setup`, which imports it again when it changes (an import updates the forms in place, keeping their submissions, and replaces their actions). Keep the forms' paths and keys, such as `serviceRequest`, `application`, `claim` and `guestRegister`, and their actions: the pages address them by name. Set the project's token expiry to the length of a visit (two hours is plenty): a guest's token lasts that long.
 
-1. In `.env`, set the name and use both files, so plain `docker compose` picks them up:
+**Retention.** [`.github/workflows/demo-retention.yml`](../.github/workflows/demo-retention.yml) runs [`scripts/retention.mjs`](./scripts/retention.mjs) every hour: it deletes the demo forms' submissions and the guests once they are a day old, with the project's API key (the secret `DEMO_PROJECT_KEY`). It runs only when the repository variable `DEMO_RETENTION_ENABLED` is `true`. It logs counts, never a submission.
 
-   ```bash
-   DEMO_DOMAIN=ai.formio.local
-   COMPOSE_FILE=docker-compose.yml:docker-compose.https.yml
-   ```
-
-   Leave `DEMO_PUBLIC_URL` unset: the site is served at `https://<DEMO_DOMAIN>`.
-2. Point the name at your machine (both lines: a `.local` name otherwise waits on an IPv6 lookup first on macOS):
-
-   ```bash
-   printf '127.0.0.1 ai.formio.local\n::1 ai.formio.local\n' | sudo tee -a /etc/hosts
-   ```
-
-3. Start it, then trust Caddy's root certificate once (it is kept in the `caddy-data` volume):
-
-   ```bash
-   docker compose up -d
-   docker compose cp https:/data/caddy/pki/authorities/local/root.crt ./caddy-root.crt
-   sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain caddy-root.crt   # macOS
-   ```
-
-Then open `https://ai.formio.local`. `docker compose pull && docker compose up -d` moves it to the images `.env` names; `docker compose down` stops it (`-v` also removes the certificate authority, which must then be trusted again).
-
-## Changing the domain
-
-The domain is one setting. Set `DEMO_DOMAIN` in `.env` to the new name (and `DEMO_PUBLIC_URL` only if it is not `https://<DEMO_DOMAIN>`), restart the site, and move the load balancer. Canonical links, social cards and cookies follow it. Nothing inside the stack names the public domain: every service reaches the others by their Compose names.
-
-The repository's own docs link to `ai.form.io` as the place to see the demos; search for it when the domain changes for good.
-
-## Keeping the demos safe to leave public
-
-The demos call real models on Form.io's keys and hold what visitors type, so the site:
-
-- **Checks visitors are human** with Cloudflare Turnstile. It is required in production (`NODE_ENV=production`): the site does not start without `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` unless `DEMO_REQUIRE_TURNSTILE=false`. One challenge unlocks the demos for `TURNSTILE_VALID_MINUTES` (120).
-- **Rate limits** each operation per client network (an IPv4 address, or an IPv6 /64) and then per visitor (`DEMO_LIMITS`, JSON; see `server/config.mjs` for the defaults). A network may also start only `DEMO_SESSIONS_PER_NETWORK` (default 300, so offices and campuses behind one address are not shut out) new visitor sessions in ten minutes, and hold `DEMO_STREAMS_PER_NETWORK` (default 10) flow views open.
-- **Caps the day's spend** at `DEMO_DAILY_BUDGET` units across all visitors, and `DEMO_DAILY_NETWORK_BUDGET` per network. A chat turn or an extraction costs a unit up front (an application 2; `DEMO_COSTS` changes them), and a chat turn pays one more per `DEMO_TOKENS_PER_UNIT` model tokens it used, from the engine `usage` the UAG reports with each turn. A conversation may take `CHAT_MAX_TURNS` (30) turns before it must start over (starting over is rate-limited like a turn), with messages of at most `CHAT_MAX_MESSAGE_LENGTH` (2000) characters, and the UAG bounds each turn's transcript itself (`agentApi.chat`). Requests are validated before they are charged. The count is kept in the `demo-state` volume, so a restart does not reset it. Once it is spent the demos say so until midnight UTC; the rest of the site keeps working. Set a spend limit on the model provider's side too.
-- **Keeps visitors apart.** A visitor is a signed cookie (`DEMO_SECRET`; `__Host-` prefixed over HTTPS), started only by the demos' API. They can read only the applications they submitted, and the flow viewer shows them only their own runs: every call the site makes for them carries an `X-Request-Id` naming their session, which the UAG passes on to the Run task runs a save starts and to the engine server, and the engine server to its research calls. Token exchanges are redacted from the viewer, and so are the private services' addresses.
-- **Narrows the chat.** The page embeds one form, `CHAT_FORM` (`serviceRequest`), with `Formio.createChat`, and the site's `/api/conversation/uag` routes stand in for the UAG for that form only: the form, its `agent/chat` turns and its save, relayed with the project key behind the guard above. The UAG's chat only ever sets fields a person may enter on that form, and never submits; the page submits after the visitor confirms.
-- **Deletes what visitors submit** after `DEMO_RETENTION_HOURS` (24), and never writes request bodies to its logs.
-- **Fixes the task server-side.** The browser cannot choose which form or task the demo's key is used for, or pre-fill the agents' fields; descriptions are capped at `DEMO_MAX_INPUT_LENGTH` (8000) characters, and the claim upload is read only after the guard lets it in.
-- **Publishes only the site, and only on `DEMO_BIND`** (127.0.0.1 by default). Point your load balancer at it on a private address: the site trusts the `X-Forwarded-For` of whatever connects to it (`TRUST_PROXY` hops), so the port must not be reachable around the load balancer. With the Enterprise overlay, MongoDB is on an internal network only Form.io can reach.
-
-Sessions and rate-limit counters are in the site's memory (bounded), so run one instance of `site`.
+**Spend.** Registration is open (there is no human check yet), so set a spend limit with the model provider before the site is public. The rate limits above bound each guest and all guests together, and retention removes guests after a day. A human check can be added later without changing the pages' embed code: AWS WAF in front of the site and the UAG (rate-based rules, Bot Control), or Form.io's own CAPTCHA component on the `guest/register` form, which Form.io enforces server-side.
 
 ## Settings
 
-The common ones are in [`.env.example`](./.env.example), and every one, with its default, is read in [`server/config.mjs`](./server/config.mjs). Under Compose, a variable reaches the site only if the `site` service's `environment` passes it. The ones you are most likely to change:
+The build reads its settings from the environment ([`lib/config.mjs`](./lib/config.mjs)), and from `demo/.env.local` when that file exists and `NODE_ENV` is not `production`. Everything the build reads ends up in the pages, so none of it may be a secret: the build fails if the value of any environment variable whose name says it is a secret (`KEY`, `SECRET`, `PASS`, `LICENSE`, `TOKEN`) appears in its output.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `DEMO_DOMAIN` | `ai.form.io` | The domain the site is served at. |
-| `DEMO_PORT`, `DEMO_BIND` | `8080`, `127.0.0.1` | The host port the site listens on, and the address it is bound to. |
-| `CONTACT_FORM_URL` | `https://formio.form.io/contact` | The hosted form the Contact Us page renders. Point it at the form on `crm.form.io` once it is there. |
-| `CLAUDE_MODEL` | `claude-sonnet-5-5` | The model the Claude engine uses, for values and for the chat. |
-| `CHAT_FORM` | `serviceRequest` | The form the Conversation Forms demo embeds as a chat. The page addresses it by its path, `service-request`, so change both together. |
-| `CHAT_MAX_TURNS` | `30` | Turns one conversation may take before the visitor must start over. |
-| `CHAT_MAX_MESSAGE_LENGTH` | `2000` | The longest message the demo relays, in characters. Keep it within the UAG's `agentApi.chat.maxMessageLength`. |
-| `PROJECT_TTL` | `300` | Seconds between the UAG's re-reads of the project. |
-| `FLOW_ENGINES` | `inside` with `FLOW_UAG_URL`, else `remote` | Where the engines run, which sets what the flow viewer can show. `inside` the UAG, their calls never cross the network, so the viewer's map shows only your app, the UAG and Form.io, and each Agent API call says which engines answered and how fast; `remote`, on an engine server behind the flow proxy, each engine call is its own step. |
-| `DEMO_TEMPLATE_SYNC` | `import` | With `docker-compose.enterprise.yml`, `off` stops the setup job updating an existing project's forms from `module/project.json`. |
+| `DEMO_UAG_URL` | `http://localhost:3200`; required in production | The UAG the pages call. |
+| `FORMIO_PROJECT_URL` | `https://uag.form.io` | The project the forms load from. |
+| `DEMO_UAG_PROJECT_PATH` | `/<project name>` | Where the UAG serves the project's forms: under the project's name (its subdomain, or the last segment of a self-hosted project's URL), or at the UAG's root (`""`) for Form.io Open Source. |
+| `FORMIO_BASE_URL` | Derived from the project URL | formio.js's base URL. |
+| `DEMO_DOMAIN`, `DEMO_PUBLIC_URL` | `ai.form.io`, `https://<DEMO_DOMAIN>` | The site's own address, for canonical links and social cards. |
+| `DEMO_OUT` | `dist` | Where the build is written. |
+| `DEMO_ASSET_VERSION` | The release's version | Added to the URLs of scripts and styles (`?v=`). The site workflow adds the commit. |
+| `CONTACT_FORM_URL` | `https://formio.form.io/contact` | The hosted form the Contact Us page renders. |
+| `FORMIO_JS_VERSION` | `5.6.1` | The formio.js the demo apps load. |
+
+The UAG's settings are in [`.env.example`](./.env.example).
 
 ## Working on it
 
-Run on your own machine, the examples say whether they can run: with no UAG to talk to, or one that cannot run Agentic Formflow (no license that includes the UAG, and not on a hosted project), they show a notice that a license is needed to run them locally, and the workflow, formflow and AI Document demos say they are not supported. The deployed site (`NODE_ENV=production`) never shows it: there, a UAG that does not answer is an outage, and the demos say so themselves.
+Run on your own machine, the examples say when they cannot run: a UAG that cannot run Agentic Formflow (no license that includes the UAG, and not on a hosted project) refuses the formflow and AI Document demos' calls, and the page says they are not supported, with what a local run needs; the workflow says so if no agent answers within 45 seconds. Conversation forms run everywhere. The deployed site (`NODE_ENV=production`) never shows that notice: there, a UAG that does not answer is an outage, and the demos say so.
 
-### The whole demo on your machine, self-hosted (`yarn demo:start <port>`)
+### Against your own project (`yarn demo:local`)
 
-One command runs every demo against Form.io Enterprise on your machine, with its portal, real engines (JEV and Claude), and a portal stage connected to the UAG, so "Agent: Run task" opens in the portal and its runs appear in Action Logs.
-
-**You need:** Docker, Node.js 22 or later, Yarn (`corepack enable`), and in the root `.env` (git ignores it):
-
-| Setting | Value |
-|---|---|
-| `LICENSE_KEY` | A Form.io Enterprise license. The UAG uses it too, so it should include the UAG and allow the endpoint `formio.e2e.test`: inside the stack, the UAG reaches Form.io's API server by that name. |
-| `UAG_LICENSE` | Optional: the UAG's own license, when `LICENSE_KEY` does not include the UAG or allow that endpoint. |
-| `CLAUDE_API_KEY`, `TYPESAFE_API_KEY` | Your model keys. |
-
-The deployment's own settings are optional. Each is taken from the root `.env` when set there, by the name the deployment uses ([`demo/.env.example`](./.env.example)), and is otherwise random for that start:
-
-| Setting | What |
-|---|---|
-| `ADMIN_EMAIL`, `ADMIN_PASS` | The portal administrator's sign-in. Default: `admin@example.com`, with a random password. Both are printed when the demo is up. |
-| `FORMIO_ADMIN_KEY` | Form.io's admin key, which the setup job creates the project with. |
-| `PROJECT_KEY` | The demo project's API key. |
-| `DB_SECRET`, `FORMIO_JWT_SECRET` | Form.io's database and token secrets. |
-| `UAG_JWT_SECRET`, `PORTAL_SECRET` | The UAG's token secret, and the secret the portal stage is connected with. |
-| `ENGINE_SERVER_KEY`, `FLOW_KEY`, `DEMO_SECRET` | The engine server's key, the flow viewer's key, and the site's session secret. |
-
-The settings are read from the file, not loaded into the environment, so a variable set in your shell with the same name takes precedence.
-
-```bash
-git clone https://github.com/formio/uag.git && cd uag
-yarn install
-npx playwright install chromium   # once: connecting the portal stage drives the portal in a browser
-yarn demo:start 3430              # the port to start at
-```
-
-The port is the first of three, on 127.0.0.1:
-
-| Port | What |
-|---|---|
-| `3430` | The demo site, with the examples: `/examples/conversation`, `/examples/workflow`, `/examples/formflow` and `/examples/documents` (the last needs the AI Document module in the UAG, as above). |
-| `3431` | Form.io Enterprise and its portal. |
-| `3432` | The UAG, built from this checkout. |
-
-Give another port to run a second copy beside the first; each runs as its own Compose project (`uag-demo-<port>`).
-
-It builds the images from this checkout (the first start takes several minutes), starts MongoDB and Form.io, and runs the setup job, which creates the `UAG Demo` project and imports the demo's roles, forms and actions into it (`module/project.json`): `serviceRequest`, `application`, `sum`, `claim` and `leaseReview`, with their "Agent: Run task" actions. Then it starts the UAG on that project, with its own database on the same MongoDB, the engine server, the flow proxy and the site. Last, it creates a stage, **UAG Gateway**, and connects it to the UAG. When it is up it prints the URLs and the portal's administrator sign-in:
-
-```
-The UAG demo is running:
-
-  Demo site            http://127.0.0.1:3430
-    Conversation forms http://127.0.0.1:3430/examples/conversation
-    Agentic Workflow   http://127.0.0.1:3430/examples/workflow
-    Agentic Formflow   http://127.0.0.1:3430/examples/formflow
-  Form.io portal       http://127.0.0.1:3431
-    Sign in as         admin@example.com
-    Password           <random>   (generated; set ADMIN_PASS in .env to choose it)
-    Stage "UAG Gateway" of the "UAG Demo" project is connected to the UAG.
-  UAG                  http://127.0.0.1:3432
-```
-
-Every start is fresh: Ctrl+C stops the stack and removes its data, and the settings you did not set are new each time (the output lists them). If the UAG's license does not allow `formio.e2e.test`, it says that Agentic Formflow is off, and the workflow, formflow and AI Document demos will not run. If connecting the stage fails (Chromium not installed, for one), the demo still runs, without it. `yarn demo:start` with no port still runs the site alone (see [Against a UAG you run](#against-a-uag-you-run)).
-
-### Run it against your own project
-
-The quickest way to run every demo on your machine: your own project on Form.io's hosted service (a free one from [portal.form.io](https://portal.form.io) will do, or a stage of one), and one command. No Docker, and no UAG license: a hosted project runs Agentic Formflow under Form.io's license.
+The quickest way to run every demo on your machine: your own project on Form.io's hosted service (a free one from [portal.form.io](https://portal.form.io) will do, or a stage of one). No Docker, and no UAG license: a hosted project runs Agentic Formflow under Form.io's license.
 
 **You need:** Node.js 22 or later, Yarn (`corepack enable`), an API key of the project (the project's **Settings → API Keys**), a Claude API key, and a TypeSafe API key (for JEV, the decision engine).
 
@@ -200,16 +100,15 @@ In `demo/.env.local` (git ignores it):
 | Setting | Value |
 |---|---|
 | `FORMIO_PROJECT_URL` | Your project, `https://<name>.form.io`. Not `https://uag.form.io`, the deployed demo's own project. |
-| `PROJECT_KEY` | The project's API key. |
+| `PROJECT_KEY` | The project's API key. The UAG uses it; the site never sees it. |
 | `CLAUDE_API_KEY`, `TYPESAFE_API_KEY` | Your model keys. |
 | `DEMO_TEMPLATE_SYNC` | Leave empty the first time, so the demo's forms are imported. Set `off` afterwards, or on a project others already set up and share. |
 
 `yarn demo:local` then:
 
-1. Imports the demo's forms and actions (`module/project.json`) into the project: `serviceRequest`, `application`, `sum`, `claim` and `leaseReview`. An empty project is fine; forms it already has are updated in place.
-2. Starts the UAG from `lib/` on the project, with JEV and Claude in-process, on `UAG_PORT` (3200).
-3. Starts the flow proxy, for the flow viewer, on `FLOW_PORT` (3250).
-4. Starts the site on `DEMO_PORT` (8080), and prints what it found:
+1. Imports the demo's roles, forms and actions (`module/project.json`) into the project. An empty project is fine; forms it already has are updated in place.
+2. Starts the UAG from `lib/` on the project, with JEV and Claude in-process, on `UAG_PORT` (3200), allowing the site's origin.
+3. Builds the site for that UAG and project and serves it on `DEMO_PORT` (8080), rebuilding it when its pages, docs or scripts change, and prints what it found:
 
 ```
 [demo:local] The demo is running at http://localhost:8080
@@ -217,59 +116,68 @@ In `demo/.env.local` (git ignores it):
 [demo:local] UAG:      http://localhost:3200 (enterprise edition; Agentic Formflow enabled, hosted)
 ```
 
-Ctrl+C stops everything. If a port is taken, it says which one and which setting moves it.
+Ctrl+C stops everything. If a port is taken, it says which one and which setting moves it. The AI Document demo also needs `UAG_PLUGINS` (see above).
 
-**What works.** The conversation, workflow and formflow demos work as soon as it is up: the Agentic Workflow's agents run in the local UAG, on the applications the site saves through it. The AI Document demo also needs the AI Document module and the document plugins: set `UAG_PLUGINS` to a plugins file that lists them (the `ai-document` module, the `extract`, `analyze` and `translate` document plugins, and the `office-text` converter for Word files), in `demo/.env.local` or the shell. Without them, an upload answers that its process is not installed.
+### The whole demo, self-hosted (`yarn demo:start <port>`)
 
-### Against a UAG you run
+One command runs every demo against Form.io Enterprise on your machine, with its portal, real engines (JEV and Claude), and a portal stage connected to the UAG, so "Agent: Run task" opens in the portal and its runs appear in Action Logs.
 
-Run a UAG on your machine, connected to `https://uag.form.io` (or any hosted project, or another project with a `LICENSE_KEY`), and then the site alone against it. In the UAG's `.env`, at the repository root:
+**You need:** Docker, Node.js 22 or later, Yarn (`corepack enable`), and in the root `.env` (git ignores it):
 
-```bash
-PORT=3200
-PROJECT=https://uag.form.io
-PROJECT_KEY=<an API key of the project>
-JWT_SECRET=<openssl rand -hex 32>
-# The engines the deployed stack runs: JEV decides, Claude fills in values.
-UAG_ENGINES=jev,claude
-TYPESAFE_API_KEY=<your key>
-CLAUDE_API_KEY=<your key>
-```
+| Setting | Value |
+|---|---|
+| `LICENSE_KEY` | A Form.io Enterprise license. The UAG uses it too, so it should include the UAG and allow the endpoint `formio.e2e.test`: inside the stack, the UAG reaches Form.io's API server by that name. |
+| `UAG_LICENSE` | Optional: the UAG's own license, when `LICENSE_KEY` does not include the UAG or allow that endpoint. |
+| `CLAUDE_API_KEY`, `TYPESAFE_API_KEY` | Your model keys. |
 
-Then the site's, in `demo/.env.local` (read by `yarn demo:start`):
+The deployment's own settings (`ADMIN_EMAIL`, `ADMIN_PASS`, `FORMIO_ADMIN_KEY`, `PROJECT_KEY`, `DB_SECRET`, `FORMIO_JWT_SECRET`, `UAG_JWT_SECRET`, `PORTAL_SECRET`) are taken from the root `.env` when set there, and are otherwise random for that start. They are read from the file, not loaded into the environment, so a variable set in your shell with the same name takes precedence.
 
 ```bash
-FORMIO_PROJECT_URL=https://uag.form.io
-PROJECT_KEY=<the same key>
-UAG_URL=http://localhost:3200
-DEMO_PUBLIC_URL=http://localhost:8080
-CLAUDE_API_KEY=<your key>
+git clone https://github.com/formio/uag.git && cd uag
+yarn install
+npx playwright install chromium   # once: connecting the portal stage drives the portal in a browser
+yarn demo:start 3430              # the port to start at
 ```
 
-```bash
-yarn build && yarn start        # the UAG, on :3200
-yarn demo:start                 # the site, on http://localhost:8080
-```
+The port is the first of three, on 127.0.0.1:
 
-The UAG reports the hosted project (`reason: "hosted"`), so every demo runs and no notice is shown. There is no flow proxy in this setup, so the flow viewer is off. The site saves applications through your UAG, so the workflow's Run task actions run there.
+| Port | What |
+|---|---|
+| `3430` | The demo site. |
+| `3431` | Form.io Enterprise and its portal, where the site's pages load their forms. |
+| `3432` | The UAG, built from this checkout, which the site's pages call. |
 
-### The whole stack
+It builds the UAG's image from this checkout (the first start takes several minutes), starts MongoDB and Form.io, runs the setup job ([`scripts/setup.mjs`](./scripts/setup.mjs)), which creates the `UAG Demo` project from `module/project.json`, starts the UAG on it, builds the site for them and serves it, and last creates a stage, **UAG Gateway**, connected to the UAG. When it is up it prints the URLs and the portal's administrator sign-in. Every start is fresh: Ctrl+C stops the stack and removes its data. Give another port to run a second copy beside the first; each runs as its own Compose project (`uag-demo-<port>`).
 
-Run the whole site locally:
+`yarn demo:start` with no port builds and serves the site alone, from `demo/.env.local`, against whatever UAG `DEMO_UAG_URL` names, rebuilding on every change.
+
+### Open Source, with scripted engines (`yarn demo:dev`)
 
 ```bash
 yarn install && yarn build      # the UAG, from lib/
 yarn demo:dev                   # http://127.0.0.1:3420; Ctrl+C stops it and removes the containers
 ```
 
-It runs Form.io Open Source and MongoDB in Docker, the UAG from `lib/`, the engine server with the e2e suite's scripted engines (instant, keyword-driven answers for the workflow and the claims wizard), the flow proxy and the site, as the e2e suites do ([`scripts/dev.mjs`](./scripts/dev.mjs)). The chat (the UAG's `agent/chat`) is answered by the scripted agent engine, which reads `Label: value` pairs, such as `Full Name: Ada Lovelace; Category: Billing`. The workflow and formflow demos are Agentic Formflow, so they need a license that includes the UAG, `LICENSE_KEY` (or `E2E_UAG_LICENSE`) in the root `.env`; without one the examples show the notice, and those two demos "Not supported without a license or SaaS project", as they do against any Open Source server or unlicensed UAG. Pages and docs are re-read on every request, so edits show on reload; restart it after changing server code.
+It runs Form.io Open Source and MongoDB in Docker, the UAG from `lib/`, the engine server with the e2e suite's scripted engines (instant, keyword-driven answers for the workflow and the claims wizard), and the site built for them, as the e2e suites do ([`scripts/dev.mjs`](./scripts/dev.mjs)). The chat is answered by the scripted agent engine, which reads `Label: value` pairs, such as `Full Name: Ada Lovelace; Category: Billing`. The workflow and formflow demos are Agentic Formflow, so they need a license that includes the UAG, `LICENSE_KEY` (or `E2E_UAG_LICENSE`) in the root `.env`. The site is rebuilt when its sources change; reload to see it.
+
+### The other layouts
+
+`docker-compose.split.yml` moves the engines to the engine server (`packages/engine-server`, `uag-engines`), so the UAG holds no model keys; it needs `ENGINE_SERVER_KEY`. `docker-compose.enterprise.yml` holds the project on Form.io Enterprise in the stack, created by the setup job; it needs `LICENSE_KEY`, and the settings marked "self-hosted" in `.env.example`. With it, browsers must reach Form.io too (the pages load their forms there), so publish it as well and build the site with `FORMIO_PROJECT_URL` set to its public URL.
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.split.yml up -d --build
+```
+
+### What is where
 
 | Path | What |
 |---|---|
-| `server/` | The site: `index.mjs` (routes), `pages.mjs` (the pages, from `views/`), `docs.mjs` and `diagrams.mjs` (the docs, from `content/developers/`), one module per demo, and the guard, sessions and flow viewer. |
-| `public/` | Styles, scripts, images, and the four demo apps under `public/apps/`. |
-| `flow/proxy.mjs` | The flow proxy. |
+| `lib/` | What the build renders with: `pages.mjs` (the pages, from `views/`), `docs.mjs` and `diagrams.mjs` (the docs, from `content/developers/`), and `config.mjs` (the build's settings and the Content-Security-Policy). |
+| `scripts/` | `build.mjs` (the site, into `dist/`), `serve.mjs` (serves `dist/` as CloudFront does), `setup.mjs` (imports the template), `retention.mjs`, and the local stacks: `local.mjs`, `start.mjs`, `dev.mjs`. |
+| `public/` | Styles, scripts, images, and the four demo apps under `public/apps/`. `js/guest.js` signs visitors in, `js/flow-log.js` records the page's calls, and `js/demo-app.js` points formio.js at the project. |
 | `module/` | The demo project (`project.json`) and the sample applicants. |
+| `uag-module/` | The UAG module the demo's UAG runs with: its rate limits. |
+| `deploy/` | `site.yml` (CloudFormation for S3 and CloudFront) and `docker-compose.yml` (the UAG, from released images). |
 | `samples/` | Things to start your own deployment from: the [custom module](./samples/custom-module) (Claude Desktop) and [engine setups](./samples/engines). |
 | `recordings/` | The Playwright scripts that record the documentation's demo GIFs (`yarn demo:record`), with the storyboard each one follows. See [recordings](./recordings/README.md). |
 | `test/` | Unit tests, run by `yarn test` at the root. The e2e suites are `test/e2e/layer1.demo-*` and `layer3.demo-stack` at the root. |

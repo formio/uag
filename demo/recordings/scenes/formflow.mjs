@@ -90,6 +90,10 @@ export default async function formflow(d, env) {
                 await name.fill('Jordan Ellis');
                 await app.locator('input[name="data[contactPhone]"]').pressSequentially('5125550147');
             }
+            // A value the engines were unsure of must be checked before the step continues.
+            for (const box of await app.locator('.uag-review input[type="checkbox"]:visible').all()) {
+                if (!(await box.isChecked())) await box.check();
+            }
             await d.page.waitForTimeout(1600);
             await next().click();
             await d.page.waitForTimeout(700);

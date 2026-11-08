@@ -1,22 +1,23 @@
 import { expect } from 'chai';
 import { formio, requireLicense } from './helpers/stack.mjs';
 import { launchBrowser } from './helpers/browser.mjs';
-import { startDemoStack, SITE_URL } from './helpers/demoStack.mjs';
+import { startDemoStack, startExample, flowLog, SITE_URL } from './helpers/demoStack.mjs';
 
 const APP_URL = `${SITE_URL}/apps/formflow/`;
 
 /**
  * Layer 1: the demo site's Agentic Formflow (the Lantern Mutual claims wizard)
- * in a browser. The site serves the page and the renderer plugin from
- * ./renderer, and relays to the e2e stack, whose template is the demo's own;
- * both engines run on the engine server, through the flow proxy. The scripted
+ * in a browser. The static site's page loads the claim form from the project
+ * and @formio/uag-js from the UAG, and calls the UAG's Agent API from the
+ * browser as a guest of the project, on the e2e stack, whose template is the
+ * demo's own; both engines run on the engine server. The scripted
  * engines read claim descriptions by keyword, so the page's own "Try an
  * example" buttons lead to known triage. This checks what a policyholder sees:
  * what the rail says triage decided, the steps it added and why, the fields
  * filled from the description and marked as such, values the user typed kept
  * when the description is read again, and the claim saved at the end, through
  * the UAG, so its Run task action re-decides triage on the server. And it
- * checks the example page around the wizard, with the flow viewer beside it.
+ * checks the example page around the wizard, with the flow log beside it.
  */
 describe('Layer 1: the demo site\'s Agentic Formflow, in a browser', function () {
     this.timeout(300000);
@@ -39,11 +40,13 @@ describe('Layer 1: the demo site\'s Agentic Formflow, in a browser', function ()
     async function start(example) {
         const page = await browser.page();
         page.setDefaultTimeout(30000);
-        // Extraction requests the page makes through the app's relay.
+        // Extraction requests the page makes to the UAG.
         page.extracts = 0;
         page.on('request', (request) => {
-            if (request.url().endsWith('/api/formflow/agent/extract')) page.extracts++;
+            if (request.method() === 'POST' && request.url().endsWith('/agent/extract')) page.extracts++;
         });
+        // Signed in as a guest on the example page, then the wizard full screen.
+        await startExample(page, 'formflow');
         await page.goto(APP_URL);
         await page.locator('#examples button', { hasText: example }).click();
         return page;
@@ -61,7 +64,7 @@ describe('Layer 1: the demo site\'s Agentic Formflow, in a browser', function ()
         }
         catch (error) {
             const errors = await page.locator('#claim .formio-errors').allTextContents();
-            throw new Error(`Expected the "${expected}" step, still on "${await title(page)}": ${errors.join(' ').trim()}\n${stack.site.getOutput().slice(-2000)}`);
+            throw new Error(`Expected the "${expected}" step, still on "${await title(page)}": ${errors.join(' ').trim()}\n${stack.uag.getOutput().slice(-2000)}`);
         }
     }
 
@@ -152,18 +155,18 @@ describe('Layer 1: the demo site\'s Agentic Formflow, in a browser', function ()
         expect(page.errors).to.deep.equal([]);
     });
 
-    it('shows the extraction\'s legs in the flow viewer beside the wizard', async function () {
+    it('shows each extraction the page calls in the flow log beside the wizard, with the engines that answered', async function () {
         const page = await browser.page();
-        await page.goto(`${SITE_URL}/examples/formflow`);
-        const frame = page.frameLocator('iframe[data-demo-frame]');
+        const frame = await startExample(page, 'formflow');
         await frame.locator('#examples button', { hasText: 'Cracked windshield' }).click();
         await frame.locator('#claim .btn-wizard-nav-next').click();
         const flow = page.locator('[data-flow]');
-        await flow.locator('.flow-run-head', { hasText: '/agent/extract · triage' }).first().waitFor();
-        await flow.locator('.flow-kind', { hasText: 'engine' }).first().waitFor();
-        const labels = await flow.locator('.flow-label').allTextContents();
-        expect(labels).to.include('/agent/extract');
-        expect(labels.some((label) => /decide$/.test(label)), labels.join(', ')).to.equal(true);
+        await flow.locator('.flow-run-head', { hasText: '/agent/extract' }).first().waitFor();
+        await flow.locator('.flow-summary', { hasText: 'engines:' }).first().waitFor();
+        const runs = await flowLog(page);
+        const extract = runs.find((run) => run.title.startsWith('/agent/extract'));
+        expect(extract.labels.some((label) => /^POST \/form\/\w+\/agent\/extract$/.test(label)), JSON.stringify(runs)).to.equal(true);
+        expect(extract.text, JSON.stringify(runs)).to.match(/engines: .*decide/).and.match(/agent/);
         expect(page.errors).to.deep.equal([]);
     });
 });

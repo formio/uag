@@ -28,7 +28,7 @@ export const portalForm = (d, title) => d.page.locator('.item-wrap.form', { hasT
 
 /**
  * What a recording shows of an example page: only its demo, the app and the
- * flow viewer ("Behind the scenes"), filling a screen narrowed to STAGE_WIDTH so
+ * flow log ("Behind the scenes"), filling a screen narrowed to STAGE_WIDTH so
  * they read larger in the GIF. The site's navigation and the page around the
  * demo are covered.
  */
@@ -42,11 +42,15 @@ const STAGE = `
     html.rec-stage .demo-layout .flow { position: relative; top: 0; height: auto; min-height: 0; }
 `;
 
-/** Open an example page on its demo alone (see STAGE). */
+/** Open an example page on its demo alone (see STAGE), started as a guest. */
 export async function openExample(d, site, name) {
     await d.goto(`${site}/examples/${name}`);
     const page = d.page;
+    // "Start the live demo" signs the visitor in as a guest; a guest already signed in goes straight in.
+    const start = page.locator('[data-demo-start]');
     const app = page.locator(`iframe[src="/apps/${name}/"]`);
+    await start.or(app).first().waitFor();
+    if (await start.isVisible()) await start.click();
     await app.waitFor();
     await page.addStyleTag({ content: STAGE });
     await page.evaluate(() => document.documentElement.classList.add('rec-stage'));
@@ -76,6 +80,10 @@ export const builderComponent = (d, key) => d.page.locator(`.builder-component:h
 /** Open a builder component's settings at a tab (`API` shows its custom properties). */
 export async function openSettings(d, key, tab = 'API') {
     const component = builderComponent(d, key);
+    // Scroll it to the upper part of the page first: near the bottom, the
+    // builder's Save bar covers the buttons that hovering shows.
+    const top = await component.evaluate((el) => window.scrollY + el.getBoundingClientRect().top - window.innerHeight * 0.25);
+    if (Math.abs(top - await d.page.evaluate(() => window.scrollY)) > 40) await d.scrollTo(Math.max(0, top));
     await d.moveTo(component, { offset: { x: 0, y: -10 } });
     await d.click(component.locator('[ref="editComponent"]').first(), { after: 900 });
     await d.click(d.page.locator('.formio-dialog').getByText(tab, { exact: true }).first(), { after: 600 });

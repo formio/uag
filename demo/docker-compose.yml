@@ -1,17 +1,20 @@
-# The Form.io UAG demo site, as one Docker Compose stack of two services, on the
-# demo's project on Form.io's hosted service (FORMIO_PROJECT_URL, https://uag.form.io).
+# The UAG the demo site (ai.form.io) embeds: the Universal Agent Gateway alone,
+# on the demo's project on Form.io's hosted service (FORMIO_PROJECT_URL,
+# https://uag.form.io), with the JEV and Claude engines and their keys inside it.
 #
-#   site        the public site: product pages, docs, the live demos and
-#               the flow viewer. The ONLY service with a published port. It
-#               serves plain HTTP; put your load balancer or proxy in front of it
-#               for TLS, and set DEMO_DOMAIN to the name it serves. It runs the
-#               flow proxy (flow/proxy.mjs) inside it, in front of the UAG, so
-#               every call the demos make can be shown to the visitor who made it.
-#   formio-uag  the Universal Agent Gateway, with the JEV and Claude engines and
-#               their keys inside it. Private. A hosted project needs no license.
+# The site itself is static files (yarn demo:build; S3 + CloudFront, see
+# deploy/site.yml), whose pages call this UAG from the browser, as each visitor's
+# guest user of the project. So the UAG is public: publish it at its own host
+# name (uag.ai.form.io) behind your load balancer, which ends TLS, and set
+# DEMO_SITE_ORIGIN to the site's origin, the only one its CORS allows.
 #
-# The project's forms are not created here: the demo uses the forms already in
-# the project (module/project.json is their template).
+# Beside it, the AI Document add-on (formio/uag-documents) fills the volume the
+# UAG mounts at /app/plugins/documents with the AI Document module and the
+# document plugins, which the AI Document demo (/examples/documents) needs; it
+# runs at each "up" and exits.
+#
+# The project's forms are not created here: the UAG uses the forms already in
+# the project (module/project.json is their template; scripts/setup.mjs imports it).
 #
 #   cp .env.example .env     # then fill it in
 #   docker compose up -d --build
@@ -19,9 +22,7 @@
 # More layouts, added to this file with -f:
 #
 #   docker-compose.split.yml       the engines on their own engine server, so the
-#                                  UAG holds no model keys, and the flow proxy as
-#                                  its own service; the flow viewer then also
-#                                  shows each engine call.
+#                                  UAG holds no model keys.
 #   docker-compose.enterprise.yml  the project on a self-hosted Form.io Enterprise
 #                                  server in the stack, created by a setup job
 #                                  (needs LICENSE_KEY).
@@ -34,10 +35,29 @@ name: uag-demo
 x-uag-image: &uag-image ${UAG_IMAGE:-formio/uag:demo}
 
 services:
+  # Runs once at each "up" and exits; no restart policy.
+  uag-documents:
+    image: ${UAG_DOCUMENTS_IMAGE:-formio/uag-documents:1}
+    volumes:
+      - uag-documents:/out
+
   formio-uag:
     build: { context: .., dockerfile: Dockerfile }
     image: *uag-image
     restart: always
+    depends_on:
+      uag-documents:
+        condition: service_completed_successfully
+        restart: true
+    ports:
+      # Bound to this machine only by default. Set UAG_BIND to the private address
+      # your load balancer reaches.
+      - "${UAG_BIND:-127.0.0.1}:${UAG_PORT:-3200}:3200"
+    volumes:
+      # The AI Document module and the document plugins, from the add-on.
+      - uag-documents:/app/plugins/documents:ro
+      # The demo's rate limits (uag-module/index.js).
+      - ./uag-module:/app/module:ro
     environment:
       PORT: 3200
       PROJECT: ${FORMIO_PROJECT_URL:-https://uag.form.io}
@@ -49,52 +69,17 @@ services:
       JWT_EXPIRE_TIME: 60
       PROJECT_TTL: ${PROJECT_TTL:-300}
       PROJECT_RETRIES: 30
+      # Browsers may call it from the site only.
+      CORS: ${DEMO_SITE_ORIGIN:-https://ai.form.io}
+      # Proxy hops in front of the UAG that add to X-Forwarded-For.
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      # JSON in the shape of agentApi.rateLimits, replacing uag-module's.
+      DEMO_RATE_LIMITS: ${DEMO_RATE_LIMITS:-}
       # The engines run inside the UAG, with their keys.
       UAG_ENGINES: jev,claude
       TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:?set TYPESAFE_API_KEY in .env}
       CLAUDE_API_KEY: ${CLAUDE_API_KEY:?set CLAUDE_API_KEY in .env}
       CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-5-5}
 
-  site:
-    build: { context: .., dockerfile: demo/Dockerfile }
-    image: ${DEMO_IMAGE:-formio/uag-demo:latest}
-    restart: always
-    depends_on:
-      formio-uag: { condition: service_started }
-    ports:
-      # Bound to this machine only by default. Set DEMO_BIND to the private address
-      # your load balancer reaches, never to a public one: the site trusts the
-      # X-Forwarded-For of whatever connects to it (TRUST_PROXY).
-      - "${DEMO_BIND:-127.0.0.1}:${DEMO_PORT:-8080}:8080"
-    volumes:
-      - demo-state:/data
-    environment:
-      NODE_ENV: production
-      PORT: 8080
-      DEMO_DOMAIN: ${DEMO_DOMAIN:-ai.form.io}
-      DEMO_PUBLIC_URL: ${DEMO_PUBLIC_URL:-}
-      TRUST_PROXY: ${TRUST_PROXY:-1}
-      DEMO_SECRET: ${DEMO_SECRET:?set DEMO_SECRET in .env}
-      FORMIO_PROJECT_URL: ${FORMIO_PROJECT_URL:-https://uag.form.io}
-      FORMIO_PROJECT_NAME: ${FORMIO_PROJECT_NAME:-}
-      PROJECT_KEY: ${PROJECT_KEY}
-      # The flow proxy runs inside the site, in front of the UAG.
-      FLOW_UAG_URL: http://formio-uag:3200
-      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
-      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
-      DEMO_REQUIRE_TURNSTILE: ${DEMO_REQUIRE_TURNSTILE:-true}
-      TURNSTILE_VALID_MINUTES: ${TURNSTILE_VALID_MINUTES:-120}
-      DEMO_DAILY_BUDGET: ${DEMO_DAILY_BUDGET:-2000}
-      DEMO_COSTS: ${DEMO_COSTS:-}
-      DEMO_LIMITS: ${DEMO_LIMITS:-}
-      DEMO_DAILY_NETWORK_BUDGET: ${DEMO_DAILY_NETWORK_BUDGET:-200}
-      DEMO_TOKENS_PER_UNIT: ${DEMO_TOKENS_PER_UNIT:-20000}
-      CHAT_FORM: ${CHAT_FORM:-serviceRequest}
-      CHAT_MAX_TURNS: ${CHAT_MAX_TURNS:-30}
-      CHAT_MAX_MESSAGE_LENGTH: ${CHAT_MAX_MESSAGE_LENGTH:-2000}
-      DEMO_RETENTION_HOURS: ${DEMO_RETENTION_HOURS:-24}
-      DEMO_STATE_DIR: /data
-      CONTACT_FORM_URL: ${CONTACT_FORM_URL:-https://formio.form.io/contact}
-
 volumes:
-  demo-state:
+  uag-documents:
