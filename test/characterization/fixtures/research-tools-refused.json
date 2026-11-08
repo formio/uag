@@ -1,0 +1,12 @@
+{
+  "missing": {
+    "status": 400,
+    "error": "The task \"triage\" names the tool \"module_lookup\" in uagTools, which does not exist.",
+    "code": "invalid_request"
+  },
+  "writes": {
+    "status": 400,
+    "error": "The task \"triage\" names the tool \"submit_completed_form\" in uagTools, which may write. Only read-only tools can be used for research.",
+    "code": "invalid_request"
+  }
+}

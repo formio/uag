@@ -1,0 +1,1046 @@
+{
+  "portalTeamAdmin": {
+    "list": {
+      "status": 200,
+      "body": [
+        {
+          "name": "agentRunTask",
+          "title": "Agent: Run task",
+          "group": "default",
+          "description": "Runs one of the form's agent tasks on the submission, before the save or after it in the background.",
+          "priority": 20,
+          "defaults": {
+            "handler": [
+              "before",
+              "after"
+            ],
+            "method": [
+              "create"
+            ]
+          },
+          "access": {
+            "handler": false,
+            "method": true
+          }
+        }
+      ]
+    },
+    "forms": {
+      "agentRunTask": {
+        "status": 200,
+        "body": {
+          "name": "agentRunTask",
+          "title": "Agent: Run task",
+          "group": "default",
+          "description": "Runs one of the form's agent tasks on the submission, before the save or after it in the background.",
+          "priority": 20,
+          "defaults": {
+            "handler": [
+              "before",
+              "after"
+            ],
+            "method": [
+              "create"
+            ]
+          },
+          "access": {
+            "handler": false,
+            "method": true
+          },
+          "settingsForm": {
+            "action": "/formio-oss/form/000000000000000000000001/action",
+            "components": [
+              {
+                "type": "hidden",
+                "input": true,
+                "key": "priority",
+                "defaultValue": 20
+              },
+              {
+                "type": "hidden",
+                "input": true,
+                "key": "name",
+                "defaultValue": "agentRunTask"
+              },
+              {
+                "type": "textfield",
+                "input": true,
+                "label": "Title",
+                "key": "title",
+                "defaultValue": "Agent: Run task"
+              },
+              {
+                "type": "fieldset",
+                "input": false,
+                "tree": true,
+                "legend": "Action Settings",
+                "components": [
+                  {
+                    "type": "container",
+                    "key": "settings",
+                    "components": [
+                      {
+                        "type": "select",
+                        "input": true,
+                        "key": "task",
+                        "label": "Task",
+                        "tooltip": "The task to run, from the tasks the form defines.",
+                        "dataSrc": "values",
+                        "data": {
+                          "values": [
+                            {
+                              "label": "triage",
+                              "value": "triage"
+                            }
+                          ]
+                        },
+                        "validate": {
+                          "required": true
+                        }
+                      },
+                      {
+                        "type": "radio",
+                        "input": true,
+                        "key": "answer",
+                        "label": "Answer",
+                        "defaultValue": "task",
+                        "values": [
+                          {
+                            "label": "The whole task",
+                            "value": "task"
+                          },
+                          {
+                            "label": "Its decision fields only",
+                            "value": "decisions"
+                          }
+                        ],
+                        "validate": {
+                          "required": true
+                        }
+                      },
+                      {
+                        "type": "select",
+                        "input": true,
+                        "key": "agentRole",
+                        "label": "Agent role",
+                        "tooltip": "Act at Form.io with this role, on behalf of the user, to save the task's results and to create submissions users may not create themselves. Needs JWT_SECRET to be the same as Form.io Enterprise's. Leave empty to act with the user's own token.",
+                        "dataSrc": "values",
+                        "data": {
+                          "values": [
+                            {
+                              "label": "Anonymous",
+                              "value": "anonymous"
+                            },
+                            {
+                              "label": "Authenticated",
+                              "value": "authenticated"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "type": "select",
+                        "input": true,
+                        "key": "submitterRoles",
+                        "label": "Submitter roles",
+                        "tooltip": "Who may submit this form through the agent when the form does not let their roles create submissions: the agent creates it on their behalf.",
+                        "multiple": true,
+                        "dataSrc": "values",
+                        "data": {
+                          "values": [
+                            {
+                              "label": "Anonymous",
+                              "value": "anonymous"
+                            },
+                            {
+                              "label": "Authenticated",
+                              "value": "authenticated"
+                            }
+                          ]
+                        },
+                        "customConditional": "show = !!data.agentRole;"
+                      },
+                      {
+                        "type": "radio",
+                        "input": true,
+                        "key": "when",
+                        "label": "When",
+                        "defaultValue": "after",
+                        "values": [
+                          {
+                            "label": "After the save, in the background",
+                            "value": "after"
+                          },
+                          {
+                            "label": "Before the save (the submitter waits)",
+                            "value": "before"
+                          }
+                        ],
+                        "validate": {
+                          "required": true
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "fieldset",
+                "input": false,
+                "tree": false,
+                "key": "conditions",
+                "legend": "Action Execution",
+                "components": [
+                  {
+                    "type": "select",
+                    "input": true,
+                    "key": "handler",
+                    "label": "Handler",
+                    "placeholder": "Select which handler(s) you would like to trigger",
+                    "dataSrc": "json",
+                    "data": {
+                      "json": [
+                        {
+                          "name": "before",
+                          "title": "Before"
+                        },
+                        {
+                          "name": "after",
+                          "title": "After"
+                        }
+                      ]
+                    },
+                    "template": "<span>{{ item.title }}</span>",
+                    "valueProperty": "name",
+                    "multiple": true
+                  },
+                  {
+                    "type": "select",
+                    "input": true,
+                    "label": "Methods",
+                    "key": "method",
+                    "placeholder": "Trigger action on method(s)",
+                    "dataSrc": "json",
+                    "data": {
+                      "json": [
+                        {
+                          "name": "create",
+                          "title": "Create"
+                        },
+                        {
+                          "name": "update",
+                          "title": "Update"
+                        },
+                        {
+                          "name": "read",
+                          "title": "Read"
+                        },
+                        {
+                          "name": "delete",
+                          "title": "Delete"
+                        },
+                        {
+                          "name": "index",
+                          "title": "Index"
+                        }
+                      ]
+                    },
+                    "template": "<span>{{ item.title }}</span>",
+                    "valueProperty": "name",
+                    "multiple": true
+                  }
+                ]
+              },
+              {
+                "key": "fieldset",
+                "type": "fieldset",
+                "input": false,
+                "tree": false,
+                "legend": "Action Conditions (optional)",
+                "components": [
+                  {
+                    "type": "container",
+                    "key": "condition",
+                    "input": false,
+                    "tree": true,
+                    "components": [
+                      {
+                        "key": "columns",
+                        "type": "columns",
+                        "input": false,
+                        "columns": [
+                          {
+                            "components": [
+                              {
+                                "type": "select",
+                                "input": true,
+                                "label": "Trigger this action only if field",
+                                "key": "field",
+                                "placeholder": "Select the conditional field",
+                                "template": "<span>{{ item.label || item.key }}</span>",
+                                "dataSrc": "json",
+                                "data": {
+                                  "json": [
+                                    {
+                                      "key": ""
+                                    },
+                                    {
+                                      "type": "textarea",
+                                      "key": "notes",
+                                      "label": "Notes",
+                                      "input": true,
+                                      "properties": {
+                                        "uag": "triage",
+                                        "uagField": "input"
+                                      }
+                                    },
+                                    {
+                                      "type": "textfield",
+                                      "key": "name",
+                                      "label": "Name",
+                                      "input": true,
+                                      "validate": {
+                                        "required": true
+                                      },
+                                      "properties": {
+                                        "uag": "triage"
+                                      }
+                                    },
+                                    {
+                                      "type": "textarea",
+                                      "key": "summary",
+                                      "label": "Summary",
+                                      "input": true,
+                                      "properties": {
+                                        "uag": "triage"
+                                      }
+                                    },
+                                    {
+                                      "type": "select",
+                                      "key": "priority",
+                                      "label": "Priority",
+                                      "input": true,
+                                      "data": {
+                                        "values": [
+                                          {
+                                            "label": "Low",
+                                            "value": "low"
+                                          },
+                                          {
+                                            "label": "High",
+                                            "value": "high"
+                                          }
+                                        ]
+                                      },
+                                      "properties": {
+                                        "uag": "triage"
+                                      }
+                                    }
+                                  ]
+                                },
+                                "valueProperty": "key",
+                                "multiple": false
+                              },
+                              {
+                                "type": "select",
+                                "input": true,
+                                "label": "",
+                                "key": "eq",
+                                "placeholder": "Select comparison",
+                                "template": "<span>{{ item.label }}</span>",
+                                "dataSrc": "values",
+                                "data": {
+                                  "values": [
+                                    {
+                                      "value": "",
+                                      "label": ""
+                                    },
+                                    {
+                                      "value": "equals",
+                                      "label": "Equals"
+                                    },
+                                    {
+                                      "value": "notEqual",
+                                      "label": "Does Not Equal"
+                                    }
+                                  ],
+                                  "json": "",
+                                  "url": "",
+                                  "resource": ""
+                                },
+                                "valueProperty": "value",
+                                "multiple": false
+                              },
+                              {
+                                "input": true,
+                                "type": "textfield",
+                                "inputType": "text",
+                                "label": "",
+                                "key": "value",
+                                "placeholder": "Enter value",
+                                "multiple": false
+                              }
+                            ]
+                          },
+                          {
+                            "components": [
+                              {
+                                "key": "well2",
+                                "type": "well",
+                                "input": false,
+                                "components": [
+                                  {
+                                    "key": "html",
+                                    "type": "htmlelement",
+                                    "tag": "h4",
+                                    "input": false,
+                                    "content": "Or you can provide your own custom JavaScript or <a href=\"http://jsonlogic.com\" target=\"_blank\">JSON</a> condition logic here",
+                                    "className": ""
+                                  },
+                                  {
+                                    "label": "",
+                                    "type": "textarea",
+                                    "input": true,
+                                    "key": "custom",
+                                    "editorComponents": [
+                                      {
+                                        "type": "textarea",
+                                        "key": "notes",
+                                        "label": "Notes",
+                                        "input": true,
+                                        "properties": {
+                                          "uag": "triage",
+                                          "uagField": "input"
+                                        }
+                                      },
+                                      {
+                                        "type": "content",
+                                        "key": "triageCriteria",
+                                        "input": false,
+                                        "html": "<p>Summarize the notes.</p>",
+                                        "properties": {
+                                          "uag": "triage",
+                                          "uagField": "criteria",
+                                          "uagTools": "get_forms,find_submissions"
+                                        }
+                                      },
+                                      {
+                                        "type": "textfield",
+                                        "key": "name",
+                                        "label": "Name",
+                                        "input": true,
+                                        "validate": {
+                                          "required": true
+                                        },
+                                        "properties": {
+                                          "uag": "triage"
+                                        }
+                                      },
+                                      {
+                                        "type": "textarea",
+                                        "key": "summary",
+                                        "label": "Summary",
+                                        "input": true,
+                                        "properties": {
+                                          "uag": "triage"
+                                        }
+                                      },
+                                      {
+                                        "type": "select",
+                                        "key": "priority",
+                                        "label": "Priority",
+                                        "input": true,
+                                        "data": {
+                                          "values": [
+                                            {
+                                              "label": "Low",
+                                              "value": "low"
+                                            },
+                                            {
+                                              "label": "High",
+                                              "value": "high"
+                                            }
+                                          ]
+                                        },
+                                        "properties": {
+                                          "uag": "triage"
+                                        }
+                                      }
+                                    ],
+                                    "placeholder": "// Example: Only execute if submitted roles has 'authenticated'.\nJavaScript: execute = (data.roles.indexOf('authenticated') !== -1);\nJSON: { \"in\": [ \"authenticated\", { \"var\": \"data.roles\" } ] }"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "key": "html2",
+                "type": "htmlelement",
+                "tag": "hr",
+                "input": false,
+                "content": "",
+                "className": ""
+              },
+              {
+                "type": "button",
+                "input": true,
+                "label": "Save Action",
+                "key": "submit",
+                "size": "md",
+                "leftIcon": "",
+                "rightIcon": "",
+                "block": false,
+                "action": "submit",
+                "disableOnInvalid": true,
+                "theme": "primary"
+              }
+            ]
+          }
+        }
+      },
+      "webhook": {
+        "status": 502
+      },
+      "email": {
+        "status": 502
+      },
+      "save": {
+        "status": 502
+      },
+      "unknown": {
+        "status": 404
+      }
+    }
+  },
+  "adminKey": {
+    "list": {
+      "status": 200,
+      "body": [
+        {
+          "name": "agentRunTask",
+          "title": "Agent: Run task",
+          "group": "default",
+          "description": "Runs one of the form's agent tasks on the submission, before the save or after it in the background.",
+          "priority": 20,
+          "defaults": {
+            "handler": [
+              "before",
+              "after"
+            ],
+            "method": [
+              "create"
+            ]
+          },
+          "access": {
+            "handler": false,
+            "method": true
+          }
+        }
+      ]
+    },
+    "forms": {
+      "agentRunTask": {
+        "status": 200,
+        "body": {
+          "name": "agentRunTask",
+          "title": "Agent: Run task",
+          "group": "default",
+          "description": "Runs one of the form's agent tasks on the submission, before the save or after it in the background.",
+          "priority": 20,
+          "defaults": {
+            "handler": [
+              "before",
+              "after"
+            ],
+            "method": [
+              "create"
+            ]
+          },
+          "access": {
+            "handler": false,
+            "method": true
+          },
+          "settingsForm": {
+            "action": "/formio-oss/form/000000000000000000000001/action",
+            "components": [
+              {
+                "type": "hidden",
+                "input": true,
+                "key": "priority",
+                "defaultValue": 20
+              },
+              {
+                "type": "hidden",
+                "input": true,
+                "key": "name",
+                "defaultValue": "agentRunTask"
+              },
+              {
+                "type": "textfield",
+                "input": true,
+                "label": "Title",
+                "key": "title",
+                "defaultValue": "Agent: Run task"
+              },
+              {
+                "type": "fieldset",
+                "input": false,
+                "tree": true,
+                "legend": "Action Settings",
+                "components": [
+                  {
+                    "type": "container",
+                    "key": "settings",
+                    "components": [
+                      {
+                        "type": "select",
+                        "input": true,
+                        "key": "task",
+                        "label": "Task",
+                        "tooltip": "The task to run, from the tasks the form defines.",
+                        "dataSrc": "values",
+                        "data": {
+                          "values": [
+                            {
+                              "label": "triage",
+                              "value": "triage"
+                            }
+                          ]
+                        },
+                        "validate": {
+                          "required": true
+                        }
+                      },
+                      {
+                        "type": "radio",
+                        "input": true,
+                        "key": "answer",
+                        "label": "Answer",
+                        "defaultValue": "task",
+                        "values": [
+                          {
+                            "label": "The whole task",
+                            "value": "task"
+                          },
+                          {
+                            "label": "Its decision fields only",
+                            "value": "decisions"
+                          }
+                        ],
+                        "validate": {
+                          "required": true
+                        }
+                      },
+                      {
+                        "type": "select",
+                        "input": true,
+                        "key": "agentRole",
+                        "label": "Agent role",
+                        "tooltip": "Act at Form.io with this role, on behalf of the user, to save the task's results and to create submissions users may not create themselves. Needs JWT_SECRET to be the same as Form.io Enterprise's. Leave empty to act with the user's own token.",
+                        "dataSrc": "values",
+                        "data": {
+                          "values": [
+                            {
+                              "label": "Anonymous",
+                              "value": "anonymous"
+                            },
+                            {
+                              "label": "Authenticated",
+                              "value": "authenticated"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "type": "select",
+                        "input": true,
+                        "key": "submitterRoles",
+                        "label": "Submitter roles",
+                        "tooltip": "Who may submit this form through the agent when the form does not let their roles create submissions: the agent creates it on their behalf.",
+                        "multiple": true,
+                        "dataSrc": "values",
+                        "data": {
+                          "values": [
+                            {
+                              "label": "Anonymous",
+                              "value": "anonymous"
+                            },
+                            {
+                              "label": "Authenticated",
+                              "value": "authenticated"
+                            }
+                          ]
+                        },
+                        "customConditional": "show = !!data.agentRole;"
+                      },
+                      {
+                        "type": "radio",
+                        "input": true,
+                        "key": "when",
+                        "label": "When",
+                        "defaultValue": "after",
+                        "values": [
+                          {
+                            "label": "After the save, in the background",
+                            "value": "after"
+                          },
+                          {
+                            "label": "Before the save (the submitter waits)",
+                            "value": "before"
+                          }
+                        ],
+                        "validate": {
+                          "required": true
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "fieldset",
+                "input": false,
+                "tree": false,
+                "key": "conditions",
+                "legend": "Action Execution",
+                "components": [
+                  {
+                    "type": "select",
+                    "input": true,
+                    "key": "handler",
+                    "label": "Handler",
+                    "placeholder": "Select which handler(s) you would like to trigger",
+                    "dataSrc": "json",
+                    "data": {
+                      "json": [
+                        {
+                          "name": "before",
+                          "title": "Before"
+                        },
+                        {
+                          "name": "after",
+                          "title": "After"
+                        }
+                      ]
+                    },
+                    "template": "<span>{{ item.title }}</span>",
+                    "valueProperty": "name",
+                    "multiple": true
+                  },
+                  {
+                    "type": "select",
+                    "input": true,
+                    "label": "Methods",
+                    "key": "method",
+                    "placeholder": "Trigger action on method(s)",
+                    "dataSrc": "json",
+                    "data": {
+                      "json": [
+                        {
+                          "name": "create",
+                          "title": "Create"
+                        },
+                        {
+                          "name": "update",
+                          "title": "Update"
+                        },
+                        {
+                          "name": "read",
+                          "title": "Read"
+                        },
+                        {
+                          "name": "delete",
+                          "title": "Delete"
+                        },
+                        {
+                          "name": "index",
+                          "title": "Index"
+                        }
+                      ]
+                    },
+                    "template": "<span>{{ item.title }}</span>",
+                    "valueProperty": "name",
+                    "multiple": true
+                  }
+                ]
+              },
+              {
+                "key": "fieldset",
+                "type": "fieldset",
+                "input": false,
+                "tree": false,
+                "legend": "Action Conditions (optional)",
+                "components": [
+                  {
+                    "type": "container",
+                    "key": "condition",
+                    "input": false,
+                    "tree": true,
+                    "components": [
+                      {
+                        "key": "columns",
+                        "type": "columns",
+                        "input": false,
+                        "columns": [
+                          {
+                            "components": [
+                              {
+                                "type": "select",
+                                "input": true,
+                                "label": "Trigger this action only if field",
+                                "key": "field",
+                                "placeholder": "Select the conditional field",
+                                "template": "<span>{{ item.label || item.key }}</span>",
+                                "dataSrc": "json",
+                                "data": {
+                                  "json": [
+                                    {
+                                      "key": ""
+                                    },
+                                    {
+                                      "type": "textarea",
+                                      "key": "notes",
+                                      "label": "Notes",
+                                      "input": true,
+                                      "properties": {
+                                        "uag": "triage",
+                                        "uagField": "input"
+                                      }
+                                    },
+                                    {
+                                      "type": "textfield",
+                                      "key": "name",
+                                      "label": "Name",
+                                      "input": true,
+                                      "validate": {
+                                        "required": true
+                                      },
+                                      "properties": {
+                                        "uag": "triage"
+                                      }
+                                    },
+                                    {
+                                      "type": "textarea",
+                                      "key": "summary",
+                                      "label": "Summary",
+                                      "input": true,
+                                      "properties": {
+                                        "uag": "triage"
+                                      }
+                                    },
+                                    {
+                                      "type": "select",
+                                      "key": "priority",
+                                      "label": "Priority",
+                                      "input": true,
+                                      "data": {
+                                        "values": [
+                                          {
+                                            "label": "Low",
+                                            "value": "low"
+                                          },
+                                          {
+                                            "label": "High",
+                                            "value": "high"
+                                          }
+                                        ]
+                                      },
+                                      "properties": {
+                                        "uag": "triage"
+                                      }
+                                    }
+                                  ]
+                                },
+                                "valueProperty": "key",
+                                "multiple": false
+                              },
+                              {
+                                "type": "select",
+                                "input": true,
+                                "label": "",
+                                "key": "eq",
+                                "placeholder": "Select comparison",
+                                "template": "<span>{{ item.label }}</span>",
+                                "dataSrc": "values",
+                                "data": {
+                                  "values": [
+                                    {
+                                      "value": "",
+                                      "label": ""
+                                    },
+                                    {
+                                      "value": "equals",
+                                      "label": "Equals"
+                                    },
+                                    {
+                                      "value": "notEqual",
+                                      "label": "Does Not Equal"
+                                    }
+                                  ],
+                                  "json": "",
+                                  "url": "",
+                                  "resource": ""
+                                },
+                                "valueProperty": "value",
+                                "multiple": false
+                              },
+                              {
+                                "input": true,
+                                "type": "textfield",
+                                "inputType": "text",
+                                "label": "",
+                                "key": "value",
+                                "placeholder": "Enter value",
+                                "multiple": false
+                              }
+                            ]
+                          },
+                          {
+                            "components": [
+                              {
+                                "key": "well2",
+                                "type": "well",
+                                "input": false,
+                                "components": [
+                                  {
+                                    "key": "html",
+                                    "type": "htmlelement",
+                                    "tag": "h4",
+                                    "input": false,
+                                    "content": "Or you can provide your own custom JavaScript or <a href=\"http://jsonlogic.com\" target=\"_blank\">JSON</a> condition logic here",
+                                    "className": ""
+                                  },
+                                  {
+                                    "label": "",
+                                    "type": "textarea",
+                                    "input": true,
+                                    "key": "custom",
+                                    "editorComponents": [
+                                      {
+                                        "type": "textarea",
+                                        "key": "notes",
+                                        "label": "Notes",
+                                        "input": true,
+                                        "properties": {
+                                          "uag": "triage",
+                                          "uagField": "input"
+                                        }
+                                      },
+                                      {
+                                        "type": "content",
+                                        "key": "triageCriteria",
+                                        "input": false,
+                                        "html": "<p>Summarize the notes.</p>",
+                                        "properties": {
+                                          "uag": "triage",
+                                          "uagField": "criteria",
+                                          "uagTools": "get_forms,find_submissions"
+                                        }
+                                      },
+                                      {
+                                        "type": "textfield",
+                                        "key": "name",
+                                        "label": "Name",
+                                        "input": true,
+                                        "validate": {
+                                          "required": true
+                                        },
+                                        "properties": {
+                                          "uag": "triage"
+                                        }
+                                      },
+                                      {
+                                        "type": "textarea",
+                                        "key": "summary",
+                                        "label": "Summary",
+                                        "input": true,
+                                        "properties": {
+                                          "uag": "triage"
+                                        }
+                                      },
+                                      {
+                                        "type": "select",
+                                        "key": "priority",
+                                        "label": "Priority",
+                                        "input": true,
+                                        "data": {
+                                          "values": [
+                                            {
+                                              "label": "Low",
+                                              "value": "low"
+                                            },
+                                            {
+                                              "label": "High",
+                                              "value": "high"
+                                            }
+                                          ]
+                                        },
+                                        "properties": {
+                                          "uag": "triage"
+                                        }
+                                      }
+                                    ],
+                                    "placeholder": "// Example: Only execute if submitted roles has 'authenticated'.\nJavaScript: execute = (data.roles.indexOf('authenticated') !== -1);\nJSON: { \"in\": [ \"authenticated\", { \"var\": \"data.roles\" } ] }"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "key": "html2",
+                "type": "htmlelement",
+                "tag": "hr",
+                "input": false,
+                "content": "",
+                "className": ""
+              },
+              {
+                "type": "button",
+                "input": true,
+                "label": "Save Action",
+                "key": "submit",
+                "size": "md",
+                "leftIcon": "",
+                "rightIcon": "",
+                "block": false,
+                "action": "submit",
+                "disableOnInvalid": true,
+                "theme": "primary"
+              }
+            ]
+          }
+        }
+      },
+      "webhook": {
+        "status": 502
+      },
+      "email": {
+        "status": 502
+      },
+      "save": {
+        "status": 502
+      },
+      "unknown": {
+        "status": 404
+      }
+    }
+  },
+  "module": [
+    "save",
+    "login",
+    "role",
+    "agentRunTask"
+  ]
+}

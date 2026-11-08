@@ -1,0 +1,194 @@
+{
+  "nothing named": [],
+  "UAG_ENGINES empty": [],
+  "built-in stubs by type name": [
+    {
+      "name": "stub-decision",
+      "kind": "decision",
+      "model": "stub-decision-1",
+      "toolUse": null,
+      "maxOptions": 255,
+      "source": {
+        "type": "stub-decision"
+      }
+    },
+    {
+      "name": "stub-agent",
+      "kind": "agent",
+      "model": "stub-agent-1",
+      "toolUse": true,
+      "maxOptions": null,
+      "source": {
+        "type": "stub-agent"
+      }
+    }
+  ],
+  "several instances of one type": [
+    {
+      "name": "triage",
+      "kind": "decision",
+      "model": "stub-decision-1",
+      "toolUse": null,
+      "maxOptions": 255,
+      "source": {
+        "type": "stub-decision"
+      }
+    },
+    {
+      "name": "check",
+      "kind": "decision",
+      "model": "stub-decision-1",
+      "toolUse": null,
+      "maxOptions": 255,
+      "source": {
+        "type": "stub-decision"
+      }
+    }
+  ],
+  "configuration over UAG_ENGINES": [
+    {
+      "name": "stub-agent",
+      "kind": "agent",
+      "model": "stub-agent-1",
+      "toolUse": true,
+      "maxOptions": null,
+      "source": {
+        "type": "stub-agent"
+      }
+    }
+  ],
+  "installed packages by type name": [
+    {
+      "name": "jev",
+      "kind": "decision",
+      "model": "jev-1.13.0",
+      "toolUse": null,
+      "maxOptions": 255,
+      "source": {
+        "type": "jev",
+        "package": "@formio/uag-jev",
+        "version": "<version>"
+      }
+    },
+    {
+      "name": "next",
+      "kind": "decision",
+      "model": "jev-1.14.0",
+      "toolUse": null,
+      "maxOptions": 255,
+      "source": {
+        "type": "jev",
+        "package": "@formio/uag-jev",
+        "version": "<version>"
+      }
+    }
+  ],
+  "installed package by package name": [
+    {
+      "name": "triage",
+      "kind": "decision",
+      "model": "jev-1.13.0",
+      "toolUse": null,
+      "maxOptions": 255,
+      "source": {
+        "type": "jev",
+        "package": "@formio/uag-jev",
+        "version": "<version>"
+      }
+    }
+  ],
+  "UAG_ENGINE_PATH": [
+    {
+      "name": "pinned",
+      "kind": "agent",
+      "model": "pinned-1",
+      "toolUse": null,
+      "maxOptions": null,
+      "source": {
+        "type": "pinned",
+        "package": "uag-engine-pinned",
+        "version": "<version>"
+      }
+    },
+    {
+      "name": "other",
+      "kind": "agent",
+      "model": "pinned-2",
+      "toolUse": null,
+      "maxOptions": null,
+      "source": {
+        "type": "pinned",
+        "package": "uag-engine-pinned",
+        "version": "<version>"
+      }
+    }
+  ],
+  "engine type in the configuration": [
+    {
+      "name": "own",
+      "kind": "agent",
+      "model": "mine-2",
+      "toolUse": null,
+      "maxOptions": null,
+      "source": {
+        "type": "mine"
+      }
+    }
+  ],
+  "engineTypes before built-in types and packages": [
+    {
+      "name": "mine",
+      "kind": "agent",
+      "model": "mine-1",
+      "toolUse": null,
+      "maxOptions": null,
+      "source": {
+        "type": "mine"
+      }
+    },
+    {
+      "name": "jev",
+      "kind": "agent",
+      "model": "mine-1",
+      "toolUse": null,
+      "maxOptions": null,
+      "source": {
+        "type": "mine"
+      }
+    }
+  ],
+  "misconfigured: missing required setting": {
+    "error": "The \"fast\" engine (type \"claude\") needs its apiKey setting: set UAG_ENGINE_FAST_API_KEY, CLAUDE_API_KEY or ANTHROPIC_API_KEY."
+  },
+  "misconfigured: unknown type": {
+    "error": "No engine type \"mistral\" is installed. Looked for \"@formio/uag-mistral\" and \"uag-engine-mistral\". Install one (npm install @formio/uag-mistral), or add a directory that contains it to UAG_ENGINE_PATH. Types available without installing: remote, stub-decision, stub-agent."
+  },
+  "misconfigured: duplicate name": {
+    "error": "Two engines are named \"stub-agent\". Engine instance names must be unique."
+  },
+  "misconfigured: relative UAG_ENGINE_PATH": {
+    "error": "UAG_ENGINE_PATH must list absolute directories; \"relative/dir\" is relative."
+  },
+  ":remote instances": [
+    {
+      "name": "jev",
+      "kind": "decision",
+      "model": "jev-1.13.0",
+      "toolUse": null,
+      "maxOptions": 255,
+      "source": {
+        "type": "remote"
+      }
+    },
+    {
+      "name": "claude",
+      "kind": "agent",
+      "model": "claude-opus-5-5",
+      "toolUse": true,
+      "maxOptions": null,
+      "source": {
+        "type": "remote"
+      }
+    }
+  ]
+}
