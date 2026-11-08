@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { startStack, getUagToken, connectMcp, formio, mcpText, UAG_URL } from './helpers/stack.mjs';
+import { startStack, getUagToken, connectMcp, formio, mcpText, UAG_URL, requireLicense } from './helpers/stack.mjs';
 
 /**
  * Layer 1, non-happy paths.
@@ -190,36 +190,37 @@ describe('Layer 1: UAG MCP failure paths', function () {
     });
 
     describe('agentic workflow misconfiguration', function () {
-        it('refuses agent_provide_data for a submission that does not exist', async function () {
-            const { isError, text } = await call('agent_provide_data', {
+        it('refuses agent_provide for a submission that does not exist', async function () {
+            requireLicense(this);
+            const { isError, text } = await call('agent_provide', {
                 form_name: 'application',
                 submission_id: '000000000000000000000000',
-                persona: 'application',
+                task: 'application',
             });
             expect(isError).to.equal(true);
             expect(text).to.include('was not found');
         });
 
-        it('explains the uag configuration when the persona does not exist', async function () {
+        it('explains the uag configuration when the task does not exist', async function () {
             const submission = await formio.createSubmission('application', {
-                firstName: 'Wrong', lastName: 'Persona', email: 'wrong.persona@example.com',
+                firstName: 'Wrong', lastName: 'Task', email: 'wrong.task@example.com',
                 gpa: 3.2, essay: 'An essay.',
             });
-            const { isError, text } = await call('agent_provide_data', {
+            const { isError, text } = await call('agent_provide', {
                 form_name: 'application',
                 submission_id: submission._id,
-                persona: 'noSuchPersona',
+                task: 'noSuchTask',
             });
             expect(isError).to.equal(true);
             expect(text).to.include('uagField="criteria"');
-            expect(text).to.include('uag="noSuchPersona"');
+            expect(text).to.include('uag="noSuchTask"');
         });
 
         it('explains the uag configuration for a form with no agent fields', async function () {
             const submission = await formio.createSubmission('customer', {
                 firstName: 'No', lastName: 'Uag', email: 'no.uag@example.com', referralSource: 'web',
             });
-            const { isError, text } = await call('agent_provide_data', {
+            const { isError, text } = await call('agent_provide', {
                 form_name: 'customer',
                 submission_id: submission._id,
             });
