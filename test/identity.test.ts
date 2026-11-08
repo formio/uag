@@ -92,6 +92,8 @@ describe('Acting on behalf of a user', () => {
         const err = refusedSignedToken(401)!;
         expect(err.message).to.contain('JWT_SECRET must be the same as Form.io Enterprise\'s');
         expect(refusedSignedToken(440)).to.be.instanceOf(AgentIdentityError);
+        // Form.io answers a token whose signature it cannot verify with 400 "Bad Token".
+        expect(refusedSignedToken(400)).to.be.instanceOf(AgentIdentityError);
         expect(refusedSignedToken(403)).to.equal(null);
     });
 });

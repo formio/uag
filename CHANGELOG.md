@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- A run after the save that acts with an agent role, recorded while the UAG was already looking for runs, starts at once. It could wait up to a minute for the next look.
+- The agent operations' body limit (`agentApi.bodyLimit`) applies to a compressed request body as inflated, not to its size on the wire.
+- A run that acts with an agent role reports a `JWT_SECRET` that differs from Form.io's when Form.io answers its signed token with 400 ("Bad Token"), as Form.io does for a signature it cannot verify. The check gives up after 10 seconds, keeping the run's own error.
+- An MCP tool in `config.tools` (or a module) with the name of a built-in tool, or two with the same name, stops startup with an error that names the tool and how to fix it, instead of the MCP SDK's "Tool … is already registered".
+
 ## 2.0.0-rc.10
 
 Needs `@formio/appserver` 2.26.4 or later.

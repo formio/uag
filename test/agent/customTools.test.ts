@@ -41,6 +41,20 @@ describe('Custom tools', () => {
 
     const registered = (server: any): string[] => Object.keys(server._registeredTools || {});
 
+    describe('names', () => {
+        it('refuses a custom tool with the name of a built-in tool, saying how to change the built-in', async () => {
+            const err = await allTools(project([{ name: 'find_submissions', annotations: READS }])).catch((e) => e);
+            expect(err).to.be.instanceOf(Error);
+            expect(err.message).to.contain('"find_submissions" in config.tools').and.contain('toolOverrides.find_submissions');
+        });
+
+        it('refuses two custom tools with the same name, including one a bind() names', async () => {
+            const err = await allTools(project([{ name: 'dup', annotations: READS }, { name: 'other', bind: () => ({ name: 'dup' }) }])).catch((e) => e);
+            expect(err).to.be.instanceOf(Error);
+            expect(err.message).to.contain('"dup" is defined more than once in config.tools');
+        });
+    });
+
     describe('bound tools', () => {
         it('binds a tool to the project, next to plain tools', async () => {
             const seen: any[] = [];

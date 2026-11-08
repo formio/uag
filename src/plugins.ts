@@ -1,5 +1,5 @@
 import { ENGINE_NAME } from '@formio/uag-sdk';
-import type { Plugin, PluginLog, PluginRegistry, PluginType } from '@formio/appserver';
+import type { Plugin, PluginRegistry, PluginType } from '@formio/appserver';
 import type { UAGProjectInterface } from './UAGProjectInterface';
 import { allTools } from './agent/tools';
 import { engineTypesOf } from './agent/engines';
@@ -66,20 +66,13 @@ export function listEngines(registry: PluginRegistry, project: UAGProjectInterfa
 }
 
 /**
- * List every MCP tool the project serves (built-in, then config.tools). A name
- * served twice is listed once, with a warning: listing never refuses what the
- * tool loader allows.
+ * List every MCP tool the project serves (built-in, then config.tools).
+ * allTools() refuses a name defined twice, as the MCP server would.
  */
-export async function listTools(registry: PluginRegistry, project: UAGProjectInterface, log: PluginLog = console) {
-    const seen = new Set<string>();
+export async function listTools(registry: PluginRegistry, project: UAGProjectInterface) {
     const entries: Plugin[] = [];
     for (const tool of await allTools(project)) {
         const name = String(tool.name);
-        if (seen.has(name)) {
-            log.warn(`[plugins] tool:${name} is defined more than once; it is listed once`);
-            continue;
-        }
-        seen.add(name);
         entries.push({
             type: 'tool',
             name,

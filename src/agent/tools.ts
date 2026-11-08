@@ -28,12 +28,27 @@ export async function resolveTool(project: UAGProjectInterface, entry: ToolEntry
 
 /**
  * Every tool the UAG serves, including custom tools from configuration, each
- * entry of which is a tool, optionally bound to the project.
+ * entry of which is a tool, optionally bound to the project. Each tool needs
+ * its own name: the MCP server registers each name once.
  */
 export async function allTools(project: UAGProjectInterface): Promise<ToolInfo[]> {
     assertToolEntries(project.config?.tools);
-    const custom = await Promise.all((project.config?.tools || []).map((entry) => resolveTool(project, entry)));
-    return [...await getTools(project), ...custom].filter((tool): tool is ToolInfo => !!tool?.name);
+    const builtIn = (await getTools(project)).filter((tool): tool is ToolInfo => !!tool?.name);
+    const custom = (await Promise.all((project.config?.tools || []).map((entry) => resolveTool(project, entry))))
+        .filter((tool): tool is ToolInfo => !!tool?.name);
+    const builtInNames = new Set(builtIn.map((tool) => String(tool.name)));
+    const customNames = new Set<string>();
+    for (const tool of custom) {
+        const name = String(tool.name);
+        if (builtInNames.has(name)) {
+            throw new Error(`The MCP tool "${name}" in config.tools (or a module) has the name of a built-in UAG tool: give it another name, or change the built-in tool with toolOverrides.${name}.`);
+        }
+        if (customNames.has(name)) {
+            throw new Error(`The MCP tool "${name}" is defined more than once in config.tools (or its modules): each MCP tool needs its own name.`);
+        }
+        customNames.add(name);
+    }
+    return [...builtIn, ...custom];
 }
 
 /**

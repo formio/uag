@@ -86,6 +86,8 @@ export const MAX_CHAIN = 5;
 const DEFAULT_CONCURRENCY = 4;
 /** How often a replica looks for runs that are pending or lost their replica. */
 export const SWEEP_MS = 60 * 1000;
+/** How long the check of a refused signed token waits for Form.io. */
+const REFUSAL_CHECK_MS = 10 * 1000;
 
 /**
  * Runs Run task actions' background runs: load the stored submission, run the
@@ -108,6 +110,8 @@ export class TaskRunner {
     private store?: TaskRunStore;
     private sweeper?: ReturnType<typeof setInterval>;
     private sweeping = false;
+    /** A sweep was asked for while one was running: it looks again before it stops. */
+    private resweep = false;
 
     constructor(private project: UAGProjectInterface, private concurrency: number = DEFAULT_CONCURRENCY) {}
 
@@ -217,20 +221,29 @@ export class TaskRunner {
 
     /** Take durable runs from the database while there is room. */
     private async sweep(): Promise<void> {
-        if (!this.store || this.sweeping) return;
+        if (!this.store) return;
+        if (this.sweeping) {
+            // A claim in flight may have missed a run recorded since it began.
+            this.resweep = true;
+            return;
+        }
         this.sweeping = true;
         try {
-            while (this.active < this.concurrency) {
-                const record = await this.store.claim();
-                if (!record) break;
-                this.runRecord(record);
-            }
+            do {
+                this.resweep = false;
+                while (this.active < this.concurrency) {
+                    const record = await this.store.claim();
+                    if (!record) break;
+                    this.runRecord(record);
+                }
+            } while (this.resweep && this.active < this.concurrency);
         }
         catch (err: any) {
             debug(`Could not take runs from the database: ${err?.message || err}`);
         }
         finally {
             this.sweeping = false;
+            this.resweep = false;
             this.settled();
         }
     }
@@ -310,7 +323,10 @@ export class TaskRunner {
         if (!job.agentRole || !this.project.endpoint) return null;
         try {
             const auth = await agentAuth(this.project, job.actingFor, job.agentRole, { action: job.action, task: job.task });
-            const response = await fetch(`${this.project.endpoint}/current`, { headers: { 'x-jwt-token': auth.token || '', Accept: 'application/json' } });
+            const response = await fetch(`${this.project.endpoint}/current`, {
+                headers: { 'x-jwt-token': auth.token || '', Accept: 'application/json' },
+                signal: AbortSignal.timeout(REFUSAL_CHECK_MS)
+            });
             return refusedSignedToken(response.status);
         }
         catch {

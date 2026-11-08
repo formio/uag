@@ -107,9 +107,10 @@ async function authFor(project: UAGProjectInterface, user: ActingFor, roles: str
 
 /**
  * Explain a Form.io refusal of a token the UAG signed: almost always a
- * JWT_SECRET that is not Form.io Enterprise's.
+ * JWT_SECRET that is not Form.io Enterprise's. Form.io answers a token whose
+ * signature it cannot verify with 400 ("Bad Token").
  */
 export function refusedSignedToken(status: number | undefined): AgentIdentityError | null {
-    if (status !== 401 && status !== 440) return null;
+    if (status !== 400 && status !== 401 && status !== 440) return null;
     return new AgentIdentityError('Form.io refused the token the UAG signed to act on the user\'s behalf: JWT_SECRET must be the same as Form.io Enterprise\'s.');
 }

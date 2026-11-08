@@ -1,3 +1,4 @@
+import zlib from 'zlib';
 import { expect } from 'chai';
 import http from 'http';
 import express from 'express';
@@ -141,5 +142,17 @@ describe('Documents in the Agent API', function () {
         const res = await request().post('/documentextract/agent/extract').set('x-admin-key', 'admin-key').send({ text: 'The parties agree.' });
         expect(res.status, res.text).to.equal(200);
         expect(requests[0].state.input).to.deep.equal({ Input: 'The parties agree.' });
+    });
+
+    it('measures a compressed body as inflated against the body limit', async () => {
+        await start({ agentApi: { bodyLimit: 512 } });
+        // A few dozen bytes on the wire, over 2 KB once inflated.
+        const gzipped = zlib.gzipSync(JSON.stringify({ text: 'x'.repeat(2048) }));
+        const big = await request().post('/documentextract/agent/extract').set('x-admin-key', 'admin-key')
+            .set('Content-Type', 'application/json').set('Content-Encoding', 'gzip').serialize((body: any) => body).send(gzipped);
+        expect(big.status, big.text.slice(0, 200)).to.equal(413);
+        const small = await request().post('/documentextract/agent/extract').set('x-admin-key', 'admin-key')
+            .set('Content-Type', 'application/json').set('Content-Encoding', 'gzip').serialize((body: any) => body).send(zlib.gzipSync(JSON.stringify({ text: 'The parties agree.' })));
+        expect(small.status, small.text).to.equal(200);
     });
 });

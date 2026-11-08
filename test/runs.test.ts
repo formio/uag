@@ -183,6 +183,32 @@ describe('Run task records', function () {
             expect(one.executed.length + two.executed.length).to.equal(1);
         });
 
+        it('takes a run recorded while a sweep\'s claim is in flight, without waiting for the next sweep', async () => {
+            const runs = collection();
+            const store = await storeOf(runs);
+            // The first claim reads the table at once (empty) but answers only
+            // after the gate opens: a run recorded meanwhile is not in its answer.
+            const claim = store.claim.bind(store);
+            let open!: () => void;
+            const gate = new Promise<void>((resolve) => { open = resolve; });
+            let first = true;
+            (store as any).claim = async (...args: any[]) => {
+                if (!first) return claim(...args);
+                first = false;
+                const answer = await claim(...args);
+                await gate;
+                return answer;
+            };
+            const runner = new StubRunner(project);
+            runner.useStore(store);
+            await runner.enqueue(job({ agentRole: 'agent' }));
+            open();
+            await runner.idle();
+            runner.stop();
+            expect(runner.executed).to.have.length(1);
+            expect(await runs.findOne({})).to.include({ status: 'done' });
+        });
+
         it('records a run without an agent role, keeping it and the caller\'s token out of the queue', async () => {
             const runs = collection();
             const runner = new StubRunner(project);

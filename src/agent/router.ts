@@ -110,7 +110,10 @@ export function agentEndpoints(project: UAGProjectInterface) {
     // agent operations' limit is checked here on a body already read.
     const json = (req: Request, res: Response, next: NextFunction) => {
         if (req.body === undefined) return parse(req, res, next);
-        const length = Number(req.get('content-length')) || Buffer.byteLength(JSON.stringify(req.body ?? null));
+        // Content-Length is the size on the wire: a compressed body is measured
+        // as parsed, since the parser inflated it.
+        const encoded = (req.get('content-encoding') || 'identity').trim().toLowerCase() !== 'identity';
+        const length = (!encoded && Number(req.get('content-length'))) || Buffer.byteLength(JSON.stringify(req.body ?? null));
         if (length > limit) {
             return res.status(413).json({ error: `The request body is larger than the agent operations' limit of ${Math.round(limit / (1024 * 1024) * 10) / 10} MB.`, code: 'payload_too_large' });
         }
