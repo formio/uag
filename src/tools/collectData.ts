@@ -7,7 +7,7 @@ import { SchemaBuilder } from "./SchemaBuilder";
 import { interpolateErrors } from "@formio/core";
 import { reads } from './annotations';
 export const collectData = async (project: UAGProjectInterface): Promise<ToolInfo> => {
-    return defaultsDeep(project.config?.toolOverrides?.collect_field_data || {}, {
+    return defaultsDeep({}, project.config?.toolOverrides?.collect_field_data, {
         name: 'collect_field_data',
         title: 'Collect Field Data',
         description: 'Collect data for a form, or a specific field with nested components. Identify the component by its path, validate the provided value, and update the form_data object. After updating, determine the next required field to collect or indicate if all required fields are complete. PREREQUISITE: This tool should only be called after the `get_form_fields` tool AND subsequentially the `get_field_info` tool have been called to understand the structure and validation rules of the fields.',
@@ -45,7 +45,8 @@ export const collectData = async (project: UAGProjectInterface): Promise<ToolInf
             const fields = await form.getFields(submission, extra.authInfo, parent?.data_path);
             if (fields.errors.length > 0) {
                 if (as_json) {
-                    return project.mcpJSONResponse(fields.errors);
+                    // structuredContent must be an object: an MCP client refuses a bare array.
+                    return project.mcpJSONResponse({ errors: fields.errors }, true);
                 }
                 return project.mcpResponse(ResponseTemplate.fieldValidationErrors, { invalidFields: fields.errors });
             }

@@ -54,16 +54,15 @@ export class UAGTemplate {
      * @returns The compiled template function
      */
     getTemplate(templateName: ResponseTemplate): TemplateExecutor {
-        if (this.templateCache.has(templateName)) {
-            return this.templateCache.get(templateName)!;
+        const cached = this.templateCache.get(templateName);
+        if (cached) {
+            return cached;
         }
-        let templateContent = '';
-        if ((this.config as any)[templateName]) {
-            templateContent = (this.config as any)[templateName];
-        } else {
-            const templatePath = path.join(path.join(__dirname, 'templates') || '', `${templateName}.md`);
+        let templateContent = this.config[templateName];
+        if (!templateContent) {
+            const templatePath = path.join(__dirname, 'templates', `${templateName}.md`);
             if (!fs.existsSync(templatePath)) throw new Error(`Template '${templateName}' not found at ${templatePath}`);
-            templateContent = (this.config as any)[templateName] || fs.readFileSync(templatePath, 'utf-8');
+            templateContent = fs.readFileSync(templatePath, 'utf-8');
         }
         const compiled = template(templateContent);
         this.templateCache.set(templateName, compiled);

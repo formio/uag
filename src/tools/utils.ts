@@ -1,6 +1,8 @@
 import { ZodRawShape } from "zod";
 import { escapeRegExp } from "lodash";
 import { ToolAnnotations } from "./annotations";
+import type { AuthRequest } from "@formio/appserver";
+import type { UAGProjectInterface } from "../UAGProjectInterface";
 
 /**
  * Escape a literal value so it can be carried in a `__regex` query parameter.
@@ -24,6 +26,21 @@ import { ToolAnnotations } from "./annotations";
 export const escapeSearchPattern = (value: string): string =>
     escapeRegExp(value).replace(/\//g, '\\x2f');
 
+/**
+ * What a tool's `execute` receives besides its arguments, on every path that
+ * runs it: MCP clients on `/mcp`, and Agent API research in process.
+ */
+export type ToolExtra = {
+    /** The caller's identity: who the work runs as. Pass it to form methods so Form.io applies its permissions. */
+    authInfo: AuthRequest;
+    /** The project serving the request. */
+    project: UAGProjectInterface;
+    /** For a tool from a module with a name and an apiVersion: the module's API (its settings, engines, ...). */
+    module?: import('../modules').UAGModuleApi;
+    /** On `/mcp`, the rest of the MCP SDK's request context (signal, request id, ...). */
+    [key: string]: any;
+};
+
 export type ToolInfo = {
     name?: string;
     title?: string;
@@ -32,7 +49,40 @@ export type ToolInfo = {
     // Whether calling this tool reads or writes. Not optional in practice: the
     // annotations test fails a tool that ships without them.
     annotations?: ToolAnnotations;
+    /**
+     * Runs the tool: always called with its arguments (an empty object when it
+     * takes none), then a `ToolExtra`. Typed loosely so existing tools and their
+     * callers keep compiling; annotate `extra` as `ToolExtra` in your own tools.
+     */
     execute?: any;
+    /**
+     * Builds the project-specific part of the tool (`inputSchema`, `annotations`,
+     * `execute`, ...) for a project, as the built-in tools are built. The static
+     * `name`, `title` and `description` are used unless `bind` returns its own,
+     * so the tool's name is known without a project. Called whenever the tool
+     * list is built (every `/mcp` request and every research plan): keep it
+     * cheap, and load libraries and other slow state once, outside it.
+     */
+    bind?: (project: UAGProjectInterface) => Partial<ToolInfo> | Promise<Partial<ToolInfo>>;
+}
+
+/** An entry of `config.tools`: a tool, optionally bound to the project with `bind`. */
+export type ToolEntry = ToolInfo;
+
+/** The shape a `config.tools` entry takes, shown when one is a bare function. */
+export const BOUND_TOOL_SHAPE = "{ name: 'my_tool', title: 'My Tool', description: '...', bind(project) { return { inputSchema, annotations, execute }; } }";
+
+/**
+ * Refuse `config.tools` entries that are bare functions (the unreleased factory
+ * form): a tool is an object, whose `bind(project)` builds its project-specific
+ * part. Throws naming the entry and showing the shape.
+ */
+export function assertToolEntries(entries: unknown[] | undefined): void {
+    (entries || []).forEach((entry, index) => {
+        if (typeof entry === 'function') {
+            throw new Error(`config.tools[${index}] is a function. A custom tool is an object; build its project-specific part with bind(project): ${BOUND_TOOL_SHAPE}`);
+        }
+    });
 }
 
 export type ParentInfo = {
