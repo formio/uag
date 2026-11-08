@@ -30,7 +30,7 @@ export function fileOf(route) {
 /** The pages and docs of the site, as `{ file, html }`. Throws, naming the source, on any render error. */
 export function renderSite(config) {
     const views = new Views(path.join(config.root, 'views'));
-    const docs = new Docs(path.join(config.root, 'content/developers'));
+    const docs = new Docs(path.join(config.root, 'content/developers'), config.links);
     const out = [];
     const attempt = (source, fn) => {
         try {

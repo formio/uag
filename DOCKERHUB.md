@@ -36,7 +36,7 @@ docker run -d --name formio-uag -p 3200:3200 \
   formio/uag:rc
 ```
 
-Docker Compose is the recommended path for anything beyond a single container. Working stacks — including one that runs the UAG alongside a Form.io OSS server — are in the repository's [`demo/`](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo) folder: the whole [ai.form.io](https://ai.form.io) demo site, and [samples](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo/samples) you can start from.
+Docker Compose is the recommended path for anything beyond a single container. Working stacks — including one that runs the UAG alongside a Form.io OSS server — are in the repository's [`demo/`](https://github.com/formio/uag/tree/main/demo) folder: the whole [ai.form.io](https://ai.form.io) demo site, and [samples](https://github.com/formio/uag/tree/main/demo/samples) you can start from.
 
 ## Connecting an agent
 
@@ -126,8 +126,8 @@ Forms and resources are cached and refreshed on the `PROJECT_TTL` interval, so a
 
 ## Links
 
-- Documentation: https://ai.form.io/developers · Source: https://github.com/formio/uag/tree/v2.0.0-rc.8
-- Live demos of conversation forms, agentic workflows and Agentic Formflow: https://ai.form.io/examples (source: https://github.com/formio/uag/tree/v2.0.0-rc.8/demo)
+- Documentation: https://ai.form.io/developers · Source: https://github.com/formio/uag
+- Live demos of conversation forms, agentic workflows and Agentic Formflow: https://ai.form.io/examples (source: https://github.com/formio/uag/tree/main/demo)
 - Engine server image, for running engines in their own container: https://hub.docker.com/r/formio/uag-engines
 - AI Document add-on, which runs beside this image and fills its plugins folder with the AI Document module and the document extras of `@formio/uag-extras`: https://hub.docker.com/r/formio/uag-documents (`formio/uag-documents:1`); see https://ai.form.io/developers/ai-document#run-it-with-docker
 - MCP server for building and managing Form.io forms from a coding agent: https://hub.docker.com/r/formio/mcp

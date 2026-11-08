@@ -26,7 +26,7 @@ groups pages by section in that order, and sorts each group by `order`.
 - Every heading gets an anchor; `##` headings also feed the "On this page" list.
 - Links between pages: `/developers/<slug>` (and `#anchor`). Demo pages:
   `/examples/conversation`, `/examples/workflow`, `/examples/formflow`, `/contact`.
-- Source links: `https://github.com/formio/uag/blob/<tag>/<path>`, with the current release tag (`v2.0.0-rc.8` until 2.0.0 is released), not `main` (1.x until then). Site HTML uses `{{links.source}}` and `{{links.sourceFile}}` instead. The "Edit this page" link stays on `main`.
+- Source links: the file's path relative to the page, such as `../../samples/custom-module` or `../../../MIGRATING-2.0.md`. GitHub resolves it on any branch, and the site build turns it into a link to that path at the release the site is built for. Never link to a tag or `main` by hand. In a code block, `{{releaseTag}}` becomes that release's tag (`git clone -b {{releaseTag}} ...`). Site HTML uses `{{links.source}}` and `{{links.sourceFile}}`. The "Edit this page" link stays on `main`.
 - Images: `/images/<file>`, from `demo/public/images`.
 - Callouts: a blockquote whose first word is bold, `> **Note:**`, `> **Warning:**`, `> **Tip:**`, `> **Important:**`.
 - Code fences carry a language (`bash`, `json`, `js`, `ts`, `yaml`, `http`, `dockerfile`, `text`, ...).

@@ -320,7 +320,7 @@ CLAUDE_API_KEY=...
 - **Token limit:** a research turn or an answer cut off at `maxTokens` (16,000 by default) is an engine failure, and routing moves on.
 - **Documents (generate):** Claude also writes free text over attached documents, text and PDF, for modules and plugins such as AI Document. It is the only official engine that does; `api.engines.select` picks the engine, and `documents.engine` (`DOCUMENTS_ENGINE`) chooses one for AI Document. See [AI Document: Limits](/developers/ai-document#limits), [Modules: The module API](/developers/modules#the-module-api) and [Engine server](/developers/engine-server#post-v1enginesnamegenerate).
 - Set `model` to a specific model ID; a new release may change the default. Every request sends `effort`, so the model must accept it: the current models take all five levels, Claude Opus 4.6 and Sonnet 4.6 all but `xhigh`, and Claude Haiku 4.5 and Sonnet 4.5 refuse it, so they cannot be used.
-- Coming from `@formio/uag-claude` 1.x, the standalone integration server: see its README's [Upgrading from 1.x](https://github.com/formio/uag/blob/v2.0.0-rc.8/engines/claude/README.md#upgrading-from-1x).
+- Coming from `@formio/uag-claude` 1.x, the standalone integration server: see its README's [Upgrading from 1.x](../../../engines/claude/README.md#upgrading-from-1x).
 
 ### openai
 
@@ -432,7 +432,7 @@ The repository also holds an `mai` engine for Microsoft's MAI models on Microsof
 
 ## Recipes
 
-Each recipe is a Docker Compose override for a stack whose UAG service is named `formio-uag` and runs its engines inside the UAG, such as the [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo/samples/custom-module). On a self-hosted project, as in these samples, every engine but the stubs needs a license that includes the UAG (a project on Form.io's hosted service needs none), so each sample file also passes `LICENSE_KEY` from `.env` to the UAG (left out of the excerpts below). Run one from that stack's folder:
+Each recipe is a Docker Compose override for a stack whose UAG service is named `formio-uag` and runs its engines inside the UAG, such as the [custom module sample](../../samples/custom-module). On a self-hosted project, as in these samples, every engine but the stubs needs a license that includes the UAG (a project on Form.io's hosted service needs none), so each sample file also passes `LICENSE_KEY` from `.env` to the UAG (left out of the excerpts below). Run one from that stack's folder:
 
 ```bash
 docker compose -f docker-compose.yml -f ../engines/<recipe>.yml up -d
@@ -442,7 +442,7 @@ Check what a stack enabled at `GET /agent/capabilities`.
 
 ### Claude on an engine server
 
-Claude's key and traffic stay in their own container. The UAG sends the engine server only the engine server key. Set `ENGINE_SERVER_KEY` in `.env` to 32 or more random characters (`openssl rand -hex 32`). Source: [`engine-server.yml`](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/samples/engines/engine-server.yml).
+Claude's key and traffic stay in their own container. The UAG sends the engine server only the engine server key. Set `ENGINE_SERVER_KEY` in `.env` to 32 or more random characters (`openssl rand -hex 32`). Source: [`engine-server.yml`](../../samples/engines/engine-server.yml).
 
 ```yaml
 services:
@@ -472,7 +472,7 @@ services:
 
 ### Two instances of one engine
 
-A fast model and a deeper one with more research effort, sharing one key. Fields go to the first agent engine, `fast`; send a task to `deep` with `uagEngine: "deep"` on its criteria component. Source: [`instances.yml`](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/samples/engines/instances.yml).
+A fast model and a deeper one with more research effort, sharing one key. Fields go to the first agent engine, `fast`; send a task to `deep` with `uagEngine: "deep"` on its criteria component. Source: [`instances.yml`](../../samples/engines/instances.yml).
 
 ```yaml
 services:
@@ -488,7 +488,7 @@ services:
 
 ### A local model through Ollama
 
-No API key, and no data leaving the network. Set `OLLAMA_MODEL` in `.env`, then pull it once: `docker compose exec ollama ollama pull "$OLLAMA_MODEL"`. Source: [`ollama.yml`](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/samples/engines/ollama.yml).
+No API key, and no data leaving the network. Set `OLLAMA_MODEL` in `.env`, then pull it once: `docker compose exec ollama ollama pull "$OLLAMA_MODEL"`. Source: [`ollama.yml`](../../samples/engines/ollama.yml).
 
 ```yaml
 services:
@@ -515,7 +515,7 @@ volumes:
 
 ### Grok or Gemini in place of Claude
 
-Set `PROVIDER_ENGINE` in `.env` to `grok` or `gemini`, with that provider's variables. Source: [`providers.yml`](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/samples/engines/providers.yml).
+Set `PROVIDER_ENGINE` in `.env` to `grok` or `gemini`, with that provider's variables. Source: [`providers.yml`](../../samples/engines/providers.yml).
 
 ```yaml
 services:
@@ -531,7 +531,7 @@ services:
 
 ### OpenAI's Decisions API with Claude
 
-`decide` answers the closed-set fields; Claude answers them only if it fails, and writes the open values. Source: [`openai-decisions.yml`](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/samples/engines/openai-decisions.yml).
+`decide` answers the closed-set fields; Claude answers them only if it fails, and writes the open values. Source: [`openai-decisions.yml`](../../samples/engines/openai-decisions.yml).
 
 ```yaml
 services:

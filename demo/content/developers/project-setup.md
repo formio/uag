@@ -94,7 +94,7 @@ When a submission arrives at the UAG, it decides how to create it from the form'
 
 ## Worked example: college admissions
 
-The [demo project](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/module/project.json) admits applicants with an `admissions` task and awards aid with a `finance` task. The demo site runs on Form.io's hosted service, so its actions name no agent role and act as the site; on a self-hosted Enterprise project, set it up with an agent role as follows.
+The [demo project](../../module/project.json) admits applicants with an `admissions` task and awards aid with a `finance` task. The demo site runs on Form.io's hosted service, so its actions name no agent role and act as the site; on a self-hosted Enterprise project, set it up with an agent role as follows.
 
 1. Roles: `Applicant` (signs in), `Agent` (no users), `Reviewer` (staff).
 2. The Application form grants `Agent` Create All, Read All and Update All; `Applicant` Read Own only; `Reviewer` Read All.

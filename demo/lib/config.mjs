@@ -121,6 +121,7 @@ export function readConfig(env = process.env) {
             // resolve before the release reaches the default branch.
             source: `${env.GITHUB_URL || 'https://github.com/formio/uag'}/tree/v${version}`,
             sourceFile: `${env.GITHUB_URL || 'https://github.com/formio/uag'}/blob/v${version}`,
+            releaseTag: `v${version}`,
             // The Agentic Coding Plugin (skills and the Form.io MCP server).
             plugin: env.PLUGIN_URL || 'https://github.com/formio/ai',
             formio: env.FORMIO_SITE_URL || 'https://form.io',
