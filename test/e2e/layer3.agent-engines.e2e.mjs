@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { createRequire } from 'module';
-import { startStack, formio } from './helpers/stack.mjs';
+import { startStack, formio, requireLicense } from './helpers/stack.mjs';
 import { api } from './helpers/agent.mjs';
 
 const require = createRequire(import.meta.url);
@@ -35,6 +35,7 @@ describe('Layer 3: Agent API with real engines', function () {
             console.log('    Skipping: CLAUDE_API_KEY is not set.');
             this.skip();
         }
+        requireLicense(this);
         stack = await startStack({
             uagEnv: {
                 UAG_ENGINES: withJev ? 'jev,claude' : 'claude',

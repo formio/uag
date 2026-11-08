@@ -34,14 +34,14 @@
         },
         {
           "name": "ADMIN_KEY",
-          "description": "Server admin key for Community Edition. Not required for Enterprise deployment.",
+          "description": "Server admin key for Form.io Open Source. Not required for Enterprise deployment.",
           "isRequired": false,
           "format": "string",
           "isSecret": true
         },
         {
           "name": "LICENSE_KEY",
-          "description": "Form.io license for a self-hosted Enterprise deployment; when it includes the UAG it also enables the Agent API. Not required for Community Edition, or for a project on Form.io's hosted service (https://*.form.io).",
+          "description": "Form.io license for a self-hosted Enterprise deployment; when it includes the UAG it also enables the Agent API. Not required for Form.io Open Source, or for a project on Form.io's hosted service (https://*.form.io).",
           "isRequired": false,
           "format": "string",
           "isSecret": true

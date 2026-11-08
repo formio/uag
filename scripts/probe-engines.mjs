@@ -14,7 +14,6 @@
  *   decisions OPENAI_API_KEY, and OPENAI_DECISION_MODEL (default gpt-6-luna)
  *   grok      XAI_API_KEY, XAI_MODEL
  *   gemini    GEMINI_API_KEY (or GOOGLE_API_KEY), GEMINI_MODEL
- *   mai       MAI_ENDPOINT, MAI_API_KEY, MAI_DEPLOYMENT (not released yet)
  *
  * PROBE_TIMEOUT sets each request's limit in milliseconds (default 180000:
  * reasoning models can take a minute to research). PROBE_ONLY limits it to
@@ -113,7 +112,6 @@ const engines = {
     openai: require('@formio/uag-openai'),
     grok: require('@formio/uag-grok'),
     gemini: require('@formio/uag-gemini'),
-    mai: require('@formio/uag-mai'),
 };
 
 const only = env.PROBE_ONLY ? new Set(env.PROBE_ONLY.split(',').map((name) => name.trim())) : null;
@@ -124,7 +122,6 @@ if (wanted('openai') && env.OPENAI_API_KEY && env.OPENAI_MODEL) { probed++; awai
 if (wanted('decisions') && env.OPENAI_API_KEY) { probed++; await probeDecisions(engines.openai); }
 if (wanted('grok') && env.XAI_API_KEY && env.XAI_MODEL) { probed++; await probeAgent('grok', engines.grok, 'grok', env); }
 if (wanted('gemini') && (env.GEMINI_API_KEY || env.GOOGLE_API_KEY) && env.GEMINI_MODEL) { probed++; await probeAgent('gemini', engines.gemini, 'gemini', env); }
-if (wanted('mai') && env.MAI_ENDPOINT && env.MAI_API_KEY && env.MAI_DEPLOYMENT) { probed++; await probeAgent('mai', engines.mai, 'mai', env); }
 if (!probed) {
     say('Nothing to probe: set the variables for at least one provider (see the top of this file).');
     process.exitCode = 1;

@@ -253,7 +253,7 @@ Optionally, the UAG has a MongoDB database of its own (`MONGO`, with the databas
 | `uag-authcodes` | Authorization codes for remote MCP clients, stored by their SHA-256 hash, with their tokens sealed | OAuth sign-in for remote MCP clients (`MCP_OAUTH`) |
 | `uag-meta` | The database's schema version | The startup check |
 
-Using the database needs a license that includes the UAG, unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`). Without it, the UAG still starts, with these features off, and says why. See [Deployment](/developers/deployment).
+Using the database needs a license that includes the UAG. Without it, the UAG still starts, with these features off, and says why. See [Deployment](/developers/deployment).
 
 ## A complete example
 

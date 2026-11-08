@@ -2,7 +2,8 @@
 # formio/uag: the UAG with every official engine (jev, claude, openai, grok,
 # gemini). Each engine is its own npm package with its own provider SDK;
 # UAG_ENGINES decides which run, and none does until it is named. For an image
-# with fewer engines, see "Building a smaller image" in the README.
+# with fewer engines, see "A smaller image" in the deployment guide:
+# https://ai.form.io/developers/deployment#a-smaller-image
 
 # Build stage
 # Node 24, not node:lts: Node 25 and later images ship without corepack,
@@ -18,8 +19,6 @@ COPY engines/claude/package.json engines/claude/
 COPY engines/openai/package.json engines/openai/
 COPY engines/grok/package.json engines/grok/
 COPY engines/gemini/package.json engines/gemini/
-# Not released (MAI is in preview): only its manifest, which the lockfile lists.
-COPY engines/mai/package.json engines/mai/
 # The demo site is a workspace too; its manifest is in the lockfile.
 COPY demo/package.json demo/
 RUN apk upgrade --no-cache && apk add --no-cache make python3 g++ git && corepack enable && yarn install --immutable

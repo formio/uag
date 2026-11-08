@@ -391,6 +391,11 @@ It hosts one decision engine, "triage", behind remote engine protocol 1.
 
     UAG_ENGINE_SERVER_KEY=$(openssl rand -hex 32) python3 engine_server.py
 
+It listens on PORT (default 3300) and HOST (default 127.0.0.1, loopback only),
+as @formio/uag-engines does. For a UAG on another host or container, set HOST to
+an address on a private network only the UAG reaches (0.0.0.0 inside a container
+whose port is not published), never a public one.
+
 On the UAG:
 
     UAG_ENGINES=triage:remote
@@ -549,7 +554,8 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "3300"))
-    ThreadingHTTPServer((os.environ.get("HOST", "0.0.0.0"), port), Handler).serve_forever()
+    # Loopback unless HOST says otherwise: keep the engine server off public networks.
+    ThreadingHTTPServer((os.environ.get("HOST", "127.0.0.1"), port), Handler).serve_forever()
 ```
 
 Requires Python 3.9 or later. Try it:

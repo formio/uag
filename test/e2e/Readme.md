@@ -12,10 +12,10 @@ yarn test:e2e
 
 | Requirement | Used for |
 |-------------|----------|
-| Docker (with `docker compose`) | Spins up Form.io OSS + MongoDB for layers 1 and 3 |
+| Docker (with `docker compose`) | Spins up Form.io Open Source and MongoDB for layer 1 and the layer 3 Agent API and conversation suites, and Form.io Enterprise for `layer3.demo-stack` and the Enterprise Getting Started guide |
 | `CLAUDE_API_KEY` env var (or in the root `.env`) | Real Claude API calls in layer 3. Suites that need it are skipped when it is not set. |
 | A built `lib/` (`yarn build`) | The UAG server is booted from the compiled output |
-| Chromium for Playwright (`npx playwright install chromium`, once) | The browser suites (`layer1.demo-conversation`, `layer1.demo-formflow`, `layer1.demo-documents`, `layer1.demo-unlicensed`, `layer3.demo-stack`). They are skipped, with that command, when it is not installed. |
+| Chromium for Playwright (`npx playwright install chromium`, once) | The browser suites and tests (`layer1.demo-conversation`, `layer1.demo-workflow`, `layer1.demo-formflow`, `layer1.demo-documents`, `layer1.demo-unlicensed`, `layer3.demo-stack`). They are skipped, with that command, when it is not installed. |
 | Internet access | The demo site's pages load formio.js, Bootstrap and fonts from CDNs, so the browser suites need it |
 
 Optional:
@@ -24,15 +24,15 @@ Optional:
 |----------|---------|-------------|
 | `E2E_CLAUDE_MODEL` | the Claude engine's own default | Override the Claude model used by `layer3.agent-engines`, `layer3.conversational` and `layer3.conversational-invalid` |
 | `TYPESAFE_API_KEY` | unset | Adds the JEV engine to `layer3.agent-engines`, when its SDK is installed |
-| `E2E_UAG_LICENSE` | unset | A `UAG_LICENSE` with the `uag` feature for `formio.e2e.test`. Runs the licensed cases in `layer1.agent-license`; they are pending without it. Keep it in the gitignored `.env`. |
-| `E2E_UAG_IMAGE`, `E2E_ENGINES_IMAGE` | unset | For `layer3.demo-stack`: a release's published images (both, such as `formio/uag:2.0.0-rc.1`), pulled and run instead of images built from this tree. Add `E2E_PLATFORM=linux/amd64` to run them as amd64 on an arm64 machine (MongoDB and Form.io keep their own platform). |
-| `E2E_FORMIO_LICENSE` | unset | A Form.io Enterprise `LICENSE_KEY`, for `layer3.demo-stack`. Set `E2E_FORMIO_LICENSE_REMOTE=true` when it is an offline (self-contained) license; otherwise the server keeps logging `License not found` and the setup job cannot log in. |
+| `E2E_UAG_LICENSE` | unset | A license that includes the UAG and allows the endpoint `formio.e2e.test`. Every suite that runs Agentic Formflow needs it (see **License** under Layers), and the licensed cases in `layer1.agent-license` are pending without it. Keep it in the gitignored `.env`. |
+| `E2E_UAG_IMAGE`, `E2E_ENGINES_IMAGE` | unset | For `layer3.demo-stack`: a release's published images (both, such as `formio/uag:rc` and `formio/uag-engines:rc`), pulled and run instead of images built from this tree. Add `E2E_PLATFORM=linux/amd64` to run them as amd64 on an arm64 machine (MongoDB and Form.io keep their own platform). |
+| `E2E_FORMIO_LICENSE` | unset | A Form.io Enterprise `LICENSE_KEY`, for `layer3.demo-stack` and the Enterprise Getting Started guide. Set `E2E_FORMIO_LICENSE_REMOTE=true` when it is an offline license. |
 | `FORMIO_TEST_URL` | unset | A Form.io Enterprise deployment that is already running, with its portal (such as `https://form.test`), for `layer3.demo-stack` (and the demo recordings) to run on instead of starting one. Needs `FORMIO_TEST_EMAIL` and `FORMIO_TEST_PASSWORD` (a portal account that may create projects and teams), `FORMIO_TEST_UAG_LICENSE` (a license with the UAG that allows the deployment's subdomains (`*.form.test`); `FORMIO_TEST_UAG_LICENSE_REMOTE=true` for an offline one), `CLAUDE_API_KEY` and `TYPESAFE_API_KEY`. The suite works in a project of its own, `uag-e2e-demo`, and deletes it, and the accounts and teams it made, after. |
 | `E2E_CORE_BUNDLE` | unset | Path to a locally built appserver-core `build/server.js`, bind-mounted into the UAG container `layer3.demo-stack` starts, to check a core change before it is published. |
 | `E2E_LOCAL_CORE`, `E2E_LOCAL_APPSERVER` | unset | Paths to a built appserver-core's `build/` folder and a built appserver repository. Together, they build the UAG image `layer3.demo-stack` (and the demo recordings) start against those unpublished versions, which the UAG needs when it uses APIs the published ones lack. |
 | `E2E_HOSTED_PROJECT_URL`, `E2E_HOSTED_PROJECT_KEY` | unset | For `layer3.getting-started`: a project on Form.io's hosted service with the demo's `claim` form, such as https://uag.form.io, and an API key of it. |
 | `E2E_STRICT` | unset | `true` makes `layer3.getting-started` fail a guide whose variables are missing, instead of skipping it. The release workflow sets it. |
-| `E2E_DEMO_UAG_LICENSE` | unset | A `UAG_LICENSE` with the `uag` feature that allows `formio.e2e.test` (the same kind as `E2E_UAG_LICENSE`), for `layer3.demo-stack`, with `CLAUDE_API_KEY` and `TYPESAFE_API_KEY`. `E2E_EXAMPLE_UAG_LICENSE`, its earlier name, is still read. |
+| `E2E_DEMO_UAG_LICENSE` | unset | A license that includes the UAG and allows the endpoint `formio.e2e.test` (the same kind as `E2E_UAG_LICENSE`), for `layer3.demo-stack`, with `CLAUDE_API_KEY` and `TYPESAFE_API_KEY`. `E2E_EXAMPLE_UAG_LICENSE`, its earlier name, is still read. |
 
 ## Layers
 
@@ -79,14 +79,13 @@ MCP tool, and scoped tokens limiting `/mcp` to their read-only tools, refused
 once expired or when issued for another project or none.
 
 **License** (`layer1.agent-license.e2e.mjs`, no Claude): a test-only preload
-(`helpers/resolveLocal.cjs`) resolves `formio.e2e.example`, `formio.e2e.local`
-and `formio.e2e.test` to 127.0.0.1 for the UAG process only.
-- Through `formio.e2e.example`, which is not a local name, the UAG behaves like a production deployment. Without a license, real engines are refused with `403` on every Agent API operation, on a save through the claim form's Run task action, and on `agent_decide`. MCP keeps working, and capabilities report the Open Source edition.
-- The stub engines run there without a license, but do not unlock `agent_decide`.
-- `formio.e2e.local`, `formio.e2e.test` and `localhost` are refused too: a project on this machine needs a license too. MCP keeps working there, and `agent_provide` answers with the license requirement.
-- With `E2E_UAG_LICENSE`, the real engines run and the edition is Enterprise.
+(`helpers/resolveLocal.cjs`) resolves the suite's `formio.e2e.*` host names to
+127.0.0.1 for the UAG process only.
+- Without a license, real engines are refused with `403` (`license_required`) on every Agent API operation, on a save through the claim form's Run task action, and on `agent_decide`, and no engine is called. MCP keeps working, `agent_provide` answers with the license requirement, and capabilities report the Open Source edition. Remote and installed engines are refused the same way.
+- The stub engines run without a license, but do not unlock `agent_decide`.
+- With `E2E_UAG_LICENSE`, the real engines run and the edition is Enterprise, whether the license is in `LICENSE_KEY` or in the deprecated `UAG_LICENSE`.
 
-Every suite that runs Agentic Formflow needs `E2E_UAG_LICENSE` and is skipped without it; the stack passes it to the UAG as `UAG_LICENSE`, with `PROJECT` at `localhost`, which any license serves. The conversation suites, `layer1.mcp-protocol` (but for `agent_provide`), `layer1.adversarial` (but for one `agent_provide` case), `layer1.concurrency` and `layer1.demo-unlicensed` (the demo site against Open Source and an unlicensed UAG: the chat works, and the workflow and formflow demos say they are not supported) need no credentials. The UAG's unit tests for Agentic Formflow read `UAG_TEST_LICENSE` (or `E2E_UAG_LICENSE`) and are skipped without it.
+Every suite that runs Agentic Formflow needs `E2E_UAG_LICENSE`, which the stack passes to the UAG as `UAG_LICENSE`; those that check for it are skipped without it. The conversation suites, `layer1.mcp-protocol` (but for `agent_provide`), `layer1.adversarial` (but for one `agent_provide` case), `layer1.concurrency`, `layer1.demo-guests`, `layer1.demo-conversation` and `layer1.demo-unlicensed` (the demo site against Open Source and an unlicensed UAG: the chat works, and the workflow and formflow demos say they are not supported) need no license. The UAG's unit tests for Agentic Formflow read `UAG_TEST_LICENSE` (or `E2E_UAG_LICENSE`) and are skipped without it.
 
 **Agent API scenarios** (no model keys; needs `E2E_UAG_LICENSE`). These suites run the stack with the
 *scripted engines* in `module/engines.js`: deterministic stand-ins that answer
@@ -172,8 +171,8 @@ claims saved through the UAG are still re-decided after a refresh rebuilds the
 form routes; and a template action deleted from a form the project already has
 is installed again when the next UAG starts (`TEMPLATE_SYNC=boot`).
 
-**The demo site** (`layer1.demo-*.e2e.mjs`, no model keys; `demo-workflow` and `demo-formflow`
-need `E2E_UAG_LICENSE`, and the browser tests need Chromium): the [demo site](../../demo) as it runs in production, on the
+**The demo site** (`layer1.demo-*.e2e.mjs`, no model keys; `demo-workflow`, `demo-formflow`
+and `demo-documents` need `E2E_UAG_LICENSE`, and the browser tests need Chromium): the [demo site](../../demo) as it runs in production, on the
 open-source stack (`helpers/demoStack.mjs`). `E2E_TEMPLATE=demo` installs the
 demo's own `module/project.json`; both engines run on the real engine server
 package, hosting the scripted engines; the UAG allows the site's origin
@@ -225,10 +224,7 @@ agents, so the workflow needs no webhooks and runs on Open Source.
 - *AI Document, without the add-on* (`layer1.demo-documents.e2e.mjs`): the
   lease review loads for a guest, and, since this UAG has no AI Document
   module, the page says the process is not installed instead of an upload that
-  does nothing. The upload itself is in `layer3.demo-stack`: the sample lease
-  sent to each of its three AI Documents (the `formio/uag-documents` add-on, with
-  Claude), each settled, the engine and plugin in the flow log, and the review
-  saved through the UAG with the copied clauses.
+  does nothing. The upload itself is in `layer3.demo-stack`.
 - *Unlicensed* (`layer1.demo-unlicensed.e2e.mjs`): with no license, the chat
   still works, the Agent API refuses the formflow demo's extraction
   (`license_required`), and the page says the demo is not supported, with what
@@ -246,7 +242,7 @@ evaluation command's report and JSON output against the stub decision engine,
 and its argument errors.
 
 **Layer 3 — Agent API with real engines** (`layer3.agent-engines.e2e.mjs`,
-needs `CLAUDE_API_KEY`; JEV is used too when `TYPESAFE_API_KEY` is set and its
+needs `CLAUDE_API_KEY` and `E2E_UAG_LICENSE`; it is skipped without the key only; JEV is used too when `TYPESAFE_API_KEY` is set and its
 SDK is installed): FNOL triage and extraction by the bundled engines, and
 `{form}/agent/generate` with the bundled Claude engine reviewing an application
 (researching with the task's read-only tools), including an essay that tries to
@@ -289,7 +285,20 @@ applicant and award another's strong one, neither guest can read the other's
 application, and then neither changes; and in a browser, the claims wizard's
 collision, stolen car and burst pipe examples are triaged as their kind of
 claim, with their steps added and no others, and JEV and Claude both named in
-the flow log's engine summaries.
+the flow log's engine summaries. It also checks:
+
+- *Action Logs*: the application form's action log, read through the UAG, lists
+  each "Agent: Run task" run (`agentRunTask`) for the `admissions` and `finance`
+  tasks, complete, beside Form.io's own entries.
+- *Portal team members, through a stage connected to the UAG*: with the
+  project's `remoteSecret` set to the UAG's `PORTAL_SECRET`, a `team_write`
+  member's remote token opens and saves a form and lists its submissions and
+  roles; a `team_read` member views forms and submissions but cannot save
+  (`401`); and neither sees the project's settings.
+- *The AI Document lease review, in a browser*: the sample lease uploaded to each
+  of its three AI Documents (the `formio/uag-documents` add-on, with Claude),
+  each settled, one `/document/process` call per upload with Claude named in the
+  flow log, and the review saved through the UAG with the copied clauses.
 
 **Layer 3 — the Getting Started guides, as documented** (`layer3.getting-started.e2e.mjs`,
 `yarn test:getting-started`; a few minutes): the release gate for the page most

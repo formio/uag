@@ -1,17 +1,23 @@
 # @formio/uag-jev
 
-<sub>[Form.io UAG](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md#engines-and-routing) &rsaquo; this page</sub>
+<sub>[Form.io UAG](https://ai.form.io/developers) &rsaquo; [Engines](https://ai.form.io/developers/engines) &rsaquo; this page</sub>
 
-The TypeSafe **Jev** decision engine for the [UAG Agent API](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md#agent-api). It answers a task's closed-set fields (radio, select, checkbox, select boxes, survey and small resource selects) in one request, typically in 70–500 ms, with a confidence for each answer.
+The TypeSafe **Jev** decision engine for the [UAG Agent API](https://ai.form.io/developers/agent-api). It answers a task's closed-set fields (radio, select, checkbox, select boxes, survey and small resource selects) in one request, typically in 70–500 ms, with a confidence for each answer.
 
-It is included in the `formio/uag` Docker image. Enable it by naming it, and set its key:
+It is included in the `formio/uag` Docker image. With the UAG installed from npm, install it next to it:
+
+```bash
+npm install @formio/uag-jev@rc
+```
+
+Enable it by naming it, and set its key:
 
 ```
 UAG_ENGINES=jev
 TYPESAFE_API_KEY=...
 ```
 
-Decisions are Agentic Formflow, so on a self-hosted project the UAG also needs a `LICENSE_KEY` that includes the UAG (see [License](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md#license)); a project on Form.io's hosted service needs none.
+Decisions are Agentic Formflow, so on a self-hosted project the UAG also needs a `LICENSE_KEY` that includes the UAG for the project's endpoint (see [Licensing](https://ai.form.io/developers/deployment#licensing)); a project on Form.io's hosted service needs none.
 
 ## Settings
 
@@ -47,7 +53,7 @@ docker run --rm --entrypoint node -v "$PWD:/data" -e TYPESAFE_API_KEY -e LICENSE
   --engine jev --project <your project URL>
 ```
 
-The license must allow that project URL.
+`uag-eval` needs a `LICENSE_KEY` that includes the UAG for that project's endpoint.
 
 ## How it works
 

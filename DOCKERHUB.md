@@ -24,7 +24,18 @@ docker run -d --name formio-uag -p 3200:3200 \
   formio/uag:rc
 ```
 
-Against a self-hosted Form.io Enterprise project, use `PROJECT_KEY` and `LICENSE_KEY` in place of `ADMIN_KEY`. A project on Form.io's hosted service (`PROJECT=https://myproject.form.io`) needs only `PROJECT_KEY`:
+Against a project on Form.io's hosted service, use `PROJECT_KEY` in place of `ADMIN_KEY`, and set no license:
+
+```bash
+docker run -d --name formio-uag -p 3200:3200 \
+  -e PROJECT=https://myproject.form.io \
+  -e PROJECT_KEY=your-project-api-key \
+  -e JWT_SECRET=your-jwt-secret \
+  --restart unless-stopped \
+  formio/uag:rc
+```
+
+Against a self-hosted Form.io Enterprise project, add a Form.io license that includes the UAG, in `LICENSE_KEY`, whose endpoint allowlist includes `PROJECT`'s host; for an offline license, also set `LICENSE_REMOTE=true`:
 
 ```bash
 docker run -d --name formio-uag -p 3200:3200 \
@@ -36,7 +47,7 @@ docker run -d --name formio-uag -p 3200:3200 \
   formio/uag:rc
 ```
 
-Docker Compose is the recommended path for anything beyond a single container. Working stacks — including one that runs the UAG alongside a Form.io OSS server — are in the repository's [`demo/`](https://github.com/formio/uag/tree/main/demo) folder: the whole [ai.form.io](https://ai.form.io) demo site, and [samples](https://github.com/formio/uag/tree/main/demo/samples) you can start from.
+Docker Compose is the recommended path for anything beyond a single container. The README's [Quickstart](https://github.com/formio/uag#quickstart) runs the UAG beside a Form.io Open Source server in one Compose file. The repository's [custom module sample](https://github.com/formio/uag/tree/main/demo/samples/custom-module) is a fuller stack to start from: Form.io Open Source, MongoDB and the UAG with a module of its own, and the [engine setups](https://github.com/formio/uag/tree/main/demo/samples/engines) add engines to a stack like it.
 
 ## Connecting an agent
 
@@ -59,7 +70,7 @@ Besides MCP, the UAG serves an HTTP Agent API for a form's tasks: `POST {form}/a
 | `gemini` | Extracts and generates open values with Google's Gemini models. | `GEMINI_API_KEY`, `GEMINI_MODEL` |
 | `remote` | An engine hosted by an engine server (`formio/uag-engines`), so the model's API key stays in that container. | `UAG_ENGINE_<NAME>_URL`, `UAG_ENGINE_<NAME>_KEY`, and `JWT_SECRET` for research |
 
-With the quick-start settings in an `uag.env` file:
+With the quick-start settings in an `uag.env` file (on a self-hosted project, with a `LICENSE_KEY` that includes the UAG):
 
 ```bash
 docker run -d --name formio-uag -p 3200:3200 \
@@ -67,11 +78,10 @@ docker run -d --name formio-uag -p 3200:3200 \
   -e UAG_ENGINES=jev,claude \
   -e TYPESAFE_API_KEY=your-typesafe-key \
   -e CLAUDE_API_KEY=your-claude-key \
-  -e LICENSE_KEY=your-license \
   formio/uag:rc
 ```
 
-The Agent API and Run task are Agentic Formflow, an Enterprise feature. A project on Form.io's hosted service runs it with real engines and no license. When you self-host, real engines need a license in `LICENSE_KEY` that includes the UAG (an online license with UAG servers, or an offline license with the `uag` option), wherever the project runs (`UAG_LICENSE` still works, but is deprecated). Conversation forms need no license, and run on Form.io Open Source: the MCP tools, and a form's chat (`{form}/agent/chat`, which `Formio.createChat` in `@formio/uag-js` embeds in a page) with any agent engine. The stub engines (`stub-decision`, `stub-agent`) run without one, for trying the API out. The [licensing documentation](https://ai.form.io/developers/deployment#licensing) covers when a hosted project still needs a license.
+The Agent API and Run task are Agentic Formflow. A project on Form.io's hosted service runs it with real engines and no license. On a self-hosted project, Open Source or Enterprise, real engines need a license in `LICENSE_KEY` that includes the UAG for the project's endpoint: an online license whose key has the `uagServer` scope, or an offline license with the `uag` option (with `LICENSE_REMOTE=true`). `UAG_LICENSE` still works, but is deprecated. Conversation forms need no license, and run on Form.io Open Source: the MCP tools, and a form's chat (`{form}/agent/chat`, which `Formio.createChat` in `@formio/uag-js` embeds in a page) with any agent engine. The stub engines (`stub-decision`, `stub-agent`) run without one, for trying the API out. Unlicensed requests answer `403` with `code: "license_required"`, and `GET /agent/capabilities` reports the `edition` and `formflow.reason`. See the [licensing documentation](https://ai.form.io/developers/deployment#licensing).
 
 Callers send the signed-in user's Form.io token (`x-jwt-token`), a portal team member's remote token (`x-remote-token`) or a UAG bearer token, and Form.io's permissions apply; servers may send `x-token` / `x-admin-key` instead, which are refused from browsers. A form that sets `uagAnonymous: "true"` and lets Anonymous create submissions also answers visitors with no credential, within the anonymous rate limits. `jev` and `claude` send submission data to their provider's hosted API. Field properties, routing and the Run task action are covered in the [Agent API](https://ai.form.io/developers/agent-api) and [Workflows](https://ai.form.io/developers/workflows) documentation.
 
@@ -84,14 +94,15 @@ Callers send the signed-in user's Form.io token (`x-jwt-token`), a portal team m
 | `BASE_URL` | Optional. The URL clients reach the UAG at, for the OAuth discovery documents remote MCP clients read. Derived from each request when unset. |
 | `TRUST_PROXY` | Express's `trust proxy` (`true`, a number of hops, or addresses). Set it behind a reverse proxy, so the UAG reads its public URL from the forwarded headers. |
 | `MCP_OAUTH` | `true` turns on OAuth sign-in for remote MCP clients (the `/auth/authorize` page, client registration and `/.well-known/*`). Needs `MONGO`, with its license; otherwise the UAG starts with it off and says why. `/auth/token` (`client_credentials`) and API keys work without it. |
-| `MONGO` | Optional. The UAG's own database, for run records, runs that survive a restart, and remote MCP sign-in. Holds only `uag-*` collections, never submissions. Needs a license that includes the UAG, unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`). |
+| `MONGO` | Optional. The UAG's own database, for run records, runs that survive a restart, and remote MCP sign-in. Holds only `uag-*` collections, never submissions. Needs a license that includes the UAG, on every project; without one the UAG starts with its database features off and says why. |
 | `UAG_DATABASE` | The database to use on the `MONGO` connection, selected by name. Default `uag`. |
 | `MONGO_CONFIG` | MongoDB driver options for `MONGO`, as JSON. |
 | `TASK_RUN_RETENTION_DAYS` | Days run records are kept. Default `90`; `0` keeps them forever. |
 | `PROJECT_KEY` | Enterprise only. Project API key, from **Project Settings → API Keys**. |
 | `ADMIN_KEY` | Open Source only. Used instead of `PROJECT_KEY`. |
-| `LICENSE_KEY` | The Form.io license. One that includes the UAG is required to run against a self-hosted Form.io Enterprise deployment; not needed for a project on Form.io's hosted service (`https://*.form.io`), which also runs Agentic Formflow without one. A license that includes the UAG enables Agentic Formflow (the Agent API, `{form}/agent/*`, the Run task action, `agent_decide` and `agent_provide`) with real engines, on Open Source too; without it these answer `403`, except against a hosted `PROJECT`, and the Agent API and Run task also run with only the stub engines. It also lets the UAG use its database (`MONGO`), on every edition. |
-| `UAG_LICENSE` | Deprecated: use `LICENSE_KEY`. Still read until UAG 3.0; a feature is on when either license grants it. |
+| `LICENSE_KEY` | The Form.io license. One that includes the UAG, and whose endpoint allowlist includes `PROJECT`'s host, is required to run against a self-hosted Form.io Enterprise project; leave it unset for a project on Form.io's hosted service (`https://*.form.io`), which also runs Agentic Formflow without one, unless the UAG has its own database. A license that includes the UAG enables Agentic Formflow (the Agent API's `extract`, `decide` and `generate`, the Run task action, `agent_decide` and `agent_provide`) with real engines, on Open Source too; without it these answer `403`, except against a hosted `PROJECT`, and the Agent API and Run task also run with only the stub engines. It also lets the UAG use its database (`MONGO`), on every edition. |
+| `LICENSE_REMOTE` | `true` when `LICENSE_KEY` is an offline license. |
+| `UAG_LICENSE` | Deprecated: use `LICENSE_KEY`. Still read until UAG 3.0. |
 | `PORT` | Server port. Default `3200`. |
 | `PROJECT_RETRIES` | Attempts to load the project (the first try included), for a Form.io server that is still starting. Also used for each refresh and for finding `remote` engines. Default `5`. |
 | `PROJECT_RETRY_DELAY` | Milliseconds before the first retry; the delay doubles on each attempt, up to 60 seconds. Default `5000`. |

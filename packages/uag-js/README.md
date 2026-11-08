@@ -2,6 +2,12 @@
 
 The [Form.io UAG](https://ai.form.io/developers) for formio.js applications. Register it once, and forms tagged `uag` save through the UAG (so their "Agent: Run task" actions run), and those whose task has an input get **Agent Input**, which fills the form from what the user describes without overwriting what they entered. Every other form, and every other request, goes to Form.io as before. Any `uag` form can also be rendered as a [chat](#chat).
 
+```bash
+npm install @formio/uag-js@rc
+```
+
+It works with formio.js 5 (`@formio/js` 5.x) and has no dependencies.
+
 ```js
 import { Formio } from '@formio/js';
 import { UAG } from '@formio/uag-js';

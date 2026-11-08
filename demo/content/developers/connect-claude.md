@@ -7,7 +7,7 @@ order: 50
 
 Claude can use your forms directly. Connected to the UAG, it lists the `uag`-tagged forms a user may use, asks for what each one needs, validates the answers against the form, and saves the submission, all as the user who signed in. Nothing about your forms is written into Claude: the form is the rulebook, read at the moment of use.
 
-This page connects two Claude clients, and shows how Form.io roles decide what the agent may do. It follows the [custom module sample](../../samples/custom-module), a Community Edition project with **Customer** and **Employee** resources where managers onboard employees and employees onboard customers. No license is needed.
+This page connects two Claude clients, and shows how Form.io roles decide what the agent may do. It follows the [custom module sample](../../samples/custom-module), a Form.io Open Source project with **Customer** and **Employee** resources where managers onboard employees and employees onboard customers. The MCP tools need no license, but the browser sign-in this page uses (`MCP_OAUTH`) keeps its codes in the UAG's own database, which needs a license that includes the UAG, in `LICENSE_KEY`.
 
 | Client | How it connects | What the UAG needs |
 |---|---|---|
@@ -20,12 +20,13 @@ Either way the user signs in through the UAG's OAuth (PKCE) flow, with the proje
 
 ## Run the sample
 
-The sample runs Form.io Community Edition, MongoDB, the UAG, and nginx, which serves Form.io and the UAG on one port, `3000`. nginx sends `/mcp`, `/auth` and `/.well-known` to the UAG and everything else to Form.io, so one origin serves the forms, the login page and the MCP endpoint.
+The sample runs Form.io Open Source, MongoDB, the UAG, and nginx, which serves Form.io and the UAG on one port, `3000`. nginx sends `/mcp`, `/auth` and `/.well-known` to the UAG and everything else to Form.io, so one origin serves the forms, the login page and the MCP endpoint.
 
 ```bash
 git clone -b {{releaseTag}} https://github.com/formio/uag.git
 cd uag/demo/samples/custom-module
 # In docker-compose.yml first: replace every CHANGEME (both ADMIN_KEY values must be the same).
+export LICENSE_KEY=...          # a license that includes the UAG
 docker compose up -d
 ```
 
@@ -42,13 +43,14 @@ The UAG's settings in that file:
       JWT_SECRET: CHANGEME
       LOGIN_FORM: http://localhost:3000/employee/login
       PROJECT_TTL: 10
+      LICENSE_KEY: ${LICENSE_KEY:-} # a license that includes the UAG, for the database
       MCP_OAUTH: "true"             # browser sign-in for MCP clients
       MONGO: mongodb://mongo.local:27017
       UAG_DATABASE: uag
       TRUST_PROXY: 1                # behind nginx
 ```
 
-`MCP_OAUTH` turns on the browser sign-in that `mcp-remote` and Claude's connectors use, and `MONGO` gives the UAG the database it keeps the sign-in codes in (a database named `uag` on the stack's MongoDB). A database needs a license that includes the UAG, so set `LICENSE_KEY`. Without it the UAG starts with sign-in off and says why. The UAG names its own address in the OAuth discovery documents from each request, here through nginx (`TRUST_PROXY`). `LOGIN_FORM` is the form the login page loads, here the module's employee login, so the people who sign in are records in the Employee resource.
+`MCP_OAUTH` turns on the browser sign-in that `mcp-remote` and Claude's connectors use, and `MONGO` gives the UAG the database it keeps the sign-in codes in (a database named `uag` on the stack's MongoDB). A database needs a license that includes the UAG, so set `LICENSE_KEY` in your shell before `docker compose up`. Without it the database features, sign-in included, stay off, and the UAG's log says so. The UAG names its own address in the OAuth discovery documents from each request, here through nginx (`TRUST_PROXY`). `LOGIN_FORM` is the form the login page loads, here the module's employee login, so the people who sign in are records in the Employee resource.
 
 At startup the UAG installs the module's template: the **Customer** and **Employee** resources (both tagged `uag`), an **Employee Login** form, and the **Manager** and **Employee** roles.
 

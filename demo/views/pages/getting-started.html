@@ -17,7 +17,7 @@
           <div class="card">
             <span class="num">FREE, FULLY SELF-HOSTED</span>
             <h3>Open Source stack</h3>
-            <p>Form.io Community Edition, MongoDB and the UAG in one Docker Compose file, on your own machine or network.</p>
+            <p>Form.io Open Source, MongoDB and the UAG in one Docker Compose file, on your own machine or network.</p>
           </div>
           <div class="card card-dark">
             <span class="num">PRODUCTION</span>
@@ -75,7 +75,7 @@
             <div class="steps">
               <div class="step"><div>
                 <h3>Save this as <code>docker-compose.yml</code></h3>
-                <p>Form.io Community Edition, MongoDB and the UAG. Change every <code>CHANGEME</code> before you use it for anything real.</p>
+                <p>Form.io Open Source, MongoDB and the UAG. Change every <code>CHANGEME</code> before you use it for anything real.</p>
                 <div class="code"><div class="code-bar"><span>yaml</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-yaml">services:
   mongo:
     image: mongo:7
@@ -203,7 +203,7 @@ volumes:
             <button role="tab" id="tab-api" aria-controls="panel-api" aria-selected="false" tabindex="-1">Agent API</button>
           </div>
           <div class="tab-panel" role="tabpanel" id="panel-claude" aria-labelledby="tab-claude">
-            <p>Turn on browser sign-in on the UAG with <code>MCP_OAUTH=true</code> and a database (<code>MONGO</code>), then add the UAG to <code>claude_desktop_config.json</code>. The first connection opens your Form.io login, and Claude then acts with that user's roles. The database needs a license that includes the UAG, unless the project and the database are both on development hosts (<code>localhost</code>, <code>*.local</code>); Compose service names such as <code>formio</code> and <code>mongo</code> are not, so without a license give both services a <code>*.local</code> network alias, or run them on <code>localhost</code>.</p>
+            <p>Turn on browser sign-in on the UAG with <code>MCP_OAUTH=true</code> and a database (<code>MONGO</code>), then add the UAG to <code>claude_desktop_config.json</code>. The first connection opens your Form.io login, and Claude then acts with that user's roles. The database needs a license that includes the UAG, in <code>LICENSE_KEY</code>.</p>
             <div class="code"><div class="code-bar"><span>json</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-json">{
   "mcpServers": {
     "formio-uag": {

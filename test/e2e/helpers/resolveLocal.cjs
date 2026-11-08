@@ -2,7 +2,7 @@
  * Preloaded into the UAG process by the license e2e suite (NODE_OPTIONS
  * --require). Resolves the host names in E2E_LOCAL_HOSTS (comma-separated) to
  * 127.0.0.1, so the UAG can reach the local Form.io container through a name
- * that is not on the local-endpoint allow list. Test-only; nothing outside the
+ * other than localhost. Test-only; nothing outside the
  * e2e suite loads it.
  */
 const dns = require('dns');

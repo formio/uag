@@ -17,7 +17,6 @@ export const JWT_SECRET = 'uag-e2e-secret';
  * The UAG license the stack runs under. Agentic Formflow needs one (or a hosted
  * project) wherever the project runs, so the suites that use it need
  * E2E_UAG_LICENSE and are skipped without it; MCP and conversation forms do not.
- * Any license serves the stack's `localhost` project.
  */
 export const E2E_LICENSE = process.env.E2E_UAG_LICENSE || '';
 
@@ -63,7 +62,7 @@ export async function startStack({ uagEnv = {}, forms = ['customer', 'applicatio
             cwd: repoRoot,
             env: {
                 PORT: '3210',
-                // `localhost`, which any license serves, rather than the published 127.0.0.1.
+                // `localhost` rather than the published 127.0.0.1.
                 PROJECT: FORMIO_URL.replace('127.0.0.1', 'localhost'),
                 UAG_LICENSE: E2E_LICENSE,
                 ADMIN_KEY,

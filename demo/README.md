@@ -41,7 +41,7 @@ The site is **static files**, and the demos are what any application embedding t
 docker compose up -d --build
 ```
 
-Or, with released images and every setting written in the file, [`deploy/docker-compose.yml`](./deploy/docker-compose.yml), which also runs the AI Document add-on. Put your load balancer in front of it for its host name (TLS ends there), and set `DEMO_SITE_ORIGIN` (`CORS`) to the site's origin, `https://ai.form.io`: the UAG answers browsers from that origin only. [`uag-module/`](./uag-module/index.js) gives every guest per-minute limits on chat, extraction and document processing, and all guests together a limit on Claude calls, per UAG instance (`DEMO_RATE_LIMITS` replaces them).
+It builds the UAG from this checkout and runs the AI Document add-on beside it. Or use [`deploy/docker-compose.yml`](./deploy/docker-compose.yml): the same two services from released images, with every setting written in the file (replace each `CHANGE_ME`), run with `docker compose pull && docker compose up -d` from the `deploy/` folder. Put your load balancer in front of it for its host name (TLS ends there), and set `DEMO_SITE_ORIGIN` (`CORS`) to the site's origin, `https://ai.form.io`: the UAG answers browsers from that origin only. [`uag-module/`](./uag-module/index.js) gives every guest per-minute limits on chat, extraction and document processing, and all guests together a limit on Claude calls, per UAG instance (`DEMO_RATE_LIMITS` replaces them).
 
 **The site.** [`deploy/site.yml`](./deploy/site.yml) is a CloudFormation stack, deployed once in `us-east-1`: a private S3 bucket that only its CloudFront distribution reads, a CloudFront function that serves `<path>/index.html` for `<path>`, the site's `404.html` for anything else, a response headers policy with the Content-Security-Policy (which allows the UAG's origin, a stack parameter), and a deploy role for GitHub Actions.
 
@@ -84,7 +84,7 @@ Run on your own machine, the examples say when they cannot run: a UAG that canno
 
 ### Against your own project (`yarn demo:local`)
 
-The quickest way to run every demo on your machine: your own project on Form.io's hosted service (a free one from [portal.form.io](https://portal.form.io) will do, or a stage of one). No Docker, and no UAG license: a hosted project runs Agentic Formflow under Form.io's license.
+The quickest way to run every demo on your machine: your own project on Form.io's hosted service (a free one from [portal.form.io](https://portal.form.io) will do, or a stage of one). No Docker, and no UAG license: a project on Form.io's hosted service needs none.
 
 **You need:** Node.js 22 or later, Yarn (`corepack enable`), an API key of the project (the project's **Settings → API Keys**), a Claude API key, and a TypeSafe API key (for JEV, the decision engine).
 
@@ -127,7 +127,7 @@ One command runs every demo against Form.io Enterprise on your machine, with its
 | Setting | Value |
 |---|---|
 | `LICENSE_KEY` | A Form.io Enterprise license. The UAG uses it too, so it should include the UAG and allow the endpoint `formio.e2e.test`: inside the stack, the UAG reaches Form.io's API server by that name. |
-| `UAG_LICENSE` | Optional: the UAG's own license, when `LICENSE_KEY` does not include the UAG or allow that endpoint. |
+| `UAG_LICENSE` | Optional, deprecated: the UAG's own license, when `LICENSE_KEY` does not include the UAG or allow that endpoint. |
 | `CLAUDE_API_KEY`, `TYPESAFE_API_KEY` | Your model keys. |
 
 The deployment's own settings (`ADMIN_EMAIL`, `ADMIN_PASS`, `FORMIO_ADMIN_KEY`, `PROJECT_KEY`, `DB_SECRET`, `FORMIO_JWT_SECRET`, `UAG_JWT_SECRET`, `PORTAL_SECRET`) are taken from the root `.env` when set there, and are otherwise random for that start. They are read from the file, not loaded into the environment, so a variable set in your shell with the same name takes precedence.
@@ -148,6 +148,23 @@ The port is the first of three, on 127.0.0.1:
 | `3432` | The UAG, built from this checkout, which the site's pages call. |
 
 It builds the UAG's image from this checkout (the first start takes several minutes), starts MongoDB and Form.io, runs the setup job ([`scripts/setup.mjs`](./scripts/setup.mjs)), which creates the `UAG Demo` project from `module/project.json`, starts the UAG on it, builds the site for them and serves it, and last creates a stage, **UAG Gateway**, connected to the UAG. When it is up it prints the URLs and the portal's administrator sign-in. Every start is fresh: Ctrl+C stops the stack and removes its data. Give another port to run a second copy beside the first; each runs as its own Compose project (`uag-demo-<port>`).
+
+### On an existing Enterprise deployment (`FORMIO_TEST_URL`)
+
+With `FORMIO_TEST_URL` in the root `.env`, `yarn demo:start <port>` starts no Form.io of its own: it runs the demo on that Form.io Enterprise deployment, such as a local `https://form.test`. It needs, in the root `.env`:
+
+| Setting | Value |
+|---|---|
+| `FORMIO_TEST_URL` | The deployment, with its portal, such as `https://form.test`. |
+| `FORMIO_TEST_EMAIL`, `FORMIO_TEST_PASSWORD` | A portal account that may create projects and stages. |
+| `FORMIO_TEST_UAG_LICENSE` | A license that includes the UAG and allows the deployment's project subdomains (`*.form.test`). |
+| `FORMIO_TEST_UAG_LICENSE_REMOTE` | Optional: `true` when that license is an offline one. |
+| `FORMIO_TEST_PROJECT` | Optional: the project's name. Default: `uag-demo-<port>`. |
+| `CLAUDE_API_KEY`, `TYPESAFE_API_KEY` | Your model keys. |
+
+It creates the project from `module/project.json`, owned by that account (deleting first a project of that name the account owns, left by a run that did not finish), builds the UAG's image from this checkout and runs it on the project on `<port> + 2`, serves the site built for them on `<port>`, and creates a stage, **UAG Gateway** (`<project>-uag`), connected to the UAG. It prints the portal at its `http:` address, because the portal refuses to connect a stage to a UAG on plain HTTP from an HTTPS page. The deployment must not have another project titled "UAG Demo". Ctrl+C stops the UAG and the site and deletes the project and its stages from the deployment. [`recordings/deployed.mjs`](./recordings/deployed.mjs) has the details.
+
+### The site alone (`yarn demo:start`)
 
 `yarn demo:start` with no port builds and serves the site alone, from `demo/.env.local`, against whatever UAG `DEMO_UAG_URL` names, rebuilding on every change.
 

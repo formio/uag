@@ -29,15 +29,15 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 | The UAG exits on first boot, then works after a restart | Form.io was not answering yet. Add a healthcheck and `depends_on: condition: service_healthy`, or raise `PROJECT_RETRIES`. |
 | With `DEBUG=formio:error`, the UAG logs `401` right after starting | `PROJECT_KEY` is empty or wrong. In the demo stack, check the `setup` job's logs, then recreate the UAG container. |
 | The UAG restart-loops with "Endpoint ... is not allowed for this license" | The license's endpoint allowlist does not include `PROJECT`'s host. Match the host to the license (trial licenses expect `api-server:3000`), or get a license for your endpoint. |
-| "License is not configured" for a self-hosted Enterprise project | `LICENSE_KEY` is not set. A project not on the UAG's own machine (`localhost`) needs a license that includes the UAG. |
-| "This server needs a license that includes the UAG", with a reason for each key | `LICENSE_KEY: The license does not include the UAG.`: get a license with the UAG. `License is expired`: renew it. `License could not be verified ... has not confirmed it since this server started`: the license server is unreachable and has not confirmed the key since the UAG started; an online key needs the license server to confirm it before it runs. `The license server ... is not one of Form.io's`: `LICENSE_SERVER` can name only `https://*.form.io` servers; unset it. `The license server cannot be trusted`: `NODE_TLS_REJECT_UNAUTHORIZED=0`, `NODE_EXTRA_CA_CERTS` or `NODE_USE_SYSTEM_CA` is set; remove it, or use an offline license (`LICENSE_REMOTE`). `License is not an offline license. LICENSE_REMOTE is set`: unset `LICENSE_REMOTE` for an online key. |
+| "License is not configured" for a self-hosted Enterprise project | `LICENSE_KEY` is not set. A self-hosted Enterprise project needs a license that includes the UAG. |
+| "This server needs a license that includes the UAG", with a reason for each key | `LICENSE_KEY: The license does not include the UAG.`: get a license with the UAG. `License is expired`: renew it. `License could not be verified`: an online key needs the Form.io license server; let the UAG reach it, or use an offline license (`LICENSE_REMOTE=true`). `License is not an offline license. LICENSE_REMOTE is set`: unset `LICENSE_REMOTE` for an online key. |
 | The log warns "UAG_LICENSE is deprecated" | Put the license in `LICENSE_KEY` instead. `UAG_LICENSE` keeps working until UAG 3.0. |
-| "License is not configured" for a `*.form.io` project | A hosted project needs a license while `NODE_TLS_REJECT_UNAUTHORIZED=0`, `NODE_EXTRA_CA_CERTS` or `NODE_USE_SYSTEM_CA` is set, or when the hosted service could not be reached. The message names which. |
+| "License is not configured" for a `*.form.io` project | The UAG could not reach Form.io's hosted service for the project. The message names the cause. |
 | Startup stops naming an engine | That engine is misconfigured: its package is not installed, the name is duplicated, a required setting (such as an API key or model) is missing, or a `remote` instance's engine server refused its key or does not host it. |
 | "@formio/uag needs Node started with --no-node-snapshot" | An embedding server started Node without the flag. Start `node --no-node-snapshot`, or set `NODE_OPTIONS=--no-node-snapshot`. |
 | The log warns "JWT_SECRET is not set" | Tokens are signed with a random secret for this process only: set `JWT_SECRET`, the same on every instance. |
 | The log warns "MCP_OAUTH is on, but LOGIN_FORM is not set" | The sign-in page would load the login form from `PROJECT`, a container address. Set `LOGIN_FORM` to the login form's public URL. |
-| "@formio/uag needs @formio/appserver-core 2.26.0 or later" | An embedding application installs an older `@formio/appserver`, or its lockfile resolves an older core for it. Upgrade `@formio/appserver`. |
+| "@formio/uag needs @formio/appserver-core 2.26.4 or later, through @formio/appserver" | An embedding application installs an older `@formio/appserver`, or its lockfile resolves an older core for it. Upgrade `@formio/appserver`. |
 | Docker Compose fails with `set CLAUDE_API_KEY in .env` (or another `set ... in .env`) | A sample's `.env` is missing or incomplete. For the demo stack, copy `.env.example`; for an engine sample, add the variables its table in `samples/engines/Readme.md` lists. Compose validates every service even when you start only some. |
 
 ## The UAG's database
@@ -49,10 +49,10 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 | Startup stops: "Could not connect to MONGO" | `MONGO` is unreachable from the UAG container, or its credentials are wrong. |
 | Startup stops: "The MONGO user may not use the database" | Grant the `MONGO` user the `readWrite` role on `UAG_DATABASE`, or choose another database. |
 | Startup stops: "MONGO_CONFIG is not valid JSON" | Fix the driver options in `MONGO_CONFIG`. |
-| The log says "The database (MONGO) is not used: ... needs a license that includes ..." | No license that includes the UAG, and the UAG, the project and the database do not all run on one machine (`localhost`, `*.localhost`, `lvh.me`). The UAG runs without the database features (remote MCP sign-in, run records, durable runs) and writes nothing to it. Add a `LICENSE_KEY` that includes the UAG. |
+| The log says "The database (MONGO) is not used: ... needs a license that includes ..." | No license that includes the UAG. The UAG runs without the database features (remote MCP sign-in, run records, durable runs) and writes nothing to it. Add a `LICENSE_KEY` that includes the UAG. |
 | The log says "MCP_OAUTH is set, but remote MCP sign-in is off" | Sign-in needs a usable database: `MONGO` is unset, or the line above refused it. |
 | The log warns that the database "holds other data too" | `UAG_DATABASE` names a database with other collections, such as Form.io's. The UAG uses only its `uag-*` collections; a database of its own is recommended. |
-| The licensed features turn off as soon as the license server is unreachable | The terms the license server last confirmed are trusted for 12 hours from that confirmation, while the UAG runs. A restarted UAG, and a key the license server has never confirmed, have no grace period: the licensed features stay off until the license server answers. |
+| The licensed features turn off while the license server is unreachable | An online key needs the Form.io license server. Let the UAG reach it, or use an offline license (`LICENSE_REMOTE=true`). |
 
 ## Forms the agent cannot see
 
@@ -102,7 +102,7 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 
 | Symptom | Cause |
 |---|---|
-| `403` with `code: "license_required"` | Agentic Formflow is not allowed here: no `LICENSE_KEY` (or `UAG_LICENSE`) that includes the UAG for the project's endpoint, and the project is not on Form.io's hosted service (a project on this machine, or an Open Source server, needs the license too). Conversation forms, and a form's chat, are unaffected. The startup log says so too. |
+| `403` with `code: "license_required"` | Agentic Formflow is not allowed here: no `LICENSE_KEY` (or `UAG_LICENSE`) that includes the UAG for the project's endpoint, and the project is not on Form.io's hosted service (a self-hosted project, Open Source or Enterprise, needs the license). Conversation forms, and a form's chat, are unaffected. The startup log says so too. |
 | `403` "You do not have ... access" | The caller lacks create access on the form. |
 | `503` "No enabled engine can serve" | `UAG_ENGINES` is unset, or names no engine that can do the operation's work. |
 | `400` 'UAG 2.0 renamed "persona" to "task"' | The request still sends 1.x's `persona`. Send `task`. |

@@ -233,9 +233,8 @@ export class UAGServer extends Server {
 
   /**
    * Use the database once the project and its license are loaded: with a
-   * license that includes the UAG (or the project and the database both on
-   * development hosts), create its collections and hand out its stores;
-   * otherwise leave it untouched, close it, and say why.
+   * license that includes the UAG, create its collections and hand out its
+   * stores; otherwise leave it untouched, close it, and say why.
    */
   protected async enableDatabase(project: UAGProjectInterface): Promise<void> {
     const database = this.pendingDatabase;

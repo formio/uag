@@ -9,8 +9,8 @@
  *   engines stay optional and separately installable;
  * - each engine pins its provider SDK to an exact version, so a provider's
  *   release cannot change an engine's behavior without a new engine release
- *   (official @formio/uag-* packages, such as the OpenAI engine the Grok,
- *   Gemini and MAI engines build on, take a caret range);
+ *   (official @formio/uag-* packages, such as the OpenAI engine the Grok
+ *   and Gemini engines build on, take a caret range);
  * - every package of this repository is at @formio/uag's version (they are
  *   released together; `yarn release:version <version>` sets it everywhere);
  * - every dependency on a package in this repository accepts its version here;

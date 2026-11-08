@@ -1,6 +1,6 @@
 # Migrating to UAG 2.0
 
-UAG 2.0 is the first release of the Agent API and of the **Agent: Run task** action. If you run UAG 1.13 for local MCP clients and conversation forms, they keep working with no license and no new configuration, though some defaults changed: see [Defaults that changed](#defaults-that-changed). Read on too if you connect remote MCP clients (claude.ai, Claude Desktop connectors), set `MONGO`, call agents from Form.io webhooks, write modules, or tried the Agent API from the repository before 2.0.
+UAG 2.0 is the first release of the Agent API and of the **Agent: Run task** action. If you run UAG 1.13 for local MCP clients and conversation forms on Form.io Open Source or a hosted project, the conversation-form tools keep working with no license and no new configuration, though some defaults changed: see [Defaults that changed](#defaults-that-changed). The exception is `agent_provide_data`: it is now `agent_provide`, and it, like the new `agent_decide`, needs a license that includes the UAG or a project on Form.io's hosted service. A self-hosted Form.io Enterprise project needs a Form.io license that includes the UAG. See [Other breaking changes](#other-breaking-changes). Read on too if you connect remote MCP clients (claude.ai, Claude Desktop connectors), set `MONGO`, call agents from Form.io webhooks, write modules, or tried the Agent API from the repository before 2.0.
 
 ## Applications can send submissions to the UAG
 
@@ -17,8 +17,9 @@ Requests, MCP tools and settings take `task`, and the earlier names are gone:
 | Where | 1.x | 2.0 |
 |---|---|---|
 | Agent API request bodies | `persona` | `task`. A body that names `persona` and no `task` is refused with `400`. |
-| `agent_provide`, `agent_decide` (MCP) | `persona` | `task` |
-| MCP tool name | `agent_provide_data` | `agent_provide` (the same arguments and answer) |
+| `agent_provide` (MCP; `agent_provide_data` in 1.x) | `persona` | `task`. A call that still sends `persona` is not refused: the argument is dropped, and the tool uses the form's first task, as when no task is named. |
+| MCP tool name | `agent_provide_data` | `agent_provide` (the same answer, with `task` for `persona`) |
+| Tool overrides | `toolOverrides.agent_provide_data` | `toolOverrides.agent_provide`. The old key is ignored, without a warning. |
 | `@formio/uag-js` option (formerly the `@formio/uag-renderer` option) | `persona` | `task` |
 | `uag-eval` | `--persona` | `--task`. `--persona` is refused. |
 
@@ -34,7 +35,7 @@ Remote MCP clients sign in through OAuth, which is now off unless you turn it on
 
 To upgrade a deployment that serves remote clients:
 
-1. Set `MONGO` (see below) and `MCP_OAUTH=true`, with a `LICENSE_KEY` that includes the UAG. When the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`), no license is needed.
+1. Set `MONGO` (see below) and `MCP_OAUTH=true`, with a `LICENSE_KEY` that includes the UAG.
 2. Behind a reverse proxy, set `TRUST_PROXY` (`true`, a number of hops, or the proxy's addresses) for a proxy you control, and remove `BASE_URL` unless the derived URL is wrong.
 3. Delete the "Authorization Codes" resource from the project. The UAG no longer reads or writes it.
 
@@ -51,9 +52,9 @@ In 1.13, `MONGO` (with `MONGO_CONFIG`) connected the UAG directly to a MongoDB d
 | `MONGO_CONFIG` | Driver options, as JSON. |
 | `TASK_RUN_RETENTION_DAYS` | Days run records are kept. Default `90`; `0` keeps them forever. |
 
-The database holds only `uag-meta`, `uag-authcodes` and `uag-taskruns`, never submissions. At startup the UAG checks it before writing: a database with `uag-*` collections the UAG did not create, or created by a newer UAG, stops startup, naming the database. It enables remote MCP sign-in, run records shown in a connected portal stage's Action Logs, runs after the save that survive a restart, and the license grace period (12 hours; without the database there is none).
+The database holds only `uag-meta`, `uag-authcodes` and `uag-taskruns`, never submissions. At startup the UAG checks it before writing: a database with `uag-*` collections the UAG did not create, or created by a newer UAG, stops startup, naming the database. It enables remote MCP sign-in, run records shown in a connected portal stage's Action Logs, and runs after the save that survive a restart.
 
-Using it needs a license that includes the UAG, on every edition and on Form.io's hosted service, unless the project and the database are both on development hosts. Without the license the UAG still starts, with the database features off; it writes nothing to the database, and says why in its log. If you set `MONGO` for 1.13 and do not want the database, unset it.
+Using it needs a license that includes the UAG, on every edition and on Form.io's hosted service. Without the license the UAG still starts, with the database features off; it writes nothing to the database, and says why in its log. If you set `MONGO` for 1.13 and do not want the database, unset it.
 
 ## Defaults that changed
 
@@ -64,9 +65,19 @@ Using it needs a license that includes the UAG, on every edition and on Form.io'
 | `MAX_BODY_SIZE` | `100mb` | `16mb`, Form.io's own limit: bodies are parsed before authentication. |
 | An application that embeds the UAG | Started without Node's `--no-node-snapshot` | `new UAGServer()` throws unless Node runs with `--no-node-snapshot` (or `NODE_OPTIONS=--no-node-snapshot`), which `isolated-vm` needs. The `uag` command and the image add it themselves. |
 | Remote MCP sign-in | | Access and refresh tokens are distinct, so clients signed in through OAuth sign in again once after the upgrade. |
-| TLS to Form.io | Certificates not verified | Verified on the UAG's requests to Form.io. Trust a self-signed certificate's CA with `NODE_EXTRA_CA_CERTS`, or, on a private deployment only, set `NODE_TLS_REJECT_UNAUTHORIZED=0`. |
+| TLS to Form.io | Certificates not verified | Verified on the UAG's requests to Form.io. For a `PROJECT` with a self-signed certificate, see [Deployment](https://ai.form.io/developers/deployment). |
 | A module's project template | Installed on every `PROJECT_TTL` refresh | Installed once at startup (`TEMPLATE_SYNC=boot`). `refresh` installs on every refresh too; `off` never installs. |
 | Files and signatures in MCP tool results | The stored value (base64 for a base64 upload) | Described: a file as `{ "name", "type", "size" }`, a signature as `(signed)`. To read a document's text, call [`read_document`](https://ai.form.io/developers/mcp-tools#readdocument). |
+
+## Other breaking changes
+
+- **`agent_provide` needs a license.** `agent_provide` (formerly `agent_provide_data`) and the new `agent_decide` answer with `code: "license_required"` unless the UAG has a license (`LICENSE_KEY`) that includes the UAG for the project's endpoint, or the project is on Form.io's hosted service. Enabling only the stub engines does not lift this. The other MCP tools, and a form's chat, need no license on Form.io Open Source or a hosted project.
+- **Self-hosted Enterprise projects need a license that includes the UAG**, in `LICENSE_KEY`, whose endpoints include `PROJECT`'s host. A license that does not include the UAG is refused: the project does not load, and the UAG says why.
+- **`UAG_LICENSE` is deprecated.** Put the license in `LICENSE_KEY`, the variable the Form.io Enterprise and PDF servers read. `UAG_LICENSE` is still read, with a deprecation notice at startup, until UAG 3.0.
+- **Custom tools without an `inputSchema`** (in `config.tools` or a module) are called as `execute(args, extra)`, with `args` an empty object, as every other tool is. 1.13 called them as `execute(extra)`: read the caller from the second argument (`extra.authInfo`).
+- **Applications that embed the UAG need `@formio/appserver` 2.26.4 or later** (1.13 used 2.14). `new UAGServer()` throws, naming the installed version, when the `@formio/appserver-core` that `@formio/appserver` loads is older than 2.26.4.
+- **`401` responses follow RFC 6749 and RFC 6750.** A `401` from `/mcp` has the body `{ error, error_description }` instead of `{ detail }`, with `error="invalid_token"` in `WWW-Authenticate` when a token was sent; the challenge names `resource_metadata` only when remote MCP sign-in is on. Errors from `/auth/token` and `/auth/authorize` are `{ error, error_description }` (`invalid_request`, `invalid_client`, `invalid_grant`, `unsupported_grant_type`, `access_denied`) with `Cache-Control: no-store`, instead of empty or plain-text bodies.
+- **`examples/` is removed.** See [The examples are now the demo site](#the-examples-are-now-the-demo-site).
 
 ## Webhooks become "Agent: Run task"
 
@@ -105,20 +116,22 @@ To run a task again on stored submissions, save them again through the UAG.
 
 ## Engines
 
-Engines are npm packages, enabled as named instances of a type. The `formio/uag` image includes `jev`, `claude`, `openai`, `grok` and `gemini`.
+UAG 1.13 has no engines: its only model was the Claude integration's (above). In 2.0, engines are npm packages, enabled as named instances of a type; with none named, none is enabled. The `formio/uag` image includes `jev`, `claude`, `openai`, `grok` and `gemini`.
 
-| Before | 2.0 |
+| | 2.0 |
 |---|---|
-| `UAG_ENGINES=jev,claude` | Unchanged: a bare name is an instance named after its type. |
-| — | `UAG_ENGINES=jev,fast:claude,deep:claude`, with `UAG_ENGINE_FAST_MODEL`, `UAG_ENGINE_DEEP_MODEL` and so on: one type, several instances. |
-| `server.use(JevEngine({ ... }))` in an embedding application | `new UAGServer({ engines: ['jev'] })`, or `{ name, type, options }` entries. The type may be a package name or an engine type definition; types can also be registered by name in `engineTypes`. |
-| `UAG_ENGINES=remote` with `UAG_REMOTE_AGENT_URL` (the integration) | A `formio/uag-engines` container (`UAG_ENGINES=claude`, `CLAUDE_API_KEY`, `UAG_ENGINE_SERVER_KEY`, `UAG_SERVER`), and on the UAG `UAG_ENGINES=claude:remote`, `UAG_ENGINE_CLAUDE_URL` and `UAG_ENGINE_CLAUDE_KEY`. The UAG sends the engine server only its key, never a Form.io credential. |
+| Enable engines | `UAG_ENGINES=jev,claude`: a bare name is an instance named after its type. |
+| Several instances of one type | `UAG_ENGINES=jev,fast:claude,deep:claude`, with `UAG_ENGINE_FAST_MODEL`, `UAG_ENGINE_DEEP_MODEL` and so on. |
+| In an embedding application | `new UAGServer({ engines: ['jev'] })`, or `{ name, type, options }` entries. The type may be a package name or an engine type definition; types can also be registered by name in `engineTypes`. |
+| Model keys outside the UAG (the integration's container in 1.13) | A `formio/uag-engines` container (`UAG_ENGINES=claude`, `CLAUDE_API_KEY`, `UAG_ENGINE_SERVER_KEY`, `UAG_SERVER`), and on the UAG `UAG_ENGINES=claude:remote`, `UAG_ENGINE_CLAUDE_URL` and `UAG_ENGINE_CLAUDE_KEY`. The UAG sends the engine server only its key, never a Form.io credential. |
+
+If you built the UAG from the repository before 2.0: `server.use(JevEngine({ ... }))` and `server.use({ engines })` are replaced by `config.engines` (above), and `UAG_ENGINES=remote` with `UAG_REMOTE_AGENT_URL` by a `remote` instance such as `claude:remote`.
 
 A third-party engine is a package named `uag-engine-<type>`: install it in a derived image, or mount it and list the directory in `UAG_ENGINE_PATH`. Its definition is a plugin of type `"engine"`: `{ type: 'engine', name: '<type>', title, version, kinds, apiVersion, settings, create }`, where `name` is the type name and `version` defaults to the package's own. A definition in the shape of the 2.0 release candidates (`{ type: '<type>', kinds, ... }`) is refused at startup with a message showing the new shape; `UAG_ENGINES`, package names and instance names do not change.
 
 ## Modules
 
-- **Platform actions are not run by the UAG.** Actions that Form.io implements are marked `platform: true`: `save`, `login`, `role`, `webhook`, `email` and `group`. The UAG skips them, since Form.io runs its own when the submission reaches it; a module's own actions run as before. Mark an action of your module `platform: true` if Form.io runs it.
+- **Platform actions are not run by the UAG.** Form.io's own actions (`save`, `login`, `role`, `webhook`, `email` and `group`) are skipped, as is any action marked `platform: true`, since Form.io runs its own when the submission reaches it; a module's own actions run as before. Mark an action of your module `platform: true` if Form.io runs it.
 - **Overriding a platform action by name.** A module action registered under the name of one of Form.io's actions (its own `webhook`, say) is not run by the UAG either: Form.io runs its own action of that name on the forwarded submission, and running both would do the work twice. Give a module action a name of its own to have the UAG run it.
 - **Who a submission is forwarded as.** A `before:access:<op>` hook can set `req.forwardAuth` to the identity the submission is checked and forwarded as, instead of the caller's.
 - **`FormInterface.submit(submission, auth, request)`** takes a third argument: extra request fields for the submission's request.
@@ -153,7 +166,7 @@ Configuration:
 | `agentApi.provide.timeout`, `agentApi.run.timeout` | `routing.timeouts` per engine, and `agentApi.research.timeout` (default 120000) for engines that research. |
 | `agentApi.provide.maxIterations`, `agentApi.run.maxIterations` | `agentApi.research.maxIterations` (default 10). |
 | `agentApi.run.tools` | Removed. |
-| `agentApi.rateLimits.caller` keyed by task | Keyed by operation: `extract`, `decide`, `generate`. |
+| `agentApi.rateLimits.caller` keyed by task | Keyed by operation: `extract`, `decide`, `generate`, `chat`, `capabilities`, or a module route's name, with `default` for the rest. `agentApi.rateLimits.engine` is keyed by engine instance name, with `default`. |
 | `CLAUDE_RUN_EFFORT` | `CLAUDE_RESEARCH_EFFORT`. |
 
 Task-scoped tokens are now **scoped tokens**: they carry the caller's identity (their own token, sealed so the engine server cannot read it) and a task's read-only research tools only, are issued only for research, and are honored only by the project they were issued for.
@@ -182,17 +195,18 @@ Forms tagged `uag` then save through the UAG, and get Agent Input when one of th
 
 See [JavaScript (formio.js)](https://ai.form.io/developers/renderer).
 
-## The demo's conversation runs in the UAG
+## The examples are now the demo site
 
-If you run the demo site (`demo/`), its Conversation Forms page now embeds the form with `Formio.createChat` from `@formio/uag-js`, and each turn is the UAG's `{form}/agent/chat`. The demo server no longer calls a model:
+`examples/` is removed. The demo site (`demo/`, published at [ai.form.io](https://ai.form.io)) replaces it:
 
-| Before | Now |
+| 1.13 | 2.0 |
 |---|---|
-| `POST /api/conversation/chat` (`{ message }`), `GET /api/conversation/forms` | `GET /api/conversation/uag/{formPath}`, `POST /api/conversation/uag[/project/{id}]/form/{id}/agent/chat` and `.../submission`: stand-ins for the UAG's own routes, for the one chat form. `POST /api/conversation/reset` stays. |
-| `CLAUDE_API_KEY`, `CHAT_MODEL`, `CHAT_MAX_TOKENS`, `CHAT_MAX_TOOL_ITERATIONS`, `CHAT_MAX_HISTORY_CHARS` on the site | Not read. The model is the UAG's agent engine (`CLAUDE_API_KEY` and `CLAUDE_MODEL` on the engine server). |
-| `CHAT_FORMS` (a list) | `CHAT_FORM` (one form, default `serviceRequest`). |
+| `examples/custom-module` | [`demo/samples/custom-module`](./demo/samples/custom-module), now with remote MCP sign-in (`MCP_OAUTH`, `MONGO`, `LICENSE_KEY`). |
+| `examples/conversation-form` | The demo's Conversation Forms page, which renders its form with `Formio.createChat` from `@formio/uag-js`; each turn is the UAG's `{form}/agent/chat`. To offer the same chat in your own application, see [Chat widget](https://ai.form.io/developers/chat). |
+| `examples/agentic-workflow` | The demo's Agentic Workflow page: the application is saved through the UAG, and the form's two "Agent: Run task" actions do the rest, with no webhooks and no Claude integration. |
+| `examples/flow-viewer` | Removed. Each demo page shows a log of the calls it makes to the UAG and the project. |
 
-To offer the same chat in your own application, see [Chat widget](https://ai.form.io/developers/chat): it needs only the UAG, with an agent engine, and no license.
+The demo site is static files: its pages load `@formio/uag-js` from the UAG and call the UAG from the browser with a Form.io user token, as any application would. There is no demo server, so a demo from a 2.0 release candidate's `demo/server` (its `/api/*` routes, its Turnstile check and its settings) has no counterpart. See [`demo/README.md`](./demo/README.md).
 
 ## Rolling back
 

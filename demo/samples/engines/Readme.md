@@ -14,11 +14,11 @@ docker compose -f docker-compose.yml -f ../engines/<file>.yml up -d
 |---|---|---|
 | [`engine-server.yml`](./engine-server.yml) | Claude running on an engine server (`formio/uag-engines`), so its key and traffic stay out of the UAG. The UAG sends it only the engine server key, never a Form.io credential. | `ENGINE_SERVER_KEY`: 32+ random characters (`openssl rand -hex 32`), `CLAUDE_API_KEY` |
 | [`instances.yml`](./instances.yml) | Two instances of one engine type, `fast:claude` and `deep:claude`, with their own models and settings, sharing one key. | `CLAUDE_API_KEY` |
-| [`ollama.yml`](./ollama.yml) | A local model through Ollama, with the `openai` engine pointed at it: no API key, and no data leaving the network. | `OLLAMA_MODEL`: a model that supports structured outputs (and tool calling, for tasks that research). Pull it once with `docker compose exec ollama ollama pull "$OLLAMA_MODEL"`. |
+| [`ollama.yml`](./ollama.yml) | A local model through Ollama, with the `openai` engine pointed at it: no API key, and no data leaving the network. | `OLLAMA_MODEL`: a model that supports structured outputs (and tool calling, for tasks that research). Pull it once, with the same files as `up` (the `ollama` service is defined only in this file): `docker compose -f docker-compose.yml -f ../engines/ollama.yml exec ollama ollama pull <model>`, where `<model>` is the `OLLAMA_MODEL` value. |
 | [`providers.yml`](./providers.yml) | Grok or Gemini in place of Claude, each through its own engine package. | `PROVIDER_ENGINE` (`grok` or `gemini`), and that provider's variables (see the file) |
 | [`openai-decisions.yml`](./openai-decisions.yml) | OpenAI's Decisions API deciding the closed-set fields (`decide:openai` with `kind: decision`), with Claude writing the open values. | `OPENAI_API_KEY`, `CLAUDE_API_KEY` |
 
-Real engines are Agentic Formflow: a self-hosted UAG needs a `LICENSE_KEY` that includes the UAG for them, unless `PROJECT` is on Form.io's hosted service (see [License](../../../README.md#license)). Every file passes `LICENSE_KEY` through from `.env`.
+Real engines are Agentic Formflow: a self-hosted UAG needs a `LICENSE_KEY` that includes the UAG for them, unless `PROJECT` is on Form.io's hosted service (see [Licensing](https://ai.form.io/developers/deployment#licensing)). Every file passes `LICENSE_KEY` through from `.env`.
 
 Check what a stack enabled at `GET /agent/capabilities` on the UAG: it lists each engine instance with its type, model, package and version.
 
