@@ -1,0 +1,31 @@
+# A local model through Ollama, with no API key and no data leaving the
+# network. Layer it on any Compose file whose UAG service is `formio-uag`, such as
+# ../custom-module:
+#
+#   docker compose -f docker-compose.yml -f ../engines/ollama.yml up -d
+#   docker compose exec ollama ollama pull "$OLLAMA_MODEL"
+#
+# Set OLLAMA_MODEL in .env to a model that supports structured outputs, and tool
+# calling for tasks that research.
+services:
+  ollama:
+    image: ollama/ollama
+    restart: always
+    volumes:
+      - uag-example-ollama:/root/.ollama
+
+  formio-uag:
+    # Real engines need a LICENSE_KEY that includes the UAG, or a hosted project.
+    depends_on:
+      - ollama
+    environment:
+      LICENSE_KEY: ${LICENSE_KEY:-}
+      UAG_ENGINES: local:openai
+      UAG_ENGINE_LOCAL_BASE_URL: http://ollama:11434/v1
+      UAG_ENGINE_LOCAL_MODEL: ${OLLAMA_MODEL:?set OLLAMA_MODEL in .env}
+      # Smaller models may not follow strict JSON schemas; try json_object.
+      UAG_ENGINE_LOCAL_STRUCTURED_OUTPUT: json_schema
+      CLAUDE_API_KEY: ""
+
+volumes:
+  uag-example-ollama:
