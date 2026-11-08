@@ -122,14 +122,15 @@ Then tag a form `uag` (in the portal, **Form Settings → Tags**) and connect an
 
 ### Run the whole demo locally
 
-With Docker, a Form.io Enterprise license and a license that includes the UAG, one command runs the demo site with all three examples, Form.io Enterprise and its portal, and the UAG built from this checkout:
+With Docker, a Form.io Enterprise license and a license that includes the UAG, one command runs the demo site with all four examples, Form.io Enterprise and its portal, and the UAG built from this checkout:
 
 ```bash
 yarn install
-yarn demo:start 3430    # the site on :3430, Form.io and its portal on :3431, the UAG on :3432
+npx playwright install chromium   # once: connecting the portal stage drives the portal in a browser
+yarn demo:start 3430              # the site on :3430, Form.io and its portal on :3431, the UAG on :3432
 ```
 
-It creates the demo project and its forms itself, and prints where everything is and how to sign in to the portal. It reads `LICENSE_KEY` and your model keys from the root `.env`; the portal password and the other secrets come from there too when you set them, and are random otherwise. See [the demo's README](./demo/README.md#the-whole-demo-on-your-machine-self-hosted-yarn-demostart-port).
+It creates the demo project and its forms itself, and prints where everything is and how to sign in to the portal. It reads `LICENSE_KEY` and your model keys from the root `.env`; the portal password and the other secrets come from there too when you set them, and are random otherwise. See [the demo's README](./demo/README.md#the-whole-demo-self-hosted-yarn-demostart-port).
 
 ## Tasks
 
@@ -243,19 +244,19 @@ Engines run inside the UAG, or on an [engine server](./packages/engine-server) (
 | You run | You need |
 |---|---|
 | MCP and conversation forms (including a form's chat, `{form}/agent/chat`), on Form.io Open Source or a hosted project | Nothing |
-| MCP and conversation forms, on a self-hosted Form.io Enterprise project | A Form.io license that includes the UAG, in `LICENSE_KEY` (development hostnames such as `localhost` excepted) |
+| MCP and conversation forms, on a self-hosted Form.io Enterprise project | A Form.io license that includes the UAG, in `LICENSE_KEY`, whose endpoint allowlist includes `PROJECT`'s host. Otherwise the project does not load, and the UAG says why. |
 | Agentic workflows and Agentic Formflow (the Agent API's `extract`, `decide` and `generate`, the **Agent: Run task** action, the `agent_decide` and `agent_provide` tools, `uag-eval`) on a self-hosted project, Open Source or Enterprise | A Form.io license that includes the UAG, in `LICENSE_KEY` |
-| The same on a project on Form.io's hosted service (`https://*.form.io`) | Nothing, as the project runs under Form.io's license; except `uag-eval`, which runs offline and needs `LICENSE_KEY` |
-| The UAG's own database (`MONGO`), and with it remote MCP sign-in (`MCP_OAUTH`), on any project | A Form.io license that includes the UAG, unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`) |
+| The same on a project on Form.io's hosted service (`https://*.form.io`) | Nothing, as the project runs under Form.io's license; except `uag-eval`, which runs offline and needs `LICENSE_KEY`. Leave `LICENSE_KEY` unset there unless the UAG has its own database. |
+| The UAG's own database (`MONGO`), and with it remote MCP sign-in (`MCP_OAUTH`), on any project | A Form.io license that includes the UAG. Without one, the UAG starts with its database features off and says why. |
 | The Agent API, Run task and `uag-eval` with only the stub engines (`UAG_ENGINES=stub-decision,stub-agent`), to try them out | Nothing. The `agent_decide` and `agent_provide` tools still need a license or a hosted project. |
 
-A hosted project needs a license when `NODE_TLS_REJECT_UNAUTHORIZED=0`, `NODE_EXTRA_CA_CERTS` or `NODE_USE_SYSTEM_CA` is set. Without a license, `MONGO` is not used: the UAG starts with its database features off and says why. Unlicensed requests get `403` with `code: "license_required"`, and `GET /agent/capabilities` always reports the edition and why. `UAG_LICENSE` is deprecated in favour of `LICENSE_KEY`, and still read until UAG 3.0. Details: [Deployment → Licensing](https://ai.form.io/developers/deployment#licensing).
+A license that includes the UAG is an online license whose key has the `uagServer` scope (each project endpoint a UAG serves counts as one UAG server, replicas once), or an offline license with the `uag` option, issued for its project; set `LICENSE_REMOTE=true` for an offline license. Unlicensed requests get `403` with `code: "license_required"`, and `GET /agent/capabilities` always reports the `edition` and `formflow.reason`. `UAG_LICENSE` is deprecated in favour of `LICENSE_KEY`, and still read until UAG 3.0. Contact [support@form.io](mailto:support@form.io) for a trial license. Details: [Deployment → Licensing](https://ai.form.io/developers/deployment#licensing).
 
 ## Extending the UAG
 
 - **Modules** add MCP tools, override the built-in tools and their response templates, add form actions (the UAG runs a module's own actions; Form.io runs its own), and ship a project template of forms and resources that the UAG installs. A module can also add routes on every form, formio.js components (served in the UAG's `/uag-js/uag.use.js`), plugins, and settings of its own. Mount one over `/app/module` in the container, or name it in `UAG_MODULE` for the `uag` command. See [Modules](https://ai.form.io/developers/modules), [`module/Readme.md`](./module/Readme.md) and the [Claude Desktop example](./demo/samples/custom-module).
 - **Plugins** add capabilities of a known type, such as converters that read more file types and the document processes an AI Document runs. List them in a module, or in a plugins file: the one `UAG_PLUGINS` names, or in the image, one per folder under `/app/plugins`, where add-ons such as `formio/uag-documents` put theirs. Plugins and modules are trusted code: they run in the UAG process. See [Plugins](https://ai.form.io/developers/plugins) and [AI Document](https://ai.form.io/developers/ai-document).
-- **Node.js.** Embed the UAG in an Express application, or run it with `npx uag`:
+- **Node.js.** Embed the UAG in an Express application, or install it (`npm install @formio/uag@rc`) and run it with `npx uag`:
 
 ```js
 import Express from 'express';
@@ -268,7 +269,7 @@ app.use(await server.router());
 app.listen(process.env.PORT || 3200);
 ```
 
-Run Node 22 or newer with `--no-node-snapshot` (isolated-vm, which runs form logic, needs it), and install the engines you use next to the UAG (`npm install @formio/uag-claude@rc`). See [Node.js API](https://ai.form.io/developers/node-api).
+Run Node 22 or newer with `--no-node-snapshot` (isolated-vm, which runs form logic, needs it; `npx uag` adds it itself), and install the engines you use next to the UAG (`npm install @formio/uag-claude@rc`). See [Node.js API](https://ai.form.io/developers/node-api).
 - **[`@formio/uag-js`](./packages/uag-js)** connects a formio.js application to the UAG. Register it once with `Formio.use(UAG('https://uag.example.com'))`: submissions of forms tagged `uag` are then saved through the UAG, and Agent Input fills those forms from what the user wrote, through `{form}/agent/extract`, when they leave the input, pause, move to the next page, or press a button. `Formio.createChat(element, formUrl)` renders any of them as a chat instead, templated, translated and themed like a formio.js form. See [JavaScript (formio.js)](https://ai.form.io/developers/renderer) and [Chat widget](https://ai.form.io/developers/chat).
 
 ## Deployment
@@ -324,7 +325,7 @@ The full table, with the Agent API's errors: [Troubleshooting](https://ai.form.i
 | [`@formio/uag-sdk`](./packages/engine-sdk) | 2.x | ≥ 2.0.0 | Engine contract version 1, remote engine protocol version 1. |
 | [`@formio/uag-engines`](./packages/engine-server), image `formio/uag-engines` | 2.x | ≥ 2.0.0 | The engine server. |
 | [`@formio/uag-js`](./packages/uag-js) | 2.x | ≥ 2.0.0 | The formio.js module: saves `uag` forms through the UAG, adds Agent Input, and renders forms as a chat. Runs in the browser; the UAG also serves it at `/uag-js/`. |
-| [`@formio/uag-extras`](https://www.npmjs.com/package/@formio/uag-extras), image `formio/uag-documents` | 1.x | ≥ 2.0.0-rc.7 | Versioned on its own: the AI Document module, document plugins and converters (`npm install @formio/uag-extras@^1`). The image is an add-on that runs beside `formio/uag` and fills its plugins folder (`formio/uag-documents:1`): see [AI Document](https://ai.form.io/developers/ai-document#run-it-with-docker). |
+| [`@formio/uag-extras`](https://www.npmjs.com/package/@formio/uag-extras), image `formio/uag-documents` | 1.x | ≥ 2.0.0-rc.9 | Versioned on its own: the AI Document module, document plugins and converters (`npm install @formio/uag-extras@^1`); needs Node.js 24 or newer. The image is an add-on that runs beside `formio/uag` and fills its plugins folder (`formio/uag-documents:1`): see [AI Document](https://ai.form.io/developers/ai-document#run-it-with-docker). |
 | `@formio/uag-claude` | 1.3.x | 1.12.0 – 1.13.x | The retired Claude integration (against 2.0, only its direct commands). Security fixes only; see [MIGRATING-2.0.md](./MIGRATING-2.0.md). |
 
 `@formio/uag-claude` 2.x is the Claude *engine*, not the 1.x integration; pin `@formio/uag-claude@^1` if you still install the integration. Upgrading from 1.x: [MIGRATING-2.0.md](./MIGRATING-2.0.md).

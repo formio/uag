@@ -993,7 +993,7 @@ A contact with the job title "Director of IT" and the note "Has budget approved 
 
 ### Run it
 
-This compose file runs Form.io Open Source, MongoDB and the UAG with the module mounted. Replace every `CHANGEME`.
+This compose file runs Form.io Open Source, MongoDB and the UAG with the module mounted. Replace every `CHANGEME`, and set `LICENSE_KEY` in your shell to a license that includes the UAG, which the UAG's database needs.
 
 ```yaml
 services:
@@ -1037,7 +1037,9 @@ services:
       PROJECT: http://formio.local:3001
       ADMIN_KEY: CHANGEME
       JWT_SECRET: CHANGEME
-      # Browser sign-in for remote MCP clients, with its codes in the UAG's database.
+      # Browser sign-in for remote MCP clients, with its codes in the UAG's database,
+      # which needs a license that includes the UAG.
+      LICENSE_KEY: ${LICENSE_KEY:-}
       MCP_OAUTH: "true"
       MONGO: mongodb://mongo.local:27017
       # The login form the browser renders on /auth/authorize.

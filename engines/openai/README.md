@@ -1,13 +1,19 @@
 # @formio/uag-openai
 
-<sub>[Form.io UAG](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md#engines-and-routing) &rsaquo; this page</sub>
+<sub>[Form.io UAG](https://ai.form.io/developers) &rsaquo; [Engines](https://ai.form.io/developers/engines) &rsaquo; this page</sub>
 
-The OpenAI engine for the [UAG Agent API](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md#agent-api). An instance is one of two kinds:
+The OpenAI engine for the [UAG Agent API](https://ai.form.io/developers/agent-api). An instance is one of two kinds:
 
-- **agent** (the default): extracts and generates open values on OpenAI's Responses API, or, through Chat Completions, on any server that implements that API: local models (Ollama, vLLM, LM Studio) and routers (OpenRouter). When a task lists read-only tools in `uagTools`, it researches with them first. Grok and Gemini have their own packages built on it: [`grok`](https://github.com/formio/uag/tree/v2.0.0-rc.8/engines/grok) and [`gemini`](https://github.com/formio/uag/tree/v2.0.0-rc.8/engines/gemini).
-- **decision**: decides closed-set fields with a probability for each answer, on OpenAI's Decisions API, like the [`jev`](https://github.com/formio/uag/tree/v2.0.0-rc.8/engines/jev) engine. See [Decisions](#decisions).
+- **agent** (the default): extracts and generates open values on OpenAI's Responses API, or, through Chat Completions, on any server that implements that API: local models (Ollama, vLLM, LM Studio) and routers (OpenRouter). When a task lists read-only tools in `uagTools`, it researches with them first. Grok and Gemini have their own packages built on it: [`grok`](https://ai.form.io/developers/engines#grok) and [`gemini`](https://ai.form.io/developers/engines#gemini).
+- **decision**: decides closed-set fields with a probability for each answer, on OpenAI's Decisions API, like the [`jev`](https://ai.form.io/developers/engines#jev) engine. See [Decisions](#decisions).
 
-It is included in the `formio/uag` Docker image. Enable it by naming it, and set its model and key:
+It is included in the `formio/uag` Docker image. With the UAG installed from npm, install it next to it:
+
+```bash
+npm install @formio/uag-openai@rc
+```
+
+Enable it by naming it, and set its model and key:
 
 ```
 UAG_ENGINES=openai
@@ -15,7 +21,7 @@ OPENAI_API_KEY=...
 OPENAI_MODEL=<a dated model ID>
 ```
 
-Its tasks are Agentic Formflow, so on a self-hosted project the UAG also needs a `LICENSE_KEY` that includes the UAG (see [License](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md#license)); a project on Form.io's hosted service needs none. A form's chat needs no license on Form.io Open Source or a hosted project.
+Its tasks are Agentic Formflow, so on a self-hosted project the UAG also needs a `LICENSE_KEY` that includes the UAG for the project's endpoint (see [Licensing](https://ai.form.io/developers/deployment#licensing)); a project on Form.io's hosted service needs none. A form's chat needs no license on Form.io Open Source or a hosted project.
 
 ## Settings
 
@@ -55,7 +61,7 @@ UAG_ENGINE_LOCAL_MODEL=llama4:16x17b
 CLAUDE_API_KEY=...
 ```
 
-For Grok and Gemini, use their own engines ([`grok`](https://github.com/formio/uag/tree/v2.0.0-rc.8/engines/grok), [`gemini`](https://github.com/formio/uag/tree/v2.0.0-rc.8/engines/gemini)), which have the right endpoints and keys built in. Any other OpenAI-compatible server works with `baseURL`; check its documentation for model IDs and for which `structuredOutput` mode it supports.
+For Grok and Gemini, use their own engines ([`grok`](https://ai.form.io/developers/engines#grok), [`gemini`](https://ai.form.io/developers/engines#gemini)), which have the right endpoints and keys built in. Any other OpenAI-compatible server works with `baseURL`; check its documentation for model IDs and for which `structuredOutput` mode it supports.
 
 ## Decisions
 

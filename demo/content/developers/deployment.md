@@ -148,23 +148,23 @@ The login form JSON endpoint the `/auth/authorize` page loads, such as `https://
 
 | Variable | Default | Description |
 |---|---|---|
-| `LICENSE_KEY` | none | The Form.io license. It must include the UAG (see [Licensing](#licensing)) for a self-hosted Enterprise project, and for Agentic Formflow outside a hosted SaaS project. Form.io Enterprise reads the same variable, so one license can serve both. |
-| `UAG_LICENSE` | none | Deprecated, with a startup notice; it works until UAG 3.0. A second license, checked before `LICENSE_KEY`, which is used when it is missing, unusable, or does not include the UAG for the endpoint. |
+| `LICENSE_KEY` | none | The Form.io license. It must include the UAG (see [Licensing](#licensing)) for a self-hosted Enterprise project, for Agentic Formflow on a self-hosted project, and for the UAG's own database (`MONGO`). Form.io Enterprise reads the same variable, so one license can serve both. |
+| `UAG_LICENSE` | none | Deprecated, with a startup notice; it is still read until UAG 3.0. Use `LICENSE_KEY`. |
 | `LICENSE_REMOTE` | unset | `true` when the key is an offline (self-contained) license, so it is never sent to the license server. |
-| `LICENSE_SERVER` | `https://license.form.io` | The license server that validates other keys: one of Form.io's (`https://*.form.io`). |
+| `LICENSE_SERVER` | `https://license.form.io` | The Form.io license server that validates online keys. |
 
 ### Database, network and runtime
 
 | Variable | Default | Description |
 |---|---|---|
-| `MONGO` | none | The UAG's own database: run records for Action Logs, runs that survive a restart, and remote MCP sign-in. It holds only `uag-*` collections, never submissions, which stay in Form.io. Needs a license that includes the UAG, unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`); without one, the UAG starts with these features off and says so. |
+| `MONGO` | none | The UAG's own database: run records for Action Logs, runs that survive a restart, and remote MCP sign-in. It holds only `uag-*` collections, never submissions, which stay in Form.io. Needs a license that includes the UAG; without one, the UAG starts with these features off and says so. |
 | `UAG_DATABASE` | `uag` | The database the UAG uses on the `MONGO` connection, selected by name, so `MONGO` can be the connection string Form.io uses. A database of its own is recommended. |
 | `MONGO_CONFIG` | none | JSON options for the MongoDB driver. |
 | `TASK_RUN_RETENTION_DAYS` | `90` | Days a run record is kept. `0` keeps records forever. |
 | `CORS` | `true` | `true` allows every origin, `false` turns CORS off, and any other value is the allowed origin, or several separated by commas (`https://app.example.com,https://admin.example.com`). Restrict it before exposing the UAG. |
 | `MAX_BODY_SIZE` | `16mb` | Largest JSON request body the UAG accepts, the same as Form.io's. Bodies are parsed before authentication, so raise it only as far as the forms need. A form's agent operations and module routes have their own, smaller limit, `AGENT_BODY_LIMIT`, within this one. |
 | `AGENT_BODY_LIMIT` | `5242880` (5 MB) | Largest request body, in bytes, of a form's agent operations (`{form}/agent/*`) and of module routes. `agentApi.bodyLimit` in a module's `config` takes precedence. A larger body is refused with `413` and `code: "payload_too_large"`, naming the limit. `MAX_BODY_SIZE` still applies first. |
-| `NODE_TLS_REJECT_UNAUTHORIZED` | unset | `0` to accept a self-signed `PROJECT` certificate. Never on a deployment reachable from outside. A hosted project then needs a license. |
+| `NODE_TLS_REJECT_UNAUTHORIZED` | unset | `0` to accept a self-signed `PROJECT` certificate. Never on a deployment reachable from outside. |
 | `DEBUG` | unset | Debug logging, for example `formio:*` or `formio:uag*`. |
 | `AUTHORIZE_HTML` | the built-in page | With `MCP_OAUTH`: the HTML of the `/auth/authorize` sign-in page itself (not a path), in place of the built-in one. Read once, at startup. A module's `config.auth.authAppHtml` takes precedence. See [The login page](/developers/modules#the-login-page). |
 
@@ -190,10 +190,11 @@ None of these does anything until `UAG_ENGINES` names an engine. See [Engines](/
 | `UAG_ENGINE_PATH` | Absolute directories, separated by `:`, holding more engine packages (each with a `node_modules` folder). |
 | `TYPESAFE_API_KEY`, `TYPESAFE_MODEL`, `TYPESAFE_BASE_URL` | The `jev` engine. Pin `TYPESAFE_MODEL` to a dated version, such as `jev-1.13.0`. |
 | `CLAUDE_API_KEY` (or `ANTHROPIC_API_KEY`), `CLAUDE_MODEL`, `CLAUDE_EFFORT`, `CLAUDE_RESEARCH_EFFORT`, `CLAUDE_FALLBACKS`, `CLAUDE_MAX_TOKENS` | The `claude` engine. `CLAUDE_MODEL` defaults to `claude-opus-5-5`; set it explicitly. `CLAUDE_MAX_TOKENS` is the most output tokens one request may produce (default `16000`, up to `128000`). |
-| `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_BASE_URL`, `OPENAI_STRUCTURED_OUTPUT` | The `openai` engine, which also reaches OpenAI-compatible servers such as Ollama. `OPENAI_MODEL` has no default. `OPENAI_API_KEY` is sent only to OpenAI itself; an instance with a `baseURL` elsewhere takes its key from `UAG_ENGINE_<NAME>_API_KEY`. |
+| `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_BASE_URL`, `OPENAI_STRUCTURED_OUTPUT`, `OPENAI_KIND`, `OPENAI_API`, `OPENAI_REASONING_EFFORT` | The `openai` engine, which also reaches OpenAI-compatible servers such as Ollama. `OPENAI_MODEL` has no default. `OPENAI_KIND` is `agent` (the default) or `decision`, for OpenAI's Decisions API. `OPENAI_API` is `responses` or `chat` (default: `responses` for OpenAI itself, `chat` for any other server). `OPENAI_API_KEY` is sent only to OpenAI itself; an instance with a `baseURL` elsewhere takes its key from `UAG_ENGINE_<NAME>_API_KEY`. |
+| `OPENAI_ORG_ID`, `OPENAI_PROJECT_ID`, `OPENAI_CUSTOM_HEADERS` | OpenAI's own settings, sent only to OpenAI itself (`api.openai.com`), never to another `baseURL`, Grok or Gemini. |
 | `XAI_API_KEY`, `XAI_MODEL` | The `grok` engine. No default model. |
-| `GEMINI_API_KEY` (or `GOOGLE_API_KEY`), `GEMINI_MODEL` | The `gemini` engine. No default model. |
-| `UAG_ENGINE_<NAME>_URL`, `UAG_ENGINE_<NAME>_KEY`, `UAG_ENGINE_<NAME>_ENGINE` | A `remote` instance: the engine server's URL, its key (32+ characters, the server's `UAG_ENGINE_SERVER_KEY`), and the engine's name there when it differs. |
+| `GEMINI_API_KEY` (or `GOOGLE_API_KEY`), `GEMINI_MODEL`, `GEMINI_REASONING_EFFORT` | The `gemini` engine. No default model. |
+| `UAG_ENGINE_<NAME>_URL`, `UAG_ENGINE_<NAME>_KEY`, `UAG_ENGINE_<NAME>_ENGINE`, `UAG_ENGINE_<NAME>_TIMEOUT` | A `remote` instance: the engine server's URL, its key (32+ characters, the server's `UAG_ENGINE_SERVER_KEY`), the engine's name there when it differs, and the milliseconds for each attempt to describe the engine at startup (default `10000`). |
 
 A misconfigured engine (a type that is not installed, a duplicate name, a missing setting) stops startup with the instance named, rather than failing the first request.
 
@@ -227,30 +228,30 @@ Running against a self-hosted Enterprise project and Agentic Formflow are licens
 - **An online license**, validated with the Form.io license server like the Enterprise and PDF servers' licenses, whose key has the `uagServer` scope. The license allows a number of UAG servers, and each project endpoint a UAG serves counts as one; replicas of a UAG serving the same project count once. A UAG past that number is refused ("UAG server limit reached") and does not load its project. The Form.io portal lists the UAGs counted under UAG Servers.
 - **An offline license** (`LICENSE_REMOTE=true`) with the `uag` option. It is issued for the project it serves, so it has no count.
 
-**Which variable.** Put the license in `LICENSE_KEY`: Form.io Enterprise reads the same variable, so one Form.io license runs both. `UAG_LICENSE` still works, and is deprecated. With both set, a feature is on when either key grants it; `LICENSE_KEY` is only checked when `UAG_LICENSE` does not include the UAG for the endpoint, and the startup line names the key that licensed Agentic Formflow.
+**Which variable.** Put the license in `LICENSE_KEY`: Form.io Enterprise reads the same variable, so one Form.io license runs both. `UAG_LICENSE` is deprecated, and still read until UAG 3.0. The startup line names the key that licensed Agentic Formflow.
 
-**Running against a self-hosted Enterprise project.** The project needs a license that includes the UAG, and the license's endpoint allowlist must include `PROJECT`'s host. A project on the UAG's own machine (`localhost`) needs none. A project that fails the check does not load, and the UAG exits saying why ("Endpoint ... is not allowed for this license", for example). Trial licenses carry such allowlists, which is why the demo stack's self-hosted overlay (`docker-compose.enterprise.yml`) names its Form.io service `api-server`.
+**Running against a self-hosted Enterprise project.** The project needs a license that includes the UAG, and the license's endpoint allowlist must include `PROJECT`'s host. Otherwise the project does not load, and the UAG exits saying why ("Endpoint ... is not allowed for this license", for example). Trial licenses carry such allowlists, which is why the demo stack's self-hosted overlay (`docker-compose.enterprise.yml`) names its Form.io service `api-server`.
 
-**Agentic Formflow.** The Agent API's `extract`, `decide` and `generate`, the "Agent: Run task" action, the `agent_decide` and `agent_provide` MCP tools and `uag-eval` need a license that includes the UAG for the project's endpoint (any license allows `localhost`), wherever the project runs. Without it they run only:
+**Agentic Formflow.** The Agent API's `extract`, `decide` and `generate`, the "Agent: Run task" action, the `agent_decide` and `agent_provide` MCP tools and `uag-eval` need a license that includes the UAG for the project's endpoint on a self-hosted project, Open Source or Enterprise. Without it they run only:
 
-- against a project on Form.io's hosted SaaS (`reason: "hosted"`);
+- against a project on Form.io's hosted SaaS (`reason: "hosted"`), except `uag-eval`, which runs offline and needs `LICENSE_KEY` (see [Evaluation](/developers/evaluation));
 - with only the built-in stub engines (`reason: "stub-engines"`), which answer with placeholders, except `agent_decide` and `agent_provide`, which call no engine.
 
 Conversation forms need no license: the MCP tools and a form's [chat](/developers/chat) (`{form}/agent/chat`, which needs an agent engine) run on Form.io Open Source with an unlicensed UAG.
 
 Otherwise each Agentic Formflow request is refused with `403` and `code: "license_required"`. A Run task action that runs before the save refuses the submission the same way, so nothing is saved; one that runs after the save fails in the background, and the failure is logged. `GET /agent/capabilities` always answers with the current `edition` and `formflow.reason`.
 
-**The UAG's database** (`MONGO`) needs a license that includes the UAG on every edition, Form.io's hosted service included, unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`). See [The database](#the-database).
+**The UAG's database** (`MONGO`) needs a license that includes the UAG on every edition, Form.io's hosted service included, and so does remote MCP sign-in (`MCP_OAUTH`), which keeps its codes there. Without the license the database features stay off. See [The database](#the-database).
 
-**Hosted SaaS** projects need no license at all: they run under Form.io's own license, as the Enterprise edition. This applies to `https` endpoints on `form.io` or its subdomains, and not while `NODE_TLS_REJECT_UNAUTHORIZED=0`, `NODE_EXTRA_CA_CERTS`, `NODE_USE_SYSTEM_CA`, `--use-system-ca` or `--use-openssl-ca` is set. Leave `LICENSE_KEY` and `UAG_LICENSE` unset there unless the UAG has a database of its own, which needs one: with a key set, the project must be on that key's endpoint allowlist, or it does not load.
+**Hosted SaaS** projects (`https://*.form.io`) need no license, except for `uag-eval` and the UAG's own database: they run under Form.io's own license, as the Enterprise edition. Leave `LICENSE_KEY` and `UAG_LICENSE` unset there unless the UAG has a database of its own, which needs one: with a key set, the project must be on that key's endpoint allowlist, or it does not load.
 
-**How keys are validated.** An offline license is verified locally; set `LICENSE_REMOTE=true` for those. Any other key is validated with the Form.io license server. If the license server cannot be reached, the terms it last confirmed are trusted for 12 hours from that confirmation, while the UAG runs; after that the licensed features turn off until the server answers again, and an Enterprise project does not load until it can. A key it has never confirmed, and a restarted UAG, have no grace period. `LICENSE_SERVER` can name only Form.io's license servers (`https://*.form.io`). Online keys are not validated while `NODE_TLS_REJECT_UNAUTHORIZED=0`, `NODE_EXTRA_CA_CERTS` or `NODE_USE_SYSTEM_CA=1` is set; use an offline license there. The UAG checks online licenses again on its own schedule, so a revoked license is noticed without a restart.
+**How keys are validated.** An offline license is verified by the UAG itself; set `LICENSE_REMOTE=true` for one. Any other key is an online license, validated with the Form.io license server, so the UAG must be able to reach it; where it cannot, use an offline license.
 
 Contact [support@form.io](mailto:support@form.io) for a trial license.
 
 ## The database
 
-The UAG needs no database to run: Form.io stores every submission, and the UAG forwards them. A database of the UAG's own is optional, and turns on four features:
+The UAG needs no database to run: Form.io stores every submission, and the UAG forwards them. A database of the UAG's own is optional, and turns on three features:
 
 | Feature | Without the database |
 |---|---|
@@ -294,7 +295,7 @@ On a fresh database it writes its schema marker first, then creates its collecti
 
 ### The database's license
 
-Using the database needs a license that includes the UAG, on Open Source, Enterprise and Form.io's hosted service alike, unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`). A Compose stack runs them in separate containers, so it needs the license, as in the [custom module sample](../../samples/custom-module).
+Using the database needs a license that includes the UAG (`LICENSE_KEY`), on Open Source, Enterprise and Form.io's hosted service alike, as in the [custom module sample](../../samples/custom-module).
 
 Without the license, the UAG still starts, with the database features off. It creates and changes nothing in the database, closes the connection, and says why:
 
@@ -355,7 +356,7 @@ From 2.0.0, the UAG and the packages released with it (the engines, the engine S
 | `@formio/uag-gemini` | 2.x | >= 2.0.0 | Built on `@formio/uag-openai`. No default model. |
 | `@formio/uag-engines` | 2.x | >= 2.0.0 | The engine server. Docker image `formio/uag-engines`. |
 | `@formio/uag-js` | 2.x | >= 2.0.0 | The formio.js module, for the browser: saves `uag` forms through the UAG and adds Agent Input. Published on npm, and served by the UAG at `/uag-js/` (the image includes it). |
-| `@formio/uag-extras` | 1.x | >= 2.0.0-rc.7 | Versioned on its own: extras such as the AI Document module, document plugins and converters ([npm](https://www.npmjs.com/package/@formio/uag-extras)). Docker image `formio/uag-documents` (`:1`), an add-on that runs beside `formio/uag` and fills its plugins folder: see [AI Document](/developers/ai-document#run-it-with-docker). |
+| `@formio/uag-extras` | 1.x | >= 2.0.0-rc.9 | Versioned on its own, and needs Node.js 24 or later: extras such as the AI Document module, document plugins and converters ([npm](https://www.npmjs.com/package/@formio/uag-extras)). Docker image `formio/uag-documents` (`:1`), an add-on that runs beside `formio/uag` and fills its plugins folder: see [AI Document](/developers/ai-document#run-it-with-docker). |
 | `@formio/uag-claude` | 1.3.x | 1.12.0 – 1.13.x | The retired Claude integration, deprecated. Against 2.0 only its direct commands work: its `agent_provide_data` webhooks need 1.x. |
 | `@formio/uag-claude` | 1.2.x | 1.10.0 – 1.11.x | The retired Claude integration. |
 
@@ -365,7 +366,7 @@ For a reproducible deployment:
 
 - **Pin image tags.** The samples use the `rc` channel tag, which moves to each new release candidate. Production should pin `formio/uag:<version>` (and `formio/uag-engines:<version>`, `formio/formio-enterprise:<version>`). The `formio/uag-documents` add-on follows `@formio/uag-extras`'s versions: `:1` moves to each 1.x release; pin an exact one, such as `formio/uag-documents:1.0.0`.
 - **Pin models.** Set `CLAUDE_MODEL`, `TYPESAFE_MODEL` and the other model variables to specific versions. A new UAG release may change an engine's default, and answers differ between models. Run [`uag-eval`](/developers/evaluation) before changing one.
-- **Keep `@formio/appserver` current.** When embedding the UAG, it reaches `@formio/appserver-core` only through `@formio/appserver`, so there is one copy of it, which must be 2.26.0 or later; the UAG refuses to start with an older one, and says what to upgrade.
+- **Keep `@formio/appserver` current.** When embedding the UAG, it reaches `@formio/appserver-core` only through `@formio/appserver`, so there is one copy of it, which must be 2.26.4 or later; the UAG refuses to start with an older one, and says what to upgrade.
 - **Roll back** by pinning the previous image. Stored submissions are unaffected; UAG 1.x ignores the `metadata.uag.generated` provenance that 2.0 adds. See [MIGRATING-2.0.md](../../../MIGRATING-2.0.md) when upgrading from 1.x.
 
 ### A smaller image

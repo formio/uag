@@ -3,7 +3,7 @@
 # ../custom-module:
 #
 #   docker compose -f docker-compose.yml -f ../engines/ollama.yml up -d
-#   docker compose exec ollama ollama pull "$OLLAMA_MODEL"
+#   docker compose -f docker-compose.yml -f ../engines/ollama.yml exec ollama ollama pull <model>
 #
 # Set OLLAMA_MODEL in .env to a model that supports structured outputs, and tool
 # calling for tasks that research.

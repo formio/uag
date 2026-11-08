@@ -2,7 +2,8 @@
 # formio/uag: the UAG with every official engine (jev, claude, openai, grok,
 # gemini). Each engine is its own npm package with its own provider SDK;
 # UAG_ENGINES decides which run, and none does until it is named. For an image
-# with fewer engines, see "Building a smaller image" in the README.
+# with fewer engines, see "A smaller image" in the deployment guide:
+# https://ai.form.io/developers/deployment#a-smaller-image
 
 # Build stage
 # Node 24, not node:lts: Node 25 and later images ship without corepack,

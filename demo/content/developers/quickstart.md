@@ -32,7 +32,7 @@ services:
     volumes:
       - mongo-data:/data/db
 
-  # Form.io Community Edition. The container listens on 3001.
+  # Form.io Open Source. The container listens on 3001.
   formio:
     image: formio/formio
     restart: always
@@ -136,9 +136,9 @@ docker run -d --name formio-uag -p 3200:3200 \
   formio/uag:rc
 ```
 
-Hosted SaaS projects need no license: they run under Form.io's own license, as the Enterprise edition, and Agentic Formflow is allowed (`/agent/capabilities` reports `reason: "hosted"`). A license is needed only when you self-host Form.io Enterprise; see [Deployment](/developers/deployment#licensing).
+Hosted SaaS projects need no license: they run under Form.io's own license, as the Enterprise edition, and Agentic Formflow is allowed (`/agent/capabilities` reports `reason: "hosted"`). A license is needed when you self-host Form.io, for Form.io Enterprise or for Agentic Formflow; see [Deployment](/developers/deployment#licensing).
 
-> **Note:** A hosted project needs a license when `NODE_TLS_REJECT_UNAUTHORIZED=0`, `NODE_EXTRA_CA_CERTS` or `NODE_USE_SYSTEM_CA` is set. A database of the UAG's own (`MONGO`) needs a license that includes the UAG, unless the UAG, the project and the database all run on one machine (`localhost`, `*.localhost`, `lvh.me`).
+> **Note:** A database of the UAG's own (`MONGO`) needs a license that includes the UAG (`LICENSE_KEY`), with a hosted project too.
 
 In the commands below, a hosted project uses its own name in the `client_id` (`<project>-x-token`) and its API key as the secret: set `PROJECT_KEY` instead of `ADMIN_KEY`, send `-H "x-token: $PROJECT_KEY"` where a command sends `x-admin-key`, and where a step runs `docker compose up -d`, remove the container (`docker rm -f formio-uag`) and run the `docker run` command again with the new `-e` settings.
 

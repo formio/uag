@@ -2,7 +2,7 @@
 
 <sub>[Form.io UAG](../../../README.md) &rsaquo; [Demo](../../README.md) &rsaquo; this page</sub>
 
-This demonstrates how you can create your own custom modules to produce customized agent behaviors through the introduction of new Forms, Resources, Actions, and Configurations. This particular example, provides Employee's and Customers to an AI Agent where you can both onboard new Employees, and then they in turn can onboard new Customers. It uses the Open Source elements of [Form.io](https://form.io). Signing MCP clients in through the browser needs the UAG's own database, which needs a Form.io license that includes the UAG: set `LICENSE_KEY` before you start it.
+This demonstrates how you can create your own custom modules to produce customized agent behaviors through the introduction of new Forms, Resources, Actions, and Configurations. This particular example provides **Employee** and **Customer** resources to an AI Agent: Managers onboard new Employees, and Employees in turn onboard new Customers. It uses the Open Source elements of [Form.io](https://form.io). Signing MCP clients in through the browser needs the UAG's own database, which needs a Form.io license that includes the UAG: set `LICENSE_KEY` before you start it.
 
 ## Pre-requisites
 To run this example, there are a few things that you will need to have ready to go.
@@ -13,12 +13,12 @@ To run this example, there are a few things that you will need to have ready to 
 
 If you are using an AI Agent that only supports **Remote** MCP — one that dials into your UAG rather than running the MCP client itself — then that agent must be able to reach your UAG over the public internet, which for a local deployment means a tunnel such as NGROK. For this example, however, we will connect Claude to our locally running server using the Claude Desktop.
 
-Note that a tunnel is only needed for that remote case. If you are building automation rather than chatting — an "Agent: Run task" action, or your own application calling the UAG server-side — the MCP client runs alongside the UAG and connects *out* to it, so nothing needs to be publicly reachable. See [How Agents Connect](../../../README.md#how-agents-connect) for the distinction, and the [Agentic Workflow demo](https://ai.form.io/examples/workflow) for a deployment that works this way.
+Note that a tunnel is only needed for that remote case. If you are building automation rather than chatting — an "Agent: Run task" action, or your own application calling the UAG server-side — the MCP client runs alongside the UAG and connects *out* to it, so nothing needs to be publicly reachable. See [How agents connect](https://ai.form.io/developers/mcp-tools#how-agents-connect) for the distinction, and the [Agentic Workflow demo](https://ai.form.io/examples/workflow) for a deployment that works this way.
 
 ## Running the example
-To run the example, you will first need to change the password that is found within the docker-compose.yml file. Any text that says CHANGEME, change this to a secure password. You should also take note of the url provided to the **LOGIN_FORM** environment variable: the login page your browser loads. If you are publishing this via a web-accessible url, or if you are using NGROK, then change it to the URL your UAG is published at. For now, we will keep it at ***http://localhost:3000***.
+To run the example, you will first need to change the password that is found within the docker-compose.yml file. Any text that says CHANGEME, change this to a secure password. You should also take note of the url provided to the **LOGIN_FORM** environment variable: the login form your browser loads, here the module's **Employee Login** form. If you are publishing this via a web-accessible url, or if you are using NGROK, then change it to that form's URL at the address your UAG is published at (such as `https://uag.example.com/employee/login`). For now, we will keep it at ***http://localhost:3000/employee/login***.
 
-The UAG signs MCP clients in through the browser (`MCP_OAUTH=true`), which lets each person connect as themselves, a Manager or an Employee, with their own permissions. It keeps the sign-in codes in a database of its own (`MONGO`, here the stack's MongoDB, in a database named `uag` next to Form.io's). A database needs a license that includes the UAG (`LICENSE_KEY`, which the compose file passes to the UAG). Without one the UAG starts with sign-in off and says why in its log. Behind nginx, the UAG names its own address in its sign-in documents from the request (`TRUST_PROXY=1`), so it follows whatever URL you reach it at. One exception: nginx passes on the scheme it was reached by, so behind a tunnel, or a load balancer that ends TLS in front of nginx, the derived address starts with `http`. Set `BASE_URL` to the public `https` URL there.
+The UAG signs MCP clients in through the browser (`MCP_OAUTH=true`), which lets each person connect as themselves, a Manager or an Employee, with their own permissions. It keeps the sign-in codes in a database of its own (`MONGO`, here the stack's MongoDB, in a database named `uag` next to Form.io's). A database needs a license that includes the UAG (`LICENSE_KEY`, which the compose file passes to the UAG): set it in your shell, or in a `.env` file next to `docker-compose.yml`, before `docker compose up`. Behind nginx, the UAG names its own address in its sign-in documents from the request (`TRUST_PROXY=1`), so it follows whatever URL you reach it at. One exception: nginx passes on the scheme it was reached by, so behind a tunnel, or a load balancer that ends TLS in front of nginx, the derived address starts with `http`. Set `BASE_URL` to the public `https` URL there.
 
 Once you have modified the docker-compose.yml file, you can spin up the local UAG by typing the following.
 
@@ -26,7 +26,7 @@ Once you have modified the docker-compose.yml file, you can spin up the local UA
 docker compose up -d
 ```
 
-This will run the Form.io Community Edition server (behind an nginx front on port 3000) and MongoDB Community Edition locally while connecting the Form.io UAG to these systems. Once this is running, you can navigate to the following localhost url.
+This will run the Form.io Open Source server (behind an nginx front on port 3000) and MongoDB Community Edition locally while connecting the Form.io UAG to these systems. Once this is running, you can navigate to the following localhost url.
 
 http://localhost:3000
 
@@ -35,10 +35,10 @@ From here, you can navigate to that URL and you should see the OSS Portal where 
   - Email: admin@example.com
   - Password: [YOUR PASSWORD]
 
-Once logged in, you should see the Resources automatically created by the Module, which for this example is a **Customer** resource and an **Employee** resource. You will also see in the project an **Employee Login** form. This will allow you to add new "employees" that will have certain permissions to perform certain tasks. In this example, the Managers can onboard new Employees, and the Employees can onboard new "Customers".  If an "Employee" (non-manager) tries to create a new Employee, they should be rejected. This examples shows how you can create a project structure where certain users can do certain things with the AI Agent based on their permissions. To show how this works, we will first need to create an example Manager and an example Customer.
+Once logged in, you should see the Resources automatically created by the Module, which for this example is a **Customer** resource and an **Employee** resource. You will also see in the project an **Employee Login** form, which the people you add to the **Employee** resource sign in with, and the **Manager** and **Employee** roles, which decide what each of them may do. In this example, the Managers can onboard new Employees, and the Employees can onboard new "Customers".  If an "Employee" (non-manager) tries to create a new Employee, they should be rejected. This examples shows how you can create a project structure where certain users can do certain things with the AI Agent based on their permissions. To show how this works, we will first need to create an example Manager and an example Employee.
 
 ## Creating Manager and Employee
-To create a new Manager, you simply need to click on the **Employee** resource within the Form.io OSS portal. You will then click on the **Enter Data** tab. On this resource you will provide an **Email**, a temporary **Password** and then make sure to select a **Role** for that employee and then click submit. For this example, lets create a Manager and Employee with the following.
+To create a new Manager, you simply need to click on the **Employee** resource within the Form.io OSS portal. You will then click on the **Enter Data** tab. On this resource you will provide a **First Name**, **Last Name**, **Email** and a temporary **Password**, and then make sure to select a **Role** for that employee and then click submit. For this example, lets create a Manager and Employee with the following.
 
  - Manager:
    - First Name: Example
@@ -137,7 +137,7 @@ From this point forward, the AI Agent will use your configured Form.io Resources
 If you have upgrade your Claude to Pro level, or have onboarded your Enterprise through the Claude Enterprise Plan, you will want to deploy the UAG to a remote server with a Public URL. Once you do this, you will connect to the UAG through the Remote MCP connectors within the Claude AI portal.  To do this, we will open up Claude, and go to the "Connectors" section in the Settings and then click "Add Custom Connector". We will then need to provide the following.
 
  - Name:  Form.io UAG
- - Remote MCP Server URL:   <Your publicly hosted URL for UAG>
+ - Remote MCP Server URL:   <Your publicly hosted URL for UAG>/mcp (for example `https://uag.example.com/mcp`)
 
 <div align="center">
   <img src="../../public/images/claude-ai-add-connector.png" alt="Claude UI Connectors" width="600">

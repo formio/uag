@@ -1,6 +1,6 @@
 # @formio/uag-sdk
 
-<sub>[Form.io UAG](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/v2.0.0-rc.8/README.md#engines-and-routing) &rsaquo; this page</sub>
+<sub>[Form.io UAG](https://ai.form.io/developers) &rsaquo; [Engines](https://ai.form.io/developers/engines) &rsaquo; this page</sub>
 
 Build engine packages for the Form.io Universal Agent Gateway (UAG). This package contains:
 
@@ -13,9 +13,15 @@ Build engine packages for the Form.io Universal Agent Gateway (UAG). This packag
 
 An engine package depends on this package only. It never needs `@formio/uag`.
 
+```bash
+npm install @formio/uag-sdk@rc
+```
+
+The SDK requires Node.js 22 or later and has no dependencies. The full reference, with two complete example engines and their tests, is [Engine SDK](https://ai.form.io/developers/engine-sdk).
+
 ## An engine package
 
-Name the package `@formio/uag-<type>` (official engines) or `uag-engine-<type>` (anyone's). Export one engine type definition. It is a plugin of type `"engine"`: `name` is the type name used in `UAG_ENGINES`, `title` (default: `name`) is shown to people, and `version` defaults to your package's own version:
+Name the package `@formio/uag-<type>` (official engines) or `uag-engine-<type>` (anyone's). Export one engine type definition. It is a plugin of type `"engine"`: `name` is the type name used in `UAG_ENGINES`, `title` (default: `name`) is shown to people, `description` is an optional summary for operators, and `version` defaults to your package's own version:
 
 ```js
 const { defineEngine, EngineError, ENGINE_API_VERSION, requiredSchema } = require('@formio/uag-sdk');
@@ -26,13 +32,14 @@ module.exports = defineEngine({
     title: 'Acme',
     kinds: ['agent'],
     apiVersion: ENGINE_API_VERSION,
+    description: 'Acme models: structured extraction.',
     settings: {
         apiKey: { env: 'ACME_API_KEY', required: true, secret: true },
         model: { env: 'ACME_MODEL', default: 'acme-large-2026-09-01' },
         maxTokens: { env: 'ACME_MAX_TOKENS', type: 'number', default: 4000 },
     },
-    create({ name, settings }) {
-        const client = new AcmeClient({ apiKey: settings.apiKey });
+    create({ name, settings, options }) {
+        const client = options.client || new AcmeClient({ apiKey: settings.apiKey });
         return {
             name,
             kind: 'agent',
@@ -72,7 +79,7 @@ async generate({ instructions, system, attachments, format, maxTokens, signal, o
 `create` receives `{ name, settings, options, config, requireSetting }`:
 
 - `settings`: the instance's value for each declared setting that has one.
-- `options`: the instance's options as given in configuration, including ones that are not settings, such as a fake client in tests.
+- `options`: the instance's options as given in configuration, including ones that are not settings. Accept test doubles here (`options.client`, as in the example above), so tests, and the conformance check below, never call the real API.
 - `config`: the host's configuration, read-only, for example `routing.timeouts[name]`.
 - `requireSetting(key)`: a setting's value, or the standard "needs its setting" error, for a setting that is required only sometimes.
 
@@ -94,6 +101,7 @@ Each setting is resolved from the first of these that is set:
 | `secret` | The value is kept out of startup errors and capability discovery. Errors an engine throws while it runs are logged as they are, so never put a setting's value in one. |
 | `type` | `string` (the default), `number` or `boolean`. Values from the environment are converted. |
 | `default` | Used when nothing else is set. |
+| `description` | Documentation for operators. |
 
 ## Instances
 
@@ -124,13 +132,15 @@ const engines = await loadEngines(engineInstances(config, process.env), {
 });
 ```
 
-A type name is looked up in `types`, then as `@formio/uag-<type>`, then as `uag-engine-<type>`. Packages are looked up in the `node_modules` of the host's installation and of the directories above it (where Node finds the host's own dependencies), then in `<dir>/node_modules` of each absolute directory in `UAG_ENGINE_PATH`. Never in the working directory, `NODE_PATH` or Node's global folders, and a package whose entry point resolves outside its own directory is refused. Nothing is ever installed. Engine packages are loaded with `require()`: CommonJS, or ES modules on Node 22.12 or later. Each result is `{ engine, type, package, version }`, which is what `Formflow.engineRegistry` takes.
+A type name is looked up in `types`, then as `@formio/uag-<type>`, then as `uag-engine-<type>`. Packages are looked up in the `node_modules` of the host's installation and of the directories above it (where Node finds the host's own dependencies), then in `<dir>/node_modules` of each absolute directory in `UAG_ENGINE_PATH`. Never in the working directory, `NODE_PATH` or Node's global folders, and a package whose entry point resolves outside its own directory is refused. Nothing is ever installed. Engine packages are loaded with `require()`: CommonJS, or ES modules on Node 22.12 or later. Each result is `{ engine, type, title, kinds, typeVersion, package, version }` (`typeVersion` when the definition sets `version`; `package` and `version` when the type came from a package), which is what `Formflow.engineRegistry` takes.
+
+`planEngines(instances, options)` takes the same arguments and does the same resolving and checking, but creates nothing: for each instance it returns the result's fields without `engine`, plus `name`, `definition`, `args` (what to pass to the definition's `create`) and `failure(err)`, which words a failure to start as the loader does, with secret values left out. It is for a host that creates the engines itself. `createEngine(definition, { name, options, env, config })` resolves the settings and creates one instance, as the UAG does.
 
 Every definition is checked structurally, so a package built with another copy of this SDK, or with none, loads too. A package built for another engine contract version is refused, and the error names both versions.
 
 ## Errors
 
-Throw `EngineError` for a failure whose message the caller may see, such as "Quota exceeded for this API key." Any other error is reported to API callers only as "the engine failed (see the logs for request X)", because provider SDK errors can carry URLs and account details.
+Throw `EngineError` for a failure whose message the caller may see, such as "Quota exceeded for this API key." Any other error is reported to API callers only as "the engine failed (see the logs for request X)" (on an engine server, "The engine failed (see the engine server logs)."), because provider SDK errors can carry URLs and account details.
 
 ## Helpers
 

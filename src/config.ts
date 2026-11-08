@@ -160,8 +160,7 @@ export interface UAGConfig extends ServerConfig {
   /**
    * The UAG's own database (`MONGO`, `UAG_DATABASE`, `MONGO_CONFIG`,
    * `TASK_RUN_RETENTION_DAYS`), for remote MCP sign-in and durable task runs.
-   * It needs a license that includes the UAG, unless the project and the
-   * database are both on development hosts.
+   * It needs a license that includes the UAG.
    */
   database?: UAGDatabaseOptions
 }
