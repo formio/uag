@@ -71,6 +71,18 @@ describe('The release check', function () {
         expect(result.output).to.contain('@formio/uag-sdk is version 2.0.1, not 2.0.0. Run `yarn release:version 2.0.0`.');
     });
 
+    it('checks a workspace named by its folder, and not the folders inside it', () => {
+        write('package.json', JSON.stringify({ name: '@formio/uag', version: '2.0.0', license: 'MIT', workspaces: ['packages/*', 'demo'], dependencies: { '@formio/uag-sdk': '^2.0.0' } }));
+        write('demo/package.json', JSON.stringify({ name: '@formio/uag-demo', version: '2.0.0', private: true }));
+        write('demo/uag-module/package.json', JSON.stringify({ private: true, main: 'index.js' }));
+        const passed = check();
+        expect(passed.status, passed.output).to.equal(0);
+        write('demo/package.json', JSON.stringify({ name: '@formio/uag-demo', version: '1.14.0', private: true }));
+        const refused = check();
+        expect(refused.status).to.equal(1);
+        expect(refused.output).to.contain('@formio/uag-demo is version 1.14.0, not 2.0.0');
+    });
+
     describe('a prerelease', () => {
         const release = (version: string, range: string) => {
             write('package.json', JSON.stringify({ name: '@formio/uag', version, license: 'MIT', workspaces: ['packages/*'], dependencies: { '@formio/uag-sdk': range } }));
