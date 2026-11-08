@@ -32,12 +32,13 @@ const read = (path) => JSON.parse(readFileSync(new URL(path, root), 'utf8'));
 
 const uag = read('package.json');
 const workspaces = [];
+// `dir/*` patterns name a folder of packages, others one package.
 for (const pattern of uag.workspaces || []) {
-    const base = pattern.replace(/\/\*$/, '');
-    for (const dir of readdirSync(new URL(`${base}/`, root))) {
-        if (existsSync(new URL(`${base}/${dir}/package.json`, root))) {
-            workspaces.push({ dir: `${base}/${dir}`, pkg: read(`${base}/${dir}/package.json`) });
-        }
+    const dirs = pattern.endsWith('/*')
+        ? readdirSync(new URL(`${pattern.slice(0, -2)}/`, root)).map((dir) => `${pattern.slice(0, -2)}/${dir}`)
+        : [pattern];
+    for (const dir of dirs) {
+        if (existsSync(new URL(`${dir}/package.json`, root))) workspaces.push({ dir, pkg: read(`${dir}/package.json`) });
     }
 }
 const packages = [{ dir: '.', pkg: uag }, ...workspaces];
