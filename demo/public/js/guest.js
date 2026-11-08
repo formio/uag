@@ -11,7 +11,8 @@
 // data-uag-url, data-uag-project-url, data-project-url.
 (function () {
   if (window.UAGDemoGuest) return;
-  var KEY = 'uag-demo-guest';
+  // Where the guest is kept in localStorage.
+  var STORED_AS = 'uag-demo-guest';
   // A token this close to expiring is not used: a demo started now would fail part way.
   var MARGIN_MS = 5 * 60 * 1000;
 
@@ -22,7 +23,7 @@
 
   function read() {
     try {
-      var guest = JSON.parse(localStorage.getItem(KEY) || 'null');
+      var guest = JSON.parse(localStorage.getItem(STORED_AS) || 'null');
       if (guest && guest.token && guest.expires > Date.now() + MARGIN_MS) return guest;
     }
     catch (e) { /* storage unavailable */ }
@@ -30,7 +31,7 @@
   }
 
   function save(guest) {
-    try { localStorage.setItem(KEY, JSON.stringify(guest)); } catch (e) { /* storage unavailable */ }
+    try { localStorage.setItem(STORED_AS, JSON.stringify(guest)); } catch (e) { /* storage unavailable */ }
   }
 
   /** When a Form.io token expires, from its `exp` claim; an hour from now if it cannot be read. */
@@ -74,7 +75,7 @@
   }
 
   function clear() {
-    try { localStorage.removeItem(KEY); } catch (e) { /* storage unavailable */ }
+    try { localStorage.removeItem(STORED_AS); } catch (e) { /* storage unavailable */ }
     if (window.Formio && typeof window.Formio.setToken === 'function') {
       try { window.Formio.setToken(null); } catch (e) { /* formio.js not ready */ }
     }

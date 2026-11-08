@@ -7,7 +7,7 @@ order: 30
 
 An agentic workflow runs a form's tasks with no person in the loop. The application sends its submissions to the UAG, which forwards each one to Form.io. An **Agent: Run task** action on the form runs one of the form's [tasks](/developers/concepts#tasks) on the submission, before the save or after it, and the UAG saves the task's answers. A task's save is an update, and an update can start the next task. The instructions live in the form, so changing what an agent does is a form edit, not a deployment.
 
-This page builds the college application workflow from the [demo site's project](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/module/project.json): an `admissions` task scores each application and decides, and a `finance` task assigns a scholarship award to the applicants admissions puts on the scholarship track. See it running at [/examples/workflow](/examples/workflow).
+This page builds the college application workflow from the [demo site's project](../../module/project.json): an `admissions` task scores each application and decides, and a `finance` task assigns a scholarship award to the applicants admissions puts on the scholarship track. See it running at [/examples/workflow](/examples/workflow).
 
 > **Tip:** Build this workflow in your own project with the [admissions workflow prompt](https://github.com/formio/ai/blob/main/examples/agents/admissions-workflow.md) and the [Agentic Coding Plugin](/developers/agentic-coding). Its `formio-uag` skill adds the "Agent: Run task" actions in a project template, a UAG module or a portal stage connected to the UAG.
 

@@ -192,6 +192,6 @@ More on [Chat widget](/developers/chat#troubleshooting).
 Run one of the samples to confirm the environment itself is sound, then compare its configuration with yours:
 
 - [Quickstart](/developers/quickstart) for a minimal stack.
-- The [demo stack](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo), with conversation forms and workflows, and the [custom module sample](https://github.com/formio/uag/tree/v2.0.0-rc.8/demo/samples/custom-module).
+- The [demo stack](../..), with conversation forms and workflows, and the [custom module sample](../../samples/custom-module).
 
 To report a bug, include the `@formio/uag` version from `/status`, the `X-Request-Id` of a failing request and the matching log lines. Report security issues privately; see [Security](/developers/security#reporting-a-vulnerability).

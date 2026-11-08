@@ -2,6 +2,12 @@
  * The Developers section: Markdown pages in content/developers, rendered with
  * marked into the site layout, with a sidebar built from their front matter
  * and an "On this page" list built from their headings.
+ *
+ * A page links to a file of the repository by its relative path
+ * (`../../samples/custom-module`), which GitHub resolves on any branch; the
+ * site turns it into a link to that path at the release the site is built for
+ * (`source` for a folder, `sourceFile` for a file). `{{releaseTag}}` in a code
+ * block becomes that release's tag (`git clone -b {{releaseTag}} ...`).
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -39,7 +45,28 @@ export function parseFrontMatter(source) {
 
 const CALLOUT = /^<p><strong>(Note|Warning|Tip|Important):?<\/strong>:?\s*/i;
 
-function renderPage(body) {
+const DEFAULT_SOURCE = {
+    source: 'https://github.com/formio/uag/tree/main',
+    sourceFile: 'https://github.com/formio/uag/blob/main',
+    releaseTag: 'main',
+};
+
+/**
+ * Where a page's relative link to a repository file points on the site, and the
+ * repository path it names (`null` for a link that is not to a repository file).
+ */
+export function sourceLink(href, { dir, repoRoot, source, sourceFile }) {
+    if (!href || /^(?:[a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) return null;
+    const [, pathname, rest] = /^([^?#]*)(.*)$/.exec(href);
+    const repoPath = path.relative(repoRoot, path.resolve(dir, pathname)).split(path.sep).join('/');
+    if (!repoPath || repoPath.startsWith('..')) return null;
+    const full = path.join(repoRoot, repoPath);
+    const folder = fs.existsSync(full) && fs.statSync(full).isDirectory();
+    return { href: `${folder ? source : sourceFile}/${repoPath}${rest}`, repoPath };
+}
+
+function renderPage(body, context) {
+    const sources = [];
     const headings = [];
     const used = new Map();
     const marked = new Marked({ gfm: true });
@@ -64,10 +91,17 @@ function renderPage(body) {
             image(token) {
                 return `<a class="image-link" href="${escapeHtml(token.href)}" target="_blank" rel="noopener">${Renderer.prototype.image.call(this, token)}</a>`;
             },
+            link(token) {
+                const linked = sourceLink(token.href, context);
+                if (!linked) return Renderer.prototype.link.call(this, token);
+                sources.push(linked.repoPath);
+                return Renderer.prototype.link.call(this, { ...token, href: linked.href });
+            },
             table(token) {
                 return `<div class="table-wrap">${Renderer.prototype.table.call(this, token)}</div>`;
             },
-            code({ text, lang }) {
+            code({ text: raw, lang }) {
+                const text = raw.replaceAll('{{releaseTag}}', context.releaseTag);
                 const language = (lang || '').split(/\s/)[0];
                 if (language === 'sequence' || language === 'pipeline') {
                     const svg = (language === 'sequence' ? sequence : pipeline)(text);
@@ -82,12 +116,24 @@ function renderPage(body) {
         },
     });
     const html = marked.parse(body);
-    return { html, headings };
+    return { html, headings, sources };
 }
 
 export class Docs {
-    constructor(dir) {
+    /**
+     * `source`, `sourceFile` and `releaseTag` (the site's `links`) say where links
+     * to repository files point; `repoRoot` is the repository (three folders up
+     * from content/developers).
+     */
+    constructor(dir, { source, sourceFile, releaseTag, repoRoot } = {}) {
         this.dir = dir;
+        this.context = {
+            dir,
+            repoRoot: repoRoot || path.resolve(dir, '..', '..', '..'),
+            source: source || DEFAULT_SOURCE.source,
+            sourceFile: sourceFile || DEFAULT_SOURCE.sourceFile,
+            releaseTag: releaseTag || DEFAULT_SOURCE.releaseTag,
+        };
         this.load();
     }
 
@@ -98,7 +144,7 @@ export class Docs {
                 if (!file.endsWith('.md') || file === 'README.md') continue;
                 const slug = file.replace(/\.md$/, '');
                 const { meta, body } = parseFrontMatter(fs.readFileSync(path.join(this.dir, file), 'utf8'));
-                const { html, headings } = renderPage(body);
+                const { html, headings, sources } = renderPage(body, this.context);
                 pages.set(slug, {
                     slug,
                     href: slug === 'index' ? '/developers' : `/developers/${slug}`,
@@ -108,6 +154,7 @@ export class Docs {
                     order: Number(meta.order) || 100,
                     html,
                     headings,
+                    sources,
                 });
             }
         }

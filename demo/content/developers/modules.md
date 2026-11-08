@@ -473,7 +473,7 @@ toolOverrides: { fetch_external_data: { name: '' } }
 
 Every built-in tool answers the model with a rendered [Lodash template](https://lodash.com/docs/4.17.15#template). Templates are Markdown with `<%= value %>` (insert), `<%- value %>` (insert, HTML-escaped) and `<% code %>` (JavaScript, for loops and conditions); `_` is Lodash inside a template.
 
-`config.responseTemplates` maps template names to template source. A name that matches a built-in template replaces it; any other name adds a template your tools can render with `project.mcpResponse(name, data)`. The built-in templates are the `.md` files in [`src/templates`](https://github.com/formio/uag/tree/v2.0.0-rc.8/src/templates), one per name.
+`config.responseTemplates` maps template names to template source. A name that matches a built-in template replaces it; any other name adds a template your tools can render with `project.mcpResponse(name, data)`. The built-in templates are the `.md` files in [`src/templates`](../../../src/templates), one per name.
 
 ```js
 const fs = require('fs');
@@ -487,7 +487,7 @@ responseTemplates: {
 }
 ```
 
-To change a built-in template, copy its file from `src/templates` and edit it. The data it receives is whatever its tool passes; read the tool in [`src/tools`](https://github.com/formio/uag/tree/v2.0.0-rc.8/src/tools) for the exact shape. For example, `get_forms` renders `getAvailableForms` with:
+To change a built-in template, copy its file from `src/templates` and edit it. The data it receives is whatever its tool passes; read the tool in [`src/tools`](../../../src/tools) for the exact shape. For example, `get_forms` renders `getAvailableForms` with:
 
 ```js
 {
@@ -684,7 +684,7 @@ A replacement page must:
    ```
 4. Follow the `redirect` URL in the response: `{ "redirect": "<redirect_uri>?code=…&state=…" }`.
 
-The UAG answers `400` when `jwt` or `code_challenge` is missing or the `redirect_uri` is not allowed, and `401` when the Form.io project does not confirm the token. The [custom module example's `authorize.html`](https://github.com/formio/uag/blob/v2.0.0-rc.8/demo/samples/custom-module/module/authorize.html) is a complete page to start from: a Bootstrap layout around the same login flow.
+The UAG answers `400` when `jwt` or `code_challenge` is missing or the `redirect_uri` is not allowed, and `401` when the Form.io project does not confirm the token. The [custom module example's `authorize.html`](../../samples/custom-module/module/authorize.html) is a complete page to start from: a Bootstrap layout around the same login flow.
 
 The example module loads its `authorize.html` exactly this way, with `auth: { authAppHtml: fs.readFileSync(path.join(__dirname, 'authorize.html'), 'utf8') }`.
 

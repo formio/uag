@@ -304,4 +304,4 @@ What the UAG makes of it:
 
 ## Earlier names
 
-Tasks were called personas before UAG 2.0, and 2.0 removed the old names: the MCP tools take `task` (and `agent_provide_data` is `agent_provide`), `uag-eval` takes `--task`, and the Agent API refuses a body that names `persona` and no `task`. See [MIGRATING-2.0.md](https://github.com/formio/uag/blob/v2.0.0-rc.8/MIGRATING-2.0.md).
+Tasks were called personas before UAG 2.0, and 2.0 removed the old names: the MCP tools take `task` (and `agent_provide_data` is `agent_provide`), `uag-eval` takes `--task`, and the Agent API refuses a body that names `persona` and no `task`. See [MIGRATING-2.0.md](../../../MIGRATING-2.0.md).

@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Docs, SECTIONS, parseFrontMatter, slugify } from '../lib/docs.mjs';
+import { Docs, SECTIONS, parseFrontMatter, slugify, sourceLink } from '../lib/docs.mjs';
 import { PAGES } from '../lib/pages.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -38,6 +38,30 @@ describe('Demo site content', function () {
             expect(SECTIONS, file).to.include(meta.section);
         }
         expect(docs.get('index')).to.exist;
+    });
+
+    it('links a relative path to the repository file at the release the site is built for', function () {
+        const context = { dir: path.join(root, 'content/developers'), repoRoot: path.resolve(root, '..'), source: 'https://example.test/tree/v9', sourceFile: 'https://example.test/blob/v9' };
+        expect(sourceLink('../../samples/custom-module', context).href).to.equal('https://example.test/tree/v9/demo/samples/custom-module');
+        expect(sourceLink('../../../engines/claude/README.md#upgrading-from-1x', context).href).to.equal('https://example.test/blob/v9/engines/claude/README.md#upgrading-from-1x');
+        for (const href of ['/developers/chat', '#anchor', 'https://form.io', 'mailto:a@example.test', '../../../../outside']) {
+            expect(sourceLink(href, context), href).to.equal(null);
+        }
+        const built = new Docs(path.join(root, 'content/developers'), { ...context, releaseTag: 'v9' });
+        const page = built.get('connect-claude');
+        expect(page.html).to.include('href="https://example.test/tree/v9/demo/samples/custom-module"');
+        expect(page.html).to.include('git clone -b v9 ');
+        expect(page.html).not.to.include('{{releaseTag}}');
+    });
+
+    it('links to repository files by relative paths that exist, never to a tag or a branch', function () {
+        const repoRoot = path.resolve(root, '..');
+        const missing = docs.ordered.flatMap((page) => page.sources.filter((repoPath) => !fs.existsSync(path.join(repoRoot, repoPath))).map((repoPath) => `${page.href}: ${repoPath}`));
+        expect(missing).to.deep.equal([]);
+        expect(docs.ordered.some((page) => page.sources.length)).to.equal(true);
+        const pinned = fs.readdirSync(path.join(root, 'content/developers')).filter((name) => name.endsWith('.md') && name !== 'README.md')
+            .filter((name) => /github\.com\/formio\/uag\/(?:tree|blob)\//.test(fs.readFileSync(path.join(root, 'content/developers', name), 'utf8')));
+        expect(pinned).to.deep.equal([]);
     });
 
     it('links only to pages, anchors and files that exist', function () {
