@@ -1,0 +1,34 @@
+# Splits the demo's UAG further. Add it to docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.split.yml up -d --build
+#
+#   uag-engines the engine server: JEV and Claude, with their API keys, so the
+#               UAG holds no model keys. Private.
+#
+# Needs ENGINE_SERVER_KEY in .env as well.
+services:
+  uag-engines:
+    build: { context: .., dockerfile: packages/engine-server/Dockerfile }
+    image: ${ENGINES_IMAGE:-formio/uag-engines:demo}
+    restart: always
+    environment:
+      UAG_ENGINES: jev,claude
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:?set TYPESAFE_API_KEY in .env}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:?set CLAUDE_API_KEY in .env}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-5-5}
+      UAG_ENGINE_SERVER_KEY: ${ENGINE_SERVER_KEY:?set ENGINE_SERVER_KEY in .env (32+ characters)}
+      # Research calls the UAG's /mcp.
+      UAG_SERVER: http://formio-uag:3200
+
+  formio-uag:
+    depends_on:
+      uag-engines: { condition: service_started }
+    environment:
+      # Both engines run on the engine server; the UAG holds no model keys.
+      UAG_ENGINES: jev:remote,claude:remote
+      UAG_ENGINE_JEV_URL: http://uag-engines:3300
+      UAG_ENGINE_JEV_KEY: ${ENGINE_SERVER_KEY}
+      UAG_ENGINE_CLAUDE_URL: http://uag-engines:3300
+      UAG_ENGINE_CLAUDE_KEY: ${ENGINE_SERVER_KEY}
+      TYPESAFE_API_KEY: ""
+      CLAUDE_API_KEY: ""

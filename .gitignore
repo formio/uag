@@ -1,5 +1,7 @@
 node_modules/
 lib/
+# The demo site's build-time modules are source, not build output.
+!demo/lib/
 dist/
 .DS_Store
 .claude
@@ -14,3 +16,12 @@ dist/
 .pnp.*
 !.yarnrc.yml
 *.log
+
+# OpenSpec artifacts live in @formio/appserver-core, never here.
+openspec/
+
+# Python bytecode (demo/recordings helpers)
+__pycache__/
+
+# The local HTTPS load balancer's root certificate (demo/README.md)
+demo/caddy-root.crt

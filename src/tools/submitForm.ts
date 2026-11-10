@@ -8,7 +8,7 @@ import { SchemaBuilder } from "./SchemaBuilder";
 import { creates } from './annotations';
 const debug = require('debug')('formio:uag:submitForm');
 export const submitCompletedForm = async (project: UAGProjectInterface): Promise<ToolInfo> => {
-    return defaultsDeep(project.config?.toolOverrides?.submit_completed_form || {}, {
+    return defaultsDeep({}, project.config?.toolOverrides?.submit_completed_form, {
         name: 'submit_completed_form',
         title: 'Submit Completed Form',
         description: 'Submit the completed form data. Should only be used once all the required fields have been collected, and the user has explicitly confirmed submission (e.g. has said "submit", "send", "done", etc)',

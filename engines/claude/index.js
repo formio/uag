@@ -1,0 +1,270 @@
+/**
+ * Claude agent engine for the UAG Agent API.
+ *
+ *   UAG_ENGINES=claude                 CLAUDE_API_KEY=...
+ *   UAG_ENGINES=fast:claude,deep:claude
+ *     UAG_ENGINE_FAST_MODEL=claude-haiku-5-5   UAG_ENGINE_DEEP_MODEL=claude-opus-5-5
+ *
+ * Every call streams, so long answers need no request timeout of their own.
+ *
+ * extract() makes one call with structured outputs (`output_config.format`),
+ * so the answer is valid JSON for the requested fields. When the UAG passes
+ * read-only tools (a task that enables research), it first runs a tool-use
+ * loop over them - calls go through the UAG's `callTool`, which enforces the
+ * task's tool list and the caller's permissions - and then asks for the same
+ * structured answer with tools turned off.
+ *
+ * generate() writes free text over attached documents (PDFs as document
+ * blocks, text as text documents), before the instructions, with the last
+ * document marked for the prompt cache so a retry with the same documents
+ * reads them from the cache. It reports progress as the answer streams.
+ */
+const { defineEngine, EngineConfigError, EngineError, ENGINE_API_VERSION, requiredSchema, toolResultText } = require('@formio/uag-sdk');
+
+const DEFAULT_MODEL = 'claude-opus-5-5';
+const MAX_TOKENS = 16000;
+/** The most output a request may ask for: Claude's largest output limit. */
+const MAX_TOKENS_CEILING = 128000;
+const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
+const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
+
+/** The text of a response, from its text blocks. */
+function textOf(message) {
+    return (message.content || []).filter((block) => block.type === 'text').map((block) => block.text).join('\n').trim();
+}
+
+/** A refusal ends the attempt as an engine failure, so routing can fall back. */
+function assertNotRefused(message) {
+    if (message.stop_reason === 'refusal') {
+        const category = message.stop_details && message.stop_details.category;
+        throw new EngineError(`Claude declined the request${category ? ` (${category})` : ''}.`);
+    }
+}
+
+/**
+ * Run one tool call through the UAG's `callTool`. A call that throws, other
+ * than because the request was aborted, goes back to Claude as a tool error
+ * instead of failing the extraction.
+ */
+async function runTool(request, name, args) {
+    try {
+        return await request.callTool(name, args);
+    }
+    catch (err) {
+        if (request.signal && request.signal.aborted) throw err;
+        return { content: [{ type: 'text', text: 'The tool call failed.' }], isError: true };
+    }
+}
+
+function checkEffort(name, key, value) {
+    if (!EFFORTS.includes(value)) {
+        throw new EngineConfigError(`The "${name}" engine's ${key} setting must be one of ${EFFORTS.join(', ')}, not ${JSON.stringify(value)}.`);
+    }
+    return value;
+}
+
+module.exports = defineEngine({
+    type: 'engine',
+    name: 'claude',
+    title: 'Claude',
+    kinds: ['agent'],
+    apiVersion: ENGINE_API_VERSION,
+    description: 'Claude: structured extraction, with research over read-only tools.',
+    settings: {
+        apiKey: { env: ['CLAUDE_API_KEY', 'ANTHROPIC_API_KEY'], required: true, secret: true },
+        model: { env: 'CLAUDE_MODEL', default: DEFAULT_MODEL },
+        effort: { env: 'CLAUDE_EFFORT', default: 'low', description: 'Effort for extraction.' },
+        researchEffort: { env: 'CLAUDE_RESEARCH_EFFORT', default: 'medium', description: 'Effort for research with tools.' },
+        fallbacks: { env: 'CLAUDE_FALLBACKS', default: 'default', description: '"default" re-runs a refused request on a fallback model server-side; "off" turns that off.' },
+        maxTokens: {
+            env: 'CLAUDE_MAX_TOKENS',
+            default: String(MAX_TOKENS),
+            description: `The most output tokens one request may produce (1 to ${MAX_TOKENS_CEILING}). Raise it for long values, such as a document transcribed into a rich text field, together with the engine's routing timeout.`
+        },
+    },
+    create({ name, settings, options }) {
+        const { model } = settings;
+        const extractEffort = checkEffort(name, 'effort', settings.effort);
+        const researchEffort = checkEffort(name, 'researchEffort', settings.researchEffort);
+        if (!['default', 'off'].includes(settings.fallbacks)) {
+            throw new EngineConfigError(`The "${name}" engine's fallbacks setting must be "default" or "off", not ${JSON.stringify(settings.fallbacks)}.`);
+        }
+        const fallbacks = settings.fallbacks === 'default';
+        const maxTokens = Number(settings.maxTokens);
+        if (!Number.isInteger(maxTokens) || maxTokens < 1 || maxTokens > MAX_TOKENS_CEILING) {
+            throw new EngineConfigError(`The "${name}" engine's maxTokens setting must be a whole number from 1 to ${MAX_TOKENS_CEILING}, not ${JSON.stringify(settings.maxTokens)}.`);
+        }
+
+        let client = options.client;
+        if (!client) {
+            const Anthropic = require('@anthropic-ai/sdk');
+            const AnthropicClass = Anthropic.default || Anthropic;
+            // Retries stay small: the UAG's routing timeout aborts the request (via
+            // the signal) and falls back to the next engine before retries pile up.
+            client = new AnthropicClass({
+                apiKey: settings.apiKey,
+                maxRetries: 2,
+                // The SDK refuses to start in a "browser-like environment". Inside
+                // the UAG, Form.io's libraries install `window`/`document` shims,
+                // so allow it only when actually running on Node; a real browser is
+                // still refused.
+                dangerouslyAllowBrowser: typeof process !== 'undefined' && !!(process.versions && process.versions.node)
+            });
+        }
+
+        /**
+         * One Messages call, streamed, with the server-side refusal fallback
+         * unless turned off. `onText` receives each piece of text as it arrives.
+         */
+        function create(params, signal, onText) {
+            if (signal) signal.throwIfAborted();
+            const body = { model, max_tokens: maxTokens, ...params };
+            const stream = fallbacks
+                ? client.beta.messages.stream({ ...body, betas: [FALLBACK_BETA], fallbacks: 'default' }, { signal })
+                : client.messages.stream(body, { signal });
+            if (onText) stream.on('text', onText);
+            return stream.finalMessage();
+        }
+
+        /** A document block for one attachment: PDF bytes, or text. */
+        function documentBlock(attachment) {
+            if (attachment.kind === 'pdf') {
+                return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: Buffer.from(attachment.data).toString('base64') }, title: attachment.label };
+            }
+            return { type: 'document', source: { type: 'text', media_type: 'text/plain', data: attachment.text }, title: attachment.label };
+        }
+
+        /**
+         * Look up what the fields need with the read-only tools, appending every
+         * turn to `messages` (append-only, thinking blocks included). Stops when
+         * Claude stops calling tools, or at the iteration limit.
+         */
+        async function research(request, tools, messages, count) {
+            const toolCalls = [];
+            messages[0].content += '\n\nYou may first call the listed tools to look up information the fields need. The tools only read; nothing you do is saved.';
+            for (let iteration = 0; iteration < (request.maxIterations || 10); iteration++) {
+                const message = await create({
+                    system: request.instructions,
+                    messages,
+                    tools,
+                    output_config: { effort: researchEffort }
+                }, request.signal);
+                count(message);
+                assertNotRefused(message);
+                // A turn cut off at the token limit may end in a tool call with no
+                // result, which the API refuses on the next call.
+                if (message.stop_reason === 'max_tokens') {
+                    throw new EngineError('Claude stopped at the token limit while researching.');
+                }
+                messages.push({ role: 'assistant', content: message.content });
+                if (message.stop_reason === 'pause_turn') {
+                    continue;
+                }
+                if (message.stop_reason !== 'tool_use') {
+                    break;
+                }
+                const uses = message.content.filter((block) => block.type === 'tool_use');
+                // Run the calls of one turn concurrently, and return every result in
+                // one message, recording the calls in the order Claude made them.
+                const results = await Promise.all(uses.map(async (use) => {
+                    const result = await runTool(request, use.name, use.input || {});
+                    return { type: 'tool_result', tool_use_id: use.id, content: toolResultText(result), ...(result.isError && { is_error: true }) };
+                }));
+                uses.forEach((use, i) => toolCalls.push({ name: use.name, isError: !!results[i].is_error }));
+                messages.push({ role: 'user', content: results });
+            }
+            messages.push({ role: 'user', content: 'Now give the answer: one JSON object keyed by field path.' });
+            return toolCalls;
+        }
+
+        return {
+            name,
+            kind: 'agent',
+            apiVersion: ENGINE_API_VERSION,
+            model,
+            toolUse: true,
+            accepts: ['text', 'pdf'],
+
+            async generate(request) {
+                const content = (request.attachments || []).map(documentBlock);
+                // A retry with the same documents reads them from the prompt cache.
+                if (content.length) content[content.length - 1].cache_control = { type: 'ephemeral' };
+                content.push({ type: 'text', text: request.instructions });
+                const system = [request.system, request.format === 'text' ? 'Answer in plain text, without Markdown.' : ''].filter(Boolean).join('\n\n');
+                const limit = Math.min(request.maxTokens || maxTokens, MAX_TOKENS_CEILING);
+                let chars = 0;
+                const message = await create({
+                    ...(system && { system }),
+                    max_tokens: limit,
+                    messages: [{ role: 'user', content }]
+                }, request.signal, request.onProgress && ((delta) => {
+                    chars += String(delta || '').length;
+                    request.onProgress(chars);
+                }));
+                assertNotRefused(message);
+                return {
+                    text: textOf(message),
+                    model: message.model || model,
+                    stopReason: message.stop_reason === 'max_tokens' ? 'max_tokens' : 'end',
+                    ...(message.usage && { usage: { inputTokens: message.usage.input_tokens ?? null, outputTokens: message.usage.output_tokens ?? null } })
+                };
+            },
+
+            async extract(request) {
+                const { schema, decode } = requiredSchema(request.schema);
+                const messages = [{
+                    role: 'user',
+                    content: [
+                        'Information:',
+                        JSON.stringify(request.state, null, 2),
+                        '',
+                        'Fields to fill in (path, label, rule, format and allowed options):',
+                        JSON.stringify(request.fields, null, 2),
+                        '',
+                        'Return one JSON object keyed by field path. For a field the information does not support, give an empty string, or an empty list for a list.'
+                    ].join('\n')
+                }];
+                const usage = { inputTokens: 0, outputTokens: 0 };
+                const count = (message) => {
+                    usage.inputTokens += (message.usage && message.usage.input_tokens) || 0;
+                    usage.outputTokens += (message.usage && message.usage.output_tokens) || 0;
+                };
+                const tools = (request.tools || []).map((tool) => ({ name: tool.name, description: tool.description, input_schema: tool.inputSchema }));
+                const toolCalls = tools.length ? await research(request, tools, messages, count) : undefined;
+                // The answer: structured output, with tools turned off. The tools stay
+                // declared because the history may hold tool_use and tool_result blocks.
+                const message = await create({
+                    system: request.instructions,
+                    messages,
+                    ...(tools.length && { tools, tool_choice: { type: 'none' } }),
+                    output_config: {
+                        effort: extractEffort,
+                        format: { type: 'json_schema', schema }
+                    }
+                }, request.signal);
+                count(message);
+                assertNotRefused(message);
+                if (message.stop_reason === 'max_tokens') {
+                    throw new EngineError('Claude stopped at the token limit before finishing the answer.');
+                }
+                let answer;
+                try {
+                    answer = JSON.parse(textOf(message) || '{}');
+                }
+                catch {
+                    throw new EngineError('Claude did not return valid JSON.');
+                }
+                // Only the fields asked: the schema should ensure it, but never pass on more.
+                const asked = new Set(Object.keys((request.schema && request.schema.properties) || {}));
+                const values = Object.fromEntries(Object.entries(decode(answer)).filter(([path]) => asked.has(path)));
+                const single = message.usage && { inputTokens: message.usage.input_tokens ?? null, outputTokens: message.usage.output_tokens ?? null };
+                return {
+                    model: message.model || model,
+                    values,
+                    ...(tools.length ? { usage } : single && { usage: single }),
+                    ...(toolCalls && { toolCalls })
+                };
+            }
+        };
+    },
+});

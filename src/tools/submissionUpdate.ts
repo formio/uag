@@ -7,7 +7,7 @@ import { SchemaBuilder } from './SchemaBuilder';
 import { overwrites } from './annotations';
 const error = require('debug')('formio:uag:submissionUpdate:error');
 export const submissionUpdate = async (project: UAGProjectInterface): Promise<ToolInfo> => {
-    return defaultsDeep(project.config?.toolOverrides?.submission_update || {}, {
+    return defaultsDeep({}, project.config?.toolOverrides?.submission_update, {
         name: 'submission_update',
         title: 'Submission Update',
         description: 'Apply multiple planned field updates to a selected submission after the user confirmed they wish to update the record.',
@@ -40,10 +40,11 @@ export const submissionUpdate = async (project: UAGProjectInterface): Promise<To
                 const updateSummary = [];
                 for (const update of updates) {
                     const previousValue = get(updatedData, update.data_path);
-                    set(updatedData, update.data_path, update.new_value);
+                    const newValue = form.normalizeWrittenValue(update.data_path, update.new_value);
+                    set(updatedData, update.data_path, newValue);
                     updateSummary.push({
                         data_path: update.data_path,
-                        new_value: update.new_value,
+                        new_value: newValue,
                         previous_value: previousValue || ''
                     });
                 }

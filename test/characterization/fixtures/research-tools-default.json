@@ -1,0 +1,93 @@
+[
+  [
+    {
+      "name": "get_forms",
+      "description": "Get a list of all available forms with their descriptions. Use this tool when a user expresses intent to add, create, submit, fill out, register for something (e.g., \"I want to add a new Contact\", \"I need to submit a User Registration\", \"I met a contact who was the CMO\", \"What was the email of the contact\"). This tool can also be used when they ask what forms are available.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "find_submissions",
+      "description": "Find existing form submissions based on field values (search query). Use this to search for people, records, or data by name, email, phone, position, company, or other field values. Examples: find a contact by name, find someone who works at a company, find records with specific criteria. To retrieve the total count of records within a form, use this tool without providing a `search_query`.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "form_name": {
+            "type": "string",
+            "enum": [
+              "contact"
+            ],
+            "description": "The name of the form being filled out"
+          },
+          "search_query": {
+            "description": "Array of search criteria to find matching submissions. All criteria must match (AND logic). Do not provide this parameter to get the total count of submissions without retrieving the submission details.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "data_path": {
+                  "type": "string",
+                  "description": "The `data_path` (or \"full path\") to a component's instance value within a form submission (e.g., \"customer.firstName\"). Use `get_form_fields` to find the `data_path` of this component."
+                },
+                "operator": {
+                  "default": "contains",
+                  "description": "The operator to use for matching. \"equals\" for exact match, \"contains\" for substring match, \"starts_with\" or \"ends_with\" for prefix/suffix match, \"regex\" for regular expression match, \"greater_than\" or \"less_than\" only for numeric values, \"in\" if searching for multiple values as comma-separated values, \"nin\" if excluding multiple values as comma-separated values.",
+                  "type": "string",
+                  "enum": [
+                    "equals",
+                    "not_equals",
+                    "contains",
+                    "starts_with",
+                    "ends_with",
+                    "regex",
+                    "in",
+                    "nin",
+                    "greater_than",
+                    "greater_than_equal",
+                    "less_than",
+                    "less_than_equal"
+                  ]
+                },
+                "search_value": {
+                  "type": "string",
+                  "description": "The value of the field to use when searching."
+                }
+              },
+              "required": [
+                "data_path",
+                "search_value"
+              ],
+              "description": "Object containing the `data_path` and search value. Use `get_form_fields` to get all the field information to populate this search query object."
+            }
+          },
+          "fields_requested": {
+            "description": "An array of `data_path`(s) for values you wish to include in the result. If not provided, only submission IDs and timestamps are returned. (e.g., [\"employee.email\"] - \"What is the email address for the employee Joe Smith?\")",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "The `data_path` (or \"full path\") to a component's instance value within a form submission (e.g., \"customer.firstName\"). Use `get_form_fields` to find the `data_path` of this component."
+            }
+          },
+          "limit": {
+            "default": 5,
+            "description": "The maximum number of results to return. Defaults to 5.",
+            "type": "number"
+          },
+          "submission_id": {
+            "description": "The full ID of the submission to retrieve details for. This value is provided using the `find_submissions` tool.",
+            "type": "string"
+          },
+          "submission_id_partial": {
+            "description": "Last 4 characters of a specific submission ID. Should ONLY be used when multiple matches are found from a previous query and the user provides the last 4 characters of the Submission ID to disambiguate.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "form_name"
+        ]
+      }
+    }
+  ]
+]

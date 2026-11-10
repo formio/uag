@@ -1,0 +1,85 @@
+# The UAG the demo site (ai.form.io) embeds: the Universal Agent Gateway alone,
+# on the demo's project on Form.io's hosted service (FORMIO_PROJECT_URL,
+# https://uag.form.io), with the JEV and Claude engines and their keys inside it.
+#
+# The site itself is static files (yarn demo:build; S3 + CloudFront, see
+# deploy/site.yml), whose pages call this UAG from the browser, as each visitor's
+# guest user of the project. So the UAG is public: publish it at its own host
+# name (uag.ai.form.io) behind your load balancer, which ends TLS, and set
+# DEMO_SITE_ORIGIN to the site's origin, the only one its CORS allows.
+#
+# Beside it, the AI Document add-on (formio/uag-documents) fills the volume the
+# UAG mounts at /app/plugins/documents with the AI Document module and the
+# document plugins, which the AI Document demo (/examples/documents) needs; it
+# runs at each "up" and exits.
+#
+# The project's forms are not created here: the UAG uses the forms already in
+# the project (module/project.json is their template; scripts/setup.mjs imports it).
+#
+#   cp .env.example .env     # then fill it in
+#   docker compose up -d --build
+#
+# More layouts, added to this file with -f:
+#
+#   docker-compose.split.yml       the engines on their own engine server, so the
+#                                  UAG holds no model keys.
+#   docker-compose.enterprise.yml  the project on a self-hosted Form.io Enterprise
+#                                  server in the stack, created by a setup job
+#                                  (needs LICENSE_KEY).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.split.yml up -d --build
+#
+# Build from this folder; the images are built from the repository root.
+name: uag-demo
+
+x-uag-image: &uag-image ${UAG_IMAGE:-formio/uag:demo}
+
+services:
+  # Runs once at each "up" and exits; no restart policy.
+  uag-documents:
+    image: ${UAG_DOCUMENTS_IMAGE:-formio/uag-documents:1}
+    volumes:
+      - uag-documents:/out
+
+  formio-uag:
+    build: { context: .., dockerfile: Dockerfile }
+    image: *uag-image
+    restart: always
+    depends_on:
+      uag-documents:
+        condition: service_completed_successfully
+        restart: true
+    ports:
+      # Bound to this machine only by default. Set UAG_BIND to the private address
+      # your load balancer reaches.
+      - "${UAG_BIND:-127.0.0.1}:${UAG_PORT:-3200}:3200"
+    volumes:
+      # The AI Document module and the document plugins, from the add-on.
+      - uag-documents:/app/plugins/documents:ro
+      # The demo's rate limits (uag-module/index.js).
+      - ./uag-module:/app/module:ro
+    environment:
+      PORT: 3200
+      PROJECT: ${FORMIO_PROJECT_URL:-https://uag.form.io}
+      PROJECT_KEY: ${PROJECT_KEY:?set PROJECT_KEY in .env}
+      # No license: a project on Form.io's hosted service needs none, and a key
+      # that does not list its endpoint would stop it loading.
+      # docker-compose.enterprise.yml adds LICENSE_KEY for a self-hosted project.
+      JWT_SECRET: ${UAG_JWT_SECRET:?set UAG_JWT_SECRET in .env}
+      JWT_EXPIRE_TIME: 60
+      PROJECT_TTL: ${PROJECT_TTL:-300}
+      PROJECT_RETRIES: 30
+      # Browsers may call it from the site only.
+      CORS: ${DEMO_SITE_ORIGIN:-https://ai.form.io}
+      # Proxy hops in front of the UAG that add to X-Forwarded-For.
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      # JSON in the shape of agentApi.rateLimits, replacing uag-module's.
+      DEMO_RATE_LIMITS: ${DEMO_RATE_LIMITS:-}
+      # The engines run inside the UAG, with their keys.
+      UAG_ENGINES: jev,claude
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:?set TYPESAFE_API_KEY in .env}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:?set CLAUDE_API_KEY in .env}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-5-5}
+
+volumes:
+  uag-documents:
