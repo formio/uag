@@ -58,7 +58,7 @@ npx uag
 
 Install the package before running `npx uag`: without it, `npx` fetches an unrelated npm package named `uag`. Install the engine packages the user enables next to it (`npm install @formio/uag-claude`).
 
-For anything beyond a single container, start from a Docker Compose stack: the README's [Quickstart](./README.md#quickstart) (Form.io Open Source and the UAG in one file), or the [custom module sample](./demo/samples/custom-module) (Form.io Open Source, MongoDB and the UAG with a module), with the [engine setups](./demo/samples/engines) to add engines. They use untagged images (`formio/uag`, `formio/uag-engines`), which follow the newest release; pin an exact version (`formio/uag:2.0.0`) for production. Do not start from `demo/`: it is the demo site's own deployment.
+For anything beyond a single container, start from a Docker Compose stack: the README's [Quickstart](./README.md#quickstart) (Form.io Open Source and the UAG in one file), or the [custom module sample](./demo/samples/custom-module) (Form.io Open Source, MongoDB and the UAG with a module), with the [engine setups](./demo/samples/engines) to add engines. They use untagged images (`formio/uag`, `formio/uag-engines`), which follow the newest release; pin an exact version (`formio/uag:2.0.0`) for production. Do not start from `demo/`: it is the demo site.
 
 ## Making forms visible to agents
 

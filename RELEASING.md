@@ -1,6 +1,6 @@
 # Releasing
 
-Every package in this repository is released together, at one version: `@formio/uag`, the engine SDK, the engines, the engine server, `@formio/uag-js` and the demo. A pushed version tag (`v2.0.0-rc.1` or `2.0.0-rc.1`) runs [`.github/workflows/publish.yml`](.github/workflows/publish.yml), which tests, builds, publishes and deploys them. The tag can be on any branch: tag a pull request's branch to publish a release candidate for testing before it is merged.
+Every package in this repository is released together, at one version: `@formio/uag`, the engine SDK, the engines, the engine server, `@formio/uag-js` and the demo. A pushed version tag (`v2.0.0-rc.1` or `2.0.0-rc.1`) runs [`.github/workflows/publish.yml`](.github/workflows/publish.yml), which tests, builds and publishes them. The tag can be on any branch: tag a pull request's branch to publish a release candidate for testing before it is merged.
 
 ## Steps
 
@@ -29,7 +29,6 @@ The release check (`scripts/check-release.mjs`) refuses a package out of step wi
 | `DOCKERHUB_USERNAME` | variable | Docker Hub sign-in, to push `formio/uag` and `formio/uag-engines`. |
 | `DOCKERHUB_TOKEN` | secret | Docker Hub sign-in: an access token of that account. |
 | `MCP_PRIVATE_KEY` | secret | Signing in to the MCP Registry as `form.io` (DNS authentication), to publish `server.json` for a release. |
-| `DEPLOY_TEST_HOOK_URL`, `DEPLOY_TEST_HOOK_TOKEN`, `DEPLOY_PRODUCTION_HOOK_URL`, `DEPLOY_PRODUCTION_HOOK_TOKEN` | secrets, optional | The deployment hooks (see [Deployment](#deployment)). |
 
 npm needs no token: CI publishes through npm's Trusted Publishing (see [A new package](#a-new-package)), which needs the job's `id-token: write` permission and no `NODE_AUTH_TOKEN`.
 
@@ -55,32 +54,9 @@ To check them without releasing, run the workflow by hand: **Actions → Publish
 | `formio/uag` | `:2.0.0` and `:latest` | `:2.0.0-rc.2` and `:rc` |
 | `formio/uag-engines` | `:2.0.0` and `:latest` | `:2.0.0-rc.2` and `:rc` |
 | MCP Registry (`server.json`) | published | skipped |
-| Deployment hook | production | test |
 
 A failed run can be rerun ("Re-run failed jobs"): a package npm already has at the version is skipped, as is the `formio/uag-engines` image when Docker Hub has it; the `formio/uag` image is built and pushed again. An image build that runs longer than 30 minutes fails instead of hanging: the arm64 half is built under QEMU, which can crash and hang.
 
-## Deployment
-
-The last step asks an environment to deploy the new images: a prerelease goes to test, a release to production. Each is optional; set the environment's hook as secrets (of the repository or the `production` environment), and the step does nothing for an environment without one:
-
-| Secret | Purpose |
-|---|---|
-| `DEPLOY_TEST_HOOK_URL`, `DEPLOY_TEST_HOOK_TOKEN` | The test environment's hook, and its bearer token if it needs one. |
-| `DEPLOY_PRODUCTION_HOOK_URL`, `DEPLOY_PRODUCTION_HOOK_TOKEN` | Production's. |
-
-The hook receives a `POST` with JSON:
-
-```json
-{
-  "environment": "test",
-  "version": "2.0.0-rc.1",
-  "tag": "v2.0.0-rc.1",
-  "commit": "<sha>",
-  "images": { "uag": "formio/uag:2.0.0-rc.1" }
-}
-```
-
-To deploy the demo's UAG, use [`demo/deploy/docker-compose.yml`](demo/deploy/docker-compose.yml): its `formio-uag` service follows `formio/uag` (the newest release), or set its `image` to the release's tag to pin it, then run `docker compose pull && docker compose up -d` from `demo/deploy`. The demo site itself is static files, published by its own workflow ([`site.yml`](.github/workflows/site.yml); see [demo/README.md](demo/README.md#hosting)).
 
 ## A new package
 
