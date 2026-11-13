@@ -15,7 +15,7 @@ The UAG is a long-lived HTTP server you deploy next to a Form.io project. It is 
 |---|---|---|
 | **Docker image** `formio/uag` | Almost always | Includes the UAG and every official engine (`jev`, `claude`, `openai`, `grok`, `gemini`). Listens on `PORT` (default 3200). |
 | **Docker Compose** | Running Form.io and the UAG together, or with an engine server | The samples are Compose stacks. |
-| **`npx uag`** | A Node.js host without Docker | Install `@formio/uag@rc` and the engine packages you need. Reads the same environment, plus `UAG_MODULE` and `UAG_PLUGINS`. |
+| **`npx uag`** | A Node.js host without Docker | Install `@formio/uag` and the engine packages you need. Reads the same environment, plus `UAG_MODULE` and `UAG_PLUGINS`. |
 | **Embedded in Express** | Your own Node.js application hosts the UAG | `new UAGServer(config)`; see [Node.js API](/developers/node-api). |
 
 Outside Docker, the UAG needs Node.js 22 or newer, and Node must run with `--no-node-snapshot` (the `uag` command adds it itself) because `isolated-vm`, which runs form logic, requires it.
@@ -27,14 +27,14 @@ docker run -d --name formio-uag --restart unless-stopped -p 3200:3200 \
   -e PROJECT=https://forms.example.com \
   -e ADMIN_KEY=... \
   -e JWT_SECRET=... \
-  formio/uag:rc
+  formio/uag
 ```
 
 The image starts `node --no-node-snapshot index.js`, which loads the module in `/app/module`, then the plugins folder `/app/plugins` when it exists (or what `UAG_PLUGINS` names). Mount your own [module](/developers/modules) at `/app/module` to add forms, actions, tools and configuration, and a folder with an `index.mjs` of [plugins](/developers/plugins) in a folder under `/app/plugins` to add converters and document processes:
 
 ```bash
-docker run -v "$PWD/module:/app/module" ... formio/uag:rc
-docker run -v "$PWD/my-plugins:/app/plugins/my-plugins:ro" ... formio/uag:rc
+docker run -v "$PWD/module:/app/module" ... formio/uag
+docker run -v "$PWD/my-plugins:/app/plugins/my-plugins:ro" ... formio/uag
 ```
 
 For AI Document, the `formio/uag-documents` add-on brings the plugins for you: it runs beside the UAG and copies its plugins folder into a volume the UAG mounts at `/app/plugins/documents`. Each add-on, and each folder of your own, is a folder under `/app/plugins`; the UAG loads them all. See [AI Document: Run it with Docker](/developers/ai-document#run-it-with-docker) and [Plugins: Add-ons](/developers/plugins#add-ons) for Compose, `docker run` and Kubernetes.
@@ -67,7 +67,7 @@ services:
       interval: 5s
       retries: 60
   formio-uag:
-    image: formio/uag:rc
+    image: formio/uag
     depends_on:
       api-server: { condition: service_healthy }
     environment:
@@ -356,7 +356,7 @@ From 2.0.0, the UAG and the packages released with it (the engines, the engine S
 | `@formio/uag-gemini` | 2.x | >= 2.0.0 | Built on `@formio/uag-openai`. No default model. |
 | `@formio/uag-engines` | 2.x | >= 2.0.0 | The engine server. Docker image `formio/uag-engines`. |
 | `@formio/uag-js` | 2.x | >= 2.0.0 | The formio.js module, for the browser: saves `uag` forms through the UAG and adds Agent Input. Published on npm, and served by the UAG at `/uag-js/` (the image includes it). |
-| `@formio/uag-extras` | 1.x | >= 2.0.0-rc.9 | Versioned on its own, and needs Node.js 24 or later: extras such as the AI Document module, document plugins and converters ([npm](https://www.npmjs.com/package/@formio/uag-extras)). Docker image `formio/uag-documents` (`:1`), an add-on that runs beside `formio/uag` and fills its plugins folder: see [AI Document](/developers/ai-document#run-it-with-docker). |
+| `@formio/uag-extras` | 1.x | >= 2.0.0 | Versioned on its own, and needs Node.js 24 or later: extras such as the AI Document module, document plugins and converters ([npm](https://www.npmjs.com/package/@formio/uag-extras)). Docker image `formio/uag-documents` (`:1`), an add-on that runs beside `formio/uag` and fills its plugins folder: see [AI Document](/developers/ai-document#run-it-with-docker). |
 | `@formio/uag-claude` | 1.3.x | 1.12.0 – 1.13.x | The retired Claude integration, deprecated. Against 2.0 only its direct commands work: its `agent_provide_data` webhooks need 1.x. |
 | `@formio/uag-claude` | 1.2.x | 1.10.0 – 1.11.x | The retired Claude integration. |
 
@@ -364,7 +364,7 @@ From 2.0.0, the UAG and the packages released with it (the engines, the engine S
 
 For a reproducible deployment:
 
-- **Pin image tags.** The samples use the `rc` channel tag, which moves to each new release candidate. Production should pin `formio/uag:<version>` (and `formio/uag-engines:<version>`, `formio/formio-enterprise:<version>`). The `formio/uag-documents` add-on follows `@formio/uag-extras`'s versions: `:1` moves to each 1.x release; pin an exact one, such as `formio/uag-documents:1.0.0`.
+- **Pin image tags.** The samples use untagged images (`latest`), which move to each new release. Production should pin `formio/uag:<version>` (and `formio/uag-engines:<version>`, `formio/formio-enterprise:<version>`). The `formio/uag-documents` add-on follows `@formio/uag-extras`'s versions: `:1` moves to each 1.x release; pin an exact one, such as `formio/uag-documents:1.0.0`.
 - **Pin models.** Set `CLAUDE_MODEL`, `TYPESAFE_MODEL` and the other model variables to specific versions. A new UAG release may change an engine's default, and answers differ between models. Run [`uag-eval`](/developers/evaluation) before changing one.
 - **Keep `@formio/appserver` current.** When embedding the UAG, it reaches `@formio/appserver-core` only through `@formio/appserver`, so there is one copy of it, which must be 2.26.4 or later; the UAG refuses to start with an older one, and says what to upgrade.
 - **Roll back** by pinning the previous image. Stored submissions are unaffected; UAG 1.x ignores the `metadata.uag.generated` provenance that 2.0 adds. See [MIGRATING-2.0.md](../../../MIGRATING-2.0.md) when upgrading from 1.x.
@@ -379,7 +379,7 @@ WORKDIR /app
 # isolated-vm, which runs form logic, compiles on install.
 RUN apk add --no-cache make python3 g++
 # @formio/uag-js is what the UAG serves at /uag-js/ (uag.use.js, the portal script).
-RUN npm install --omit=dev @formio/uag@rc @formio/uag-claude@rc @formio/uag-js@rc
+RUN npm install --omit=dev @formio/uag @formio/uag-claude @formio/uag-js
 
 FROM node:24-alpine
 WORKDIR /app

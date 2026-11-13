@@ -12,7 +12,7 @@
  * Engines are found among the installed packages, so a custom image holds only
  * the engines it installs:
  *
- *   npm install @formio/uag@rc @formio/uag-claude@rc
+ *   npm install @formio/uag @formio/uag-claude
  *   UAG_ENGINES=claude CLAUDE_API_KEY=... npx uag
  */
 // Before anything else, so a module that reads the environment sees .env too.

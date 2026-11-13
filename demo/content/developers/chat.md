@@ -40,16 +40,16 @@ Chat is part of conversation forms: it works on Form.io Open Source with no UAG 
 
 ## Get it
 
-The chat is part of `@formio/uag-js` 2.x (`npm install @formio/uag-js@rc` for the 2.0 release candidate), with formio.js 5 (`@formio/js` 5.x). Registering the module with `Formio.use(UAG(...))` registers the chat display and `Formio.createChat`, beside the submission routing and Agent Input described in [JavaScript (formio.js)](/developers/renderer). `uag-js.css` holds the chat's default styles. The form view (Review form, Edit in form) is an ordinary formio.js form, so load your framework's CSS as for any form: Bootstrap 5 for formio.js's default templates.
+The chat is part of `@formio/uag-js` 2.x (`npm install @formio/uag-js`), with formio.js 5 (`@formio/js` 5.x). Registering the module with `Formio.use(UAG(...))` registers the chat display and `Formio.createChat`, beside the submission routing and Agent Input described in [JavaScript (formio.js)](/developers/renderer). `uag-js.css` holds the chat's default styles. The form view (Review form, Edit in form) is an ordinary formio.js form, so load your framework's CSS as for any form: Bootstrap 5 for formio.js's default templates.
 
 With script tags:
 
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/uag-js@rc/uag-js.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/uag-js@2/uag-js.css">
 <script src="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@formio/uag-js@rc/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@formio/uag-js@2/index.js"></script>
 
 <div id="chat"></div>
 <script>

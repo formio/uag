@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.0
+
+The first stable release of UAG 2.0. It brings together the release candidates below, 2.0.0-rc.1 through 2.0.0-rc.11, and needs `@formio/appserver` 2.26.4 or later. Coming from 1.x, read the introduction to 2.0.0-rc.6 and [MIGRATING-2.0.md](./MIGRATING-2.0.md) before upgrading.
+
+### Changed
+
+- Untagged images and packages now resolve to 2.x: `formio/uag`, `formio/uag-engines` and every `@formio/uag*` package are published as `latest`. The documentation, samples and Docker Compose files use them instead of the `rc` channel (`:rc`, `@rc`), and jsDelivr links use `@formio/uag-js@2`. Pin an exact version, such as `formio/uag:2.0.0`, in production. 1.x stays available as `formio/uag:1.13.2` and `@formio/uag@1`.
+
 ## 2.0.0-rc.11
 
 ### Removed

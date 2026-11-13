@@ -7,7 +7,7 @@ The TypeSafe **Jev** decision engine for the [UAG Agent API](https://ai.form.io/
 It is included in the `formio/uag` Docker image. With the UAG installed from npm, install it next to it:
 
 ```bash
-npm install @formio/uag-jev@rc
+npm install @formio/uag-jev
 ```
 
 Enable it by naming it, and set its key:
@@ -48,7 +48,7 @@ Routing lists name the instances: `routing.decision: ["next", "jev"]`.
 Behavior differs between Jev versions. Keep `model` at a dated version, and run `uag-eval` on your own labeled examples before changing it or any threshold. `uag-eval --engine jev` works from a checkout of the UAG repository or inside the `formio/uag` image:
 
 ```
-docker run --rm --entrypoint node -v "$PWD:/data" -e TYPESAFE_API_KEY -e LICENSE_KEY formio/uag:rc \
+docker run --rm --entrypoint node -v "$PWD:/data" -e TYPESAFE_API_KEY -e LICENSE_KEY formio/uag \
   --no-node-snapshot bin/uag-eval.js --form /data/claim.json --examples /data/claim-examples.json \
   --engine jev --project <your project URL>
 ```

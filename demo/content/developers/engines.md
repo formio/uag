@@ -153,8 +153,8 @@ Engines are enabled before the UAG serves anything. Any of these stops startup w
 {
   "requestId": "6f1c…",
   "engines": [
-    { "name": "jev", "kind": "decision", "model": "jev-1.13.0", "type": "jev", "package": "@formio/uag-jev", "version": "2.0.0-rc.7" },
-    { "name": "deep", "kind": "agent", "model": "claude-opus-5-5", "type": "claude", "package": "@formio/uag-claude", "version": "2.0.0-rc.7" }
+    { "name": "jev", "kind": "decision", "model": "jev-1.13.0", "type": "jev", "package": "@formio/uag-jev", "version": "2.0.0" },
+    { "name": "deep", "kind": "agent", "model": "claude-opus-5-5", "type": "claude", "package": "@formio/uag-claude", "version": "2.0.0" }
   ],
   "operations": {
     "extract": { "available": true, "engines": ["jev", "deep"] },
@@ -256,7 +256,7 @@ FROM node:24-alpine AS build
 WORKDIR /app
 # isolated-vm, which runs form logic, compiles on install.
 RUN apk add --no-cache make python3 g++
-RUN npm install --omit=dev @formio/uag@rc @formio/uag-claude@rc
+RUN npm install --omit=dev @formio/uag @formio/uag-claude
 
 FROM node:24-alpine
 WORKDIR /app
@@ -445,7 +445,7 @@ Claude's key and traffic stay in their own container. The UAG sends the engine s
 ```yaml
 services:
   uag-engines:
-    image: formio/uag-engines:rc
+    image: formio/uag-engines
     restart: always
     environment:
       UAG_ENGINES: claude

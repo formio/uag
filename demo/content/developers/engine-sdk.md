@@ -19,7 +19,7 @@ This page is the complete reference for the contract, then two full example engi
 | `@formio/uag-sdk/protocol` | The remote engine protocol's checks, used by the `remote` type and the engine server. See [Engine server](/developers/engine-server). |
 
 ```bash
-npm install @formio/uag-sdk@rc
+npm install @formio/uag-sdk
 ```
 
 The SDK requires Node.js 22 or later and has no dependencies.
@@ -495,7 +495,7 @@ uag-engine-keywords/
   "files": ["index.js"],
   "engines": { "node": ">=22.0.0" },
   "scripts": { "test": "node --test" },
-  "dependencies": { "@formio/uag-sdk": "^2.0.0-rc.7" }
+  "dependencies": { "@formio/uag-sdk": "^2.0.0" }
 }
 ```
 
@@ -876,7 +876,7 @@ With `toolRounds: 5` and the conformance check's `maxIterations: 2`, the two res
 | An engine server | Install it there the same ways; the UAG reaches it with `UAG_ENGINES=keywords:remote`. See [Engine server](/developers/engine-server). |
 
 ```dockerfile
-FROM formio/uag:rc
+FROM formio/uag
 RUN npm install --prefix /engines uag-engine-keywords
 ENV UAG_ENGINE_PATH=/engines
 ```
@@ -885,7 +885,7 @@ ENV UAG_ENGINE_PATH=/engines
 
 ## Versions
 
-`ENGINE_API_VERSION` is `1` in `@formio/uag-sdk` 2.x, and every UAG 2.x supports it. Depend on `@formio/uag-sdk@^2.0.0-rc.7`, the first release with this definition shape, which also matches 2.0.0 and later 2.x releases. A future contract version will be refused by older hosts with an error that names both versions, rather than failing at the first request.
+`ENGINE_API_VERSION` is `1` in `@formio/uag-sdk` 2.x, and every UAG 2.x supports it. Depend on `@formio/uag-sdk@^2.0.0`, the first release with this definition shape, which also matches 2.0.0 and later 2.x releases. A future contract version will be refused by older hosts with an error that names both versions, rather than failing at the first request.
 
 ## Next steps
 

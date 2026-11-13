@@ -44,7 +44,7 @@ docker run -d --name formio-uag -p 3200:3200 \
   -e PROJECT_KEY="..." \
   -e LICENSE_KEY="..." \
   -e JWT_SECRET="..." \
-  formio/uag:rc
+  formio/uag
 ```
 
 For an offline license, add `-e LICENSE_REMOTE=true`. For a project on Form.io's hosted service (`PROJECT=https://your-project.form.io`), drop `LICENSE_KEY`. For an Open Source server, replace `PROJECT_KEY` with `ADMIN_KEY`, and drop `LICENSE_KEY` unless the user wants Agentic Formflow or the UAG's database. For remote MCP clients, add `-e MCP_OAUTH=true -e MONGO="..."` (and `-e TRUST_PROXY=true` behind a reverse proxy you control).
@@ -52,13 +52,13 @@ For an offline license, add `-e LICENSE_REMOTE=true`. For a project on Form.io's
 Or install the npm package and run it as a Node process (Node.js 22 or newer), with the same variables in the environment or in an `.env` file in the working directory:
 
 ```bash
-npm install @formio/uag@rc
+npm install @formio/uag
 npx uag
 ```
 
-Install the package before running `npx uag`: without it, `npx` fetches an unrelated npm package named `uag`. Install the engine packages the user enables next to it (`npm install @formio/uag-claude@rc`).
+Install the package before running `npx uag`: without it, `npx` fetches an unrelated npm package named `uag`. Install the engine packages the user enables next to it (`npm install @formio/uag-claude`).
 
-For anything beyond a single container, start from a Docker Compose stack: the README's [Quickstart](./README.md#quickstart) (Form.io Open Source and the UAG in one file), or the [custom module sample](./demo/samples/custom-module) (Form.io Open Source, MongoDB and the UAG with a module), with the [engine setups](./demo/samples/engines) to add engines. They use the `rc` channel tags (`formio/uag:rc`, `formio/uag-engines:rc`), which follow the newest 2.0 release candidate until 2.0.0 is released. Use `:rc` and `@rc` too, never an untagged image or package, which resolves to an older release. Do not start from `demo/`: it is the [ai.form.io](https://ai.form.io) demo site's own deployment.
+For anything beyond a single container, start from a Docker Compose stack: the README's [Quickstart](./README.md#quickstart) (Form.io Open Source and the UAG in one file), or the [custom module sample](./demo/samples/custom-module) (Form.io Open Source, MongoDB and the UAG with a module), with the [engine setups](./demo/samples/engines) to add engines. They use untagged images (`formio/uag`, `formio/uag-engines`), which follow the newest release; pin an exact version (`formio/uag:2.0.0`) for production. Do not start from `demo/`: it is the [ai.form.io](https://ai.form.io) demo site's own deployment.
 
 ## Making forms visible to agents
 

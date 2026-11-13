@@ -13,7 +13,7 @@ The `formio/uag-engines` image includes the official engines: `jev`, `claude`, `
 ```yaml
 services:
   formio-uag:
-    image: formio/uag:rc
+    image: formio/uag
     environment:
       UAG_ENGINES: jev:remote,claude:remote
       UAG_ENGINE_JEV_URL: http://uag-engines:3300
@@ -27,7 +27,7 @@ services:
         condition: service_healthy
 
   uag-engines:
-    image: formio/uag-engines:rc
+    image: formio/uag-engines
     environment:
       UAG_ENGINES: jev,claude
       TYPESAFE_API_KEY: ${TYPESAFE_API_KEY}
@@ -39,7 +39,7 @@ services:
 
 On the UAG, `<name>:remote` is an instance hosted here; by default it uses the engine of the same name on the engine server (`UAG_ENGINE_<NAME>_ENGINE` names another). Any mix works: `UAG_ENGINES=jev,claude:remote` keeps `jev` in the UAG, with its key there, and moves only Claude.
 
-Without Docker: `npm install @formio/uag-engines@rc @formio/uag-claude@rc`, then run `npx uag-engines` with the same variables.
+Without Docker: `npm install @formio/uag-engines @formio/uag-claude`, then run `npx uag-engines` with the same variables.
 
 ## Settings
 

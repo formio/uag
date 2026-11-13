@@ -80,7 +80,7 @@ The hook receives a `POST` with JSON:
 }
 ```
 
-To deploy the demo's UAG, use [`demo/deploy/docker-compose.yml`](demo/deploy/docker-compose.yml): its `formio-uag` service follows `formio/uag:rc`, or set its `image` to the release's tag to pin it, then run `docker compose pull && docker compose up -d` from `demo/deploy`. The demo site itself is static files, published by its own workflow ([`site.yml`](.github/workflows/site.yml); see [demo/README.md](demo/README.md#hosting)).
+To deploy the demo's UAG, use [`demo/deploy/docker-compose.yml`](demo/deploy/docker-compose.yml): its `formio-uag` service follows `formio/uag` (the newest release), or set its `image` to the release's tag to pin it, then run `docker compose pull && docker compose up -d` from `demo/deploy`. The demo site itself is static files, published by its own workflow ([`site.yml`](.github/workflows/site.yml); see [demo/README.md](demo/README.md#hosting)).
 
 ## A new package
 

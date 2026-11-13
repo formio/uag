@@ -39,7 +39,7 @@ Use it when model credentials and egress to model providers must be isolated fro
 ```yaml
 services:
   formio-uag:
-    image: formio/uag:rc
+    image: formio/uag
     environment:
       UAG_ENGINES: jev:remote,claude:remote
       UAG_ENGINE_JEV_URL: http://uag-engines:3300
@@ -53,7 +53,7 @@ services:
         condition: service_healthy
 
   uag-engines:
-    image: formio/uag-engines:rc
+    image: formio/uag-engines
     environment:
       UAG_ENGINES: jev,claude
       TYPESAFE_API_KEY: ${TYPESAFE_API_KEY}
@@ -73,7 +73,7 @@ On the UAG, `<name>:remote` is an instance hosted on an engine server. By defaul
 The image runs as the `node` user, exposes port 3300, and has a health check that calls `/health` with the key (every route requires it). Without Docker:
 
 ```bash
-npm install @formio/uag-engines@rc @formio/uag-claude@rc
+npm install @formio/uag-engines @formio/uag-claude
 UAG_ENGINES=claude CLAUDE_API_KEY=... UAG_ENGINE_SERVER_KEY=... \
 UAG_SERVER=http://formio-uag:3200 npx uag-engines
 ```
@@ -359,7 +359,7 @@ main().catch((err) => {
 ## Adding engines to the image
 
 ```dockerfile
-FROM formio/uag-engines:rc
+FROM formio/uag-engines
 # The image runs as "node", which cannot create /engines; install as root.
 USER root
 RUN npm install --prefix /engines uag-engine-acme

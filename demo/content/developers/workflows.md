@@ -291,7 +291,7 @@ To see what the engines answer for some data without saving anything, call the s
 - **Add the database** for run records, Action Logs and runs that survive a restart, and to run more than one instance.
 - **Change every `CHANGEME`** and keep keys in a secret store, not in Compose files.
 - **Raise `PROJECT_TTL`.** Samples use 10 seconds so criteria edits show quickly; every expiry re-reads the project export.
-- **Pin versions.** Run task needs UAG 2.0 (`formio/uag:rc` until 2.0.0 is released). Pin a tested set of images and engine models (see [Deployment](/developers/deployment#image-and-version-pinning)).
+- **Pin versions.** Run task needs UAG 2.0 or later. Pin a tested set of images and engine models (see [Deployment](/developers/deployment#image-and-version-pinning)).
 - **Choose where the engines run.** To keep model keys and model traffic out of the UAG, run the engines on an [engine server](/developers/engine-server).
 - **Measure before trusting thresholds.** For decision engines, run [`uag-eval`](/developers/evaluation) on labeled examples before relying on the defaults.
 

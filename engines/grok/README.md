@@ -7,7 +7,7 @@ The **Grok** agent engine for the [UAG Agent API](https://ai.form.io/developers/
 It is included in the `formio/uag` Docker image. With the UAG installed from npm, install it next to it:
 
 ```bash
-npm install @formio/uag-grok@rc
+npm install @formio/uag-grok
 ```
 
 Enable it by naming it, and set its key and model:

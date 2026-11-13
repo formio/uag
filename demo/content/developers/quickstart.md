@@ -53,7 +53,7 @@ services:
       retries: 40
 
   formio-uag:
-    image: formio/uag:rc
+    image: formio/uag
     restart: always
     depends_on:
       formio:
@@ -133,7 +133,7 @@ docker run -d --name formio-uag -p 3200:3200 \
   -e PROJECT="https://<project>.form.io" \
   -e PROJECT_KEY="<your API key>" \
   -e JWT_SECRET="<a long random string>" \
-  formio/uag:rc
+  formio/uag
 ```
 
 Hosted SaaS projects need no license: they run under Form.io's own license, as the Enterprise edition, and Agentic Formflow is allowed (`/agent/capabilities` reports `reason: "hosted"`). A license is needed when you self-host Form.io, for Form.io Enterprise or for Agentic Formflow; see [Deployment](/developers/deployment#licensing).

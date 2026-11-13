@@ -7,7 +7,7 @@ The **Gemini** agent engine for the [UAG Agent API](https://ai.form.io/developer
 It is included in the `formio/uag` Docker image. With the UAG installed from npm, install it next to it:
 
 ```bash
-npm install @formio/uag-gemini@rc
+npm install @formio/uag-gemini
 ```
 
 Enable it by naming it, and set its key and model:

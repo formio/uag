@@ -34,7 +34,7 @@ The UAG's settings in that file:
 
 ```yaml
   formio-uag:
-    image: formio/uag:rc            # the 2.0 release candidate
+    image: formio/uag
     volumes:
       - ./module:/app/module        # the module: its forms, roles, actions and templates
     environment:
