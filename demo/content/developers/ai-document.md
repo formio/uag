@@ -59,7 +59,12 @@ In this release the UAG neither signs results nor checks AI Document values when
 
 ## For the operator
 
-`formio/uag-documents` is an add-on that runs beside the `formio/uag` image; it does not contain the UAG. It holds a plugins folder: an `index.mjs` that loads the AI Document module (`module:ai-document`), the `extract`, `analyze` and `translate` document plugins and the `office-text` converter (Word and Excel files), and a `node_modules` with `@formio/uag-extras` and the converter's libraries. It copies that folder into its own volume and exits; the UAG mounts that volume in a folder under `/app/plugins` and loads it at startup with any other add-ons (see [Plugins: Add-ons](./plugins.md#add-ons)). The extras use the UAG's own `@formio/uag` and `zod`. It needs `formio/uag` 2.0.0 or later. Its tags follow `@formio/uag-extras`, whose major version is the UAG's: `formio/uag-documents:2` (the newest 2.x, for `formio/uag` 2.x), or an exact version such as `formio/uag-documents:2.0.0`. Its minor and patch versions are its own, not the UAG's. For a ready-made deployment, the [deployment kit](https://github.com/formio/uag-extras/tree/main/deploy) in formio/uag-extras has a Compose file and an `.env` template that run both, with an optional database.
+`formio/uag-documents` is an add-on that runs beside the `formio/uag` image; it does not contain the UAG. It holds a plugins folder: an `index.mjs` that loads the AI Document module (`module:ai-document`), the `extract`, `analyze` and `translate` document plugins and the `office-text` converter (Word and Excel files), and a `node_modules` with `@formio/uag-extras` and the converter's libraries. It copies that folder into its own volume and exits; the UAG mounts that volume in a folder under `/app/plugins` and loads it at startup with any other add-ons (see [Plugins: Add-ons](./plugins.md#add-ons)). The extras use the UAG's own `@formio/uag` and `zod`. It needs `formio/uag` 2.0.0 or later. Its tags follow `@formio/uag-extras`, whose major version is the UAG's: `formio/uag-documents:2` (the newest 2.x, for `formio/uag` 2.x), or an exact version such as `formio/uag-documents:2.0.0`. Its minor and patch versions are its own, not the UAG's. For a ready-made deployment, the deployment kit in `@formio/uag-extras` has a Compose file and an `.env` template that run both, with an optional database; see the [add-on's Docker Hub page](https://hub.docker.com/r/formio/uag-documents) for how to use it:
+
+```bash
+curl -fsSLO https://cdn.jsdelivr.net/npm/@formio/uag-extras@2/deploy/docker-compose.yml
+curl -fsSL -o .env https://cdn.jsdelivr.net/npm/@formio/uag-extras@2/deploy/.env.example
+```
 
 ### Run it with Docker
 
