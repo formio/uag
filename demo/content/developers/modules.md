@@ -242,7 +242,7 @@ The Agent API offers tools to agent engines for research when a task's criteria 
 A module that brings a whole capability uses more keys: `settings`, `routes`, `components`, `initialize` and `close`. A module with any of them needs a `name` and an `apiVersion`, the version of the [module API](#the-module-api) it is written against: version 1, from UAG 2.0.0. A module that uses the UAG's own members of the API (licenses, engines, converters) also says `host: 'uag'`, so a server other than the UAG refuses it at startup instead of failing on the first request.
 
 ```js
-// npm install @formio/uag-extras@^1
+// npm install @formio/uag-extras@^2
 import { UAGDocument } from '@formio/uag-extras/modules/ai-document';
 server.use(UAGDocument);
 ```
@@ -360,7 +360,7 @@ export default function addressCheck(Formio) {
 Build it with the published build (it needs `esbuild`: install it as a dev dependency, or name it to `npx` as below), which writes `dist/address-check.mjs` (for bundlers), `dist/address-check.min.js` (the script `components` points at, also for CDNs) and `dist/address-check.css`, with their integrity values:
 
 ```bash
-npx -p @formio/uag-extras@^1 -p esbuild uag-build-client client.js --name address-check --style style.css --out dist
+npx -p @formio/uag-extras@^2 -p esbuild uag-build-client client.js --name address-check --style style.css --out dist
 ```
 
 Components reach browsers three ways, always matching the installed module: the UAG adds them to `uag.use.js` and the portal script; an application with a bundler imports the module's client and calls `Formio.use()` with it; a page without one loads the module's script from a CDN, such as jsDelivr, after `uag.use.js`, or from the UAG itself, `{uag}/uag-js/components/<type>.js` (and `.css`), after registering `@formio/uag-js` with its own options (see [Or load it from the UAG](./renderer.md#or-load-it-from-the-uag)).

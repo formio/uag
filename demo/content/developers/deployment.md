@@ -364,7 +364,7 @@ From 2.0.0, the UAG and the packages released with it (the engines, the engine S
 
 For a reproducible deployment:
 
-- **Pin image tags.** The samples use untagged images (`latest`), which move to each new release. Production should pin `formio/uag:<version>` (and `formio/uag-engines:<version>`, `formio/formio-enterprise:<version>`). The `formio/uag-documents` add-on follows `@formio/uag-extras`'s versions: `:1` moves to each 1.x release; pin an exact one, such as `formio/uag-documents:1.0.0`.
+- **Pin image tags.** The samples use untagged images (`latest`), which move to each new release. Production should pin `formio/uag:<version>` (and `formio/uag-engines:<version>`, `formio/formio-enterprise:<version>`). The `formio/uag-documents` add-on follows `@formio/uag-extras`'s versions, whose major version is the UAG's: `:2` moves to each 2.x release, for `formio/uag` 2.x; pin an exact one, such as `formio/uag-documents:2.0.0`.
 - **Pin models.** Set `CLAUDE_MODEL`, `TYPESAFE_MODEL` and the other model variables to specific versions. A new UAG release may change an engine's default, and answers differ between models. Run [`uag-eval`](./evaluation.md) before changing one.
 - **Keep `@formio/appserver` current.** When embedding the UAG, it reaches `@formio/appserver-core` only through `@formio/appserver`, so there is one copy of it, which must be 2.26.4 or later; the UAG refuses to start with an older one, and says what to upgrade.
 - **Roll back** by pinning the previous image. Stored submissions are unaffected; UAG 1.x ignores the `metadata.uag.generated` provenance that 2.0 adds. See [MIGRATING-2.0.md](../../../MIGRATING-2.0.md) when upgrading from 1.x.

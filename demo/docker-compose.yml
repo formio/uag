@@ -35,7 +35,7 @@ x-uag-image: &uag-image ${UAG_IMAGE:-formio/uag:demo}
 services:
   # Runs once at each "up" and exits; no restart policy.
   uag-documents:
-    image: ${UAG_DOCUMENTS_IMAGE:-formio/uag-documents:1}
+    image: ${UAG_DOCUMENTS_IMAGE:-formio/uag-documents:2}
     volumes:
       - uag-documents:/out
 
