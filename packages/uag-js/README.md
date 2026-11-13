@@ -1,6 +1,6 @@
 # @formio/uag-js
 
-The [Form.io UAG](https://ai.form.io/developers) for formio.js applications. Register it once, and forms tagged `uag` save through the UAG (so their "Agent: Run task" actions run), and those whose task has an input get **Agent Input**, which fills the form from what the user describes without overwriting what they entered. Every other form, and every other request, goes to Form.io as before. Any `uag` form can also be rendered as a [chat](#chat).
+The [Form.io UAG](https://github.com/formio/uag/blob/main/demo/content/developers/index.md) for formio.js applications. Register it once, and forms tagged `uag` save through the UAG (so their "Agent: Run task" actions run), and those whose task has an input get **Agent Input**, which fills the form from what the user describes without overwriting what they entered. Every other form, and every other request, goes to Form.io as before. Any `uag` form can also be rendered as a [chat](#chat).
 
 ```bash
 npm install @formio/uag-js
@@ -19,7 +19,7 @@ Formio.use(UAG('https://uag.example.com'));
 Formio.createForm(document.getElementById('claim'), 'https://forms.example.com/myproject/claim');
 ```
 
-Without a bundler, load the UAG's own `https://uag.example.com/uag-js/uag.use.js` (and `uag-js.css`) after formio.js: it registers itself with that UAG and its modules' components. See [Or load it from the UAG](https://ai.form.io/developers/renderer#or-load-it-from-the-uag).
+Without a bundler, load the UAG's own `https://uag.example.com/uag-js/uag.use.js` (and `uag-js.css`) after formio.js: it registers itself with that UAG and its modules' components. See [Or load it from the UAG](https://github.com/formio/uag/blob/main/demo/content/developers/renderer.md#or-load-it-from-the-uag).
 
 Requests to the UAG carry the user's Form.io token (`x-jwt-token`), as formio.js sends it to Form.io; no other token is needed. Routing in the browser is not a security boundary: protect the fields an agent owns on the server, with an agent role, form permissions and `uagAuthoritative`.
 
@@ -33,7 +33,7 @@ Formio.use(UAG('https://uag.example.com'));
 Formio.use(aiDocument);
 ```
 
-See [AI Document](https://ai.form.io/developers/ai-document).
+See [AI Document](https://github.com/formio/uag/blob/main/demo/content/developers/ai-document.md).
 
 ## For components: `client`
 
@@ -45,7 +45,7 @@ await client.ready;
 const done = await client.stream(client.formUrl(form) + '/document/process', { path, files }, { onEvent: (name, data) => {} });
 ```
 
-Every member, and how `stream()` resolves and rejects: [For module components: `client`](https://ai.form.io/developers/renderer#for-module-components-client).
+Every member, and how `stream()` resolves and rejects: [For module components: `client`](https://github.com/formio/uag/blob/main/demo/content/developers/renderer.md#for-module-components-client).
 
 ## Chat
 
@@ -63,4 +63,4 @@ chat.on('submitDone', (submission) => console.log('Saved', submission._id));
 
 `createChat` is also exported (and `FormioUAG.createChat` with script tags). The chat renders through formio.js templates (`uagChat`, `uagChatMessage`, …) you can replace per framework or per chat, translates through `i18n`, and is themed with `--uag-chat-*` CSS properties in `uag-js.css`.
 
-Documentation: [JavaScript (formio.js)](https://ai.form.io/developers/renderer) · [Chat widget](https://ai.form.io/developers/chat).
+Documentation: [JavaScript (formio.js)](https://github.com/formio/uag/blob/main/demo/content/developers/renderer.md) · [Chat widget](https://github.com/formio/uag/blob/main/demo/content/developers/chat.md).

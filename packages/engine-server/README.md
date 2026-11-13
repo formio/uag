@@ -1,6 +1,6 @@
 # @formio/uag-engines
 
-<sub>[Form.io UAG](https://ai.form.io/developers) &rsaquo; [Engines](https://ai.form.io/developers/engines) &rsaquo; this page</sub>
+<sub>[Form.io UAG](https://github.com/formio/uag/blob/main/demo/content/developers/index.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/main/demo/content/developers/engines.md) &rsaquo; this page</sub>
 
 Runs engine packages for the Form.io UAG in their own process, behind the remote engine protocol. The UAG reaches them with its built-in `remote` engine type. Model API keys and model traffic then stay in this container, and the UAG holds no model credential. Any engine package works here, unchanged.
 
@@ -47,7 +47,7 @@ Without Docker: `npm install @formio/uag-engines @formio/uag-claude`, then run `
 |---|---|---|
 | `UAG_ENGINE_SERVER_KEY` | **Required.** The key every request must carry, at least 32 characters. The UAG's `remote` instances send it as `UAG_ENGINE_<NAME>_KEY`. | |
 | `UAG_ENGINES` | The engine instances to host, as on the UAG: `jev,fast:claude,local:openai`. At least one. | |
-| `UAG_ENGINE_<NAME>_<SETTING>` and each engine's own variables | Each instance's settings, resolved as on the UAG. See each engine's README, or [The official engines](https://ai.form.io/developers/engines#the-official-engines). | |
+| `UAG_ENGINE_<NAME>_<SETTING>` and each engine's own variables | Each instance's settings, resolved as on the UAG. See each engine's README, or [The official engines](https://github.com/formio/uag/blob/main/demo/content/developers/engines.md#the-official-engines). | |
 | `UAG_SERVER` | The UAG's URL, for research. Research calls go to `${UAG_SERVER}/mcp`, never to a URL taken from a request. Must be `http` or `https`. Without it, research extracts are refused. | |
 | `UAG_ENGINE_PATH` | Absolute directories with more engine packages installed, such as a mounted volume. | |
 | `PORT`, `HOST` | Where it listens. The `formio/uag-engines` image sets `HOST=0.0.0.0`. | `3300`, `127.0.0.1` |
@@ -68,7 +68,7 @@ Engines are resolved as on the UAG: an instance named in `UAG_ENGINES` is looked
 
 ## Protocol
 
-`GET /health`, `GET /v1/engines`, `POST /v1/engines/:name/decide`, `POST /v1/engines/:name/extract` and `POST /v1/engines/:name/generate` (free text over attached documents, for agent engines that generate), all JSON, with `protocol: 1` in every body. See [`@formio/uag-sdk/protocol`](https://github.com/formio/uag/blob/main/packages/engine-sdk/protocol.js) for the shapes, and [Engine server](https://ai.form.io/developers/engine-server) for the full reference.
+`GET /health`, `GET /v1/engines`, `POST /v1/engines/:name/decide`, `POST /v1/engines/:name/extract` and `POST /v1/engines/:name/generate` (free text over attached documents, for agent engines that generate), all JSON, with `protocol: 1` in every body. See [`@formio/uag-sdk/protocol`](https://github.com/formio/uag/blob/main/packages/engine-sdk/protocol.js) for the shapes, and [Engine server](https://github.com/formio/uag/blob/main/demo/content/developers/engine-server.md) for the full reference.
 
 Decide, extract and generate calls may carry the Agent API request's `X-Request-Id`. The engine server sends it on with every research request to the UAG's `/mcp` and puts it in its logs, so a logging proxy can group every leg of a run. Only a short token (up to 128 letters, digits, `.`, `_`, `:` or `-`) is passed on; the header is optional either way, and the protocol version is unchanged.
 

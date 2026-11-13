@@ -32,7 +32,7 @@ Ask which kind of MCP client will connect (see [Connecting an agent](#connecting
 - **`MONGO`** — a MongoDB connection string for the UAG's own database (it can be the server Form.io uses; `UAG_DATABASE` names the database, default `uag`). It holds only `uag-*` collections, never submissions. Using it needs a `LICENSE_KEY` that includes the UAG. Without a usable database the UAG starts with remote sign-in off and says why in its log.
 - **`TRUST_PROXY`** — when the UAG runs behind a reverse proxy (`true`, a number of hops, or the proxy's addresses), so the OAuth discovery documents name the public URL from the forwarded headers. `BASE_URL` is optional: set it only to override the URL the UAG derives from each request.
 
-Full list, including `PORTAL_SECRET`, `LOGIN_FORM`, `CORS`, and `PROJECT_TTL`, is in the [Deployment documentation](https://ai.form.io/developers/deployment). Treat every key and secret as sensitive: put them in an `.env` file or the deployment's secret store, never inline in a committed file.
+Full list, including `PORTAL_SECRET`, `LOGIN_FORM`, `CORS`, and `PROJECT_TTL`, is in the [Deployment documentation](./demo/content/developers/deployment.md). Treat every key and secret as sensitive: put them in an `.env` file or the deployment's secret store, never inline in a committed file.
 
 ## Deploying
 
@@ -58,7 +58,7 @@ npx uag
 
 Install the package before running `npx uag`: without it, `npx` fetches an unrelated npm package named `uag`. Install the engine packages the user enables next to it (`npm install @formio/uag-claude`).
 
-For anything beyond a single container, start from a Docker Compose stack: the README's [Quickstart](./README.md#quickstart) (Form.io Open Source and the UAG in one file), or the [custom module sample](./demo/samples/custom-module) (Form.io Open Source, MongoDB and the UAG with a module), with the [engine setups](./demo/samples/engines) to add engines. They use untagged images (`formio/uag`, `formio/uag-engines`), which follow the newest release; pin an exact version (`formio/uag:2.0.0`) for production. Do not start from `demo/`: it is the [ai.form.io](https://ai.form.io) demo site's own deployment.
+For anything beyond a single container, start from a Docker Compose stack: the README's [Quickstart](./README.md#quickstart) (Form.io Open Source and the UAG in one file), or the [custom module sample](./demo/samples/custom-module) (Form.io Open Source, MongoDB and the UAG with a module), with the [engine setups](./demo/samples/engines) to add engines. They use untagged images (`formio/uag`, `formio/uag-engines`), which follow the newest release; pin an exact version (`formio/uag:2.0.0`) for production. Do not start from `demo/`: it is the demo site's own deployment.
 
 ## Making forms visible to agents
 
@@ -74,7 +74,7 @@ A local MCP client — the user's own application, or an engine server (`formio/
 
 Besides MCP, the UAG serves an HTTP Agent API (`{form}/agent/extract`, `{form}/agent/decide` and `{form}/agent/generate` under each form's URL on the UAG, and `/agent/capabilities` at its root), which saves nothing, and an **"Agent: Run task"** form action, which runs a form's task on a submission sent to the UAG, before or after the save, and is how agentic workflows run. Both do nothing until an engine is enabled with `UAG_ENGINES` (for example `jev,claude`, which also need `TYPESAFE_API_KEY` and `CLAUDE_API_KEY`), and with real engines they need a `LICENSE_KEY` that includes the UAG, or a hosted project. Enable engines only if the user asks for these: they send submission data to their provider's hosted API.
 
-A form's chat, `{form}/agent/chat`, is the exception: it is part of conversation forms and needs an agent engine (such as `claude`) but no Agentic Formflow license. It is what `Formio.createChat(element, formUrl)` from `@formio/uag-js` calls to embed a form as a chat in a web page; see [Chat widget](https://ai.form.io/developers/chat).
+A form's chat, `{form}/agent/chat`, is the exception: it is part of conversation forms and needs an agent engine (such as `claude`) but no Agentic Formflow license. It is what `Formio.createChat(element, formUrl)` from `@formio/uag-js` calls to embed a form as a chat in a web page; see [Chat widget](./demo/content/developers/chat.md).
 
 For a workflow, the user adds "Agent: Run task" to the form (on Enterprise, in a portal stage connected to the UAG with `PORTAL_SECRET`) and points their application's project URL at the UAG, since tasks run only for submissions the UAG receives. There is no webhook to configure. See the README's [Agentic workflows](./README.md#agentic-workflows) and [Agent API](./README.md#agent-api) sections.
 

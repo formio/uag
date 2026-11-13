@@ -10,8 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://ai.form.io/examples"><b>Live demos</b></a> ·
-  <a href="https://ai.form.io/developers"><b>Developer docs</b></a> ·
+  <a href="./demo/content/developers/index.md"><b>Developer docs</b></a> ·
   <a href="https://github.com/formio/ai"><b>Agentic Coding Plugin</b></a> ·
   <a href="#quickstart">Quickstart</a> ·
   <a href="#documentation">All documentation</a>
@@ -37,7 +36,7 @@ The form is the contract. Add a field and agents ask for it; rewrite a task's in
 
 ![A submission through the UAG: the application sends it with the user's x-jwt-token; the UAG checks the user with Form.io, runs its actions before the save, and forwards the request unchanged; Form.io checks permissions, validates, stores and runs its own actions; the UAG runs its actions after the save and passes Form.io's response back. A submission sent straight to Form.io skips the UAG and its actions.](./demo/public/images/uag-proxy-mode.svg)
 
-The UAG is built on Form.io's core logic. Every value an agent sends runs through the [`@formio/core`](https://github.com/formio/core) processors, the same validation, conditional and calculation rules Form.io itself applies, so the data it saves is valid and deterministic. More detail: [How the UAG works](https://ai.form.io/developers).
+The UAG is built on Form.io's core logic. Every value an agent sends runs through the [`@formio/core`](https://github.com/formio/core) processors, the same validation, conditional and calculation rules Form.io itself applies, so the data it saves is valid and deterministic. More detail: [How the UAG works](./demo/content/developers/index.md).
 
 ## Three ways to use it
 
@@ -45,7 +44,7 @@ The UAG is built on Form.io's core logic. Every value an agent sends runs throug
 
 ### Conversation forms
 
-A person talks to Claude, ChatGPT or your own chat app, and the agent fills in a form for them. Build it with the [MCP tools](https://ai.form.io/developers/mcp-tools) or [Connect Claude](https://ai.form.io/developers/connect-claude), or embed a form as a chat in your own page with the [chat widget](https://ai.form.io/developers/chat): `Formio.createChat(element, formUrl)` from [`@formio/uag-js`](./packages/uag-js), with the UAG as the only backend. [Try it](https://ai.form.io/examples/conversation) · [source](./demo/public/apps/conversation/chat.js) · [prompt for your coding agent](https://github.com/formio/ai/blob/main/examples/agents/service-chat.md).
+A person talks to Claude, ChatGPT or your own chat app, and the agent fills in a form for them. Build it with the [MCP tools](./demo/content/developers/mcp-tools.md) or [Connect Claude](./demo/content/developers/connect-claude.md), or embed a form as a chat in your own page with the [chat widget](./demo/content/developers/chat.md): `Formio.createChat(element, formUrl)` from [`@formio/uag-js`](./packages/uag-js), with the UAG as the only backend. [source](./demo/public/apps/conversation/chat.js) · [prompt for your coding agent](https://github.com/formio/ai/blob/main/examples/agents/service-chat.md).
 
 ![The chat widget sends each turn to the form's agent/chat on the UAG, which asks an agent engine and checks every value against the form; the confirmed form is submitted through the UAG.](./demo/public/images/uag-chat.svg)
 
@@ -53,13 +52,13 @@ A person talks to Claude, ChatGPT or your own chat app, and the agent fills in a
 
 ### Agentic workflows
 
-An application saves a submission through the UAG; an **Agent: Run task** action runs the form's task after the save and saves the result, which can start the next task. [Try it](https://ai.form.io/examples/workflow) · [source](./demo/public/apps/workflow/workflow.js) · build it with [Workflows](https://ai.form.io/developers/workflows) · [prompt for your coding agent](https://github.com/formio/ai/blob/main/examples/agents/admissions-workflow.md).
+An application saves a submission through the UAG; an **Agent: Run task** action runs the form's task after the save and saves the result, which can start the next task. [source](./demo/public/apps/workflow/workflow.js) · build it with [Workflows](./demo/content/developers/workflows.md) · [prompt for your coding agent](https://github.com/formio/ai/blob/main/examples/agents/admissions-workflow.md).
 
 ![The admissions criteria and the Run task actions in the portal; an applicant submits; the admissions agent scores the application and its save starts the finance agent, which picks the award.](./demo/public/images/demo-workflow.gif)
 
 ### Agentic Formflow
 
-A person describes what happened, and the form fills itself in: decisions choose the wizard's pages, extraction prefills the rest. [Try it](https://ai.form.io/examples/formflow) · [source](./demo/public/apps/formflow) · build it with the [Agent API](https://ai.form.io/developers/agent-api) and [`@formio/uag-js`](./packages/uag-js) · [prompt for your coding agent](https://github.com/formio/ai/blob/main/examples/agents/claim-formflow.md).
+A person describes what happened, and the form fills itself in: decisions choose the wizard's pages, extraction prefills the rest. [source](./demo/public/apps/formflow) · build it with the [Agent API](./demo/content/developers/agent-api.md) and [`@formio/uag-js`](./packages/uag-js) · [prompt for your coding agent](https://github.com/formio/ai/blob/main/examples/agents/claim-formflow.md).
 
 ![A policyholder describes a collision; JEV adds the wizard's steps in milliseconds, Claude prefills dates, places and names as suggestions, and the claim is submitted.](./demo/public/images/demo-formflow.gif)
 
@@ -118,7 +117,7 @@ curl -s -X POST http://localhost:3200/mcp -H "Authorization: Bearer $TOKEN" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-Then tag a form `uag` (in the portal, **Form Settings → Tags**) and connect an agent. The [Quickstart](https://ai.form.io/developers/quickstart) covers a hosted Form.io project, a first tool call and the Agent API, and [Connect Claude](https://ai.form.io/developers/connect-claude) connects Claude Desktop or claude.ai. Or have your coding agent do all of it with the [Agentic Coding Plugin](https://github.com/formio/ai).
+Then tag a form `uag` (in the portal, **Form Settings → Tags**) and connect an agent. The [Quickstart](./demo/content/developers/quickstart.md) covers a hosted Form.io project, a first tool call and the Agent API, and [Connect Claude](./demo/content/developers/connect-claude.md) connects Claude Desktop or claude.ai. Or have your coding agent do all of it with the [Agentic Coding Plugin](https://github.com/formio/ai).
 
 ### Run the whole demo locally
 
@@ -147,7 +146,7 @@ A **task** teaches an agent to fill part of a form, with instructions written in
 | `uagEngine` | A task field, or the criteria component | Which engine answers that field, or the whole task. |
 | `uagThreshold`, `uagAuthoritative`, … | A task field | How confident a decision must be; whether the server owns the value, so no client can set it. |
 
-Every property, with its default: [Form properties](https://ai.form.io/developers/form-properties). How tasks, decision fields and value fields work: [Concepts](https://ai.form.io/developers/concepts).
+Every property, with its default: [Form properties](./demo/content/developers/form-properties.md). How tasks, decision fields and value fields work: [Concepts](./demo/content/developers/concepts.md).
 
 > **No form, no error.** A form missing the `uag` tag simply is not there for agents, and a new tag or criteria edit reaches them after the next `PROJECT_TTL` refresh. Restart the UAG to pick changes up at once.
 
@@ -159,7 +158,7 @@ A workflow is a task that the **Agent: Run task** action runs on a submission th
 
 To set one up on **Form.io Enterprise**:
 
-1. **Connect a portal stage to the UAG.** Set `PORTAL_SECRET` on the UAG, then in the portal connect a stage to it as an on-premise environment. In that stage the portal lists the UAG's own actions next to Form.io's. See [Deployment → Connecting the Enterprise portal](https://ai.form.io/developers/deployment#connecting-the-enterprise-portal).
+1. **Connect a portal stage to the UAG.** Set `PORTAL_SECRET` on the UAG, then in the portal connect a stage to it as an on-premise environment. In that stage the portal lists the UAG's own actions next to Form.io's. See [Deployment → Connecting the Enterprise portal](./demo/content/developers/deployment.md#connecting-the-enterprise-portal).
 2. **Add "Agent: Run task" to the form.** Choose the **Task**, what to **Answer** (the whole task, or its decision fields only) and **When** (after the save, in the background, or before it, while the submitter waits), with Form.io's usual methods and conditions. Mark the fields the agent owns `uagAuthoritative`, so no client can set them.
 3. **Point the application at the UAG.** Use the UAG's URL as the project URL in the renderer or your API calls. Login and registration are forwarded to Form.io, and its tokens work unchanged.
 
@@ -189,9 +188,9 @@ What one run after the save does:
 - **Tasks run only for submissions sent to the UAG.** A submission sent straight to Form.io runs no task.
 - **After the save, the submitter does not wait.** The task's results are saved as an update through the UAG, so the form's update actions, including other Run task actions, run on it. A run that changes nothing saves nothing.
 - **Guard update actions with a condition on a field the task sets**, as above. Check operator names: Form.io treats a clause with an unknown operator as always true.
-- **Who the agent acts as.** With no **Agent role**, the task saves with the credential the submission was sent with. With one, and the same `JWT_SECRET` as Form.io Enterprise, the UAG acts for the user with that role, so Form.io's permissions keep users off the agent's fields. See [Project setup for agents](https://ai.form.io/developers/project-setup).
+- **Who the agent acts as.** With no **Agent role**, the task saves with the credential the submission was sent with. With one, and the same `JWT_SECRET` as Form.io Enterprise, the UAG acts for the user with that role, so Form.io's permissions keep users off the agent's fields. See [Project setup for agents](./demo/content/developers/project-setup.md).
 
-Full guide: [Workflows](https://ai.form.io/developers/workflows).
+Full guide: [Workflows](./demo/content/developers/workflows.md).
 
 ## Agent API
 
@@ -204,7 +203,7 @@ A form's operations are under the form's URL on the UAG, `{form}`: the form's pa
 | `POST {form}/agent/extract` | Fills a task's fields from free text (`text`, or the task's input field in `data`). Streams results with `Accept: text/event-stream`, each engine group as it finishes, so fast decisions usually come first. | No |
 | `POST {form}/agent/decide` | Answers a task's closed-set fields from `data`, with a calibrated confidence when a decision engine answers. | No |
 | `POST {form}/agent/generate` | Writes a task's open values (dates, amounts, text) from `data`. | No |
-| `POST {form}/agent/chat` | One turn of a conversation that fills the form in: the next message, and the values taken from the person's words, checked against the form. What the [chat widget](https://ai.form.io/developers/chat) calls. Conversation forms: no Agentic Formflow license. | No |
+| `POST {form}/agent/chat` | One turn of a conversation that fills the form in: the next message, and the values taken from the person's words, checked against the form. What the [chat widget](./demo/content/developers/chat.md) calls. Conversation forms: no Agentic Formflow license. | No |
 | `GET /agent/capabilities` (at the UAG's root) | Lists the enabled engines, the operations they serve, the edition, the license state, and whether durable runs (`durableRuns`) and remote MCP sign-in (`mcpOAuth`) are available. | No |
 
 ```bash
@@ -217,7 +216,7 @@ Each field comes back with its `value`, a `status` (`confident`, `uncertain`, `s
 
 The operations take the same credentials as the form's submissions: the signed-in user's Form.io token (`x-jwt-token`), or a portal team member's remote token (`x-remote-token`), and Form.io permissions apply. A UAG bearer token (`Authorization: Bearer`) works too. Servers may send `x-token: <PROJECT_KEY>` or `x-admin-key: <ADMIN_KEY>` instead; the UAG refuses those on any request with an `Origin` or `Sec-Fetch-Site` header, so they never work from a browser. Visitors with no credential are answered only by a form that sets `uagAnonymous: "true"` and lets Anonymous create submissions, within per-address and total rate limits. To decide on the server whatever a browser sent, add **Agent: Run task** to the form with its decision fields only, before the save.
 
-Every field, status code and setting: [Agent API](https://ai.form.io/developers/agent-api). Measure decision accuracy on your own forms before going live: [Evaluation](https://ai.form.io/developers/evaluation).
+Every field, status code and setting: [Agent API](./demo/content/developers/agent-api.md). Measure decision accuracy on your own forms before going live: [Evaluation](./demo/content/developers/evaluation.md).
 
 ## Engines and routing
 
@@ -237,7 +236,7 @@ CLAUDE_API_KEY=...
 
 Decision fields go to a decision engine, and fall back to an agent engine (reported `calibrated: false`) when it fails, times out, is over its rate limit, or none is enabled. A radio, single select or survey with more options than the decision engine accepts (255 for Jev) goes to an agent engine. Override the choice per field, or per task on its criteria, with `uagEngine`.
 
-Engines run inside the UAG, or on an [engine server](./packages/engine-server) (`formio/uag-engines`) so model keys and model traffic stay out of the UAG: name the instance with the `remote` type. To write your own, see the [Engine SDK](./packages/engine-sdk). Full guide: [Engines](https://ai.form.io/developers/engines).
+Engines run inside the UAG, or on an [engine server](./packages/engine-server) (`formio/uag-engines`) so model keys and model traffic stay out of the UAG: name the instance with the `remote` type. To write your own, see the [Engine SDK](./packages/engine-sdk). Full guide: [Engines](./demo/content/developers/engines.md).
 
 ## License
 
@@ -250,12 +249,12 @@ Engines run inside the UAG, or on an [engine server](./packages/engine-server) (
 | The UAG's own database (`MONGO`), and with it remote MCP sign-in (`MCP_OAUTH`), on any project | A Form.io license that includes the UAG. Without one, the UAG starts with its database features off and says why. |
 | The Agent API, Run task and `uag-eval` with only the stub engines (`UAG_ENGINES=stub-decision,stub-agent`), to try them out | Nothing. The `agent_decide` and `agent_provide` tools still need a license or a hosted project. |
 
-A license that includes the UAG is an online license whose key has the `uagServer` scope (each project endpoint a UAG serves counts as one UAG server, replicas once), or an offline license with the `uag` option, issued for its project; set `LICENSE_REMOTE=true` for an offline license. Unlicensed requests get `403` with `code: "license_required"`, and `GET /agent/capabilities` always reports the `edition` and `formflow.reason`. `UAG_LICENSE` is deprecated in favour of `LICENSE_KEY`, and still read until UAG 3.0. Contact [support@form.io](mailto:support@form.io) for a trial license. Details: [Deployment → Licensing](https://ai.form.io/developers/deployment#licensing).
+A license that includes the UAG is an online license whose key has the `uagServer` scope (each project endpoint a UAG serves counts as one UAG server, replicas once), or an offline license with the `uag` option, issued for its project; set `LICENSE_REMOTE=true` for an offline license. Unlicensed requests get `403` with `code: "license_required"`, and `GET /agent/capabilities` always reports the `edition` and `formflow.reason`. `UAG_LICENSE` is deprecated in favour of `LICENSE_KEY`, and still read until UAG 3.0. Contact [support@form.io](mailto:support@form.io) for a trial license. Details: [Deployment → Licensing](./demo/content/developers/deployment.md#licensing).
 
 ## Extending the UAG
 
-- **Modules** add MCP tools, override the built-in tools and their response templates, add form actions (the UAG runs a module's own actions; Form.io runs its own), and ship a project template of forms and resources that the UAG installs. A module can also add routes on every form, formio.js components (served in the UAG's `/uag-js/uag.use.js`), plugins, and settings of its own. Mount one over `/app/module` in the container, or name it in `UAG_MODULE` for the `uag` command. See [Modules](https://ai.form.io/developers/modules), [`module/Readme.md`](./module/Readme.md) and the [Claude Desktop example](./demo/samples/custom-module).
-- **Plugins** add capabilities of a known type, such as converters that read more file types and the document processes an AI Document runs. List them in a module, or in a plugins file: the one `UAG_PLUGINS` names, or in the image, one per folder under `/app/plugins`, where add-ons such as `formio/uag-documents` put theirs. Plugins and modules are trusted code: they run in the UAG process. See [Plugins](https://ai.form.io/developers/plugins) and [AI Document](https://ai.form.io/developers/ai-document).
+- **Modules** add MCP tools, override the built-in tools and their response templates, add form actions (the UAG runs a module's own actions; Form.io runs its own), and ship a project template of forms and resources that the UAG installs. A module can also add routes on every form, formio.js components (served in the UAG's `/uag-js/uag.use.js`), plugins, and settings of its own. Mount one over `/app/module` in the container, or name it in `UAG_MODULE` for the `uag` command. See [Modules](./demo/content/developers/modules.md), [`module/Readme.md`](./module/Readme.md) and the [Claude Desktop example](./demo/samples/custom-module).
+- **Plugins** add capabilities of a known type, such as converters that read more file types and the document processes an AI Document runs. List them in a module, or in a plugins file: the one `UAG_PLUGINS` names, or in the image, one per folder under `/app/plugins`, where add-ons such as `formio/uag-documents` put theirs. Plugins and modules are trusted code: they run in the UAG process. See [Plugins](./demo/content/developers/plugins.md) and [AI Document](./demo/content/developers/ai-document.md).
 - **Node.js.** Embed the UAG in an Express application, or install it (`npm install @formio/uag`) and run it with `npx uag`:
 
 ```js
@@ -269,8 +268,8 @@ app.use(await server.router());
 app.listen(process.env.PORT || 3200);
 ```
 
-Run Node 22 or newer with `--no-node-snapshot` (isolated-vm, which runs form logic, needs it; `npx uag` adds it itself), and install the engines you use next to the UAG (`npm install @formio/uag-claude`). See [Node.js API](https://ai.form.io/developers/node-api).
-- **[`@formio/uag-js`](./packages/uag-js)** connects a formio.js application to the UAG. Register it once with `Formio.use(UAG('https://uag.example.com'))`: submissions of forms tagged `uag` are then saved through the UAG, and Agent Input fills those forms from what the user wrote, through `{form}/agent/extract`, when they leave the input, pause, move to the next page, or press a button. `Formio.createChat(element, formUrl)` renders any of them as a chat instead, templated, translated and themed like a formio.js form. See [JavaScript (formio.js)](https://ai.form.io/developers/renderer) and [Chat widget](https://ai.form.io/developers/chat).
+Run Node 22 or newer with `--no-node-snapshot` (isolated-vm, which runs form logic, needs it; `npx uag` adds it itself), and install the engines you use next to the UAG (`npm install @formio/uag-claude`). See [Node.js API](./demo/content/developers/node-api.md).
+- **[`@formio/uag-js`](./packages/uag-js)** connects a formio.js application to the UAG. Register it once with `Formio.use(UAG('https://uag.example.com'))`: submissions of forms tagged `uag` are then saved through the UAG, and Agent Input fills those forms from what the user wrote, through `{form}/agent/extract`, when they leave the input, pause, move to the next page, or press a button. `Formio.createChat(element, formUrl)` renders any of them as a chat instead, templated, translated and themed like a formio.js form. See [JavaScript (formio.js)](./demo/content/developers/renderer.md) and [Chat widget](./demo/content/developers/chat.md).
 
 ## Deployment
 
@@ -289,7 +288,7 @@ A local client has no browser, so it exchanges a key for a token at the UAG's `/
 |---|---|
 | `PROJECT` | **Required.** How the UAG reaches Form.io: the Open Source server's URL, or an Enterprise or hosted project's endpoint. A container-to-container address is fine. |
 | `ADMIN_KEY` or `PROJECT_KEY` | **Required.** `ADMIN_KEY` for Open Source; a project API key (**Project Settings → API Keys**) for Enterprise or hosted. Setting `PROJECT_KEY` is what makes the UAG treat `PROJECT` as an Enterprise project. |
-| `JWT_SECRET` | **Required.** Signs the tokens the UAG issues. The same as the Form.io Enterprise server's lets an agent act on users' behalf (see [Project setup for agents](https://ai.form.io/developers/project-setup)). |
+| `JWT_SECRET` | **Required.** Signs the tokens the UAG issues. The same as the Form.io Enterprise server's lets an agent act on users' behalf (see [Project setup for agents](./demo/content/developers/project-setup.md)). |
 | `MONGO`, `UAG_DATABASE` | Optional. The UAG's own database (default name `uag`; it can share Form.io's MongoDB), for run records in Action Logs, runs that survive a restart, and remote MCP sign-in. It holds only `uag-*` collections, never submissions. Needs a license. |
 | `MCP_OAUTH` | `true` turns on OAuth sign-in for remote MCP clients. Needs `MONGO`. |
 | `TRUST_PROXY` | Optional. Set behind a reverse proxy, so the UAG reads its public URL from the forwarded headers. `BASE_URL`, also optional, overrides that URL. |
@@ -300,7 +299,7 @@ A local client has no browser, so it exchanges a key for a token at the UAG's `/
 | `PROJECT_TTL` | Seconds between project refreshes. Default `900`; `0` disables them. |
 | `UAG_MODULE` | Path to a module, for the `uag` command (`npx uag`). The Docker image loads `/app/module` instead. |
 
-Every variable, Docker and Kubernetes examples, Enterprise and hosted setups, a smaller image with fewer engines, and the production checklist: [Deployment](https://ai.form.io/developers/deployment). Before exposing the UAG: [Security](https://ai.form.io/developers/security).
+Every variable, Docker and Kubernetes examples, Enterprise and hosted setups, a smaller image with fewer engines, and the production checklist: [Deployment](./demo/content/developers/deployment.md). Before exposing the UAG: [Security](./demo/content/developers/security.md).
 
 ## Troubleshooting
 
@@ -314,7 +313,7 @@ Every variable, Docker and Kubernetes examples, Enterprise and hosted setups, a 
 | A Run task action never runs | The submission went to Form.io's URL instead of the UAG's, the action's method or conditions do not match, or the UAG has no license (see its log). |
 | A task runs again on every update | The update Run task action has no condition on a field the task sets. |
 
-The full table, with the Agent API's errors: [Troubleshooting](https://ai.form.io/developers/troubleshooting).
+The full table, with the Agent API's errors: [Troubleshooting](./demo/content/developers/troubleshooting.md).
 
 ## Packages and versions
 
@@ -325,19 +324,19 @@ The full table, with the Agent API's errors: [Troubleshooting](https://ai.form.i
 | [`@formio/uag-sdk`](./packages/engine-sdk) | 2.x | ≥ 2.0.0 | Engine contract version 1, remote engine protocol version 1. |
 | [`@formio/uag-engines`](./packages/engine-server), image `formio/uag-engines` | 2.x | ≥ 2.0.0 | The engine server. |
 | [`@formio/uag-js`](./packages/uag-js) | 2.x | ≥ 2.0.0 | The formio.js module: saves `uag` forms through the UAG, adds Agent Input, and renders forms as a chat. Runs in the browser; the UAG also serves it at `/uag-js/`. |
-| [`@formio/uag-extras`](https://www.npmjs.com/package/@formio/uag-extras), image `formio/uag-documents` | 1.x | ≥ 2.0.0 | Versioned on its own: the AI Document module, document plugins and converters (`npm install @formio/uag-extras@^1`); needs Node.js 24 or newer. The image is an add-on that runs beside `formio/uag` and fills its plugins folder (`formio/uag-documents:1`): see [AI Document](https://ai.form.io/developers/ai-document#run-it-with-docker). |
+| [`@formio/uag-extras`](https://www.npmjs.com/package/@formio/uag-extras), image `formio/uag-documents` | 1.x | ≥ 2.0.0 | Versioned on its own: the AI Document module, document plugins and converters (`npm install @formio/uag-extras@^1`); needs Node.js 24 or newer. The image is an add-on that runs beside `formio/uag` and fills its plugins folder (`formio/uag-documents:1`): see [AI Document](./demo/content/developers/ai-document.md#run-it-with-docker). |
 | `@formio/uag-claude` | 1.3.x | 1.12.0 – 1.13.x | The retired Claude integration (against 2.0, only its direct commands). Security fixes only; see [MIGRATING-2.0.md](./MIGRATING-2.0.md). |
 
 `@formio/uag-claude` 2.x is the Claude *engine*, not the 1.x integration; pin `@formio/uag-claude@^1` if you still install the integration. Upgrading from 1.x: [MIGRATING-2.0.md](./MIGRATING-2.0.md).
 
 ## Documentation
 
-The developer documentation is published at [ai.form.io/developers](https://ai.form.io/developers), from the Markdown in [`demo/content/developers`](./demo/content/developers).
+The developer documentation is the Markdown in [`demo/content/developers`](./demo/content/developers). Start with [How the UAG works](./demo/content/developers/index.md).
 
-| | Site | In this repository |
+| | Developer guides | Package and sample READMEs |
 |---|---|---|
-| **Start here** | [How the UAG works](https://ai.form.io/developers) · [Agentic Coding Plugin](https://ai.form.io/developers/agentic-coding) · [Quickstart](https://ai.form.io/developers/quickstart) | [Demo site](./demo/README.md) |
-| **Concepts** | [Concepts](https://ai.form.io/developers/concepts) · [Form properties](https://ai.form.io/developers/form-properties) | |
-| **Build** | [MCP tools](https://ai.form.io/developers/mcp-tools) · [Agent API](https://ai.form.io/developers/agent-api) · [Workflows](https://ai.form.io/developers/workflows) · [JavaScript (formio.js)](https://ai.form.io/developers/renderer) · [Chat widget](https://ai.form.io/developers/chat) · [AI Document](https://ai.form.io/developers/ai-document) · [Connect Claude](https://ai.form.io/developers/connect-claude) | [`@formio/uag-js`](./packages/uag-js/README.md) · [Claude Desktop module](./demo/samples/custom-module/Readme.md) |
-| **Extend** | [Node.js API](https://ai.form.io/developers/node-api) · [Modules](https://ai.form.io/developers/modules) · [Plugins](https://ai.form.io/developers/plugins) · [Engines](https://ai.form.io/developers/engines) · [Engine SDK](https://ai.form.io/developers/engine-sdk) · [Engine server](https://ai.form.io/developers/engine-server) | [Modules](./module/Readme.md) · [Response templates](./demo/samples/custom-module/module/templates/Readme.md) · [Engines](./engines) · [Engine SDK](./packages/engine-sdk/README.md) · [Engine server](./packages/engine-server/README.md) · [Engine setups](./demo/samples/engines/Readme.md) |
-| **Operate** | [Security](https://ai.form.io/developers/security) · [Deployment](https://ai.form.io/developers/deployment) · [Evaluation](https://ai.form.io/developers/evaluation) · [Troubleshooting](https://ai.form.io/developers/troubleshooting) | [Docker Hub](./DOCKERHUB.md) · [Migrating to 2.0](./MIGRATING-2.0.md) · [Security policy](./SECURITY.md) · [End-to-end tests](./test/e2e/Readme.md) |
+| **Start here** | [How the UAG works](./demo/content/developers/index.md) · [Agentic Coding Plugin](./demo/content/developers/agentic-coding.md) · [Quickstart](./demo/content/developers/quickstart.md) | [Demo site](./demo/README.md) |
+| **Concepts** | [Concepts](./demo/content/developers/concepts.md) · [Form properties](./demo/content/developers/form-properties.md) | |
+| **Build** | [MCP tools](./demo/content/developers/mcp-tools.md) · [Agent API](./demo/content/developers/agent-api.md) · [Workflows](./demo/content/developers/workflows.md) · [JavaScript (formio.js)](./demo/content/developers/renderer.md) · [Chat widget](./demo/content/developers/chat.md) · [AI Document](./demo/content/developers/ai-document.md) · [Connect Claude](./demo/content/developers/connect-claude.md) | [`@formio/uag-js`](./packages/uag-js/README.md) · [Claude Desktop module](./demo/samples/custom-module/Readme.md) |
+| **Extend** | [Node.js API](./demo/content/developers/node-api.md) · [Modules](./demo/content/developers/modules.md) · [Plugins](./demo/content/developers/plugins.md) · [Engines](./demo/content/developers/engines.md) · [Engine SDK](./demo/content/developers/engine-sdk.md) · [Engine server](./demo/content/developers/engine-server.md) | [Modules](./module/Readme.md) · [Response templates](./demo/samples/custom-module/module/templates/Readme.md) · [Engines](./engines) · [Engine SDK](./packages/engine-sdk/README.md) · [Engine server](./packages/engine-server/README.md) · [Engine setups](./demo/samples/engines/Readme.md) |
+| **Operate** | [Security](./demo/content/developers/security.md) · [Deployment](./demo/content/developers/deployment.md) · [Evaluation](./demo/content/developers/evaluation.md) · [Troubleshooting](./demo/content/developers/troubleshooting.md) | [Docker Hub](./DOCKERHUB.md) · [Migrating to 2.0](./MIGRATING-2.0.md) · [Security policy](./SECURITY.md) · [End-to-end tests](./test/e2e/Readme.md) |

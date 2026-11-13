@@ -1,6 +1,6 @@
 # @formio/uag-sdk
 
-<sub>[Form.io UAG](https://ai.form.io/developers) &rsaquo; [Engines](https://ai.form.io/developers/engines) &rsaquo; this page</sub>
+<sub>[Form.io UAG](https://github.com/formio/uag/blob/main/demo/content/developers/index.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/main/demo/content/developers/engines.md) &rsaquo; this page</sub>
 
 Build engine packages for the Form.io Universal Agent Gateway (UAG). This package contains:
 
@@ -17,7 +17,7 @@ An engine package depends on this package only. It never needs `@formio/uag`.
 npm install @formio/uag-sdk
 ```
 
-The SDK requires Node.js 22 or later and has no dependencies. The full reference, with two complete example engines and their tests, is [Engine SDK](https://ai.form.io/developers/engine-sdk).
+The SDK requires Node.js 22 or later and has no dependencies. The full reference, with two complete example engines and their tests, is [Engine SDK](https://github.com/formio/uag/blob/main/demo/content/developers/engine-sdk.md).
 
 ## An engine package
 

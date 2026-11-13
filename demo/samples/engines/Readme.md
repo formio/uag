@@ -2,7 +2,7 @@
 
 <sub>[Form.io UAG](../../../README.md) &rsaquo; [Demo](../../README.md) &rsaquo; this page</sub>
 
-Compose overrides, each showing another way to run the [Agent API](https://ai.form.io/developers/engines)'s engines. Each one changes only the engines of a stack whose UAG service is named `formio-uag`, such as the [custom module sample](../custom-module) or your own. The [demo site](../../docker-compose.yml) itself runs JEV and Claude inside the UAG; its [split overlay](../../docker-compose.split.yml) moves them to an engine server.
+Compose overrides, each showing another way to run the [Agent API](../../content/developers/engines.md)'s engines. Each one changes only the engines of a stack whose UAG service is named `formio-uag`, such as the [custom module sample](../custom-module) or your own. The [demo site](../../docker-compose.yml) itself runs JEV and Claude inside the UAG; its [split overlay](../../docker-compose.split.yml) moves them to an engine server.
 
 Run one by adding it to the compose command, from your stack's folder:
 
@@ -18,7 +18,7 @@ docker compose -f docker-compose.yml -f ../engines/<file>.yml up -d
 | [`providers.yml`](./providers.yml) | Grok or Gemini in place of Claude, each through its own engine package. | `PROVIDER_ENGINE` (`grok` or `gemini`), and that provider's variables (see the file) |
 | [`openai-decisions.yml`](./openai-decisions.yml) | OpenAI's Decisions API deciding the closed-set fields (`decide:openai` with `kind: decision`), with Claude writing the open values. | `OPENAI_API_KEY`, `CLAUDE_API_KEY` |
 
-Real engines are Agentic Formflow: a self-hosted UAG needs a `LICENSE_KEY` that includes the UAG for them, unless `PROJECT` is on Form.io's hosted service (see [Licensing](https://ai.form.io/developers/deployment#licensing)). Every file passes `LICENSE_KEY` through from `.env`.
+Real engines are Agentic Formflow: a self-hosted UAG needs a `LICENSE_KEY` that includes the UAG for them, unless `PROJECT` is on Form.io's hosted service (see [Licensing](../../content/developers/deployment.md#licensing)). Every file passes `LICENSE_KEY` through from `.env`.
 
 Check what a stack enabled at `GET /agent/capabilities` on the UAG: it lists each engine instance with its type, model, package and version.
 

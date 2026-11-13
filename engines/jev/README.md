@@ -1,8 +1,8 @@
 # @formio/uag-jev
 
-<sub>[Form.io UAG](https://ai.form.io/developers) &rsaquo; [Engines](https://ai.form.io/developers/engines) &rsaquo; this page</sub>
+<sub>[Form.io UAG](https://github.com/formio/uag/blob/main/demo/content/developers/index.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/main/demo/content/developers/engines.md) &rsaquo; this page</sub>
 
-The TypeSafe **Jev** decision engine for the [UAG Agent API](https://ai.form.io/developers/agent-api). It answers a task's closed-set fields (radio, select, checkbox, select boxes, survey and small resource selects) in one request, typically in 70–500 ms, with a confidence for each answer.
+The TypeSafe **Jev** decision engine for the [UAG Agent API](https://github.com/formio/uag/blob/main/demo/content/developers/agent-api.md). It answers a task's closed-set fields (radio, select, checkbox, select boxes, survey and small resource selects) in one request, typically in 70–500 ms, with a confidence for each answer.
 
 It is included in the `formio/uag` Docker image. With the UAG installed from npm, install it next to it:
 
@@ -17,7 +17,7 @@ UAG_ENGINES=jev
 TYPESAFE_API_KEY=...
 ```
 
-Decisions are Agentic Formflow, so on a self-hosted project the UAG also needs a `LICENSE_KEY` that includes the UAG for the project's endpoint (see [Licensing](https://ai.form.io/developers/deployment#licensing)); a project on Form.io's hosted service needs none.
+Decisions are Agentic Formflow, so on a self-hosted project the UAG also needs a `LICENSE_KEY` that includes the UAG for the project's endpoint (see [Licensing](https://github.com/formio/uag/blob/main/demo/content/developers/deployment.md#licensing)); a project on Form.io's hosted service needs none.
 
 ## Settings
 

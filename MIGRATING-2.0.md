@@ -65,9 +65,9 @@ Using it needs a license that includes the UAG, on every edition and on Form.io'
 | `MAX_BODY_SIZE` | `100mb` | `16mb`, Form.io's own limit: bodies are parsed before authentication. |
 | An application that embeds the UAG | Started without Node's `--no-node-snapshot` | `new UAGServer()` throws unless Node runs with `--no-node-snapshot` (or `NODE_OPTIONS=--no-node-snapshot`), which `isolated-vm` needs. The `uag` command and the image add it themselves. |
 | Remote MCP sign-in | | Access and refresh tokens are distinct, so clients signed in through OAuth sign in again once after the upgrade. |
-| TLS to Form.io | Certificates not verified | Verified on the UAG's requests to Form.io. For a `PROJECT` with a self-signed certificate, see [Deployment](https://ai.form.io/developers/deployment). |
+| TLS to Form.io | Certificates not verified | Verified on the UAG's requests to Form.io. For a `PROJECT` with a self-signed certificate, see [Deployment](./demo/content/developers/deployment.md). |
 | A module's project template | Installed on every `PROJECT_TTL` refresh | Installed once at startup (`TEMPLATE_SYNC=boot`). `refresh` installs on every refresh too; `off` never installs. |
-| Files and signatures in MCP tool results | The stored value (base64 for a base64 upload) | Described: a file as `{ "name", "type", "size" }`, a signature as `(signed)`. To read a document's text, call [`read_document`](https://ai.form.io/developers/mcp-tools#readdocument). |
+| Files and signatures in MCP tool results | The stored value (base64 for a base64 upload) | Described: a file as `{ "name", "type", "size" }`, a signature as `(signed)`. To read a document's text, call [`read_document`](./demo/content/developers/mcp-tools.md#read_document). |
 
 ## Other breaking changes
 
@@ -86,11 +86,11 @@ Using it needs a license that includes the UAG, on every edition and on Form.io'
 For each form whose webhooks call the UAG (`/agent/provide`) or the retired Claude integration (`/agent/claude/agent_provide_data`):
 
 1. **Send its submissions to the UAG.** Point the application's project URL at the UAG instead of Form.io. A submission sent straight to Form.io runs no task.
-2. **Replace each webhook with Run task.** Add "Agent: Run task" with the webhook's task, **Answer** set to the whole task, **When** set to after the save, and the webhook's method (create or update). On Form.io Enterprise, add it in a portal stage connected to the UAG (`PORTAL_SECRET`; see [Deployment → Connecting the Enterprise portal](https://ai.form.io/developers/deployment#connecting-the-enterprise-portal)). On Open Source, add it with Form.io's action API (`POST /form/{formId}/action`) or in a module's project template. Then delete the webhook: the UAG no longer serves `/agent/provide`.
+2. **Replace each webhook with Run task.** Add "Agent: Run task" with the webhook's task, **Answer** set to the whole task, **When** set to after the save, and the webhook's method (create or update). On Form.io Enterprise, add it in a portal stage connected to the UAG (`PORTAL_SECRET`; see [Deployment → Connecting the Enterprise portal](./demo/content/developers/deployment.md#connecting-the-enterprise-portal)). On Open Source, add it with Form.io's action API (`POST /form/{formId}/action`) or in a module's project template. Then delete the webhook: the UAG no longer serves `/agent/provide`.
 3. **Keep the conditions.** Copy each webhook's condition onto its Run task action, including the condition on a field the task sets that keeps an update action from running again on the task's own save. Form.io's condition lists (`all` or `any`) work as they do on any action.
 4. **Mark the agent's fields `uagAuthoritative: "true"`.** Decision and value fields alike; a field's `uagConfidenceField` is owned with it. The UAG then removes them from what a client sends, for every Run task action on the form, and on an update they keep their stored value. Fields without it stay editable, so a person's correction is kept.
 
-Run task never substitutes the UAG's project API key for the caller's credential. Without an **Agent role** it saves with the credential the submission was sent with (a user's token needs update permission on their own submission); with one, on Form.io Enterprise with the same `JWT_SECRET`, it acts for the user with that role. See [Project setup for agents](https://ai.form.io/developers/project-setup).
+Run task never substitutes the UAG's project API key for the caller's credential. Without an **Agent role** it saves with the credential the submission was sent with (a user's token needs update permission on their own submission); with one, on Form.io Enterprise with the same `JWT_SECRET`, it acts for the user with that role. See [Project setup for agents](./demo/content/developers/project-setup.md).
 
 What changes in behavior, coming from the Claude integration:
 
@@ -193,16 +193,16 @@ Forms tagged `uag` then save through the UAG, and get Agent Input when one of th
 | `trigger` | The same values. On forms attached when registered, the default is `next` for wizards and `blur` otherwise; `UAG.attach` still defaults to `blur`. |
 | `task`, `pauseMs`, `nextTimeoutMs`, `fetch`, `onStart`, `onResult`, `onError`, `onDone` | Unchanged. |
 
-See [JavaScript (formio.js)](https://ai.form.io/developers/renderer).
+See [JavaScript (formio.js)](./demo/content/developers/renderer.md).
 
 ## The examples are now the demo site
 
-`examples/` is removed. The demo site (`demo/`, published at [ai.form.io](https://ai.form.io)) replaces it:
+`examples/` is removed. The demo site (`demo/`) replaces it:
 
 | 1.13 | 2.0 |
 |---|---|
 | `examples/custom-module` | [`demo/samples/custom-module`](./demo/samples/custom-module), now with remote MCP sign-in (`MCP_OAUTH`, `MONGO`, `LICENSE_KEY`). |
-| `examples/conversation-form` | The demo's Conversation Forms page, which renders its form with `Formio.createChat` from `@formio/uag-js`; each turn is the UAG's `{form}/agent/chat`. To offer the same chat in your own application, see [Chat widget](https://ai.form.io/developers/chat). |
+| `examples/conversation-form` | The demo's Conversation Forms page, which renders its form with `Formio.createChat` from `@formio/uag-js`; each turn is the UAG's `{form}/agent/chat`. To offer the same chat in your own application, see [Chat widget](./demo/content/developers/chat.md). |
 | `examples/agentic-workflow` | The demo's Agentic Workflow page: the application is saved through the UAG, and the form's two "Agent: Run task" actions do the rest, with no webhooks and no Claude integration. |
 | `examples/flow-viewer` | Removed. Each demo page shows a log of the calls it makes to the UAG and the project. |
 

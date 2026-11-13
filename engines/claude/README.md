@@ -1,8 +1,8 @@
 # @formio/uag-claude
 
-<sub>[Form.io UAG](https://ai.form.io/developers) &rsaquo; [Engines](https://ai.form.io/developers/engines) &rsaquo; this page</sub>
+<sub>[Form.io UAG](https://github.com/formio/uag/blob/main/demo/content/developers/index.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/main/demo/content/developers/engines.md) &rsaquo; this page</sub>
 
-The **Claude** agent engine for the [UAG Agent API](https://ai.form.io/developers/agent-api). It extracts and generates open values (dates, amounts, names, free text) with structured outputs. When a task lists read-only tools in `uagTools`, it researches with them first.
+The **Claude** agent engine for the [UAG Agent API](https://github.com/formio/uag/blob/main/demo/content/developers/agent-api.md). It extracts and generates open values (dates, amounts, names, free text) with structured outputs. When a task lists read-only tools in `uagTools`, it researches with them first.
 
 It is included in the `formio/uag` Docker image. With the UAG installed from npm, install it next to it:
 
@@ -17,7 +17,7 @@ UAG_ENGINES=claude          # or jev,claude
 CLAUDE_API_KEY=...
 ```
 
-Its tasks are Agentic Formflow, so on a self-hosted project the UAG also needs a `LICENSE_KEY` that includes the UAG for the project's endpoint (see [Licensing](https://ai.form.io/developers/deployment#licensing)); a project on Form.io's hosted service needs none. A form's chat needs no license on Form.io Open Source or a hosted project.
+Its tasks are Agentic Formflow, so on a self-hosted project the UAG also needs a `LICENSE_KEY` that includes the UAG for the project's endpoint (see [Licensing](https://github.com/formio/uag/blob/main/demo/content/developers/deployment.md#licensing)); a project on Form.io's hosted service needs none. A form's chat needs no license on Form.io Open Source or a hosted project.
 
 ## Settings
 

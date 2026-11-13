@@ -1,8 +1,8 @@
 # @formio/uag-gemini
 
-<sub>[Form.io UAG](https://ai.form.io/developers) &rsaquo; [Engines](https://ai.form.io/developers/engines) &rsaquo; this page</sub>
+<sub>[Form.io UAG](https://github.com/formio/uag/blob/main/demo/content/developers/index.md) &rsaquo; [Engines](https://github.com/formio/uag/blob/main/demo/content/developers/engines.md) &rsaquo; this page</sub>
 
-The **Gemini** agent engine for the [UAG Agent API](https://ai.form.io/developers/agent-api): Google's Gemini models, through Google's OpenAI-compatible endpoint. It extracts and generates open values (dates, amounts, names, free text) with structured outputs. When a task lists read-only tools in `uagTools`, it researches with them first.
+The **Gemini** agent engine for the [UAG Agent API](https://github.com/formio/uag/blob/main/demo/content/developers/agent-api.md): Google's Gemini models, through Google's OpenAI-compatible endpoint. It extracts and generates open values (dates, amounts, names, free text) with structured outputs. When a task lists read-only tools in `uagTools`, it researches with them first.
 
 It is included in the `formio/uag` Docker image. With the UAG installed from npm, install it next to it:
 
@@ -18,7 +18,7 @@ GEMINI_API_KEY=...
 GEMINI_MODEL=<a Gemini model ID>
 ```
 
-Its tasks are Agentic Formflow, so on a self-hosted project the UAG also needs a `LICENSE_KEY` that includes the UAG for the project's endpoint (see [Licensing](https://ai.form.io/developers/deployment#licensing)); a project on Form.io's hosted service needs none. A form's chat needs no license on Form.io Open Source or a hosted project.
+Its tasks are Agentic Formflow, so on a self-hosted project the UAG also needs a `LICENSE_KEY` that includes the UAG for the project's endpoint (see [Licensing](https://github.com/formio/uag/blob/main/demo/content/developers/deployment.md#licensing)); a project on Form.io's hosted service needs none. A form's chat needs no license on Form.io Open Source or a hosted project.
 
 ## Settings
 
@@ -51,7 +51,7 @@ There is no default model: set `model` to a specific model ID from Google's docu
 
 ## How it works
 
-It is the [OpenAI engine](https://ai.form.io/developers/engines#openai)'s agent kind with Google's endpoint and key built in: one chat completion with a strict JSON schema per extraction, and a function-calling loop over the task's read-only tools for research, ending in the same structured answer. A refusal, a truncated answer or an answer that is not JSON is an engine failure, and the UAG falls back to the next engine.
+It is the [OpenAI engine](https://github.com/formio/uag/blob/main/demo/content/developers/engines.md#openai)'s agent kind with Google's endpoint and key built in: one chat completion with a strict JSON schema per extraction, and a function-calling loop over the task's read-only tools for research, ending in the same structured answer. A refusal, a truncated answer or an answer that is not JSON is an engine failure, and the UAG falls back to the next engine.
 
 Each field's format (such as `date`) and pattern are written into its description, not sent as schema constraints, so a field the input does not state stays empty instead of being invented to fit a pattern. The UAG validates every value either way.
 
