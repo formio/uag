@@ -38,6 +38,19 @@ export function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 }
 
+/**
+ * A front matter value: a YAML scalar on one line. A value with `: ` or ` #` in it
+ * must be quoted for GitHub, which reads front matter as YAML: `"..."` (with `\"`
+ * for a double quote) or `'...'` (with `''` for an apostrophe).
+ */
+function scalar(value) {
+    if (/^"(?:[^"\\]|\\.)*"$/.test(value)) {
+        try { return JSON.parse(value); } catch { return value.slice(1, -1); }
+    }
+    if (/^'(?:[^']|'')*'$/.test(value)) return value.slice(1, -1).replace(/''/g, "'");
+    return value;
+}
+
 /** `---` front matter of `key: value` lines, and the body after it. */
 export function parseFrontMatter(source) {
     const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(source);
@@ -45,7 +58,7 @@ export function parseFrontMatter(source) {
     const meta = {};
     for (const line of match[1].split(/\r?\n/)) {
         const index = line.indexOf(':');
-        if (index > 0) meta[line.slice(0, index).trim()] = line.slice(index + 1).trim().replace(/^["']|["']$/g, '');
+        if (index > 0) meta[line.slice(0, index).trim()] = scalar(line.slice(index + 1).trim());
     }
     return { meta, body: source.slice(match[0].length) };
 }

@@ -68,6 +68,22 @@ describe('Demo site content', function () {
         expect(docs.get('index')).to.exist;
     });
 
+    it('reads quoted front matter values, and quotes every value YAML would refuse', function () {
+        const { meta } = parseFrontMatter('---\na: "Run \\"Agent: Run task\\" first"\nb: \'agents\'\' fields: theirs\'\nc: plain\n---\nBody');
+        expect(meta).to.deep.equal({ a: 'Run "Agent: Run task" first', b: "agents' fields: theirs", c: 'plain' });
+        expect(docs.get('workflows').description).to.match(/^Build autonomous agent workflows with the "Agent: Run task" action/);
+        const unquoted = [];
+        for (const file of fs.readdirSync(path.join(root, 'content/developers')).filter((name) => name.endsWith('.md') && name !== 'README.md')) {
+            const front = /^---\r?\n([\s\S]*?)\r?\n---/.exec(fs.readFileSync(path.join(root, 'content/developers', file), 'utf8'))[1];
+            for (const line of front.split(/\r?\n/)) {
+                const value = line.slice(line.indexOf(':') + 1).trim();
+                const quoted = /^"(?:[^"\\]|\\.)*"$/.test(value) || /^'(?:[^']|'')*'$/.test(value);
+                if (!quoted && (/: | #/.test(value) || /^[[\]{}&*!|>'"%@`#,?:-]/.test(value))) unquoted.push(`${file}: ${line}`);
+            }
+        }
+        expect(unquoted).to.deep.equal([]);
+    });
+
     it('links a relative path to the repository file at the release the site is built for', function () {
         const context = { dir: path.join(root, 'content/developers'), repoRoot: path.resolve(root, '..'), source: 'https://example.test/tree/v9', sourceFile: 'https://example.test/blob/v9' };
         expect(sourceLink('../../samples/custom-module', context).href).to.equal('https://example.test/tree/v9/demo/samples/custom-module');

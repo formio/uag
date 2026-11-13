@@ -1,6 +1,6 @@
 ---
 title: Workflows
-description: Build autonomous agent workflows with the "Agent: Run task" action, before or after the save, chain tasks by update conditions, keep agents' fields out of clients' hands, and follow each run in Action Logs.
+description: "Build autonomous agent workflows with the \"Agent: Run task\" action, before or after the save, chain tasks by update conditions, keep agents' fields out of clients' hands, and follow each run in Action Logs."
 section: Build
 order: 30
 ---
