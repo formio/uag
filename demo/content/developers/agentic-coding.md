@@ -51,7 +51,7 @@ The **UAG URL** is a separate value: where your applications, browsers and MCP c
 
 ## What to ask for
 
-Describe the outcome, not the settings. The plugin's `formio-uag` skill maps the request to one of the UAG's [usage patterns](./index.md#three-ways-to-use-it), and says up front whether it needs a license. Each prompt below builds one of this site's live demos in your own project.
+Describe the outcome, not the settings. The plugin's `formio-uag` skill maps the request to one of the UAG's [usage patterns](./index.md#ways-to-use-it), and says up front whether it needs a license. Each prompt below builds one of this site's live demos in your own project.
 
 | You want | Ask your coding agent | See it running |
 |---|---|---|

@@ -1,6 +1,6 @@
 ---
 title: How the UAG works
-description: The architecture of the Form.io Universal Agent Gateway, how it reads your project, and the request flow of each of its three usage patterns.
+description: The architecture of the Form.io Universal Agent Gateway, how it reads your project, and the request flow of each of its four usage patterns.
 section: Start here
 order: 1
 ---
@@ -74,9 +74,9 @@ Two consequences matter in practice:
 - **A form edit is not instant.** Adding the `uag` tag, rewriting criteria or flagging new agent fields reaches agents after the next refresh, so allow up to `PROJECT_TTL` seconds. Restart the UAG to register changes immediately.
 - **The project is the source of truth, not the template.** A module's template only adds what the project lacks, matched by key. It never changes a form or action the project already has. Change existing forms in the portal, through a stage deployment, or by posting the template to the project's `/import` endpoint. With `TEMPLATE_SYNC=boot`, a template form you deleted from the project comes back on the next restart; use `off` when stage deployments manage the project.
 
-## Three ways to use it
+## Ways to use it
 
-The UAG supports three usage patterns. They share the same forms, authentication and validation, and one deployment can serve all three at once.
+The UAG supports four usage patterns. They share the same forms, authentication and validation, and one deployment can serve all four at once.
 
 ![Conversation forms, agentic workflows and Agentic Formflow, step by step.](../../public/images/uag-usage-patterns.svg)
 
@@ -85,6 +85,7 @@ The UAG supports three usage patterns. They share the same forms, authentication
 | **Conversation forms** | A person, through an agent or a chat on your page | `/mcp`, or a form's `agent/chat` | In the MCP client (Claude, your own app), or in the UAG through an agent engine | None |
 | **Agentic workflows** | A submission sent to the UAG | The "Agent: Run task" action, after the save | In the UAG, through an engine | A license that includes the UAG, or a hosted project |
 | **Agentic Formflow** | An application, or a person typing in a form | `{form}/agent/extract`, `/decide`, `/generate` | In the UAG, through engines | A license that includes the UAG, or a hosted project |
+| **AI Documents** | A person uploading files to a form | An AI Document component's `{form}/document/process` | In the UAG, through an agent engine | A license that includes the UAG, or a hosted project |
 
 ### Conversation forms over MCP
 
@@ -170,9 +171,35 @@ note formio.js + @formio/uag-js: fills empty fields as suggestions
 
 `{form}/agent/decide` and `{form}/agent/generate` do the same on in-flight data, for decisions only or open values only. Build this with the [Agent API](./agent-api.md) and [`@formio/uag-js`](./renderer.md). See it live at [/examples/formflow](../../public/apps/formflow).
 
+### AI Documents
+
+A person uploads files to a form, and the form reads them. An **AI Document** component (`uagdocument`) sends the uploaded files to the UAG, which produces what the form designer's instructions ask for: an exact extraction, a summary, an assessment or a translation. The person reviews the result before they submit, and edits it where the process allows, or in the form field it writes to.
+
+```sequence
+participants: User, formio.js + AI Document, Storage, UAG*, Engine
+User -> formio.js + AI Document: drops a lease (PDF, Word, a scan, ...)
+formio.js + AI Document -> Storage: uploads it, as a File component does
+formio.js + AI Document -> UAG: POST {form}/document/process, the file references and the user's Form.io token
+UAG -> Storage: reads the files with the user's permissions
+note UAG: converters bring each file to PDF or text
+UAG -> Engine: the document plugin's request, with the form's instructions
+Engine --> UAG: the content
+note UAG: the plugin checks it (extract: word for word against the file's text)
+UAG --> formio.js + AI Document: progress, then the result (or flagged, with the issues)
+note formio.js + AI Document: the person reviews it, then submits
+```
+
+1. The form designer adds an AI Document in the form builder, picks a **process** (a document plugin installed on the UAG: `extract`, `analyze`, `translate`, or one of your own) and writes its instructions.
+2. The person drops one or more files. formio.js uploads them to the form's own storage, and the component posts the file references to the UAG with the signed-in user's Form.io token.
+3. The UAG reads the files with the user's permissions and converts each one to what the engine reads: PDF or text, with converter plugins for Word and Excel files.
+4. The document plugin asks an agent engine for the content and checks it. `extract` compares its copy with the file's text, retries a copy that differs, then flags it; a scan or photo has no text to compare, so its copy is flagged for the person to check.
+5. The component shows the progress and the result. The submission keeps the file references and the result, and the person submits it as any other.
+
+Nothing checks the result again when the submission is saved: the person's review is the control. AI Document is a module from `@formio/uag-extras`, added to the `formio/uag` image by the `formio/uag-documents` add-on. Build this with [AI Document](./ai-document.md) and [Plugins](./plugins.md). See it live at [/examples/documents](../../public/apps/documents).
+
 ## Where the models run
 
-The UAG never trains or hosts a model. In MCP conversations, the client's model does the reasoning. In a form's [chat](./chat.md), workflows and Agentic Formflow, the UAG calls **engines**: adapters for a model provider, each its own npm package (`jev`, `claude`, `openai`, `grok`, `gemini`). The `formio/uag` image includes all of them, and none runs until you name it in `UAG_ENGINES`. Engines can also run in a separate engine server container, so model keys and model traffic stay out of the UAG.
+The UAG never trains or hosts a model. In MCP conversations, the client's model does the reasoning. In a form's [chat](./chat.md), workflows, Agentic Formflow and AI Documents, the UAG calls **engines**: adapters for a model provider, each its own npm package (`jev`, `claude`, `openai`, `grok`, `gemini`). The `formio/uag` image includes all of them, and none runs until you name it in `UAG_ENGINES`. Engines can also run in a separate engine server container, so model keys and model traffic stay out of the UAG.
 
 Engines only answer. The UAG decides which fields each engine sees, validates every answer, and performs every write. See [Engines](./engines.md) and [Engine server](./engine-server.md).
 

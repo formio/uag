@@ -35,7 +35,7 @@ describe('Demo site content', function () {
         const context = { dir: path.join(root, 'content/developers') };
         expect(siteLink('./chat.md', context)).to.equal('/developers/chat');
         expect(siteLink('chat.md#the-widget', context)).to.equal('/developers/chat#the-widget');
-        expect(siteLink('./index.md#three-ways-to-use-it', context)).to.equal('/developers#three-ways-to-use-it');
+        expect(siteLink('./index.md#ways-to-use-it', context)).to.equal('/developers#ways-to-use-it');
         expect(siteLink('../../public/apps/workflow', context)).to.equal('/examples/workflow');
         expect(siteLink('../../public/apps/workflow/workflow.js', context)).to.equal('/apps/workflow/workflow.js');
         expect(siteLink('../../public/images/login.png', context)).to.equal('/images/login.png');
