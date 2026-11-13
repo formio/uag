@@ -36,7 +36,7 @@ async function waitFor(check, what, timeoutMs = 30000) {
 
 /**
  * The demo site as it ships, on the open-source e2e stack: the static build
- * (demo/scripts/build.mjs), served as CloudFront serves it, whose pages call
+ * (demo/scripts/build.mjs), served as a static host serves it, whose pages call
  * the UAG and the project from the browser, as each visitor's guest user.
  *
  *   browser ─▶ site (static files)

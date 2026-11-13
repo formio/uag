@@ -2,12 +2,12 @@
 /**
  * Builds the demo site into static files (demo/dist by default): every page and
  * doc as HTML, the public assets, and the demo apps, with the build-time
- * settings of lib/config.mjs filled in. The output needs no server: put it on
- * S3 + CloudFront (deploy/site.yml), or any static host that serves
- * `<path>/index.html` for `<path>` and `404.html` for what it does not have.
+ * settings of lib/config.mjs filled in. The output needs no server: any static
+ * host that serves `<path>/index.html` for `<path>` and `404.html` for what it
+ * does not have, with the headers of scripts/serve.mjs's securityHeaders.
  *
  *   yarn demo:build                       a local build, against http://localhost:3200
- *   NODE_ENV=production DEMO_UAG_URL=https://uag.ai.form.io yarn demo:build
+ *   NODE_ENV=production DEMO_UAG_URL=https://uag.example.com yarn demo:build
  *
  * A build is written to a temporary folder and moved into place only when every
  * page rendered and no secret from the environment appears in it, so a failed

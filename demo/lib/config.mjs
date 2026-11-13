@@ -66,10 +66,9 @@ export function formioBaseOf(projectUrl) {
 }
 
 /**
- * The site's Content-Security-Policy. deploy/site.yml sends the same policy from
- * CloudFront, with its UagOrigin parameter for `uagOrigin` (a test keeps the two
- * the same); scripts/serve.mjs sends it locally, adding `projectOrigin` when the
- * project is not on Form.io's hosted service.
+ * The site's Content-Security-Policy, which a host of the built site should send
+ * with every page; scripts/serve.mjs sends it locally. `projectOrigin` is added
+ * when the project is not on Form.io's hosted service.
  *
  * The UAG serves @formio/uag-js (`/uag-js/uag.use.js` and its stylesheet), and
  * the pages call it and the project from the browser. formio.js evaluates form

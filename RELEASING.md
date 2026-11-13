@@ -38,7 +38,7 @@ Before it publishes anything, the workflow runs the Getting Started page's three
 
 | Name | Kind | Purpose |
 |---|---|---|
-| `E2E_HOSTED_PROJECT_URL` | variable | A project on Form.io's hosted service with the demo's `claim` form, such as `https://uag.form.io`. |
+| `E2E_HOSTED_PROJECT_URL` | variable | A project on Form.io's hosted service with the demo's `claim` form (`demo/module/project.json`). |
 | `E2E_HOSTED_PROJECT_KEY` | secret | An API key of that project. |
 | `E2E_FORMIO_LICENSE` | secret | A Form.io license that includes the UAG and allows `formio.e2e.test`. |
 | `E2E_FORMIO_LICENSE_REMOTE` | variable | `true` when that license is an offline license. |

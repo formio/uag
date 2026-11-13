@@ -11,8 +11,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "serve": "node scripts/serve.mjs",
-    "setup": "node scripts/setup.mjs",
-    "retention": "node scripts/retention.mjs"
+    "setup": "node scripts/setup.mjs"
   },
   "dependencies": {
     "marked": "18.1.2"

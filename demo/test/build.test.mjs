@@ -2,16 +2,13 @@ import { expect } from 'chai';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { contentSecurityPolicy, formioBaseOf, projectNameOf, readConfig } from '../lib/config.mjs';
 import { render } from '../lib/pages.mjs';
 import { build, fileOf } from '../scripts/build.mjs';
 import { createServer, resolve } from '../scripts/serve.mjs';
-import { purge, templatePaths } from '../scripts/retention.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const siteTemplate = fs.readFileSync(path.join(root, 'deploy/site.yml'), 'utf8');
 
 describe('Demo site build', function () {
     describe('configuration', function () {
@@ -118,27 +115,25 @@ describe('Demo site build', function () {
         });
     });
 
-    describe('hosting', function () {
-        it('sends the same Content-Security-Policy from CloudFront as lib/config.mjs makes', function () {
-            const line = siteTemplate.split('\n').find((text) => text.includes('ContentSecurityPolicy: !Sub'));
-            const policy = JSON.parse(line.slice(line.indexOf('!Sub') + 5)).replaceAll('${UagOrigin}', 'https://uag.example.com');
-            expect(policy).to.equal(contentSecurityPolicy({ uagOrigin: 'https://uag.example.com', projectOrigin: 'https://uag.form.io' }));
+    describe('local server', function () {
+        it('allows the pages to load from and call the UAG and the project, and nothing else', function () {
+            const policy = contentSecurityPolicy({ uagOrigin: 'https://uag.example.com', projectOrigin: 'https://forms.example.com' });
+            const directive = (name) => policy.split('; ').find((part) => part.startsWith(`${name} `));
+            expect(directive('connect-src')).to.equal("connect-src 'self' https://uag.example.com https://*.form.io https://forms.example.com");
+            expect(directive('script-src')).to.include('https://uag.example.com');
+            expect(directive('default-src')).to.equal("default-src 'self'");
+            expect(contentSecurityPolicy({ uagOrigin: 'https://uag.example.com', projectOrigin: 'https://uag.form.io' })).not.to.include('https://uag.form.io');
         });
 
-        it('maps clean URLs in CloudFront as the local server does', function () {
-            const code = siteTemplate.slice(siteTemplate.indexOf('function handler'), siteTemplate.indexOf('\n\n', siteTemplate.indexOf('function handler')));
-            const context = vm.createContext({});
-            vm.runInContext(code, context);
+        it('maps clean URLs to index.html files, and refuses paths outside the site', function () {
             const site = fs.mkdtempSync(path.join(os.tmpdir(), 'uag-demo-urls-'));
             try {
                 for (const file of ['index.html', 'examples/index.html', 'css/site.css']) {
                     fs.mkdirSync(path.join(site, path.dirname(file)), { recursive: true });
                     fs.writeFileSync(path.join(site, file), file);
                 }
-                for (const uri of ['/', '/examples', '/examples/', '/css/site.css']) {
-                    const mapped = context.handler({ request: { uri } }).uri;
-                    expect(resolve(site, uri), uri).to.equal(path.join(site, mapped));
-                }
+                const mapped = { '/': 'index.html', '/examples': 'examples/index.html', '/examples/': 'examples/index.html', '/css/site.css': 'css/site.css' };
+                for (const [uri, file] of Object.entries(mapped)) expect(resolve(site, uri), uri).to.equal(path.join(site, file));
                 expect(resolve(site, '/../../etc/passwd')).to.equal(null);
                 expect(resolve(site, '/missing')).to.equal(null);
             }
@@ -166,35 +161,6 @@ describe('Demo site build', function () {
                 server.close();
                 fs.rmSync(site, { recursive: true, force: true });
             }
-        });
-    });
-
-    describe('retention', function () {
-        it('purges the demo forms and the guests', function () {
-            expect(templatePaths()).to.include.members(['service-request', 'application', 'claim', 'lease-review', 'guest']);
-        });
-
-        it('deletes what is older than the cut-off in batches, with the project key, and reports counts', async function () {
-            const calls = [];
-            const old = Array.from({ length: 100 }, (_, i) => ({ _id: `a${i}` }));
-            const fetch = async (url, init = {}) => {
-                calls.push({ url, method: init.method || 'GET', key: init.headers['x-token'] });
-                if (init.method === 'DELETE') return new Response(null, { status: 200 });
-                const listings = calls.filter((call) => call.method === 'GET').length;
-                return Response.json(listings === 1 ? old : listings === 2 ? [{ _id: 'b' }] : []);
-            };
-            const now = Date.parse('2026-11-06T12:00:00Z');
-            const { deleted, failed } = await purge({ projectUrl: 'https://uag.form.io/', key: 'k', hours: 24, paths: ['application', 'guest'], fetch, now });
-            expect(deleted).to.deep.equal({ application: 101, guest: 0 });
-            expect(failed).to.deep.equal([]);
-            expect(calls[0].url).to.equal('https://uag.form.io/application/submission?created__lt=2026-11-05T12%3A00%3A00.000Z&limit=100&select=_id');
-            expect(calls.every((call) => call.key === 'k')).to.equal(true);
-        });
-
-        it('reports a form it could not purge, and goes on to the next', async function () {
-            const fetch = async (url) => (url.includes('/claim/') ? new Response('no', { status: 401 }) : Response.json([]));
-            const { failed } = await purge({ projectUrl: 'https://uag.form.io', key: 'k', paths: ['claim', 'guest'], fetch });
-            expect(failed).to.deep.equal(['claim']);
         });
     });
 });

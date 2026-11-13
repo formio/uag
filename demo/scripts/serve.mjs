@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * Serves the built site (demo/dist) on your machine the way CloudFront serves
- * it (deploy/site.yml): `/a/b` and `/a/b/` answer `a/b/index.html`, and a path
- * the site does not have answers `404.html` with status 404.
+ * Serves the built site (demo/dist) on your machine as a static host should:
+ * `/a/b` and `/a/b/` answer `a/b/index.html`, and a path the site does not have
+ * answers `404.html` with status 404.
  *
  *   node demo/scripts/serve.mjs [port]           serve demo/dist (DEMO_PORT, else 8080)
  *   node demo/scripts/serve.mjs [port] --watch   build first, and again on every change
  *
- * For development only: production is S3 + CloudFront.
+ * For development only.
  */
 import fs from 'node:fs';
 import http from 'node:http';
@@ -24,7 +24,7 @@ const TYPES = {
     '.woff2': 'font/woff2', '.xml': 'application/xml',
 };
 
-/** The file a request path answers with, or null: the CloudFront function's mapping (deploy/site.yml). */
+/** The file a request path answers with, or null. */
 export function resolve(root, urlPath) {
     let decoded;
     try {
@@ -47,8 +47,7 @@ export function resolve(root, urlPath) {
 }
 
 /**
- * A static server for `root`. `headers` are sent with every answer, as
- * CloudFront's response headers policy sends them (deploy/site.yml).
+ * A static server for `root`. `headers` are sent with every answer.
  */
 export function createServer(root, headers = {}) {
     root = path.resolve(root);
@@ -67,7 +66,7 @@ export function createServer(root, headers = {}) {
     });
 }
 
-/** The headers CloudFront's response headers policy sends (deploy/site.yml), for a build's config. */
+/** The security headers the site is served with, for a build's config. */
 export function securityHeaders(config) {
     return {
         'Content-Security-Policy': contentSecurityPolicy({ uagOrigin: new URL(config.uag.url).origin, projectOrigin: new URL(config.projectUrl).origin }),

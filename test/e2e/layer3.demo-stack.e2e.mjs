@@ -50,7 +50,7 @@ const onPlatform = PLATFORM ? [`    platform: ${PLATFORM}`] : [];
  * `formio.e2e.test`, the endpoint the test license allows, and the UAG loads the
  * project by its ID URL there (Enterprise Form.io reads a dotted host as a
  * project subdomain). The static site is built for that UAG and project and
- * served here, as CloudFront serves it. Everything is driven as a visitor's
+ * served here, as a static host serves it. Everything is driven as a visitor's
  * browser would: a guest of the project, a real conversation (the UAG's
  * agent/chat), real Run task actions and engines settling two applicants, and
  * the claims wizard triaged in a browser, with each engine's summary in the

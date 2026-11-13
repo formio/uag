@@ -1,12 +1,10 @@
-# The UAG the demo site (ai.form.io) embeds: the Universal Agent Gateway alone,
-# on the demo's project on Form.io's hosted service (FORMIO_PROJECT_URL,
-# https://uag.form.io), with the JEV and Claude engines and their keys inside it.
+# The UAG the demo site embeds: the Universal Agent Gateway alone, on a Form.io
+# project (FORMIO_PROJECT_URL), with the JEV and Claude engines and their keys
+# inside it.
 #
-# The site itself is static files (yarn demo:build; S3 + CloudFront, see
-# deploy/site.yml), whose pages call this UAG from the browser, as each visitor's
-# guest user of the project. So the UAG is public: publish it at its own host
-# name (uag.ai.form.io) behind your load balancer, which ends TLS, and set
-# DEMO_SITE_ORIGIN to the site's origin, the only one its CORS allows.
+# The site itself is static files (yarn demo:build), whose pages call this UAG
+# from the browser, as each visitor's guest user of the project. Set
+# DEMO_SITE_ORIGIN to the site's origin, the only one the UAG's CORS allows.
 #
 # Beside it, the AI Document add-on (formio/uag-documents) fills the volume the
 # UAG mounts at /app/plugins/documents with the AI Document module and the
@@ -50,8 +48,7 @@ services:
         condition: service_completed_successfully
         restart: true
     ports:
-      # Bound to this machine only by default. Set UAG_BIND to the private address
-      # your load balancer reaches.
+      # Bound to this machine only by default; UAG_BIND sets another address.
       - "${UAG_BIND:-127.0.0.1}:${UAG_PORT:-3200}:3200"
     volumes:
       # The AI Document module and the document plugins, from the add-on.
@@ -70,7 +67,7 @@ services:
       PROJECT_TTL: ${PROJECT_TTL:-300}
       PROJECT_RETRIES: 30
       # Browsers may call it from the site only.
-      CORS: ${DEMO_SITE_ORIGIN:-https://ai.form.io}
+      CORS: ${DEMO_SITE_ORIGIN:-http://localhost:8080}
       # Proxy hops in front of the UAG that add to X-Forwarded-For.
       TRUST_PROXY: ${TRUST_PROXY:-1}
       # JSON in the shape of agentApi.rateLimits, replacing uag-module's.

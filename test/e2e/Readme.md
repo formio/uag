@@ -30,7 +30,7 @@ Optional:
 | `FORMIO_TEST_URL` | unset | A Form.io Enterprise deployment that is already running, with its portal (such as `https://form.test`), for `layer3.demo-stack` (and the demo recordings) to run on instead of starting one. Needs `FORMIO_TEST_EMAIL` and `FORMIO_TEST_PASSWORD` (a portal account that may create projects and teams), `FORMIO_TEST_UAG_LICENSE` (a license with the UAG that allows the deployment's subdomains (`*.form.test`); `FORMIO_TEST_UAG_LICENSE_REMOTE=true` for an offline one), `CLAUDE_API_KEY` and `TYPESAFE_API_KEY`. The suite works in a project of its own, `uag-e2e-demo`, and deletes it, and the accounts and teams it made, after. |
 | `E2E_CORE_BUNDLE` | unset | Path to a locally built appserver-core `build/server.js`, bind-mounted into the UAG container `layer3.demo-stack` starts, to check a core change before it is published. |
 | `E2E_LOCAL_CORE`, `E2E_LOCAL_APPSERVER` | unset | Paths to a built appserver-core's `build/` folder and a built appserver repository. Together, they build the UAG image `layer3.demo-stack` (and the demo recordings) start against those unpublished versions, which the UAG needs when it uses APIs the published ones lack. |
-| `E2E_HOSTED_PROJECT_URL`, `E2E_HOSTED_PROJECT_KEY` | unset | For `layer3.getting-started`: a project on Form.io's hosted service with the demo's `claim` form, such as https://uag.form.io, and an API key of it. |
+| `E2E_HOSTED_PROJECT_URL`, `E2E_HOSTED_PROJECT_KEY` | unset | For `layer3.getting-started`: a project on Form.io's hosted service with the demo's `claim` form (`demo/module/project.json`), and an API key of it. |
 | `E2E_STRICT` | unset | `true` makes `layer3.getting-started` fail a guide whose variables are missing, instead of skipping it. The release workflow sets it. |
 | `E2E_DEMO_UAG_LICENSE` | unset | A license that includes the UAG and allows the endpoint `formio.e2e.test` (the same kind as `E2E_UAG_LICENSE`), for `layer3.demo-stack`, with `CLAUDE_API_KEY` and `TYPESAFE_API_KEY`. `E2E_EXAMPLE_UAG_LICENSE`, its earlier name, is still read. |
 
@@ -177,7 +177,7 @@ open-source stack (`helpers/demoStack.mjs`). `E2E_TEMPLATE=demo` installs the
 demo's own `module/project.json`; both engines run on the real engine server
 package, hosting the scripted engines; the UAG allows the site's origin
 (`CORS`); and the static site is built for that UAG and project
-(`demo/scripts/build.mjs`) and served as CloudFront serves it. The suites act
+(`demo/scripts/build.mjs`) and served as a static host serves it. The suites act
 as the site's visitors do: as guests of the project (`guest()`, which registers
 on its `guest/register` form), calling the UAG with the guest's token, and in a
 browser that clicks "Start the live demo" (`startExample()`). Applications and
@@ -232,8 +232,8 @@ agents, so the workflow needs no webhooks and runs on Open Source.
 
 The demo site's own unit tests (`demo/test`, run by `yarn test`) cover the
 build (every page written, no template left unfilled, no `/api` call, no
-secret published), the Content-Security-Policy and clean URLs CloudFront
-serves against the local server's, retention, the flow log's redaction and
+secret published), the Content-Security-Policy, the local server's clean
+URLs and 404 page, the flow log's redaction and
 event streams, the guest's sign-in and expiry, templating, and that every page
 and docs link resolves.
 
@@ -316,7 +316,7 @@ removes text an edit expects fails the suite, naming the text.
 - **Hosted project** (`E2E_HOSTED_PROJECT_URL`, `E2E_HOSTED_PROJECT_KEY`,
   `CLAUDE_API_KEY`): the page's `docker run`, its MCP client and its Agent API
   `curl`, which must triage the claim. The project needs the demo's `claim`
-  form (`demo/module/project.json`); https://uag.form.io has it.
+  form (`demo/module/project.json`).
 - **Enterprise, self-hosted** (`E2E_FORMIO_LICENSE`, `CLAUDE_API_KEY`,
   `TYPESAFE_API_KEY`): the page's `formio-uag` service beside Form.io
   Enterprise, with `LICENSE_KEY` as its only license, so the license must
