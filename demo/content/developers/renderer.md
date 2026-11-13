@@ -29,7 +29,7 @@ UAG -> Form.io: the submission, after Run task
 
 ## Get it
 
-`npm install @formio/uag-js@rc` (2.x; `@rc` is the 2.0 release candidate). It has no dependencies, and works with formio.js 5 (`@formio/js` 5.x). It is an ES module, a CommonJS module, and the browser global `FormioUAG`.
+`npm install @formio/uag-js` (2.x). It has no dependencies, and works with formio.js 5 (`@formio/js` 5.x). It is an ES module, a CommonJS module, and the browser global `FormioUAG`.
 
 | File | What it is |
 |---|---|
@@ -62,10 +62,10 @@ These are public: no credential, any origin, whatever the UAG's `CORS` setting. 
 `uag.use.js` registers with the default [options](#options). To pass options, load `index.js` instead (from npm, or from the CDN as in [Register it once](#register-it-once)), register it yourself, then load the module components the page uses from the UAG:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/uag-js@rc/uag-js.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/uag-js@2/uag-js.css">
 <link rel="stylesheet" href="https://uag.example.com/uag-js/components/uagdocument.css">
 <script src="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@formio/uag-js@rc/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@formio/uag-js@2/index.js"></script>
 <script>
   Formio.use(FormioUAG.UAG('https://uag.example.com', { trigger: 'pause' }));
 </script>
@@ -98,9 +98,9 @@ Or with script tags:
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/uag-js@rc/uag-js.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/uag-js@2/uag-js.css">
 <script src="https://cdn.jsdelivr.net/npm/@formio/js@5.6.1/dist/formio.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@formio/uag-js@rc/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@formio/uag-js@2/index.js"></script>
 <script>
   Formio.use(FormioUAG.UAG('https://uag.example.com'));
 </script>
@@ -398,7 +398,7 @@ app.listen(PORT, () => console.log(`Claim intake at http://localhost:${PORT}`));
 ```
 
 ```bash
-npm install express @formio/uag-js@rc
+npm install express @formio/uag-js
 ```
 
 `public/index.html`, served by the relay above. It renders the `claim` wizard, attaches Agent Input with the `next` trigger, pointed at the relay, and shows what the agent is doing in a status line.

@@ -65,13 +65,13 @@ The `formio/uag` image starts with the module in `/app/module`, which by default
 ```yaml
 services:
   formio-uag:
-    image: formio/uag:rc
+    image: formio/uag
     volumes:
       - ./module:/app/module
 ```
 
 ```bash
-docker run -v "$PWD/module:/app/module" -e PROJECT=... formio/uag:rc
+docker run -v "$PWD/module:/app/module" -e PROJECT=... formio/uag
 ```
 
 A mounted module runs inside the UAG's own installation in `/app`, so `require()` finds the UAG's dependencies, such as `zod` and `lodash`, from `/app/node_modules`, and `require('@formio/uag')` finds the UAG itself, as it does when the module is used from npm. A module that needs its own dependencies can bring them in its own `node_modules` folder, or in an image built `FROM formio/uag`.
@@ -239,7 +239,7 @@ The Agent API offers tools to agent engines for research when a task's criteria 
 
 ## Settings, routes and components
 
-A module that brings a whole capability uses more keys: `settings`, `routes`, `components`, `initialize` and `close`. A module with any of them needs a `name` and an `apiVersion`, the version of the [module API](#the-module-api) it is written against: version 1, from UAG 2.0.0-rc.7. A module that uses the UAG's own members of the API (licenses, engines, converters) also says `host: 'uag'`, so a server other than the UAG refuses it at startup instead of failing on the first request.
+A module that brings a whole capability uses more keys: `settings`, `routes`, `components`, `initialize` and `close`. A module with any of them needs a `name` and an `apiVersion`, the version of the [module API](#the-module-api) it is written against: version 1, from UAG 2.0.0. A module that uses the UAG's own members of the API (licenses, engines, converters) also says `host: 'uag'`, so a server other than the UAG refuses it at startup instead of failing on the first request.
 
 ```js
 // npm install @formio/uag-extras@^1
@@ -1024,7 +1024,7 @@ services:
       ADMIN_KEY: CHANGEME
 
   formio-uag:
-    image: formio/uag:rc
+    image: formio/uag
     restart: always
     depends_on:
       - formio

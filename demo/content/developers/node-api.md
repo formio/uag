@@ -22,9 +22,9 @@ This page covers the `UAGServer` class and its configuration, modules, the proje
 ## Install
 
 ```bash
-npm install @formio/uag@rc express dotenv
+npm install @formio/uag express dotenv
 # Engines are separate packages. Install the ones you will enable:
-npm install @formio/uag-jev@rc @formio/uag-claude@rc
+npm install @formio/uag-jev @formio/uag-claude
 ```
 
 `isolated-vm` compiles a native module on install, so build images need `make`, `python3` and `g++` (on Alpine: `apk add make python3 g++`).

@@ -29,7 +29,7 @@ const REQUIRED = ['E2E_FORMIO_LICENSE', 'CLAUDE_API_KEY', 'TYPESAFE_API_KEY'];
 const UAG_LICENSE = process.env.E2E_DEMO_UAG_LICENSE || process.env.E2E_EXAMPLE_UAG_LICENSE;
 // A release's published images, instead of images built from this tree, to check what
 // was shipped: E2E_UAG_IMAGE and E2E_ENGINES_IMAGE (both), such as
-// formio/uag:2.0.0-rc.1. E2E_PLATFORM (such as linux/amd64) runs the UAG's own services
+// formio/uag:2.0.0. E2E_PLATFORM (such as linux/amd64) runs the UAG's own services
 // on that platform, to check another architecture; MongoDB and Form.io keep theirs.
 const PUBLISHED = { uag: process.env.E2E_UAG_IMAGE, engines: process.env.E2E_ENGINES_IMAGE };
 const published = Object.values(PUBLISHED).some(Boolean);

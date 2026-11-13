@@ -10,7 +10,7 @@ The OpenAI engine for the [UAG Agent API](https://ai.form.io/developers/agent-ap
 It is included in the `formio/uag` Docker image. With the UAG installed from npm, install it next to it:
 
 ```bash
-npm install @formio/uag-openai@rc
+npm install @formio/uag-openai
 ```
 
 Enable it by naming it, and set its model and key:

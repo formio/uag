@@ -172,7 +172,7 @@ note formio.js + @formio/uag-js: fills empty fields as suggestions
 
 ## Where the models run
 
-The UAG never trains or hosts a model. In MCP conversations, the client's model does the reasoning. In a form's [chat](/developers/chat), workflows and Agentic Formflow, the UAG calls **engines**: adapters for a model provider, each its own npm package (`jev`, `claude`, `openai`, `grok`, `gemini`). The `formio/uag:rc` image includes all of them, and none runs until you name it in `UAG_ENGINES`. Engines can also run in a separate engine server container, so model keys and model traffic stay out of the UAG.
+The UAG never trains or hosts a model. In MCP conversations, the client's model does the reasoning. In a form's [chat](/developers/chat), workflows and Agentic Formflow, the UAG calls **engines**: adapters for a model provider, each its own npm package (`jev`, `claude`, `openai`, `grok`, `gemini`). The `formio/uag` image includes all of them, and none runs until you name it in `UAG_ENGINES`. Engines can also run in a separate engine server container, so model keys and model traffic stay out of the UAG.
 
 Engines only answer. The UAG decides which fields each engine sees, validates every answer, and performs every write. See [Engines](/developers/engines) and [Engine server](/developers/engine-server).
 

@@ -21,7 +21,7 @@ docker run -d --name formio-uag -p 3200:3200 \
   -e JWT_SECRET=your-jwt-secret \
   -e LOGIN_FORM=https://forms.example.com/user/login \
   --restart unless-stopped \
-  formio/uag:rc
+  formio/uag
 ```
 
 Against a project on Form.io's hosted service, use `PROJECT_KEY` in place of `ADMIN_KEY`, and set no license:
@@ -32,7 +32,7 @@ docker run -d --name formio-uag -p 3200:3200 \
   -e PROJECT_KEY=your-project-api-key \
   -e JWT_SECRET=your-jwt-secret \
   --restart unless-stopped \
-  formio/uag:rc
+  formio/uag
 ```
 
 Against a self-hosted Form.io Enterprise project, add a Form.io license that includes the UAG, in `LICENSE_KEY`, whose endpoint allowlist includes `PROJECT`'s host; for an offline license, also set `LICENSE_REMOTE=true`:
@@ -44,7 +44,7 @@ docker run -d --name formio-uag -p 3200:3200 \
   -e LICENSE_KEY=your-license \
   -e JWT_SECRET=your-jwt-secret \
   --restart unless-stopped \
-  formio/uag:rc
+  formio/uag
 ```
 
 Docker Compose is the recommended path for anything beyond a single container. The README's [Quickstart](https://github.com/formio/uag#quickstart) runs the UAG beside a Form.io Open Source server in one Compose file. The repository's [custom module sample](https://github.com/formio/uag/tree/main/demo/samples/custom-module) is a fuller stack to start from: Form.io Open Source, MongoDB and the UAG with a module of its own, and the [engine setups](https://github.com/formio/uag/tree/main/demo/samples/engines) add engines to a stack like it.
@@ -78,7 +78,7 @@ docker run -d --name formio-uag -p 3200:3200 \
   -e UAG_ENGINES=jev,claude \
   -e TYPESAFE_API_KEY=your-typesafe-key \
   -e CLAUDE_API_KEY=your-claude-key \
-  formio/uag:rc
+  formio/uag
 ```
 
 The Agent API and Run task are Agentic Formflow. A project on Form.io's hosted service runs it with real engines and no license. On a self-hosted project, Open Source or Enterprise, real engines need a license in `LICENSE_KEY` that includes the UAG for the project's endpoint: an online license whose key has the `uagServer` scope, or an offline license with the `uag` option (with `LICENSE_REMOTE=true`). `UAG_LICENSE` still works, but is deprecated. Conversation forms need no license, and run on Form.io Open Source: the MCP tools, and a form's chat (`{form}/agent/chat`, which `Formio.createChat` in `@formio/uag-js` embeds in a page) with any agent engine. The stub engines (`stub-decision`, `stub-agent`) run without one, for trying the API out. Unlicensed requests answer `403` with `code: "license_required"`, and `GET /agent/capabilities` reports the `edition` and `formflow.reason`. See the [licensing documentation](https://ai.form.io/developers/deployment#licensing).

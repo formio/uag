@@ -62,7 +62,7 @@
   -e PROJECT_TTL=60 \
   -e UAG_ENGINES=claude \
   -e CLAUDE_API_KEY=your-anthropic-key \
-  formio/uag:rc</code></pre></div>
+  formio/uag</code></pre></div>
               </div></div>
               <div class="step"><div>
                 <h3>Connect an agent</h3>
@@ -102,7 +102,7 @@
       retries: 40
 
   formio-uag:
-    image: formio/uag:rc
+    image: formio/uag
     restart: always
     depends_on:
       formio:
@@ -141,7 +141,7 @@ volumes:
               <div class="step"><div>
                 <h3>Point the UAG at your project</h3>
                 <div class="code"><div class="code-bar"><span>yaml</span><button type="button" class="copy" data-copy>Copy</button></div><pre><code class="language-yaml">  formio-uag:
-    image: formio/uag:rc
+    image: formio/uag
     restart: always
     environment:
       # A container-to-container address: the UAG never needs a public one.
@@ -157,7 +157,7 @@ volumes:
               </div></div>
               <div class="step"><div>
                 <h3>Keep model keys out of the gateway (optional)</h3>
-                <p>Run the engines on <code>formio/uag-engines:rc</code>, or use a local model through Ollama or vLLM so no data leaves your network. <a href="/developers/engines">Engine setups</a>.</p>
+                <p>Run the engines on <code>formio/uag-engines</code>, or use a local model through Ollama or vLLM so no data leaves your network. <a href="/developers/engines">Engine setups</a>.</p>
               </div></div>
               <div class="step"><div>
                 <h3>Harden it</h3>

@@ -28,7 +28,7 @@ examples.json + form.json -> uag-eval -> one engine call per example* -> answers
 In the Docker image, which includes the official engines:
 
 ```bash
-docker run --rm -v "$PWD:/work" -w /work -e TYPESAFE_API_KEY -e LICENSE_KEY --entrypoint node formio/uag:rc \
+docker run --rm -v "$PWD:/work" -w /work -e TYPESAFE_API_KEY -e LICENSE_KEY --entrypoint node formio/uag \
   --no-node-snapshot /app/bin/uag-eval.js --form claim.json --examples claim-examples.json --task triage --engine jev \
   --project https://forms.example.com/claims --json report.json
 ```
@@ -36,7 +36,7 @@ docker run --rm -v "$PWD:/work" -w /work -e TYPESAFE_API_KEY -e LICENSE_KEY --en
 With the npm package, install the engine's package next to it:
 
 ```bash
-npm install @formio/uag@rc @formio/uag-jev@rc
+npm install @formio/uag @formio/uag-jev
 NODE_OPTIONS=--no-node-snapshot npx uag-eval --form claim.json --examples claim-examples.json \
   --task triage --engine jev --project https://forms.example.com/claims --json report.json
 ```
