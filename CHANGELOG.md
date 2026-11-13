@@ -4,7 +4,7 @@
 
 ### Changed
 
-- The documentation names `formio/uag-documents:2` and `@formio/uag-extras@^2`. `@formio/uag-extras` 2.0.0 takes the UAG's major version: 2.x, and `formio/uag-documents:2`, are for the UAG 2.x. `formio/uag-documents:1` stays on 1.0.0, built for the release candidates. The AI Document page and `DOCKERHUB.md` link the [deployment kit](https://github.com/formio/uag-extras/tree/main/deploy) in formio/uag-extras.
+- The documentation names `formio/uag-documents:2` and `@formio/uag-extras@^2`. `@formio/uag-extras` 2.0.0 takes the UAG's major version: 2.x, and `formio/uag-documents:2`, are for the UAG 2.x. `formio/uag-documents:1` stays on 1.0.0, built for the release candidates. The AI Document page and `DOCKERHUB.md` link the deployment kit, which ships in `@formio/uag-extras` (2.0.1 or later) and is served by jsDelivr (`https://cdn.jsdelivr.net/npm/@formio/uag-extras@2/deploy/`), and the `formio/uag-documents` Docker Hub page that explains it.
 - The documentation is read in this repository: the README, the package READMEs, `DOCKERHUB.md` and the other guides link the developer pages in `demo/content/developers`, and those pages link each other, their images and the demos' source by relative paths, so every link works on GitHub. Heading anchors follow GitHub's.
 
 ## 2.0.0
