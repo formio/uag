@@ -5,19 +5,19 @@ section: Build
 order: 20
 ---
 
-The Agent API runs a form's [tasks](/developers/concepts#tasks) inside the UAG. You post text or data to the form's own URL on the UAG, optionally naming a task, and get back validated values with a status, an engine and a reason for each field. The UAG chooses an engine for each field, calls it and checks the answers against the form. Applications call the same endpoints whichever models are behind them.
+The Agent API runs a form's [tasks](./concepts.md#tasks) inside the UAG. You post text or data to the form's own URL on the UAG, optionally naming a task, and get back validated values with a status, an engine and a reason for each field. The UAG chooses an engine for each field, calls it and checks the answers against the form. Applications call the same endpoints whichever models are behind them.
 
-The Agent API is stateless: it answers from the data in the request, and never reads or saves a stored submission. To run a task on a submission and save its answers, send the submission to the UAG and add an **Agent: Run task** action to the form; see [Workflows](/developers/workflows).
+The Agent API is stateless: it answers from the data in the request, and never reads or saves a stored submission. To run a task on a submission and save its answers, send the submission to the UAG and add an **Agent: Run task** action to the form; see [Workflows](./workflows.md).
 
 | Endpoint | Saves | Needs | Purpose |
 |---|---|---|---|
 | [`POST {form}/agent/extract`](#extract) | No | Create or update access | Read free text (the request's `text`, or the task's input fields) and fill the task's fields from it: decisions and open values. Streams on request. |
 | [`POST {form}/agent/decide`](#decide) | No | Create or update access | Choose the task's closed-set fields (options, yes/no) from the data already on the form. |
 | [`POST {form}/agent/generate`](#generate) | No | Create or update access | Write the task's open values (summaries, rationales, replies) from the data already on the form, researching with `uagTools` if the task lists any. |
-| [`POST {form}/agent/chat`](#chat) | No | Create access | One turn of a conversation that fills the form in: the next message, and the values taken from the person's words. What the [chat widget](/developers/chat) calls. No Agentic Formflow license. |
+| [`POST {form}/agent/chat`](#chat) | No | Create access | One turn of a conversation that fills the form in: the next message, and the values taken from the person's words. What the [chat widget](./chat.md) calls. No Agentic Formflow license. |
 | [`GET /agent/capabilities`](#capabilities) | No | A UAG bearer token or a server key | The enabled engines, the operations they can serve, the edition, the license state, and whether durable runs and remote MCP sign-in are available. |
 
-Every operation except `capabilities` needs at least one enabled engine (`UAG_ENGINES`, see [Engines](/developers/engines)). `extract`, `decide` and `generate` are part of Agentic Formflow, which needs a license (see [Licensing](#licensing)); `chat` is part of conversation forms, and does not.
+Every operation except `capabilities` needs at least one enabled engine (`UAG_ENGINES`, see [Engines](./engines.md)). `extract`, `decide` and `generate` are part of Agentic Formflow, which needs a license (see [Licensing](#licensing)); `chat` is part of conversation forms, and does not.
 
 ## URLs
 
@@ -30,7 +30,7 @@ A form's operations are under the form, as its submissions are. `{form}` is the 
 
 The form comes from the URL; a `form` in the body is ignored. A form that is not tagged `uag` answers `404`, and so does an operation on a form the project does not have, whatever the letter case of its path; such a request is never passed on to Form.io. `GET /agent/capabilities` describes the deployment, not a form, so it stays at the UAG's root.
 
-The examples on this page use the `supportRequest` form from [Concepts](/developers/concepts#a-complete-example): a `triage` task with an input (`description`), two decision fields (`category`, `urgent`), a confidence companion (`categoryConfidence`) and one value field (`summary`).
+The examples on this page use the `supportRequest` form from [Concepts](./concepts.md#a-complete-example): a `triage` task with an input (`description`), two decision fields (`category`, `urgent`), a confidence companion (`categoryConfidence`) and one value field (`summary`).
 
 ## Credentials
 
@@ -44,11 +44,11 @@ A form's operations take the same credentials as the form's submissions, so an a
 | `x-token: <PROJECT_KEY>` | Administrator | Servers (Enterprise and hosted projects) |
 | `x-admin-key: <ADMIN_KEY>` | Administrator | Servers (Open Source) |
 
-- **Bearer tokens** are the UAG's own access tokens, the same ones `/mcp` accepts: from the `client_credentials` grant at `/auth/token` for a server (which acts as administrator), always available, or, with `MCP_OAUTH`, from the browser OAuth (PKCE) sign-in for a user. See [MCP tools](/developers/mcp-tools#how-agents-connect).
+- **Bearer tokens** are the UAG's own access tokens, the same ones `/mcp` accepts: from the `client_credentials` grant at `/auth/token` for a server (which acts as administrator), always available, or, with `MCP_OAUTH`, from the browser OAuth (PKCE) sign-in for a user. See [MCP tools](./mcp-tools.md#how-agents-connect).
 - **Server keys are refused from browsers.** A request carrying `x-token` or `x-admin-key` together with an `Origin` or `Sec-Fetch-Site` header is answered `401`, so a project key cannot be used from a web page even if it leaks into one. Node's `fetch` sends neither header, so servers are unaffected. User and remote tokens are not server keys and work from browsers.
 - **Scoped tokens are refused.** The short-lived tokens the UAG gives remote engines for research work only on `/mcp` (`401`: "Scoped tokens can only be used on /mcp.").
-- **A request with no credential is refused** (`401`), unless the form opts into anonymous use. A form that sets [`uagAnonymous: "true"`](/developers/form-properties#uaganonymous) answers visitors with no credential, as the Anonymous role, when that role may create its submissions (otherwise `403`). Anonymous requests are limited per client address and in total, counted by each UAG process: `AGENT_ANONYMOUS_RATE_LIMIT` (default 10 a minute) and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT` (default 100 a minute), or `agentApi.anonymous.rateLimit` and `totalRateLimit`. Over either limit the answer is `429` with `Retry-After`, before any engine is called; either set to `0` turns anonymous use off. See [Anonymous visitors](/developers/security#anonymous-visitors).
-- **A module's form routes take the same credentials.** A [module's form routes](/developers/modules#settings-routes-and-components), such as the AI Document's `{form}/document/process`, are checked as these operations are, so on a `uagAnonymous` form whose Anonymous role may create submissions, visitors who are not signed in reach them too, under the same anonymous limits. A route that must not be public declares an `access` the Anonymous role lacks, such as `['update']`, or checks `req.auth.user`.
+- **A request with no credential is refused** (`401`), unless the form opts into anonymous use. A form that sets [`uagAnonymous: "true"`](./form-properties.md#uaganonymous) answers visitors with no credential, as the Anonymous role, when that role may create its submissions (otherwise `403`). Anonymous requests are limited per client address and in total, counted by each UAG process: `AGENT_ANONYMOUS_RATE_LIMIT` (default 10 a minute) and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT` (default 100 a minute), or `agentApi.anonymous.rateLimit` and `totalRateLimit`. Over either limit the answer is `429` with `Retry-After`, before any engine is called; either set to `0` turns anonymous use off. See [Anonymous visitors](./security.md#anonymous-visitors).
+- **A module's form routes take the same credentials.** A [module's form routes](./modules.md#settings-routes-and-components), such as the AI Document's `{form}/document/process`, are checked as these operations are, so on a `uagAnonymous` form whose Anonymous role may create submissions, visitors who are not signed in reach them too, under the same anonymous limits. A route that must not be public declares an `access` the Anonymous role lacks, such as `['update']`, or checks `req.auth.user`.
 
 `GET /agent/capabilities` takes a UAG bearer token or a server key.
 
@@ -120,7 +120,7 @@ Extract, decide and generate answer with the same object:
 |---|---|---|
 | `path` | Yes | The field's data path. |
 | `task` | Yes | The task it belongs to. |
-| `status` | Yes | `confident`, `uncertain`, `suggested` or `missing`. See [Statuses](/developers/concepts#statuses). |
+| `status` | Yes | `confident`, `uncertain`, `suggested` or `missing`. See [Statuses](./concepts.md#statuses). |
 | `engine`, `model` | Yes | The engine instance and model that answered, or `null` when none could. |
 | `calibrated` | Yes | `true` only when the confidence comes from a decision engine. Agent engines, including when they answer a decision field as a fallback, are `false`. |
 | `value` | When answered | The value, in the shape the component stores (a string, a boolean, an object for select boxes and surveys, an array for multi-value fields). |
@@ -166,7 +166,7 @@ curl -s -X POST https://uag.example.com/supportrequest/agent/extract \
         "data": { "description": "My internet has been completely down since last night", "accountNumber": "12345678" } }'
 ```
 
-When the task's input is a file component, send the file's value as the form holds it, in `data`, and the UAG reads the document (see [Documents as input](/developers/form-properties#documents-as-input)). A file in S3 or Azure storage is a small reference that the UAG loads through Form.io with your credentials; a base64 file is the document itself, so it counts against `agentApi.bodyLimit`.
+When the task's input is a file component, send the file's value as the form holds it, in `data`, and the UAG reads the document (see [Documents as input](./form-properties.md#documents-as-input)). A file in S3 or Azure storage is a small reference that the UAG loads through Form.io with your credentials; a base64 file is the document itself, so it counts against `agentApi.bodyLimit`.
 
 ```bash
 curl -s -X POST https://uag.example.com/esign/documentextract/agent/extract \
@@ -236,7 +236,7 @@ async function extract({ formUrl, token, task, data, onResult }) {
 }
 ```
 
-[`@formio/uag-js`](/developers/renderer) does this for a formio.js form or wizard, and never overwrites what the user typed.
+[`@formio/uag-js`](./renderer.md) does this for a formio.js form or wizard, and never overwrites what the user typed.
 
 ## Decide
 
@@ -256,7 +256,7 @@ curl -s -X POST https://uag.example.com/supportrequest/agent/decide \
   -d '{ "data": { "description": "Billing question about my last invoice" } }'
 ```
 
-A `submissionId` is refused with `400` ("Decide works on the data in the request and saves nothing."): decide never reads a stored submission. To decide a submission's fields on the server and save them, add an "Agent: Run task" action that answers its decision fields only, before the save; see [Re-deciding on the server](/developers/workflows#re-deciding-on-the-server).
+A `submissionId` is refused with `400` ("Decide works on the data in the request and saves nothing."): decide never reads a stored submission. To decide a submission's fields on the server and save them, add an "Agent: Run task" action that answers its decision fields only, before the save; see [Re-deciding on the server](./workflows.md#re-deciding-on-the-server).
 
 With no decision engine enabled, decision fields fall back to an agent engine, reported `suggested` and `calibrated: false`.
 
@@ -286,9 +286,9 @@ To get decisions and values for the same data, call `decide` and `generate` at t
 
 `POST {form}/agent/chat`
 
-One turn of a conversation that fills the form in. The client sends the conversation so far and the form's current data; one agent engine reads them, with the form's fields, rules and options, and returns the values the person gave and the next message to them. The UAG checks every value against the form, and answers with the reply, the values it accepted, and what the form still needs. Nothing is stored and nothing is saved: the client keeps the conversation and the data, and submits the form itself (to the UAG, so its actions run) once the person confirms. The [chat widget](/developers/chat) in `@formio/uag-js` does all of this for you.
+One turn of a conversation that fills the form in. The client sends the conversation so far and the form's current data; one agent engine reads them, with the form's fields, rules and options, and returns the values the person gave and the next message to them. The UAG checks every value against the form, and answers with the reply, the values it accepted, and what the form still needs. Nothing is stored and nothing is saved: the client keeps the conversation and the data, and submits the form itself (to the UAG, so its actions run) once the person confirms. The [chat widget](./chat.md) in `@formio/uag-js` does all of this for you.
 
-Chat is part of conversation forms, like the MCP tools: it needs an agent engine but no Agentic Formflow license. It runs on Form.io Open Source and on the hosted service with an unlicensed UAG; a self-hosted Enterprise project needs a license that includes the UAG to be served at all (see [Editions](/developers/deployment#editions)), and nothing more for chat.
+Chat is part of conversation forms, like the MCP tools: it needs an agent engine but no Agentic Formflow license. It runs on Form.io Open Source and on the hosted service with an unlicensed UAG; a self-hosted Enterprise project needs a license that includes the UAG to be served at all (see [Editions](./deployment.md#editions)), and nothing more for chat.
 
 | Field | Required | Meaning |
 |---|---|---|
@@ -341,16 +341,16 @@ curl -s -X POST https://uag.example.com/service-request/agent/chat \
 
 ### What a turn collects
 
-A turn asks for, and accepts, only the form's visible input fields a person may enter. It never sets a [task](/developers/concepts#tasks)'s decision or value fields (a task's input is asked like any field), `uagAuthoritative` fields, hidden or disabled fields, fields inside a hidden panel or container, fields hidden by a conditional, calculated fields (unless they allow overrides) or fields that are not persisted; values the engine returns for them are dropped, and values the request's `data` holds for them are passed through untouched. Data grids, edit grids, data tables, dynamic wizards, tag pads, nested forms, data maps, addresses, file uploads, signatures, sketch pads, data sources, passwords, CAPTCHAs, selects whose options come from a URL or a resource, and any other component that holds rows or a nested object (a `tree` component, or one whose data is an array of rows, a nested submission or a map) are reported in `remaining.unsupported`. Values are checked for their shape (numbers, booleans, options, the keys of select boxes and surveys) before the form's validation. See [The fields a chat collects](/developers/chat#the-fields-a-chat-collects).
+A turn asks for, and accepts, only the form's visible input fields a person may enter. It never sets a [task](./concepts.md#tasks)'s decision or value fields (a task's input is asked like any field), `uagAuthoritative` fields, hidden or disabled fields, fields inside a hidden panel or container, fields hidden by a conditional, calculated fields (unless they allow overrides) or fields that are not persisted; values the engine returns for them are dropped, and values the request's `data` holds for them are passed through untouched. Data grids, edit grids, data tables, dynamic wizards, tag pads, nested forms, data maps, addresses, file uploads, signatures, sketch pads, data sources, passwords, CAPTCHAs, selects whose options come from a URL or a resource, and any other component that holds rows or a nested object (a `tree` component, or one whose data is an array of rows, a nested submission or a map) are reported in `remaining.unsupported`. Values are checked for their shape (numbers, booleans, options, the keys of select boxes and surveys) before the form's validation. See [The fields a chat collects](./chat.md#the-fields-a-chat-collects).
 
 ### How a turn is answered
 
 1. The UAG reads the form's collectable fields on the request's data, each with the label, description, format, options and value rule the MCP tools give agents.
-2. It calls one agent engine through the ordinary agent-engine `extract` contract (see [Engine SDK](/developers/engine-sdk#agent-engines)): the instructions are the UAG's chat instructions, the form's title and description, and the form's [`uagChatInstructions`](/developers/form-properties#uagchatinstructions); the state carries the conversation, what is already collected and what is still needed; the fields are the collectable ones plus two of the turn's own, `-reply` (the next message) and `-confirmed`. No engine needs anything new to serve chat.
+2. It calls one agent engine through the ordinary agent-engine `extract` contract (see [Engine SDK](./engine-sdk.md#agent-engines)): the instructions are the UAG's chat instructions, the form's title and description, and the form's [`uagChatInstructions`](./form-properties.md#uagchatinstructions); the state carries the conversation, what is already collected and what is still needed; the fields are the collectable ones plus two of the turn's own, `-reply` (the next message) and `-confirmed`. No engine needs anything new to serve chat.
 3. Agent engines that run in the UAG and declare `toolUse` also get one read-only tool, `check_values`, which validates values against the form before the engine answers, so its reply can explain a refusal. It saves nothing.
 4. The UAG normalizes the values as `collect_field_data` does, merges them into the data and validates the result with the form's own rules. A refused value is put back and reported `invalid`. When a value was refused and the engine did not check it first (remote engines, and engines without `toolUse`), the UAG asks the same engine once more for the reply alone, with the refusals, so the reply never says something was recorded when it was not.
 
-The conversation is the person's words, not instructions: the engine is told so, it has no tool that writes, its values are limited to fields the person could have entered themselves and checked against the form, and it cannot submit. See [Security](/developers/security#chat).
+The conversation is the person's words, not instructions: the engine is told so, it has no tool that writes, its values are limited to fields the person could have entered themselves and checked against the form, and it cannot submit. See [Security](./security.md#chat).
 
 ### Engines, timeouts and failures
 
@@ -367,11 +367,11 @@ Engines are tried in the order of `agentApi.chat.engines` (default `['agent']`: 
 | `agentApi.chat.maxMessageLength` | `2000` | The most characters in one message. |
 | `agentApi.chat.maxTranscriptChars` | `24000` | The most characters of conversation sent to the engine; older messages are left out. |
 
-A form can turn chat off with [`uagChat: "false"`](/developers/form-properties#uagchat) (its turns answer `403`).
+A form can turn chat off with [`uagChat: "false"`](./form-properties.md#uagchat) (its turns answer `403`).
 
 ## Process an AI Document
 
-With the AI Document module in use, `POST {form}/document/process` processes the files of an AI Document component with its document plugin (see [AI Document](/developers/ai-document)). The plugin, its settings and the instructions come from the stored form, never from the request.
+With the AI Document module in use, `POST {form}/document/process` processes the files of an AI Document component with its document plugin (see [AI Document](./ai-document.md)). The plugin, its settings and the instructions come from the stored form, never from the request.
 
 ```json
 { "path": "rows[2].contract", "files": [{ "storage": "s3", "key": "uploads/contract.pdf", "name": "contract.pdf", "originalName": "contract.pdf", "size": 482113, "type": "application/pdf" }], "data": { } }
@@ -460,11 +460,11 @@ Every error from a form's agent operations and `/agent/capabilities` is JSON in 
 | `502` | `engines_failed` | Chat: every engine that could answer failed or timed out. The engines' errors are in the UAG's logs, under the request id. |
 | `503` | `no_engine` | No enabled engine can serve the operation ("Enable one with UAG_ENGINES"); for chat, no agent engine is enabled. |
 
-The project's Form.io routes (forms, submissions, login) keep Form.io's answers, so formio.js shows them as it does Form.io's: a submission refused by a Run task before the save is `{ name, message, code }` (see [Workflows](/developers/workflows#failures)). `/auth/token` answers OAuth errors (see [MCP tools](/developers/mcp-tools#how-agents-connect)).
+The project's Form.io routes (forms, submissions, login) keep Form.io's answers, so formio.js shows them as it does Form.io's: a submission refused by a Run task before the save is `{ name, message, code }` (see [Workflows](./workflows.md#failures)). `/auth/token` answers OAuth errors (see [MCP tools](./mcp-tools.md#how-agents-connect)).
 
 ## Rate limits
 
-Callers and engines can be limited with `agentApi.rateLimits` in the UAG configuration, `new UAGServer(config)` (a [module](/developers/modules)'s `config` can set it too, and then wins: a module that wants a default for its own routes gives the route a `rateLimit` instead, which the operator's setting overrides):
+Callers and engines can be limited with `agentApi.rateLimits` in the UAG configuration, `new UAGServer(config)` (a [module](./modules.md)'s `config` can set it too, and then wins: a module that wants a default for its own routes gives the route a `rateLimit` instead, which the operator's setting overrides):
 
 ```js
 module.exports = {
@@ -486,11 +486,11 @@ module.exports = {
 
 Each limit is `{ limit, windowMs }`, a fixed window (`windowMs` defaults to 60000). A scope with no limit, and no `default`, is unlimited. Counters are kept in memory per process, so each instance of a multi-instance deployment has its own allowance.
 
-> **Note:** Callers without a user of their own share a counter: every request with a server key (`x-token`, `x-admin-key`) and every anonymous visitor count as one caller, and all `client_credentials` tokens as another. Size `caller` limits for servers with that in mind. A module that keeps limits of its own can count anonymous visitors per address: [`api.callerKey(req)`](/developers/modules#the-module-api) gives `anonymous:<address>` for them.
+> **Note:** Callers without a user of their own share a counter: every request with a server key (`x-token`, `x-admin-key`) and every anonymous visitor count as one caller, and all `client_credentials` tokens as another. Size `caller` limits for servers with that in mind. A module that keeps limits of its own can count anonymous visitors per address: [`api.callerKey(req)`](./modules.md#the-module-api) gives `anonymous:<address>` for them.
 
 ## Licensing
 
-The Agent API's `extract`, `decide` and `generate`, the "Agent: Run task" action, the `agent_decide` and `agent_provide` MCP tools and `uag-eval` together are **Agentic Formflow**. On a self-hosted project, Open Source or Enterprise, they need a license (`LICENSE_KEY`) that includes the UAG (see [Licensing](/developers/deployment#licensing)) and allows the project's endpoint. A project on Form.io's hosted SaaS (`https://<project>.form.io`) needs none: it runs under Form.io's own license (`reason: "hosted"`), except for `uag-eval`, which runs offline and needs `LICENSE_KEY`. Conversation forms need neither, and run on Form.io Open Source with an unlicensed UAG.
+The Agent API's `extract`, `decide` and `generate`, the "Agent: Run task" action, the `agent_decide` and `agent_provide` MCP tools and `uag-eval` together are **Agentic Formflow**. On a self-hosted project, Open Source or Enterprise, they need a license (`LICENSE_KEY`) that includes the UAG (see [Licensing](./deployment.md#licensing)) and allows the project's endpoint. A project on Form.io's hosted SaaS (`https://<project>.form.io`) needs none: it runs under Form.io's own license (`reason: "hosted"`), except for `uag-eval`, which runs offline and needs `LICENSE_KEY`. Conversation forms need neither, and run on Form.io Open Source with an unlicensed UAG.
 
 The one other allowance is the built-in stub engines, `UAG_ENGINES=stub-decision,stub-agent` (`reason: "stub-engines"`), which answer with placeholders so you can build against the API's shape. It covers work that calls engines; `agent_decide` and `agent_provide`, which call none, still need a license or a hosted project.
 
@@ -500,13 +500,13 @@ Otherwise every Agentic Formflow request is refused with `403`:
 { "requestId": "...", "error": "Agentic Formflow requires a license (LICENSE_KEY) that includes the UAG ...", "code": "license_required", "edition": "open-source" }
 ```
 
-The other MCP tools and conversation forms never need a license, and neither does a form's [chat](#chat) (`agent/chat`), which is part of conversation forms. See [Deployment](/developers/deployment#licensing) for where licenses apply.
+The other MCP tools and conversation forms never need a license, and neither does a form's [chat](#chat) (`agent/chat`), which is part of conversation forms. See [Deployment](./deployment.md#licensing) for where licenses apply.
 
 ## Configuration reference
 
 | Setting (`config`) | Default | Meaning |
 |---|---|---|
-| `engines` | `UAG_ENGINES` | Engine instances to enable. See [Engines](/developers/engines). |
+| `engines` | `UAG_ENGINES` | Engine instances to enable. See [Engines](./engines.md). |
 | `routing.decision`, `routing.value` | `['decision', 'agent']`, `['agent']` | Engine preference lists, tried in order. |
 | `routing.timeouts[engine]` | `agentApi.timeout` | Milliseconds before one engine is abandoned and the next tried. |
 | `agentApi.timeout` | `30000` | Default engine timeout. |
@@ -520,6 +520,6 @@ The other MCP tools and conversation forms never need a license, and neither doe
 | `agentApi.chat.*` | | A form's chat: its engines, timeout and bounds. See [Chat settings](#chat-settings). |
 | `agentApi.bodyLimit` | `AGENT_BODY_LIMIT`, else `5242880` (5 MB) | The largest request body an operation takes, in bytes. The server's `MAX_BODY_SIZE` (16 MB) still applies first. |
 | `agentApi.files.maxBytes` | `10485760` (10 MB) | The largest uploaded document read for a task. The `read_document` MCP tool uses `documents.maxFileBytes` (`DOCUMENTS_MAX_FILE_BYTES`, default 25 MB) instead. |
-| `agentApi.files.maxChars` | `200000` | The most characters of one document's content an engine gets; the rest is cut and marked `truncated`. It also caps the text [`read_document`](/developers/mcp-tools#readdocument) returns. |
+| `agentApi.files.maxChars` | `200000` | The most characters of one document's content an engine gets; the rest is cut and marked `truncated`. It also caps the text [`read_document`](./mcp-tools.md#read_document) returns. |
 | `agentApi.files.timeout` | `30000` | Milliseconds to load and read one document for a task, counted from when its read starts. A document that takes longer reaches the engine as its name and the reason. |
 | `agentApi.files.concurrency` | `4` | The most documents one request reads at a time. |

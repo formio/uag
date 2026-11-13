@@ -5,7 +5,7 @@ section: Build
 order: 45
 ---
 
-The chat widget turns a Form.io form into a conversation. A person describes what they need in their own words; the chat asks only for what is still missing, maps their answers onto the form's own fields and options, refuses what the form would refuse, and, once they confirm a summary, submits the form. It is the widget in the [Conversation Forms demo](/examples/conversation), and you embed it the way you embed a form:
+The chat widget turns a Form.io form into a conversation. A person describes what they need in their own words; the chat asks only for what is still missing, maps their answers onto the form's own fields and options, refuses what the form would refuse, and, once they confirm a summary, submits the form. It is the widget in the [Conversation Forms demo](../../public/apps/conversation), and you embed it the way you embed a form:
 
 ```js
 import { Formio } from '@formio/js';
@@ -16,9 +16,9 @@ Formio.use(UAG('https://uag.example.com'));
 Formio.createChat(document.getElementById('chat'), 'https://forms.example.com/myproject/service-request');
 ```
 
-The UAG is the only backend. There is no model code in your application, no prompt, and no server of your own: each turn is the form's own chat operation on the UAG, [`{form}/agent/chat`](/developers/agent-api#chat), answered by one of the UAG's agent engines. The form never leaves the browser's hands. A formio.js form sits behind the chat, so the form's conditionals, calculations and validation apply as the person talks, and the submission is the form's own, saved through the UAG like any other `uag` form, where its [Run task](/developers/workflows) actions run.
+The UAG is the only backend. There is no model code in your application, no prompt, and no server of your own: each turn is the form's own chat operation on the UAG, [`{form}/agent/chat`](./agent-api.md#chat), answered by one of the UAG's agent engines. The form never leaves the browser's hands. A formio.js form sits behind the chat, so the form's conditionals, calculations and validation apply as the person talks, and the submission is the form's own, saved through the UAG like any other `uag` form, where its [Run task](./workflows.md) actions run.
 
-<img src="/images/uag-chat.svg" alt="The chat widget in the browser sends each turn to the form's agent/chat on the UAG, which asks an agent engine and checks the values against the form; the widget writes the values into the form behind it, and the confirmed form is submitted through the UAG to Form.io.">
+![The chat widget in the browser sends each turn to the form's agent/chat on the UAG, which asks an agent engine and checks the values against the form; the widget writes the values into the form behind it, and the confirmed form is submitted through the UAG to Form.io.](../../public/images/uag-chat.svg)
 
 ```sequence
 participants: Person, Chat widget, UAG*, Agent engine, Form.io
@@ -34,13 +34,13 @@ Chat widget -> UAG: POST {form}/submission
 UAG -> Form.io: the submission, after Run task
 ```
 
-Chat is part of conversation forms: it works on Form.io Open Source with no UAG license, like the [MCP tools](/developers/mcp-tools). It needs one [agent engine](/developers/engines) enabled on the UAG.
+Chat is part of conversation forms: it works on Form.io Open Source with no UAG license, like the [MCP tools](./mcp-tools.md). It needs one [agent engine](./engines.md) enabled on the UAG.
 
-> **Tip:** Your coding agent can do this page for you with the [Agentic Coding Plugin](/developers/agentic-coding): start from the [service chat prompt](https://github.com/formio/ai/blob/main/examples/agents/service-chat.md).
+> **Tip:** Your coding agent can do this page for you with the [Agentic Coding Plugin](./agentic-coding.md): start from the [service chat prompt](https://github.com/formio/ai/blob/main/examples/agents/service-chat.md).
 
 ## Get it
 
-The chat is part of `@formio/uag-js` 2.x (`npm install @formio/uag-js`), with formio.js 5 (`@formio/js` 5.x). Registering the module with `Formio.use(UAG(...))` registers the chat display and `Formio.createChat`, beside the submission routing and Agent Input described in [JavaScript (formio.js)](/developers/renderer). `uag-js.css` holds the chat's default styles. The form view (Review form, Edit in form) is an ordinary formio.js form, so load your framework's CSS as for any form: Bootstrap 5 for formio.js's default templates.
+The chat is part of `@formio/uag-js` 2.x (`npm install @formio/uag-js`), with formio.js 5 (`@formio/js` 5.x). Registering the module with `Formio.use(UAG(...))` registers the chat display and `Formio.createChat`, beside the submission routing and Agent Input described in [JavaScript (formio.js)](./renderer.md). `uag-js.css` holds the chat's default styles. The form view (Review form, Edit in form) is an ordinary formio.js form, so load your framework's CSS as for any form: Bootstrap 5 for formio.js's default templates.
 
 With script tags:
 
@@ -74,7 +74,7 @@ Or load it from the UAG, which serves the `@formio/uag-js` it was installed with
 </script>
 ```
 
-`uag.use.js` registers the module with no other options. To pass options, load `index.js` (from jsDelivr or npm) as above and register `Formio.use(FormioUAG.UAG(url, options))` yourself, rather than registering again on top of `uag.use.js`; a module's components are then at `{uag}/uag-js/components/<type>.js` (and `.css`). See [JavaScript (formio.js)](/developers/renderer#get-it).
+`uag.use.js` registers the module with no other options. To pass options, load `index.js` (from jsDelivr or npm) as above and register `Formio.use(FormioUAG.UAG(url, options))` yourself, rather than registering again on top of `uag.use.js`; a module's components are then at `{uag}/uag-js/components/<type>.js` (and `.css`). See [JavaScript (formio.js)](./renderer.md#get-it).
 
 Allow the application's origin in the UAG's `CORS` setting.
 
@@ -114,9 +114,9 @@ Any form tagged `uag` can be used for chat. On the form:
 |---|---|
 | The `uag` tag | The form is visible to the UAG. Without it, the chat says the form is not available. |
 | Create access for the people who chat | A turn needs create access to the form's submissions, as the save does. |
-| [`uagAnonymous: "true"`](/developers/form-properties#uaganonymous) (form custom property) | Only for visitors who do not sign in. See [Public forms](#public-forms). |
-| [`uagChat: "false"`](/developers/form-properties#uagchat) (form custom property) | Turns chat off for the form: its turns answer 403. |
-| [`uagChatInstructions`](/developers/form-properties#uagchatinstructions) (form custom property) | Instructions of your own for this form's chat, added to the UAG's ("Always ask for the account number first."). |
+| [`uagAnonymous: "true"`](./form-properties.md#uaganonymous) (form custom property) | Only for visitors who do not sign in. See [Public forms](#public-forms). |
+| [`uagChat: "false"`](./form-properties.md#uagchat) (form custom property) | Turns chat off for the form: its turns answer 403. |
+| [`uagChatInstructions`](./form-properties.md#uagchatinstructions) (form custom property) | Instructions of your own for this form's chat, added to the UAG's ("Always ask for the account number first."). |
 
 The form's labels, descriptions, tooltips, placeholders, validation and options are what the chat works from, so write them for a person: the chat asks in their words, offers the options' labels, and explains a refusal with the form's own message.
 
@@ -125,7 +125,7 @@ The form's labels, descriptions, tooltips, placeholders, validation and options 
 A turn asks for, and accepts, the form's visible input fields that a person may enter:
 
 - **Collected:** text, text areas, email, phone, number, currency, checkboxes, radios, select boxes, selects with static values (or JSON), tags, date and time fields, day, URL, surveys, and the fields inside containers, fieldsets, panels, columns and tables of layout.
-- **Never set:** fields a [task](/developers/concepts#tasks) fills (its decision and value fields, but not its input, which is asked like any field), fields marked `uagAuthoritative`, hidden and disabled fields, fields inside a hidden panel or container, fields hidden by a conditional, fields with a calculated value (unless the calculation allows overrides), and fields that are not persisted.
+- **Never set:** fields a [task](./concepts.md#tasks) fills (its decision and value fields, but not its input, which is asked like any field), fields marked `uagAuthoritative`, hidden and disabled fields, fields inside a hidden panel or container, fields hidden by a conditional, fields with a calculated value (unless the calculation allows overrides), and fields that are not persisted.
 - **Finished in the form:** data grids, edit grids, data tables, dynamic wizards, tag pads, nested forms, data maps, addresses, file uploads, signatures, sketch pads, data sources, passwords, CAPTCHAs, selects whose options come from a URL or a resource, and any other component that holds rows or a nested object (a `tree` component, or one whose data is an array of rows, a nested submission or a map). The UAG reports them in `remaining.unsupported`, and while a required one is empty the form cannot be `complete`: the chat names them and opens the form view so the person can fill them in.
 
 Each value is also checked for its shape before the form's own validation: a number must be a number, a checkbox true or false, select boxes and surveys only their own options and questions, and a select or radio one of its options. A value that fails is refused (`invalid`), and the reply asks again.
@@ -146,7 +146,7 @@ Task fields are left to the server on purpose: when the chat's submission is sav
 | `submitted` | "Thanks! Your form was submitted." | The message after a successful save. |
 | `markdown` | none | A function from a reply's text to HTML, such as `marked.parse`. Its output is always sanitized. Without it, replies are plain text. |
 | `storage` | none | `'session'` or `'local'`: keep the conversation and the data in the browser's storage, per form, so a reload continues it. |
-| `maxMessages` | `40` | The most messages sent with a turn: the newest, starting at one the person wrote. Keep it within the UAG's [`agentApi.chat.maxMessages`](/developers/agent-api#chat-settings). |
+| `maxMessages` | `40` | The most messages sent with a turn: the newest, starting at one the person wrote. Keep it within the UAG's [`agentApi.chat.maxMessages`](./agent-api.md#chat-settings). |
 | `maxMessageLength` | `2000` | The composer's character limit. Keep it within `agentApi.chat.maxMessageLength`. |
 | `fetch` | the global `fetch` | The `fetch` turns are posted with. |
 
@@ -167,7 +167,7 @@ Listen with `chat.on(name, handler)`, as for any formio.js form:
 | Event | Handler receives | When |
 |---|---|---|
 | `chatMessage` | `{ role, content }` | A message is added: the person's, a reply, or the chat's own message after a successful save. |
-| `chatReply` | the [turn's response](/developers/agent-api#chat) | Each turn the UAG answered: `reply`, `patch`, `fields`, `remaining`, `complete`, `confirmed`, `engine`. |
+| `chatReply` | the [turn's response](./agent-api.md#chat) | Each turn the UAG answered: `reply`, `patch`, `fields`, `remaining`, `complete`, `confirmed`, `engine`. |
 | `chatComplete` | the turn's response | The form became complete: the summary is shown. |
 | `chatError` | the error | A turn failed (an `Error`, with `status` and `response` when the UAG answered), or the save failed (formio.js's error, which may be a list of errors). |
 | `chatReset` | | The person started over. |
@@ -325,16 +325,16 @@ The conversation lives in the browser: the UAG stores nothing between turns. Wit
 
 A visitor who is not signed in has no Form.io token. Two ways to offer them a chat:
 
-- **Anonymous use.** Set [`uagAnonymous: "true"`](/developers/form-properties#uaganonymous) on the form, and let the Anonymous role create its submissions. The UAG then answers visitors directly, rate-limited per address and in total, together with the form's other anonymous agent operations (`AGENT_ANONYMOUS_RATE_LIMIT`, default 10 a minute per address, and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`, default 100). Every anonymous turn spends your model budget: set the limits for what you are prepared to pay, and a spend limit at your model provider.
-- **A relay of your own,** when you need more: a CAPTCHA, a daily budget, your own sessions. The relay checks what it must, then calls the UAG with a key the browser never sees. Either point only the turns at it with `chatUrl`, or register the relay's base URL as the UAG's URL (`Formio.use(UAG(relayUrl))`) and have it serve the UAG's paths for your form: the form (`{relay}/{formPath}`), its turns (`{relay}[/project/{id}]/form/{id}/agent/chat`) and its save (`{relay}[/project/{id}]/form/{id}/submission`). The [demo](/examples/conversation) needs no relay: it signs each visitor in as a guest user of its project and calls the UAG with that user's token, under per-user rate limits (`agentApi.rateLimits.caller`).
+- **Anonymous use.** Set [`uagAnonymous: "true"`](./form-properties.md#uaganonymous) on the form, and let the Anonymous role create its submissions. The UAG then answers visitors directly, rate-limited per address and in total, together with the form's other anonymous agent operations (`AGENT_ANONYMOUS_RATE_LIMIT`, default 10 a minute per address, and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`, default 100). Every anonymous turn spends your model budget: set the limits for what you are prepared to pay, and a spend limit at your model provider.
+- **A relay of your own,** when you need more: a CAPTCHA, a daily budget, your own sessions. The relay checks what it must, then calls the UAG with a key the browser never sees. Either point only the turns at it with `chatUrl`, or register the relay's base URL as the UAG's URL (`Formio.use(UAG(relayUrl))`) and have it serve the UAG's paths for your form: the form (`{relay}/{formPath}`), its turns (`{relay}[/project/{id}]/form/{id}/agent/chat`) and its save (`{relay}[/project/{id}]/form/{id}/submission`). The [demo](../../public/apps/conversation) needs no relay: it signs each visitor in as a guest user of its project and calls the UAG with that user's token, under per-user rate limits (`agentApi.rateLimits.caller`).
 
-The UAG refuses project and admin keys on browser requests, so a key cannot be used from a page; see [Security](/developers/security#chat).
+The UAG refuses project and admin keys on browser requests, so a key cannot be used from a page; see [Security](./security.md#chat).
 
 ## Limits and licensing
 
-- **No Agentic Formflow license.** Chat is part of conversation forms, like the MCP tools: it runs on Form.io Open Source and on the hosted service with an unlicensed UAG. A self-hosted Enterprise project needs a license that includes the UAG to be served at all, and nothing more for chat (see [Editions](/developers/deployment#editions)). `GET /agent/capabilities` reports `operations.chat`. The rest of the Agent API (`extract`, `decide`, `generate`), Agent Input and Run task are Agentic Formflow, and need a license or a hosted project.
-- **Engines.** A turn needs an agent engine. The UAG tries the engines in `agentApi.chat.engines` (default: every agent engine) in order, each within its timeout, and moves to the next on a failure. See [Engines](/developers/engines#chat).
-- **Bounds.** A turn carries at most 40 messages of at most 2000 characters each, and the UAG sends the engine the newest 24,000 characters of the conversation (`agentApi.chat`). Callers are rate-limited per operation with `agentApi.rateLimits.caller.chat`. See [Agent API](/developers/agent-api#chat).
+- **No Agentic Formflow license.** Chat is part of conversation forms, like the MCP tools: it runs on Form.io Open Source and on the hosted service with an unlicensed UAG. A self-hosted Enterprise project needs a license that includes the UAG to be served at all, and nothing more for chat (see [Editions](./deployment.md#editions)). `GET /agent/capabilities` reports `operations.chat`. The rest of the Agent API (`extract`, `decide`, `generate`), Agent Input and Run task are Agentic Formflow, and need a license or a hosted project.
+- **Engines.** A turn needs an agent engine. The UAG tries the engines in `agentApi.chat.engines` (default: every agent engine) in order, each within its timeout, and moves to the next on a failure. See [Engines](./engines.md#chat).
+- **Bounds.** A turn carries at most 40 messages of at most 2000 characters each, and the UAG sends the engine the newest 24,000 characters of the conversation (`agentApi.chat`). Callers are rate-limited per operation with `agentApi.rateLimits.caller.chat`. See [Agent API](./agent-api.md#chat).
 
 ## Troubleshooting
 

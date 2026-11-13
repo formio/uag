@@ -7,7 +7,7 @@ order: 40
 
 An engine connects the UAG to a model. The official engines (`jev`, `claude`, `openai`, `grok`, `gemini`) are ordinary npm packages built with `@formio/uag-sdk`, and yours is built the same way. An engine package depends on the SDK only: it never needs `@formio/uag`, and the same package runs inside the UAG, on an engine server, and in `uag-eval`.
 
-This page is the complete reference for the contract, then two full example engines with their tests. For how instances are enabled and routed, see [Engines and routing](/developers/engines).
+This page is the complete reference for the contract, then two full example engines with their tests. For how instances are enabled and routed, see [Engines and routing](./engines.md).
 
 ## What the SDK contains
 
@@ -16,7 +16,7 @@ This page is the complete reference for the contract, then two full example engi
 | `@formio/uag-sdk` | The contract's types, `ENGINE_API_VERSION`, `defineEngine`, `EngineError`, `EngineConfigError`, settings and instance helpers, and the structured-output helpers. |
 | `@formio/uag-sdk/conformance` | `checkEngine`, the conformance check, and the fixed inputs it sends (`STATE`, `FIELDS`, `SCHEMA`, `QUESTIONS` and the `LOOKUP` tool), for your fakes. |
 | `@formio/uag-sdk/loader` | `loadEngines`, `createEngine`, `resolveType`, `enginePaths`: how hosts find and create engines. |
-| `@formio/uag-sdk/protocol` | The remote engine protocol's checks, used by the `remote` type and the engine server. See [Engine server](/developers/engine-server). |
+| `@formio/uag-sdk/protocol` | The remote engine protocol's checks, used by the `remote` type and the engine server. See [Engine server](./engine-server.md). |
 
 ```bash
 npm install @formio/uag-sdk
@@ -260,10 +260,10 @@ type NoulAnswer = { type: 'noul'; probability: number };   // P("yes"), 0 to 1
 type EngineUsage = { inputTokens?: number | null; outputTokens?: number | null };
 ```
 
-- Probabilities and confidences are from 0 to 1. The UAG compares `confidence` (or, for `noul`, `probability` against the uncertain band) with the field's threshold; see [Form properties](/developers/form-properties).
+- Probabilities and confidences are from 0 to 1. The UAG compares `confidence` (or, for `noul`, `probability` against the uncertain band) with the field's threshold; see [Form properties](./form-properties.md).
 - An answer you leave out leaves its field undecided: the UAG reports it `missing`, or tries the next engine in the routing list.
 - `maxOptions` must be at least 2. Fields whose closed set is larger go to an agent engine instead.
-- A decision engine's answers are reported `calibrated: true`. Only build one when its probabilities mean something; measure them with [`uag-eval`](/developers/evaluation).
+- A decision engine's answers are reported `calibrated: true`. Only build one when its probabilities mean something; measure them with [`uag-eval`](./evaluation.md).
 
 ### Agent engines
 
@@ -333,11 +333,11 @@ type ToolCallResult = { content: { type: string; text?: string; [key: string]: a
 - `instructions` is the task's criteria; use it as the system prompt. `state` is the same object decision engines read. `fields` describes each field, and `schema` is the JSON schema of the answer, keyed by field path.
 - Return values only for the fields asked. Leave out a field the information does not support; do not invent a value. The UAG validates every value against the form.
 - Values from an agent engine are always reported `suggested`.
-- Agent engines also answer a form's [chat](/developers/chat) turns, through this same `extract` call, with nothing new to implement. A chat turn's `fields` hold the form's fields plus two of the turn's own, whose paths start with `-`: `-reply` (a string, the next message) and `-confirmed` (a boolean). Treat them like any field. An engine that runs in the UAG and declares `toolUse` is offered one read-only tool on chat turns, `check_values`, even though no task lists `uagTools`; remote engines are not. See [Agent API: Chat](/developers/agent-api#chat).
+- Agent engines also answer a form's [chat](./chat.md) turns, through this same `extract` call, with nothing new to implement. A chat turn's `fields` hold the form's fields plus two of the turn's own, whose paths start with `-`: `-reply` (a string, the next message) and `-confirmed` (a boolean). Treat them like any field. An engine that runs in the UAG and declares `toolUse` is offered one read-only tool on chat turns, `check_values`, even though no task lists `uagTools`; remote engines are not. See [Agent API: Chat](./agent-api.md#chat).
 
 ### Generating text over documents
 
-An agent engine may also implement `generate`, which writes free text over attached documents, and declare `accepts`, the document kinds it reads natively. Modules and plugins call it through `api.engines.select` (see [Modules: The module API](/developers/modules#the-module-api)), which picks an agent engine that has `generate` and accepts what the documents became. Of the official engines, only `claude` implements it.
+An agent engine may also implement `generate`, which writes free text over attached documents, and declare `accepts`, the document kinds it reads natively. Modules and plugins call it through `api.engines.select` (see [Modules: The module API](./modules.md#the-module-api)), which picks an agent engine that has `generate` and accepts what the documents became. Of the official engines, only `claude` implements it.
 
 ```ts
 /** A document an engine reads: PDF bytes, or text with its format. */
@@ -385,7 +385,7 @@ When a task lists read-only tools in `uagTools`, `generate` and an "Agent: Run t
 - Report every call you made in `toolCalls`, in order, with `isError` from the result.
 - Tools never write, so research can only read.
 
-`scopedToken` is for engines whose model runs outside the UAG and calls tools back over `/mcp`; in-process engines ignore it. The engine server uses it for you (see [Engine server](/developers/engine-server)).
+`scopedToken` is for engines whose model runs outside the UAG and calls tools back over `/mcp`; in-process engines ignore it. The engine server uses it for you (see [Engine server](./engine-server.md)).
 
 ### Signals and timeouts
 
@@ -873,7 +873,7 @@ With `toolRounds: 5` and the conformance check's `maxIterations: 2`, the two res
 | A derived image | `RUN npm install --prefix /engines uag-engine-keywords` and `ENV UAG_ENGINE_PATH=/engines`. |
 | A mounted volume | A directory holding `node_modules/uag-engine-keywords` (with its dependencies), listed in `UAG_ENGINE_PATH`. Paths must be absolute; separate several with `:`. |
 | Your own server, without publishing | Pass the definition: `new UAGServer({ engineTypes: { keywords: require('./keywords') }, engines: ['keywords'] })`, or `engines: [{ name: 'kw', type: require('./keywords') }]`. |
-| An engine server | Install it there the same ways; the UAG reaches it with `UAG_ENGINES=keywords:remote`. See [Engine server](/developers/engine-server). |
+| An engine server | Install it there the same ways; the UAG reaches it with `UAG_ENGINES=keywords:remote`. See [Engine server](./engine-server.md). |
 
 ```dockerfile
 FROM formio/uag
@@ -889,6 +889,6 @@ ENV UAG_ENGINE_PATH=/engines
 
 ## Next steps
 
-- [Engines and routing](/developers/engines): enable and route your engine.
-- [Engine server](/developers/engine-server): run it in its own container.
-- [Evaluation](/developers/evaluation): measure a decision engine's calibration.
+- [Engines and routing](./engines.md): enable and route your engine.
+- [Engine server](./engine-server.md): run it in its own container.
+- [Evaluation](./evaluation.md): measure a decision engine's calibration.

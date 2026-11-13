@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- The documentation is read in this repository: the README, the package READMEs, `DOCKERHUB.md` and the other guides link the developer pages in `demo/content/developers`, and those pages link each other, their images and the demos' source by relative paths, so every link works on GitHub. Heading anchors follow GitHub's.
+
 ## 2.0.0
 
 The first stable release of UAG 2.0. It brings together the release candidates below, 2.0.0-rc.1 through 2.0.0-rc.11, and needs `@formio/appserver` 2.26.4 or later. Coming from 1.x, read the introduction to 2.0.0-rc.6 and [MIGRATING-2.0.md](./MIGRATING-2.0.md) before upgrading.

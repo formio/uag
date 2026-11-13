@@ -5,21 +5,21 @@ section: Concepts
 order: 10
 ---
 
-Everything the UAG does is driven by the forms in your project. This page explains the vocabulary: how the UAG works with Form.io, which forms an agent can see, how a form defines work for an agent, how the UAG decides what each model is asked, and what it records about the answers. [Form properties](/developers/form-properties) is the companion reference for every property mentioned here.
+Everything the UAG does is driven by the forms in your project. This page explains the vocabulary: how the UAG works with Form.io, which forms an agent can see, how a form defines work for an agent, how the UAG decides what each model is asked, and what it records about the answers. [Form properties](./form-properties.md) is the companion reference for every property mentioned here.
 
 ## The UAG in front of Form.io
 
 The UAG is built on Form.io core logic, using `@formio/core` processors, but it stores no submissions. It runs in **proxy mode**: every submission it receives is forwarded to the Form.io project, which validates it, stores it and runs its own actions. Applications use the UAG by pointing their project URL at it instead of at Form.io; login and registration are forwarded too, and Form.io's response, with the token it issues, is passed back.
 
-![A submission through the UAG: the application sends it with the user's x-jwt-token; the UAG checks the user with Form.io, runs its actions before the save, and forwards the request unchanged; Form.io checks permissions, validates, stores and runs its own actions; the UAG runs its actions after the save and passes Form.io's response back. A submission sent straight to Form.io skips the UAG and its actions.](/images/uag-proxy-mode.svg)
+![A submission through the UAG: the application sends it with the user's x-jwt-token; the UAG checks the user with Form.io, runs its actions before the save, and forwards the request unchanged; Form.io checks permissions, validates, stores and runs its own actions; the UAG runs its actions after the save and passes Form.io's response back. A submission sent straight to Form.io skips the UAG and its actions.](../../public/images/uag-proxy-mode.svg)
 
 | What | Runs where |
 |---|---|
 | Form.io's actions (Save Submission, Login, Role, Webhook, Email, Group) | At Form.io, on the forwarded request. The UAG never runs them, so nothing runs twice. |
-| The UAG's own action, **Agent: Run task**, and any action a [module](/developers/modules) adds | In the UAG: before the forward, or after it. |
+| The UAG's own action, **Agent: Run task**, and any action a [module](./modules.md) adds | In the UAG: before the forward, or after it. |
 | The forward itself | A fixed step of every create and update, between the "before" and "after" actions. |
 
-A Form.io user token (`x-jwt-token`) works against the UAG as it does against Form.io: the UAG verifies it with Form.io and forwards it unchanged, never re-signed, so Form.io's roles and permissions apply. The exception is a create that a Run task action with an agent role makes on the user's behalf; see [Project setup for agents](/developers/project-setup). A submission sent straight to Form.io never passes through the UAG, so none of the UAG's actions run for it.
+A Form.io user token (`x-jwt-token`) works against the UAG as it does against Form.io: the UAG verifies it with Form.io and forwards it unchanged, never re-signed, so Form.io's roles and permissions apply. The exception is a create that a Run task action with an agent role makes on the user's behalf; see [Project setup for agents](./project-setup.md). A submission sent straight to Form.io never passes through the UAG, so none of the UAG's actions run for it.
 
 ## The `uag` tag
 
@@ -31,7 +31,7 @@ The UAG registers only forms and resources tagged `uag`. In the form builder the
 
 An untagged form is invisible to every agent and every tool, including `get_forms` and the form's agent operations, `{form}/agent/*` (which answer `404` "does not exist or is not tagged"). Nothing logs an error. When an agent insists a form does not exist, check the tag first, then wait for the project cache (`PROJECT_TTL`) or restart the UAG.
 
-A tagged form is all a conversation form needs. An agent reads its fields, labels, descriptions, options and validation through the MCP tools, and the form's [chat](/developers/chat) (`{form}/agent/chat`) reads the same for the UAG's agent engine. The form's `properties.description`, if set, is the description `get_forms` shows; otherwise it shows "A form to submit new <title> records."
+A tagged form is all a conversation form needs. An agent reads its fields, labels, descriptions, options and validation through the MCP tools, and the form's [chat](./chat.md) (`{form}/agent/chat`) reads the same for the UAG's agent engine. The form's `properties.description`, if set, is the description `get_forms` shows; otherwise it shows "A form to submit new <title> records."
 
 > **Tip:** Field descriptions are agent context as much as help text. A precise description ("The 8-digit account number printed on the invoice") changes how an agent asks for and checks a value.
 
@@ -53,15 +53,15 @@ Custom properties are set in the builder under a component's **API → Custom Pr
 
 | Surface | Saves | Use it for |
 |---|---|---|
-| The **Agent: Run task** action | Yes. Before the save, its answers are part of the one save; after the save, they are saved as an update through the UAG, which runs the form's update actions, so tasks chain (through actions that run after the save). | Workflows with no person in the loop, and re-deciding sensitive fields on the server. See [Workflows](/developers/workflows). |
-| The Agent API: `{form}/agent/extract`, `{form}/agent/decide`, `{form}/agent/generate`, under the form's URL on the UAG | No. It is stateless: it answers from the data in the request, and never reads or writes a stored submission. | Pages and applications that fill a form as a person works on it. See [Agent API](/developers/agent-api). |
-| The `agent_provide` and `agent_decide` MCP tools | No. They only read: they hand an MCP client the task, and the client writes with `submission_update`. | An MCP client that does the task with its own model. See [MCP tools](/developers/mcp-tools). |
+| The **Agent: Run task** action | Yes. Before the save, its answers are part of the one save; after the save, they are saved as an update through the UAG, which runs the form's update actions, so tasks chain (through actions that run after the save). | Workflows with no person in the loop, and re-deciding sensitive fields on the server. See [Workflows](./workflows.md). |
+| The Agent API: `{form}/agent/extract`, `{form}/agent/decide`, `{form}/agent/generate`, under the form's URL on the UAG | No. It is stateless: it answers from the data in the request, and never reads or writes a stored submission. | Pages and applications that fill a form as a person works on it. See [Agent API](./agent-api.md). |
+| The `agent_provide` and `agent_decide` MCP tools | No. They only read: they hand an MCP client the task, and the client writes with `submission_update`. | An MCP client that does the task with its own model. See [MCP tools](./mcp-tools.md). |
 
-Run task, the Agent API's extract, decide and generate, and the `agent_provide` and `agent_decide` MCP tools are Agentic Formflow, which needs a license that includes the UAG or a project on Form.io's hosted service; see [Licensing](/developers/agent-api#licensing).
+Run task, the Agent API's extract, decide and generate, and the `agent_provide` and `agent_decide` MCP tools are Agentic Formflow, which needs a license that includes the UAG or a project on Form.io's hosted service; see [Licensing](./agent-api.md#licensing).
 
-![The demo's First Notice of Loss form: its input, its criteria, two decision fields and two value fields, all in the triage task.](/images/uag-task-anatomy.svg)
+![The demo's First Notice of Loss form: its input, its criteria, two decision fields and two value fields, all in the triage task.](../../public/images/uag-task-anatomy.svg)
 
-![The custom properties that make a content component a task's criteria.](/images/criteria-properties.png)
+![The custom properties that make a content component a task's criteria.](../../public/images/criteria-properties.png)
 
 ### Criteria
 
@@ -69,7 +69,7 @@ The criteria is a content component whose HTML is the task's instructions. The U
 
 Write it as you would brief a new employee: what the submission is, what each field the task fills means, how to judge it, which values are allowed, and in which units and formats. If the task acts in a role (an admissions officer, a claims adjuster), say so here; the criteria is the only place a model learns who it is acting as. Name field keys verbatim when it helps.
 
-![An example criteria for scoring a college application essay.](/images/criteria-example.png)
+![An example criteria for scoring a college application essay.](../../public/images/criteria-example.png)
 
 The criteria component also carries the task's settings. Any custom property on it other than `uag` and `uagField` becomes a task setting; the UAG reads `uagContext`, `uagTools` and `uagEngine` from there.
 
@@ -79,7 +79,7 @@ In a production form, hide the criteria and the agent fields from the rendered f
 
 Every input component with the task's `uag` value is a field the task fills. Fields do not have to sit next to the criteria: a `status` field in one panel can belong to one task while the field beside it belongs to another.
 
-![Agent fields flagged with the task's name.](/images/agent-field-property.png)
+![Agent fields flagged with the task's name.](../../public/images/agent-field-property.png)
 
 A task only ever fills its own fields. Values an engine returns for any other path are discarded, so a model cannot be talked into writing a field the task does not own.
 
@@ -98,7 +98,7 @@ By default a task reads the whole submission, except the fields it is filling. F
   "properties": { "uag": "triage", "uagField": "input" } }
 ```
 
-An input can also be a container, in which case every value inside it is input. A task can have several inputs. A file component given as input or context reaches engines as the uploaded document's text; any other file is described by name, type and size, never sent (see [Documents as input](/developers/form-properties#documents-as-input)).
+An input can also be a container, in which case every value inside it is input. A task can have several inputs. A file component given as input or context reaches engines as the uploaded document's text; any other file is described by name, type and size, never sent (see [Documents as input](./form-properties.md#documents-as-input)).
 
 The input matters most for `{form}/agent/extract`, which fills a task's fields from free text. Extract needs either a task with an input (and the input's value in `data`) or a `text` value in the request, which replaces the input for that call.
 
@@ -119,9 +119,9 @@ To give a task one or two extra values without making them input, list their dat
 "properties": { "uag": "triage", "uagField": "criteria", "uagContext": "policyNumber, customer.tier" }
 ```
 
-Agent engines also receive each target field's label, type, description, rule, format and options, and a JSON schema for the answer. The rule states the field's validation too: lengths, word counts, the pattern, the range, the input mask and fixed date limits (not `required`, so an engine is never pushed to invent a value, and not custom validation, which cannot be stated). The form still validates every answer; see [Values the form refuses](/developers/workflows#values-the-form-refuses). Decision engines receive compiled questions (see [How decisions are asked](#how-decisions-are-asked)).
+Agent engines also receive each target field's label, type, description, rule, format and options, and a JSON schema for the answer. The rule states the field's validation too: lengths, word counts, the pattern, the range, the input mask and fixed date limits (not `required`, so an engine is never pushed to invent a value, and not custom validation, which cannot be stated). The form still validates every answer; see [Values the form refuses](./workflows.md#values-the-form-refuses). Decision engines receive compiled questions (see [How decisions are asked](#how-decisions-are-asked)).
 
-When a task lists research tools in `uagTools`, an agent engine may also call those read-only tools before it answers. See [Security](/developers/security#research-identity).
+When a task lists research tools in `uagTools`, an agent engine may also call those read-only tools before it answers. See [Security](./security.md#research-identity).
 
 ## Multiple tasks
 
@@ -148,7 +148,7 @@ When a request names no task:
 
 An **Agent: Run task** action always names its task: a saving operation never guesses which stage to run.
 
-Chaining tasks, so that the first task's save starts the second, is covered in [Workflows](/developers/workflows#chaining-tasks).
+Chaining tasks, so that the first task's save starts the second, is covered in [Workflows](./workflows.md#chaining-tasks).
 
 ## Decision fields and value fields
 
@@ -182,7 +182,7 @@ Decision engines are asked closed questions, compiled from the component, with c
 - **Yes/no** (checkbox, each select-box option): two literal questions, "does the input affirm this?" and "does it deny it?". True needs a clear affirmation and no denial, false the reverse, neither is "not mentioned", anything else is `uncertain`.
 - **Resource match** (resource select): a choice over every record of the resource, labeled with the component's template. When the input clearly names a record that is not on file, the field is `missing` with `noMatch: true`, and, when an agent engine is enabled, `newRecordName` carries the name the input used.
 
-Thresholds are set per field with `uagThreshold` (choice and score, default `0.5`) and `uagUncertainBand` (yes/no and mention checks, default `0.2-0.8`). Measure them on your own data before relying on the defaults; see [Evaluation](/developers/evaluation).
+Thresholds are set per field with `uagThreshold` (choice and score, default `0.5`) and `uagUncertainBand` (yes/no and mention checks, default `0.2-0.8`). Measure them on your own data before relying on the defaults; see [Evaluation](./evaluation.md).
 
 ### What gets excluded
 
@@ -202,7 +202,7 @@ Stateless operations (extract, decide, generate) return values and save nothing.
 
 - **Decision fields** take a `confident` answer. Otherwise they keep their stored value, which a person may have confirmed, unless the field is marked `uagAuthoritative: "true"`, in which case an answer that is not confident (including an agent engine's `suggested` answer, without `uagAgentDecides`) clears it so a person decides. A field marked `uagAgentDecides: "true"` also takes an agent engine's `suggested` answer.
 - **Value fields** take a generated value only while they are empty and visible. A generated value never replaces one already there, so running a task again on its own output changes nothing.
-- **Fields the task owns.** For every task a form's Run task actions run, values a client sends for the task's `uagAuthoritative` fields (decision and value fields alike, and their confidence fields) are removed before anything runs: on a create they start empty, on an update they keep their stored values. Only the task sets them. See [`uagAuthoritative`](/developers/form-properties#uagauthoritative).
+- **Fields the task owns.** For every task a form's Run task actions run, values a client sends for the task's `uagAuthoritative` fields (decision and value fields alike, and their confidence fields) are removed before anything runs: on a create they start empty, on an update they keep their stored values. Only the task sets them. See [`uagAuthoritative`](./form-properties.md#uagauthoritative).
 
 Every reconciled value is recorded in the submission's metadata, next to the data:
 
@@ -253,11 +253,11 @@ Optionally, the UAG has a MongoDB database of its own (`MONGO`, with the databas
 | `uag-authcodes` | Authorization codes for remote MCP clients, stored by their SHA-256 hash, with their tokens sealed | OAuth sign-in for remote MCP clients (`MCP_OAUTH`) |
 | `uag-meta` | The database's schema version | The startup check |
 
-Using the database needs a license that includes the UAG. Without it, the UAG still starts, with these features off, and says why. See [Deployment](/developers/deployment).
+Using the database needs a license that includes the UAG. Without it, the UAG still starts, with these features off, and says why. See [Deployment](./deployment.md).
 
 ## A complete example
 
-This form has one task, `triage`, with an input, a criteria that adds one context value, two decision fields (one of which writes its confidence to a companion field) and one value field. It is the form the [Agent API](/developers/agent-api) examples use.
+This form has one task, `triage`, with an input, a criteria that adds one context value, two decision fields (one of which writes its confidence to a companion field) and one value field. It is the form the [Agent API](./agent-api.md) examples use.
 
 ```json
 {

@@ -80,7 +80,7 @@ Run each engine you are considering on the same examples to compare them.
 
 ## The form file
 
-Any Form.io form definition with a task. `uag-eval` adds the `uag` tag if the form does not have it, and takes the form's name from `name`, else `path`. The task's criteria, input, `uagContext` and decision field properties are read from the form as the UAG reads them; see [Form properties](/developers/form-properties).
+Any Form.io form definition with a task. `uag-eval` adds the `uag` tag if the form does not have it, and takes the form's name from `name`, else `path`. The task's criteria, input, `uagContext` and decision field properties are read from the form as the UAG reads them; see [Form properties](./form-properties.md).
 
 Resource-backed selects need a live project for their options, so they are skipped.
 
@@ -175,7 +175,7 @@ Set the result on the field:
 | Choice or score | `uagThreshold`, such as `0.7` |
 | Yes/no, select boxes | `uagUncertainBand`, such as `0.3-0.7` |
 
-Or change the defaults for the project with `agentApi.threshold` and `agentApi.uncertainBand` (see [Engines and routing](/developers/engines#agent-api-defaults)).
+Or change the defaults for the project with `agentApi.threshold` and `agentApi.uncertainBand` (see [Engines and routing](./engines.md#agent-api-defaults)).
 
 Run `uag-eval` again, on the same examples, before you change a threshold, the pinned model version (`TYPESAFE_MODEL`, or the instance's `model`) or the engine. Behavior differs between model versions.
 
@@ -252,6 +252,6 @@ The thresholds are `0.3` to `0.9` in steps of `0.1`; the bands are `0.1-0.9`, `0
 
 ## Next steps
 
-- [Form properties](/developers/form-properties): `uagThreshold`, `uagUncertainBand` and the other decision field properties.
-- [Engines and routing](/developers/engines): the decision engines you can evaluate.
-- [Agent API](/developers/agent-api): how `confident`, `uncertain` and `missing` reach your application.
+- [Form properties](./form-properties.md): `uagThreshold`, `uagUncertainBand` and the other decision field properties.
+- [Engines and routing](./engines.md): the decision engines you can evaluate.
+- [Agent API](./agent-api.md): how `confident`, `uncertain` and `missing` reach your application.

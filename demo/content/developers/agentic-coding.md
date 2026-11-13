@@ -51,14 +51,14 @@ The **UAG URL** is a separate value: where your applications, browsers and MCP c
 
 ## What to ask for
 
-Describe the outcome, not the settings. The plugin's `formio-uag` skill maps the request to one of the UAG's [usage patterns](/developers#three-ways-to-use-it), and says up front whether it needs a license. Each prompt below builds one of this site's live demos in your own project.
+Describe the outcome, not the settings. The plugin's `formio-uag` skill maps the request to one of the UAG's [usage patterns](./index.md#three-ways-to-use-it), and says up front whether it needs a license. Each prompt below builds one of this site's live demos in your own project.
 
 | You want | Ask your coding agent | See it running |
 |---|---|---|
-| A chat on your page that fills in a form | [Service chat prompt](https://github.com/formio/ai/blob/main/examples/agents/service-chat.md): *"Put a chat on our public support page where customers describe their problem and it fills in our serviceRequest form, then submits it once they confirm."* | [Conversation Forms](/examples/conversation) |
-| Agents that review every submission | [Admissions workflow prompt](https://github.com/formio/ai/blob/main/examples/agents/admissions-workflow.md): *"Every college application should be scored by an admissions agent, and scholarship candidates by a finance agent that picks the award level."* | [Agentic Workflow](/examples/workflow) |
-| A wizard that fills itself in from a description | [Claim wizard prompt](https://github.com/formio/ai/blob/main/examples/agents/claim-formflow.md): *"When the policyholder describes the incident, decide the claim type so the right pages appear, and prefill the date and location for them to check."* | [Agentic Formflow](/examples/formflow) |
-| Claude or your own agent talking to your forms | *"Connect Claude Desktop to our Form.io forms through the UAG, signing in with our users' own Form.io logins."* | [Connect Claude](/developers/connect-claude) |
+| A chat on your page that fills in a form | [Service chat prompt](https://github.com/formio/ai/blob/main/examples/agents/service-chat.md): *"Put a chat on our public support page where customers describe their problem and it fills in our serviceRequest form, then submits it once they confirm."* | [Conversation Forms](../../public/apps/conversation) |
+| Agents that review every submission | [Admissions workflow prompt](https://github.com/formio/ai/blob/main/examples/agents/admissions-workflow.md): *"Every college application should be scored by an admissions agent, and scholarship candidates by a finance agent that picks the award level."* | [Agentic Workflow](../../public/apps/workflow) |
+| A wizard that fills itself in from a description | [Claim wizard prompt](https://github.com/formio/ai/blob/main/examples/agents/claim-formflow.md): *"When the policyholder describes the incident, decide the claim type so the right pages appear, and prefill the date and location for them to check."* | [Agentic Formflow](../../public/apps/formflow) |
+| Claude or your own agent talking to your forms | *"Connect Claude Desktop to our Form.io forms through the UAG, signing in with our users' own Form.io logins."* | [Connect Claude](./connect-claude.md) |
 
 Start a prompt with `/formio-uag` to load the skill explicitly in agents that take slash commands. Without it, the skill loads from the request's wording.
 
@@ -70,15 +70,15 @@ The `formio-uag` skill works in five steps, and hands parts of the work to the p
 your request -> 1 pattern: pick the surface, say what needs a license -> 2 form: tag, describe, design tasks* -> 3 server: Compose or Kubernetes, engines, Run task actions -> 4 application: @formio/uag-js, the chat widget, Agent API or MCP client code -> 5 verify: the checks for you to run
 ```
 
-1. **Pattern.** It chooses conversation forms over MCP, the [chat widget](/developers/chat), [Agentic Formflow](/developers/agent-api) or an [agentic workflow](/developers/workflows), and tells you which need a license.
-2. **Form.** It tags each form `uag`, writes a description and field descriptions an agent can use, and designs the tasks: the criteria, input, decision and value fields, and their [properties](/developers/form-properties). Form writes go through the `formio-form-builder` skill, which shows each change and asks before saving it.
-3. **Server.** It writes a Compose stack or Kubernetes manifest for your edition, with the engines your pattern needs and an `.env.example` whose secrets are placeholders for your secret store. It adds "Agent: Run task" actions in a project template, a [UAG module](/developers/modules) or a portal stage connected to the UAG, and hands agent roles and permissions to the `formio-auth` skill.
-4. **Application.** It registers [`@formio/uag-js`](/developers/renderer) in a formio.js, React or Angular application, renders a form as a chat, calls the [Agent API](/developers/agent-api) from your backend, or connects an [MCP client](/developers/mcp-tools).
-5. **Verify.** It hands you the checks from [Troubleshooting](/developers/troubleshooting) to run yourself: `GET /agent/capabilities` for the edition, engines and license, and a stateless `decide` or `generate` to see each field's status before anything is saved.
+1. **Pattern.** It chooses conversation forms over MCP, the [chat widget](./chat.md), [Agentic Formflow](./agent-api.md) or an [agentic workflow](./workflows.md), and tells you which need a license.
+2. **Form.** It tags each form `uag`, writes a description and field descriptions an agent can use, and designs the tasks: the criteria, input, decision and value fields, and their [properties](./form-properties.md). Form writes go through the `formio-form-builder` skill, which shows each change and asks before saving it.
+3. **Server.** It writes a Compose stack or Kubernetes manifest for your edition, with the engines your pattern needs and an `.env.example` whose secrets are placeholders for your secret store. It adds "Agent: Run task" actions in a project template, a [UAG module](./modules.md) or a portal stage connected to the UAG, and hands agent roles and permissions to the `formio-auth` skill.
+4. **Application.** It registers [`@formio/uag-js`](./renderer.md) in a formio.js, React or Angular application, renders a form as a chat, calls the [Agent API](./agent-api.md) from your backend, or connects an [MCP client](./mcp-tools.md).
+5. **Verify.** It hands you the checks from [Troubleshooting](./troubleshooting.md) to run yourself: `GET /agent/capabilities` for the edition, engines and license, and a stateless `decide` or `generate` to see each field's status before anything is saved.
 
 ## Guardrails
 
-The skill builds to the UAG's [security model](/developers/security):
+The skill builds to the UAG's [security model](./security.md):
 
 - **You see every form change first.** Nothing is saved to a form until you approve the change.
 - **Settings that widen access or spend money are named on their own:** `uagAnonymous`, tools added to `uagTools`, removing `uagAuthoritative` from a field a task owns, and anonymous create access on a public form. Each one is confirmed separately.
@@ -99,6 +99,6 @@ The plugin and the UAG both speak MCP, for different readers:
 
 ## Next steps
 
-- [How the UAG works](/developers): the architecture your coding agent builds on.
-- [Quickstart](/developers/quickstart): run the UAG by hand, if you want to see each step.
+- [How the UAG works](./index.md): the architecture your coding agent builds on.
+- [Quickstart](./quickstart.md): run the UAG by hand, if you want to see each step.
 - [The plugin on GitHub](https://github.com/formio/ai): every skill, the MCP server's tools, and more example prompts.

@@ -85,7 +85,7 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 | `{form}/agent/*` returns `401` "Sign in to use this form's agent operations and routes." | The request has no credential, and the form does not allow anonymous use: it needs `uagAnonymous: "true"`, and `AGENT_ANONYMOUS_RATE_LIMIT` and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT` must not be `0`. Or send the user's Form.io token. |
 | `{form}/agent/*` returns `403` "Anonymous visitors may not submit this form." | The form allows anonymous use, but the Anonymous role may not create its submissions. |
 | `{form}/agent/*` returns `429` "Too many requests. Try again shortly." to anonymous visitors | Over the anonymous limits: `AGENT_ANONYMOUS_RATE_LIMIT` per client address (default 10 a minute) or `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT` in total (default 100 a minute), counted by each UAG process. Wait `Retry-After` seconds. Behind a reverse proxy without `TRUST_PROXY`, every visitor shares the proxy's address. |
-| A portal team member's request through a connected stage returns `401` | Their team permission does not allow it: `team_read` and `team_access` may only read, and only `team_write`, `team_admin` and the owner may run a form's agent operations. See [Portal team members](/developers/security#portal-team-members). |
+| A portal team member's request through a connected stage returns `401` | Their team permission does not allow it: `team_read` and `team_access` may only read, and only `team_write`, `team_admin` and the owner may run a form's agent operations. See [Portal team members](./security.md#portal-team-members). |
 | `{form}/agent/*` returns `401` "Scoped tokens can only be used on /mcp." | A research token is being used to start work. Scoped tokens are only for a remote engine's calls back into `/mcp`. |
 
 ## Conversations over MCP
@@ -111,7 +111,7 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 | `400` on decide with a `submissionId` | Decide works on the data in the request and saves nothing. To decide a stored submission's fields, run its task when it is saved, with an "Agent: Run task" action. |
 | A call to `/agent/provide` fails | It was removed in 2.0. Use an "Agent: Run task" action on the form, or `{form}/agent/generate` and `{form}/agent/decide` on the submission's data. |
 | `413` with `code: "payload_too_large"` | The body is over the agent operations' limit, `AGENT_BODY_LIMIT` (or `agentApi.bodyLimit`; 5 MB by default), which the message names. A file sent inline as base64 is about 1.33 times (4/3) its size. Module routes share the limit, and `MAX_BODY_SIZE` (16 MB by default) applies before it. |
-| A task's file input reaches the engine as its name and a reason, not its text | No installed converter reads its type (add a [converter plugin](/developers/plugins)), it is an image or a PDF with no text layer (a scan), it is over `agentApi.files.maxBytes` (10 MB), or it is stored where the UAG cannot read it (Google Drive, Dropbox). See [Documents as input](/developers/form-properties#documents-as-input). |
+| A task's file input reaches the engine as its name and a reason, not its text | No installed converter reads its type (add a [converter plugin](./plugins.md)), it is an image or a PDF with no text layer (a scan), it is over `agentApi.files.maxBytes` (10 MB), or it is stored where the UAG cannot read it (Google Drive, Dropbox). See [Documents as input](./form-properties.md#documents-as-input). |
 | `429` | The caller is over its `agentApi.rateLimits.caller` limit (wait `Retry-After` seconds), or every engine that could answer is over its own limit. |
 | A field is `missing` | Read its `reason`: `not mentioned`, `the engine returned no value`, an engine failure, or `no enabled engine can answer`. |
 | A field is always `uncertain` | Its answer changes when the options are reversed (rewrite ambiguous option labels, or set `uagOrderCheck: "false"`), the mention check is in the uncertain band, or `uagThreshold` is above what the engine reaches. Measure with `uag-eval`. |
@@ -130,7 +130,7 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 | `502` on a turn | Every engine that could answer failed or timed out. The UAG's log has the engines' errors under the response's `requestId`. |
 | The chat never shows the summary | A required field is one the chat cannot collect (a data grid, a file, a nested form): the chat names it and opens the form. Or a value fails validation, and the reply asks again. |
 
-More on [Chat widget](/developers/chat#troubleshooting).
+More on [Chat widget](./chat.md#troubleshooting).
 
 ## Run task and workflows
 
@@ -140,14 +140,14 @@ More on [Chat widget](/developers/chat#troubleshooting).
 | A run after the save fails: the submission "was not found, or the user the run acts as may not read it" | The action names no agent role, and the submitter may not read the submission. Grant Read Own, or give the action an agent role. |
 | A field a task should fill stays empty, `failed validation: ...` in the run's results | The engine's answer broke one of the field's rules, so the run left it out rather than fail the save. State the rule in the field's description or the criteria. |
 | A run after the save did nothing visible | It failed in the background, which never affects the submitter's response. The UAG logs `[formio-uag] Run task "<task>" failed for submission <id> of "<form>": <reason>`. With the database, the run is also recorded, and Action Logs in a connected classic portal stage show it with its error. A run that changes nothing saves nothing, and is recorded as such. |
-| A run fails: "Form.io refused the token the UAG signed ... JWT_SECRET must be the same as Form.io Enterprise's" | The action names an agent role, and the UAG's `JWT_SECRET` differs from the Form.io server's. See [Project setup for agents](/developers/project-setup). |
+| A run fails: "Form.io refused the token the UAG signed ... JWT_SECRET must be the same as Form.io Enterprise's" | The action names an agent role, and the UAG's `JWT_SECRET` differs from the Form.io server's. See [Project setup for agents](./project-setup.md). |
 | A run without an agent role fails with an authorization error | It acts with the submitter's own token, which expired or was logged out before the run. Give the action an agent role, or keep tokens valid for longer than a run takes. |
 | A run fails: "The submission changed while its task was running, and again on the second try" | A person saved the submission while the task ran, and again after it started over. Nothing was saved. |
 | `403` "You may not submit this form." | The form does not let the user's roles create submissions, and either the user has none of the action's **Submitter roles**, or the agent role lacks Create All on the form. |
 | `500` "... its Run task actions name different agent roles." | Several Run task actions on the form run on create and name different agent roles. Give them one. |
 | A run fails: "An agent cannot act with an admin role." | The action's agent role is an admin role. Use a role without admin access. |
 | A save through the UAG is refused with `503` or `429` | A Run task that runs before the save and answers its decision fields only could not decide some of them, so it refused the submission rather than clear them. Nothing was stored. |
-| A save through the UAG is refused with `403` and `code: "license_required"` | A Run task runs before the save without a license that includes the UAG. See [Deployment](/developers/deployment#licensing). |
+| A save through the UAG is refused with `403` and `code: "license_required"` | A Run task runs before the save without a license that includes the UAG. See [Deployment](./deployment.md#licensing). |
 | A value a client sent for a field is dropped | The field is marked `uagAuthoritative` and owned by a task of one of the form's Run task actions. The server decides it; on an update it keeps its stored value. |
 | A browser-decided value was stored as the user sent it | The submission was saved straight to Form.io, where no task runs, or the field is not marked `uagAuthoritative`. |
 | Runs after the save are lost when the UAG restarts | They are kept in memory: the UAG has no usable database (`durableRuns: false`), or the action names no agent role. |
@@ -157,7 +157,7 @@ More on [Chat widget](/developers/chat#troubleshooting).
 | The submitter waits a long time after submitting | The Run task runs before the save. Agent runs take seconds to tens of seconds; set **When** to **After the save** unless the submitter needs the answer in the response. |
 | A chained Run task action never runs | It is set to run **Before the save**. Only actions that run **After the save** start from another task's save. Set the follow-on action's **When** to **After the save**. |
 | Chained tasks run again and again, then stop with "5 runs in a row were each started by the save of the one before" | A Run task on update whose conditions stay true after its own save, with a task that changes something each time. The UAG stops such a chain after 5 runs and logs `Run task "<task>" was not run on submission <id>`. Add a condition on a field the task fills, such as "`awardLevel` is empty". |
-| "Agent: Run task" opens as a blank page in the portal | The stage is not connected to the UAG, so the portal asks Form.io, which does not know the action. See [Connecting the Enterprise portal](/developers/deployment#connecting-the-enterprise-portal). |
+| "Agent: Run task" opens as a blank page in the portal | The stage is not connected to the UAG, so the portal asks Form.io, which does not know the action. See [Connecting the Enterprise portal](./deployment.md#connecting-the-enterprise-portal). |
 | Action Logs show no task runs | The UAG has no usable database, the stage is not connected to the UAG, or you use the new portal, which reads Action Logs from its own API server. |
 
 ## Modules, plugins and documents
@@ -165,13 +165,13 @@ More on [Chat widget](/developers/chat#troubleshooting).
 | Symptom | Cause |
 |---|---|
 | Startup stops: "The form route "…" is defined by both … and …" (or a component type, an MCP tool or an engine type) | Two modules define the same thing. Leave one out with `MODULES_DISABLED`, or rename yours. |
-| Startup stops: "… the script of component "…" is not a browser script that registers the component" | The component's `script` is an ES module, or does not parse. Point it at the built, self-registering file (see [Components](/developers/modules#components)). |
+| Startup stops: "… the script of component "…" is not a browser script that registers the component" | The component's `script` is an ES module, or does not parse. Point it at the built, self-registering file (see [Components](./modules.md#components)). |
 | The log warns "The component script … is not a browser script" | A component script changed after startup and no longer parses. `/uag-js/uag.use.js` and `/uag-js/portal.js` leave it out until it parses again. |
-| A plugin is missing: `GET {project}/plugins` does not list it, or a form names a process that "is not installed" | Its plugins file was not loaded: check `UAG_PLUGINS`, or the mount (an add-on's volume or your folder, mounted in a folder under `/app/plugins` that holds `index.mjs`; rc.7 and earlier load only `/app/plugins/index.mjs`). The startup log names each file it loaded ("Plugins loaded from …", or "Plugins and modules loaded from …"), and `UAG_PLUGINS=off` loads none. Or `PLUGINS_DISABLED` names it. See [Plugins](/developers/plugins#when-it-does-not-work). |
+| A plugin is missing: `GET {project}/plugins` does not list it, or a form names a process that "is not installed" | Its plugins file was not loaded: check `UAG_PLUGINS`, or the mount (an add-on's volume or your folder, mounted in a folder under `/app/plugins` that holds `index.mjs`; rc.7 and earlier load only `/app/plugins/index.mjs`). The startup log names each file it loaded ("Plugins loaded from …", or "Plugins and modules loaded from …"), and `UAG_PLUGINS=off` loads none. Or `PLUGINS_DISABLED` names it. See [Plugins](./plugins.md#when-it-does-not-work). |
 | `/uag-js/uag.use.js`, `uag-js.css`, `portal.js` or `portal.css` answers `404` "@formio/uag-js is not installed with this UAG." | The UAG was installed from npm without `@formio/uag-js`. Install `@formio/uag-js` beside `@formio/uag`. The images include it. |
 | `read_document` answers "No uploaded file at "…" in that submission." | `data_path` does not name a file field or an AI Document field with a file there. For a field with several files, add the index: `contract[1]`. |
 | `read_document` answers "The file is stored as …, which cannot be read here." | The UAG cannot read files from that storage (Google Drive, Dropbox). Use S3, Azure or base64 storage. |
-| `read_document` answers "… cannot be read as text: no installed converter reads it." or "… has no text to read: …" | No converter reads that file type: add a [converter plugin](/developers/plugins). Or the file is an image, or a PDF with no text layer (a scan). |
+| `read_document` answers "… cannot be read as text: no installed converter reads it." or "… has no text to read: …" | No converter reads that file type: add a [converter plugin](./plugins.md). Or the file is an image, or a PDF with no text layer (a scan). |
 | `read_document` answers "The file "…" is larger than the … bytes that may be read." | The file is over `DOCUMENTS_MAX_FILE_BYTES` (`documents.maxFileBytes`, 25 MB by default). |
 
 ## Engines and engine servers
@@ -191,7 +191,7 @@ More on [Chat widget](/developers/chat#troubleshooting).
 
 Run one of the samples to confirm the environment itself is sound, then compare its configuration with yours:
 
-- [Quickstart](/developers/quickstart) for a minimal stack.
+- [Quickstart](./quickstart.md) for a minimal stack.
 - The [demo stack](../..), with conversation forms and workflows, and the [custom module sample](../../samples/custom-module).
 
-To report a bug, include the `@formio/uag` version from `/status`, the `X-Request-Id` of a failing request and the matching log lines. Report security issues privately; see [Security](/developers/security#reporting-a-vulnerability).
+To report a bug, include the `@formio/uag` version from `/status`, the `X-Request-Id` of a failing request and the matching log lines. Report security issues privately; see [Security](./security.md#reporting-a-vulnerability).

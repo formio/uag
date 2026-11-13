@@ -20,13 +20,13 @@ module.exports = {
 };
 ```
 
-From a plugins file: an ES module (`.mjs`) or CommonJS file whose default export (or `plugins` export) is a plugin, a list of plugins, or nested lists; or a list mixing [modules](/developers/modules) and plugins, each module used in turn. Document plugins need the AI Document module, which defines their type. The `uag` command and the `formio/uag` image load the plugins folder `/app/plugins` when it exists, or what `UAG_PLUGINS` names (`UAG_PLUGINS=off` loads none):
+From a plugins file: an ES module (`.mjs`) or CommonJS file whose default export (or `plugins` export) is a plugin, a list of plugins, or nested lists; or a list mixing [modules](./modules.md) and plugins, each module used in turn. Document plugins need the AI Document module, which defines their type. The `uag` command and the `formio/uag` image load the plugins folder `/app/plugins` when it exists, or what `UAG_PLUGINS` names (`UAG_PLUGINS=off` loads none):
 
 - a file: that file;
 - a folder with an `index.mjs`: that file;
 - any other folder: the `index.mjs` of each folder in it, in name order, one per [add-on](#add-ons) (`node_modules` and folders whose name starts with `.` are skipped).
 
-In your own server, `usePluginFiles(server)` does the same (see [Node.js API](/developers/node-api#public-exports)). Relative imports in a file resolve from the file, and bare imports from its folder's own `node_modules`, then upward.
+In your own server, `usePluginFiles(server)` does the same (see [Node.js API](./node-api.md#public-exports)). Relative imports in a file resolve from the file, and bare imports from its folder's own `node_modules`, then upward.
 
 ```js
 // my-plugins/index.mjs: the AI Document module and the official plugins, plus your own
@@ -39,7 +39,7 @@ import myConverter from './my-converter.mjs';
 export default [UAGDocument, Extract, Analyze, Translate, OfficeText, myConverter];
 ```
 
-These plugins come from `@formio/uag-extras`, the package of UAG extras (modules, actions, MCP tools, engine types, document plugins and converters) from Form.io and the community: `npm install @formio/uag-extras@^1` in the plugins folder (it needs `@formio/uag` 2.0.0 or later and Node.js 24 or later). See [`@formio/uag-extras` on npm](https://www.npmjs.com/package/@formio/uag-extras). Each extra is its own import, `@formio/uag-extras/<kind>/<name>`: its default export is a module for `server.use()`, and its plugin is a named export, for plugins files. In Docker, the [`formio/uag-documents` add-on](/developers/ai-document#run-it-with-docker) brings the AI Document module and these plugins, so your own folder beside it lists only yours (see [Add-ons](#add-ons)). A plugin that needs system packages (an OCR engine) needs them in the UAG's container: build an image `FROM formio/uag:<version>` that adds them with `apk add`, and mount or copy the plugins there.
+These plugins come from `@formio/uag-extras`, the package of UAG extras (modules, actions, MCP tools, engine types, document plugins and converters) from Form.io and the community: `npm install @formio/uag-extras@^1` in the plugins folder (it needs `@formio/uag` 2.0.0 or later and Node.js 24 or later). See [`@formio/uag-extras` on npm](https://www.npmjs.com/package/@formio/uag-extras). Each extra is its own import, `@formio/uag-extras/<kind>/<name>`: its default export is a module for `server.use()`, and its plugin is a named export, for plugins files. In Docker, the [`formio/uag-documents` add-on](./ai-document.md#run-it-with-docker) brings the AI Document module and these plugins, so your own folder beside it lists only yours (see [Add-ons](#add-ons)). A plugin that needs system packages (an OCR engine) needs them in the UAG's container: build an image `FROM formio/uag:<version>` that adds them with `apk add`, and mount or copy the plugins there.
 
 ### Add-ons
 
@@ -92,7 +92,7 @@ COPY my-plugins /plugins
 CMD ["sh", "-c", "find /out -mindepth 1 -delete && cp -a /plugins/. /out/"]
 ```
 
-Every add-on runs in the UAG process with its secrets: add only add-ons you trust (see [Security](/developers/security)).
+Every add-on runs in the UAG process with its secrets: add only add-ons you trust (see [Security](./security.md)).
 
 ### Settings and switching plugins off
 
@@ -135,7 +135,7 @@ The `converter` and `document` types are **experimental** in 2.0: their contract
 | `converter` | Turns an uploaded file into a PDF or text, which is what AI engines read. Chosen automatically by file type. | Experimental |
 | `document` | Turns files and a form designer's instructions into content for the AI Document component. Chosen per component in the form builder. | Experimental |
 | `engine`, `tool`, `action` | Listed only: engines, MCP tools and form actions keep loading as before, and appear in `GET {project}/plugins`. | Stable |
-| `module` | Listed only: each [module](/developers/modules#settings-routes-and-components) in use that declares an `apiVersion`, as `module:<name>`. | Experimental |
+| `module` | Listed only: each [module](./modules.md#settings-routes-and-components) in use that declares an `apiVersion`, as `module:<name>`. | Experimental |
 
 The UAG registers the listed-only types itself: a plugin of one of them in a module's `plugins` or in a plugins file stops startup.
 
@@ -241,7 +241,7 @@ Name the plugins file with `UAG_PLUGINS`:
 UAG_PLUGINS=./my-plugins/index.mjs npx uag
 ```
 
-With Docker, mount the folder beside the [`formio/uag-documents` add-on](/developers/ai-document#run-it-with-docker), in a folder of its own under `/app/plugins` (see [Add-ons](#add-ons)):
+With Docker, mount the folder beside the [`formio/uag-documents` add-on](./ai-document.md#run-it-with-docker), in a folder of its own under `/app/plugins` (see [Add-ons](#add-ons)):
 
 ```yaml
     volumes:
@@ -354,5 +354,5 @@ The UAG sanitizes Markdown content before returning it: raw HTML, unsafe links a
 
 ## Next steps
 
-- [AI Document](/developers/ai-document): the component, the process route, and running it.
-- [Modules](/developers/modules): wiring a deployment.
+- [AI Document](./ai-document.md): the component, the process route, and running it.
+- [Modules](./modules.md): wiring a deployment.

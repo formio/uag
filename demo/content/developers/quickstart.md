@@ -14,7 +14,7 @@ Both end with the same [first calls](#first-calls): a token, the MCP tool list, 
 
 **Prerequisites**: Docker with Compose, and `curl`. Node.js 22 or newer for the JavaScript examples.
 
-> **Tip:** To have your coding agent do this, run `npx skills add formio/ai` in your application's folder to install the [Agentic Coding Plugin](/developers/agentic-coding), and ask, for example: "Deploy the UAG against our Form.io project with Docker Compose and make our serviceRequest form agent-ready." It writes the Compose file with placeholder secrets and shows each form change before saving it.
+> **Tip:** To have your coding agent do this, run `npx skills add formio/ai` in your application's folder to install the [Agentic Coding Plugin](./agentic-coding.md), and ask, for example: "Deploy the UAG against our Form.io project with Docker Compose and make our serviceRequest form agent-ready." It writes the Compose file with placeholder secrets and shows each form change before saving it.
 
 ## Self-hosted with Form.io Open Source
 
@@ -117,7 +117,7 @@ curl -s -X POST http://localhost:3000/form \
 
 Wait `PROJECT_TTL` seconds (10 here) for the UAG to register it, or run `docker compose restart formio-uag`.
 
-To make the UAG reachable from outside the host, put it behind a reverse proxy with TLS, and set `TRUST_PROXY` so the UAG reads its public URL from the proxy's forwarded headers (or set `BASE_URL` to that URL). Remote MCP clients such as claude.ai connectors also need `MCP_OAUTH=true` and a database of the UAG's own (`MONGO`); see [Connect Claude](/developers/connect-claude). Read [Deployment](/developers/deployment) and [Security](/developers/security) before you expose it.
+To make the UAG reachable from outside the host, put it behind a reverse proxy with TLS, and set `TRUST_PROXY` so the UAG reads its public URL from the proxy's forwarded headers (or set `BASE_URL` to that URL). Remote MCP clients such as claude.ai connectors also need `MCP_OAUTH=true` and a database of the UAG's own (`MONGO`); see [Connect Claude](./connect-claude.md). Read [Deployment](./deployment.md) and [Security](./security.md) before you expose it.
 
 ## Against a hosted Form.io project
 
@@ -136,7 +136,7 @@ docker run -d --name formio-uag -p 3200:3200 \
   formio/uag
 ```
 
-Hosted SaaS projects need no license: they run under Form.io's own license, as the Enterprise edition, and Agentic Formflow is allowed (`/agent/capabilities` reports `reason: "hosted"`). A license is needed when you self-host Form.io, for Form.io Enterprise or for Agentic Formflow; see [Deployment](/developers/deployment#licensing).
+Hosted SaaS projects need no license: they run under Form.io's own license, as the Enterprise edition, and Agentic Formflow is allowed (`/agent/capabilities` reports `reason: "hosted"`). A license is needed when you self-host Form.io, for Form.io Enterprise or for Agentic Formflow; see [Deployment](./deployment.md#licensing).
 
 > **Note:** A database of the UAG's own (`MONGO`) needs a license that includes the UAG (`LICENSE_KEY`), with a hosted project too.
 
@@ -214,7 +214,7 @@ curl -s -X POST $UAG/mcp \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_forms","arguments":{}}}'
 ```
 
-The text it returns lists `Support Request (**supportRequest**)` with your permissions on it. Real clients use an MCP SDK instead of `curl`; [MCP tools](/developers/mcp-tools#a-minimal-mcp-client) has a complete one.
+The text it returns lists `Support Request (**supportRequest**)` with your permissions on it. Real clients use an MCP SDK instead of `curl`; [MCP tools](./mcp-tools.md#a-minimal-mcp-client) has a complete one.
 
 ### Ask the Agent API what it can do
 
@@ -239,7 +239,7 @@ curl -s $UAG/agent/capabilities -H "x-admin-key: $ADMIN_KEY"
 }
 ```
 
-No engine is enabled yet, so no operation is available. `durableRuns` and `mcpOAuth` are `false` because the UAG has no database of its own (`MONGO`); see [Deployment](/developers/deployment#the-database). A bearer token works here too (`-H "Authorization: Bearer $TOKEN"`). The admin-key form works only from servers: the UAG refuses admin credentials on any request that carries an `Origin` or `Sec-Fetch-Site` header.
+No engine is enabled yet, so no operation is available. `durableRuns` and `mcpOAuth` are `false` because the UAG has no database of its own (`MONGO`); see [Deployment](./deployment.md#the-database). A bearer token works here too (`-H "Authorization: Bearer $TOKEN"`). The admin-key form works only from servers: the UAG refuses admin credentials on any request that carries an `Origin` or `Sec-Fetch-Site` header.
 
 ### Try the Agent API without a model
 
@@ -262,7 +262,7 @@ A form's operations are under the form's URL on the UAG, as its submissions are:
 { "requestId": "b011c34d-9bda-447c-bb8d-9e53f8d362dc", "error": "The form \"supportRequest\" defines no tasks.", "code": "invalid_request" }
 ```
 
-The form defines no task yet, so the UAG answers `400` and says so. Give it one: a criteria content component, and the `uag` property on the field the task decides (see [Concepts](/developers/concepts)). This replaces the form with the same fields plus a `triage` task that decides `urgency` (on a hosted project, add the same two properties in the form builder instead):
+The form defines no task yet, so the UAG answers `400` and says so. Give it one: a criteria content component, and the `uag` property on the field the task decides (see [Concepts](./concepts.md)). This replaces the form with the same fields plus a `triage` task that decides `urgency` (on a hosted project, add the same two properties in the form builder instead):
 
 ```bash
 FORM_ID=$(curl -s http://localhost:3000/supportrequest -H "x-admin-key: $ADMIN_KEY" \
@@ -290,14 +290,14 @@ curl -s -X PUT http://localhost:3000/form/$FORM_ID \
   }'
 ```
 
-Wait `PROJECT_TTL` seconds and run the `decide` call again: `urgency` now comes back with the stub's placeholder answer. To decide for real, enable a real engine such as `jev` or `claude` (see [Engines](/developers/engines)), which needs a `LICENSE_KEY` that includes the UAG, or a project on Form.io's hosted service.
+Wait `PROJECT_TTL` seconds and run the `decide` call again: `urgency` now comes back with the stub's placeholder answer. To decide for real, enable a real engine such as `jev` or `claude` (see [Engines](./engines.md)), which needs a `LICENSE_KEY` that includes the UAG, or a project on Form.io's hosted service.
 
 ## Next steps
 
-- [How the UAG works](/developers): the architecture and the three usage patterns.
-- [Connect Claude](/developers/connect-claude): talk to your forms from Claude Desktop.
-- [Concepts](/developers/concepts): define a task on a form.
-- [Agent API](/developers/agent-api): every endpoint, with examples.
-- [Chat widget](/developers/chat): embed a form as a chat in your own page, with no license.
-- [Workflows](/developers/workflows): run a task on every submission with the "Agent: Run task" action.
-- [Agentic Coding Plugin](/developers/agentic-coding): let your coding agent tag forms, design tasks and wire your application.
+- [How the UAG works](./index.md): the architecture and the three usage patterns.
+- [Connect Claude](./connect-claude.md): talk to your forms from Claude Desktop.
+- [Concepts](./concepts.md): define a task on a form.
+- [Agent API](./agent-api.md): every endpoint, with examples.
+- [Chat widget](./chat.md): embed a form as a chat in your own page, with no license.
+- [Workflows](./workflows.md): run a task on every submission with the "Agent: Run task" action.
+- [Agentic Coding Plugin](./agentic-coding.md): let your coding agent tag forms, design tasks and wire your application.

@@ -14,9 +14,9 @@ This page connects two Claude clients, and shows how Form.io roles decide what t
 | **Claude Desktop** (any plan) | A local `mcp-remote` proxy, started by Claude Desktop, connects to the UAG and runs the login flow in your browser | Reachable from your machine; `localhost` is fine |
 | **claude.ai and Claude Desktop custom connectors** (plans with connectors) | Anthropic's servers connect to the UAG over the internet | A public HTTPS URL |
 
-Either way the user signs in through the UAG's OAuth (PKCE) flow, with the project's own login form, and every tool call runs with that user's Form.io permissions. That sign-in is off by default: it needs `MCP_OAUTH=true` and a database of the UAG's own (`MONGO`), where it keeps the one-time authorization codes. Clients that run next to the UAG on a server do not use it; they get a token from `/auth/token` with `client_credentials` (see [MCP tools](/developers/mcp-tools#local-clients-clientcredentials)).
+Either way the user signs in through the UAG's OAuth (PKCE) flow, with the project's own login form, and every tool call runs with that user's Form.io permissions. That sign-in is off by default: it needs `MCP_OAUTH=true` and a database of the UAG's own (`MONGO`), where it keeps the one-time authorization codes. Clients that run next to the UAG on a server do not use it; they get a token from `/auth/token` with `client_credentials` (see [MCP tools](./mcp-tools.md#local-clients-client_credentials)).
 
-> **Tip:** The [Agentic Coding Plugin](/developers/agentic-coding)'s `formio-uag` skill writes this setup for you. The plugin's own Form.io MCP server is a different one: your coding agent uses it to build forms, while Claude connects to the UAG's `/mcp` to fill them in.
+> **Tip:** The [Agentic Coding Plugin](./agentic-coding.md)'s `formio-uag` skill writes this setup for you. The plugin's own Form.io MCP server is a different one: your coding agent uses it to build forms, while Claude connects to the UAG's `/mcp` to fill them in.
 
 ## Run the sample
 
@@ -113,7 +113,7 @@ npx mcp-remote http://localhost:3000/mcp
 
 Your browser opens the UAG's login page, which loads `LOGIN_FORM`. Sign in as the manager or the employee.
 
-![The UAG login page, showing the project's own login form.](/images/login.png)
+![The UAG login page, showing the project's own login form.](../../public/images/login.png)
 
 `mcp-remote` stores the token under `~/.mcp-auth`. To sign in as someone else later, delete it:
 
@@ -125,7 +125,7 @@ rm -rf ~/.mcp-auth
 
 In Claude Desktop, open **Developer → Open App Config File**.
 
-![Opening the app config file from Claude Desktop's Developer menu.](/images/claude-app-config.png)
+![Opening the app config file from Claude Desktop's Developer menu.](../../public/images/claude-app-config.png)
 
 Add the UAG to `claude_desktop_config.json`:
 
@@ -142,7 +142,7 @@ Add the UAG to `claude_desktop_config.json`:
 
 Quit and reopen Claude Desktop. If it shows the login page again, sign in. Open **Settings**: the `formio-uag` server is listed among your connections.
 
-![The formio-uag server connected in Claude Desktop.](/images/claude-local.png)
+![The formio-uag server connected in Claude Desktop.](../../public/images/claude-local.png)
 
 ## claude.ai remote connectors
 
@@ -151,10 +151,10 @@ A remote connector is called by Anthropic's servers, not by your machine, so the
 1. Deploy the UAG behind TLS at a public URL, for example `https://uag.example.com`. With the sample's nginx layout, publish the nginx port.
 2. Make sure the OAuth discovery documents name that URL; the connector reads them and follows them. The UAG builds them from each request. Behind a proxy, set `TRUST_PROXY` and have the proxy pass `Host` and `X-Forwarded-Proto`, as the sample's nginx does; that gives `https` only when the proxy that talks to the UAG received HTTPS. When it did not (TLS ends at a load balancer or tunnel in front of nginx, which then reports `http`), set `BASE_URL=https://uag.example.com`. Check with `curl https://uag.example.com/.well-known/oauth-protected-resource`.
 3. Set `LOGIN_FORM` to a login form URL the user's browser can load at the public address, such as `https://uag.example.com/employee/login`.
-4. Keep `MCP_OAUTH=true` and `MONGO`. The UAG's database needs a license that includes the UAG (`LICENSE_KEY`). Without a usable database the UAG starts with sign-in off and says so in its log. See [Deployment](/developers/deployment#the-database).
+4. Keep `MCP_OAUTH=true` and `MONGO`. The UAG's database needs a license that includes the UAG (`LICENSE_KEY`). Without a usable database the UAG starts with sign-in off and says so in its log. See [Deployment](./deployment.md#the-database).
 5. In Claude, open **Settings → Connectors**, choose **Add custom connector**, and enter a name and the MCP URL, `https://uag.example.com/mcp`.
 
-![Adding the UAG as a custom connector in Claude.](/images/claude-ai-add-connector.png)
+![Adding the UAG as a custom connector in Claude.](../../public/images/claude-ai-add-connector.png)
 
 6. Select **Connect** next to the connector. Claude opens the UAG's login page; sign in, and Claude returns as connected.
 
@@ -171,7 +171,7 @@ Start a chat and say what you want, in your own words:
 - "What is the phone number of my customer Joe Smith?"
 - "Joe Smith is already a customer. Add a note to call him next Tuesday."
 
-![A conversation in which Claude adds a customer through the UAG.](/images/example-chat.png)
+![A conversation in which Claude adds a customer through the UAG.](../../public/images/example-chat.png)
 
 Behind each request Claude calls the UAG's tools: `get_forms` to find the Customer resource and check permissions, `get_form_fields` and `get_field_info` to learn the fields and their rules, `collect_field_data` to validate answers as they come, then `confirm_form_submission` and `submit_completed_form`. Searches use `find_submissions`, and changes `submission_update`. Watch the resource's **Data** tab in the portal to see records arrive.
 
@@ -179,7 +179,7 @@ Edit a resource in the portal (add a field, change an option, rewrite a descript
 
 ## Shaping the agent with a module
 
-The sample is a [module](/developers/modules): a folder mounted at `/app/module` that carries the project template, actions, response templates and tool overrides. This one replaces the login page with its own (`auth.authAppHtml`), and overrides the `get_forms` description so Claude checks permissions before asking for fields:
+The sample is a [module](./modules.md): a folder mounted at `/app/module` that carries the project template, actions, response templates and tool overrides. This one replaces the login page with its own (`auth.authAppHtml`), and overrides the `get_forms` description so Claude checks permissions before asking for fields:
 
 ```js
 const fs = require('fs');
@@ -199,7 +199,7 @@ module.exports = {
 };
 ```
 
-A module can also add MCP tools, and add form actions that run after the UAG has validated what the agent sent. See [Modules](/developers/modules).
+A module can also add MCP tools, and add form actions that run after the UAG has validated what the agent sent. See [Modules](./modules.md).
 
 ## Troubleshooting
 
@@ -214,4 +214,4 @@ A module can also add MCP tools, and add form actions that run after the UAG has
 | Every `/mcp` request returns `401` | The client sends no bearer token, or its token is not valid: expired, or signed with a different `JWT_SECRET` (a restart without a fixed `JWT_SECRET`, or another instance). |
 | The agent is refused an action the user expects to be allowed | The user's role lacks that permission on the form. Check its submission access. |
 
-More in [Troubleshooting](/developers/troubleshooting).
+More in [Troubleshooting](./troubleshooting.md).

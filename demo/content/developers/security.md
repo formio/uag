@@ -28,7 +28,7 @@ MCP conversations are different in one respect: there the model runs in the clie
 The UAG is an extension of a Form.io project, not a second copy of it. Applications can point their project URL at the UAG instead of Form.io, and Form.io stays in charge:
 
 - **Every submission is forwarded to Form.io**, as a fixed step of each submission request. The response the caller gets is Form.io's.
-- **The UAG runs only its own actions**: "Agent: Run task", and a [module's](/developers/modules) actions. Form.io's actions (Save Submission, Login, Role Assignment, Webhook, Email, Group and the rest) run at Form.io on the forwarded request, so nothing runs twice.
+- **The UAG runs only its own actions**: "Agent: Run task", and a [module's](./modules.md) actions. Form.io's actions (Save Submission, Login, Role Assignment, Webhook, Email, Group and the rest) run at Form.io on the forwarded request, so nothing runs twice.
 - **Form.io's permissions apply.** A submission is forwarded with the caller's own credential, and Form.io's roles and submission access decide whether it is allowed. Login and registration are forwarded to Form.io, and its response, with its `x-jwt-token`, is passed back.
 - **Form.io user tokens are forwarded unchanged.** A token the UAG cannot verify with its own secret is verified with Form.io's `/current` (the answer is cached for 60 seconds, a refusal for 10), and forwarded as the caller sent it, never re-signed. A token tied to a Form.io session (one with a `jti` claim) is always checked with Form.io, even when the UAG shares Form.io's `JWT_SECRET`, so a logout takes effect at once, apart from that cache.
 
@@ -67,7 +67,7 @@ Use administrator credentials only for trusted server-side automation: back-offi
 
 ### Anonymous visitors
 
-A visitor with no credential may use a form's agent operations, and the [routes its modules add](#modules-and-plugins), only when the form sets [`uagAnonymous: "true"`](/developers/form-properties#uaganonymous) and lets the Anonymous role create submissions. Each such request may call a model at your expense, so anonymous use is limited per client address and in total (`AGENT_ANONYMOUS_RATE_LIMIT`, default 10 a minute, and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`, default 100 a minute). The counts are kept by each UAG process, so with several replicas the deployment allows that many times more. Behind a reverse proxy, set `TRUST_PROXY`, or every visitor shares the proxy's address. Values the operations return are suggestions in the visitor's browser: re-decide anything that routes or approves on the server with Run task and `uagAuthoritative`.
+A visitor with no credential may use a form's agent operations, and the [routes its modules add](#modules-and-plugins), only when the form sets [`uagAnonymous: "true"`](./form-properties.md#uaganonymous) and lets the Anonymous role create submissions. Each such request may call a model at your expense, so anonymous use is limited per client address and in total (`AGENT_ANONYMOUS_RATE_LIMIT`, default 10 a minute, and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`, default 100 a minute). The counts are kept by each UAG process, so with several replicas the deployment allows that many times more. Behind a reverse proxy, set `TRUST_PROXY`, or every visitor shares the proxy's address. Values the operations return are suggestions in the visitor's browser: re-decide anything that routes or approves on the server with Run task and `uagAuthoritative`.
 
 ### Portal team members
 
@@ -96,7 +96,7 @@ Long `JWT_EXPIRE_TIME` values (the repository's `.env.example` uses years) are c
 
 ## Scoped tokens for remote engines
 
-When an engine runs on an [engine server](/developers/engine-server), it may need to call the UAG's tools to research. The UAG gives it a **scoped token** for that one piece of work:
+When an engine runs on an [engine server](./engine-server.md), it may need to call the UAG's tools to research. The UAG gives it a **scoped token** for that one piece of work:
 
 | Property | Value |
 |---|---|
@@ -123,14 +123,14 @@ Research tools run with the caller's identity. For an Agent API call made with t
 Values decided in a browser can be changed by the user before submit. For fields that drive routing, let the server decide them:
 
 - Mark each field a task writes that a client must never set `uagAuthoritative: "true"`. This works for decision fields and value fields, and covers their confidence fields too. For every "Agent: Run task" action on the form, whatever its method, conditions or timing, the UAG removes these values from what a client sends; on an update they keep their stored value. Fields without it stay editable, so a person's correction is kept.
-- Add a Run task action that runs **before the save** on create and update, answering **its decision fields only**. It re-decides with the caller's identity, and Form.io stores the result as the one save. See [Workflows](/developers/workflows).
-- Point the application at the UAG. A submission sent straight to Form.io runs no task, and the UAG never sees it. To keep users off the owned fields at Form.io too, give the action an agent role and set the form's permissions so users cannot create or update submissions themselves ([Project setup for agents](/developers/project-setup)).
+- Add a Run task action that runs **before the save** on create and update, answering **its decision fields only**. It re-decides with the caller's identity, and Form.io stores the result as the one save. See [Workflows](./workflows.md).
+- Point the application at the UAG. A submission sent straight to Form.io runs no task, and the UAG never sees it. To keep users off the owned fields at Form.io too, give the action an agent role and set the form's permissions so users cannot create or update submissions themselves ([Project setup for agents](./project-setup.md)).
 
 When the engines cannot answer at all (an outage, a timeout, a rate limit), a decisions-only Run task before the save refuses the submission with `503` (or `429` when every engine was over its limit) and stores nothing, rather than clearing the owned fields as if the server had judged them. An outage fails closed. A whole-task run before the save forwards the submission without the answers it could not get; a run after the save never affects the submitter's response, and its failure is logged.
 
 ## Acting on behalf of users
 
-On a self-hosted Form.io Enterprise project, a Run task action can name an **agent role**: the UAG then saves the task's results, and creates submissions users may not create themselves, as that role on the user's behalf. [Project setup for agents](/developers/project-setup) sets it up. The security properties:
+On a self-hosted Form.io Enterprise project, a Run task action can name an **agent role**: the UAG then saves the task's results, and creates submissions users may not create themselves, as that role on the user's behalf. [Project setup for agents](./project-setup.md) sets it up. The security properties:
 
 - **`JWT_SECRET` must be the Form.io server's own**, and is then equivalent to administrator access to Form.io: anyone who holds it can sign any token. Keep it in the same secret store as the Form.io server's.
 - **The UAG signs only short-lived tokens.** They are Form.io "external" tokens that name the user the agent acts for and expire after 5 minutes: to save, one that carries only the agent role; to research, one with the roles the user had when they submitted. The UAG never signs a token that marks its holder an administrator, nor one with an admin role, and the action's settings offer no admin role. Agent-role tokens are never logged, stored or given to an engine; a research token reaches a remote engine only sealed inside a [scoped token](#scoped-tokens-for-remote-engines).
@@ -145,11 +145,11 @@ The optional database (`MONGO`) holds only the UAG's own state, in collections n
 - authorization codes for remote MCP sign-in, by their SHA-256 hash, with their tokens sealed;
 - run records: the form, submission, task, state, engines, the paths of the fields written (never their values), any error, and the user acted for (id, roles and email). Never a token;
 
-Give the `MONGO` user the `readWrite` role on `UAG_DATABASE` only. Run records name users and submissions, so treat the database as you treat Form.io's, and set `TASK_RUN_RETENTION_DAYS` to your retention policy. See [Deployment](/developers/deployment#the-database).
+Give the `MONGO` user the `readWrite` role on `UAG_DATABASE` only. Run records name users and submissions, so treat the database as you treat Form.io's, and set `TASK_RUN_RETENTION_DAYS` to your retention policy. See [Deployment](./deployment.md#the-database).
 
 ## Rate and size limits
 
-`agentApi.rateLimits` limits callers per operation and engines per instance. A caller over its limit gets `429` with `Retry-After`; an engine over its limit is skipped for the next one. Counters are in memory per process, so each instance of a multi-instance deployment has its own allowance. Requests with a server key and anonymous visitors share one counter, and `client_credentials` tokens another. Anonymous visitors have limits of their own as well (see [Anonymous visitors](#anonymous-visitors)). MCP tool calls are not rate limited by the UAG; limit spend in the MCP client. See [Agent API](/developers/agent-api#rate-limits).
+`agentApi.rateLimits` limits callers per operation and engines per instance. A caller over its limit gets `429` with `Retry-After`; an engine over its limit is skipped for the next one. Counters are in memory per process, so each instance of a multi-instance deployment has its own allowance. Requests with a server key and anonymous visitors share one counter, and `client_credentials` tokens another. Anonymous visitors have limits of their own as well (see [Anonymous visitors](#anonymous-visitors)). MCP tool calls are not rate limited by the UAG; limit spend in the MCP client. See [Agent API](./agent-api.md#rate-limits).
 
 A form's agent operations, and module routes, take a JSON body of at most `agentApi.bodyLimit` bytes (`AGENT_BODY_LIMIT`, default 5 MB); a larger one is refused with `413` `payload_too_large`, naming the limit. The server's `MAX_BODY_SIZE` (default 16 MB) applies to every request first, before authentication, so raise either only as far as the forms need.
 
@@ -173,7 +173,7 @@ The UAG's end-to-end tests include an application essay that tries to change the
 
 ## Chat
 
-A form's [chat](/developers/chat) (`{form}/agent/chat`) puts a model in front of the people who fill the form in, so its transcript is untrusted text, written by them. The UAG limits what that text can achieve:
+A form's [chat](./chat.md) (`{form}/agent/chat`) puts a model in front of the people who fill the form in, so its transcript is untrusted text, written by them. The UAG limits what that text can achieve:
 
 | A message could | The UAG's answer |
 |---|---|
@@ -187,11 +187,11 @@ So the most an injected instruction can do is put values the person could have t
 
 - **Credentials.** A turn takes the same credentials as the form's other agent operations: the person's Form.io token in a browser. Project and admin keys are refused on browser requests, so a key can only be used from a server, such as a relay of your own.
 - **Cost.** Every turn calls a model at your expense. On a public form (`uagAnonymous`), anonymous turns count against the anonymous limits with the form's other agent operations; signed-in callers against `agentApi.rateLimits.caller.chat`; each turn is bounded by `agentApi.chat.maxMessages`, `maxMessageLength` and `maxTranscriptChars`, and what it sends the engine from the form's data is bounded too (see [Where data goes](#where-data-goes)), so a large request body does not make a large prompt. Each response reports the engine's token `usage`, for a relay that keeps a budget.
-- **Licensing.** Chat is part of conversation forms and needs no Agentic Formflow license, so a deployment with an agent engine offers it on every form tagged `uag`, whether or not Agentic Formflow is licensed. Turn it off per form with [`uagChat: "false"`](/developers/form-properties#uagchat).
+- **Licensing.** Chat is part of conversation forms and needs no Agentic Formflow license, so a deployment with an agent engine offers it on every form tagged `uag`, whether or not Agentic Formflow is licensed. Turn it off per form with [`uagChat: "false"`](./form-properties.md#uagchat).
 
 ## Modules and plugins
 
-[Modules](/developers/modules) and [plugins](/developers/plugins) are code the UAG runs, in its own process, with everything that process can reach: its keys, its network and its files. The module API gives a module no Form.io key, no project object and no engine credential, and an engine it selects answers only when Agentic Formflow is licensed, but the API is not a sandbox. Use only modules and plugins you trust, and treat what loads them like any other deployment setting: a module mounted at `/app/module` or named by `UAG_MODULE`, the plugins files (`UAG_PLUGINS`, or the add-ons and folders under `/app/plugins` in the image), and `server.use()` in your own server. `MODULES_DISABLED` leaves a module out by name.
+[Modules](./modules.md) and [plugins](./plugins.md) are code the UAG runs, in its own process, with everything that process can reach: its keys, its network and its files. The module API gives a module no Form.io key, no project object and no engine credential, and an engine it selects answers only when Agentic Formflow is licensed, but the API is not a sandbox. Use only modules and plugins you trust, and treat what loads them like any other deployment setting: a module mounted at `/app/module` or named by `UAG_MODULE`, the plugins files (`UAG_PLUGINS`, or the add-ons and folders under `/app/plugins` in the image), and `server.use()` in your own server. `MODULES_DISABLED` leaves a module out by name.
 
 - **Module routes** (a module's `routes.form`) get the agent operations' protections: the same credentials ([What callers present](#what-callers-present)), with keys refused from browsers and scoped tokens refused; the agent operations' body limit; the rate limits of the route's `name` (`agentApi.rateLimits.caller[name]`); the caller's access to the form (the route's `access`, by default create or update); and the Agent API's error shape. Routes a module adds with the lower-level `formRoutes` get none of these.
 - **Anonymous visitors reach module routes too.** On a form with `uagAnonymous: "true"` whose Anonymous role may create submissions, a visitor who is not signed in reaches each module route under the [anonymous limits](#anonymous-visitors), as for the agent operations. A route that must not be public declares an `access` the Anonymous role lacks, such as `['update']`, or checks `req.auth.user` itself. Anonymous visitors share one `agentApi.rateLimits.caller` counter; for a limit per address of its own, a module counts by `api.callerKey(req)`, which is `anonymous:<address>` for them.
@@ -202,8 +202,8 @@ So the most an injected instruction can do is put values the person could have t
 Enabling an engine sends submission data to its provider: TypeSafe for `jev`, Anthropic for `claude`, OpenAI (or the server it points at) for `openai`, xAI for `grok`, Google for `gemini`. What is sent is a task's criteria, its input (or, without an input, the whole submission except the fields being answered), its `uagContext` values and today's date, plus whatever research tools return.
 
 - Do not enable an engine for data that must not leave your deployment.
-- To keep everything in your network, point the `openai` engine at a local OpenAI-compatible server such as Ollama or vLLM (see [Engines](/developers/engines)).
-- To keep model keys and model traffic out of the UAG, run engines on an [engine server](/developers/engine-server) on a private network.
+- To keep everything in your network, point the `openai` engine at a local OpenAI-compatible server such as Ollama or vLLM (see [Engines](./engines.md)).
+- To keep model keys and model traffic out of the UAG, run engines on an [engine server](./engine-server.md) on a private network.
 - MCP conversations send whatever the MCP client sends to its model; the UAG sends nothing to a model itself. `read_document` gives the client a document's text, which it then sends to its model.
 - Documents: a file in a task's input or in its `uagContext` is read, and its text is sent to the task's engines; any other file or signature is described (name, type and size), never sent. A module that calls an engine sends what it chooses: AI Document sends the files it processes, as PDF or text, with its process's instructions.
 - A form's chat sends its agent engine: the UAG's chat instructions, the form's title, description and `uagChatInstructions`; the conversation (the newest messages within `agentApi.chat.maxTranscriptChars`); for each field the chat may collect, its path, label, type, description, placeholder, value rule, format and static options, and its current value (each value cut to 500 characters, all of them within `maxTranscriptChars`); the labels of the fields still needed, the optional ones and those to finish in the form; and today's date. Nothing else from the request's `data` is sent: not task fields, hidden fields or fields the chat cannot collect.
@@ -230,7 +230,7 @@ Enabling an engine sends submission data to its provider: TypeSafe for `jev`, An
 **Identity and permissions**
 
 - Authenticate each person with their own token. Reserve admin credentials for server-side automation.
-- Scope submission access per role, as the [custom module sample](/developers/connect-claude#roles-and-permissions-govern-the-agent) does. A project reachable only with the API key is a demo, not a deployment.
+- Scope submission access per role, as the [custom module sample](./connect-claude.md#roles-and-permissions-govern-the-agent) does. A project reachable only with the API key is a demo, not a deployment.
 - Hide agent sections (`hidden: true`) from the rendered form.
 
 **Agents**
@@ -240,7 +240,7 @@ Enabling an engine sends submission data to its provider: TypeSafe for `jev`, An
 - On public forms with a chat, set the anonymous limits for what you are prepared to pay, set a spend limit at the model provider, and turn chat off (`uagChat: "false"`) on forms that should not offer it.
 - List research tools sparingly; prefer none.
 - Use "Agent: Run task" with an agent role, `uagAuthoritative` and a review path for decisions that drive sensitive routing.
-- Measure decision thresholds on your own data with [`uag-eval`](/developers/evaluation) before relying on them, and pin model versions.
+- Measure decision thresholds on your own data with [`uag-eval`](./evaluation.md) before relying on them, and pin model versions.
 
 **Operations**
 

@@ -5,11 +5,11 @@ section: Concepts
 order: 20
 ---
 
-The UAG is configured almost entirely in Form JSON. This page lists every form-level setting and custom component property it reads. [Concepts](/developers/concepts) explains how they fit together.
+The UAG is configured almost entirely in Form JSON. This page lists every form-level setting and custom component property it reads. [Concepts](./concepts.md) explains how they fit together.
 
 Custom properties are key/value pairs set in the form builder under a component's **API → Custom Properties**, and stored in Form JSON under the component's `properties`. The builder stores every value as a string, so booleans are written `"true"` and `"false"`, and numbers as their text. In Form JSON, a JSON `true` or `false` works the same for the `uag*` switches.
 
-> **Tip:** With the [Agentic Coding Plugin](/developers/agentic-coding), describe the behavior ("decide the claim type, and leave it for a person when the engine is unsure") and your coding agent writes these properties, showing the form change before it saves it.
+> **Tip:** With the [Agentic Coding Plugin](./agentic-coding.md), describe the behavior ("decide the claim type, and leave it for a person when the engine is unsure") and your coding agent writes these properties, showing the form change before it saves it.
 
 ```json
 { "type": "radio", "key": "claimType", "label": "Kind of claim",
@@ -23,7 +23,7 @@ Custom properties are key/value pairs set in the form builder under a component'
 | [`tags: ["uag"]`](#the-uag-tag) | The form | none | Registers the form with the UAG. |
 | [`properties.description`](#form-description) | The form | generated | The description `get_forms` shows. |
 | [`properties.uagAnonymous`](#uaganonymous) | The form | `false` | Lets visitors who are not signed in use the form's agent operations. |
-| [`properties.uagChat`](#uagchat) | The form | on | `"false"` turns the form's [chat](/developers/chat) off. |
+| [`properties.uagChat`](#uagchat) | The form | on | `"false"` turns the form's [chat](./chat.md) off. |
 | [`properties.uagChatInstructions`](#uagchatinstructions) | The form | none | Instructions of your own for the form's chat. |
 | [`uag`](#uag) | Any component | none | Names the task the component belongs to. |
 | [`uagField`](#uagfield) | A content component, or an input field or container | none | Makes the component the task's `criteria` or its `input`. |
@@ -76,9 +76,9 @@ What `get_forms` tells an agent the form is for. Agents pick a form by matching 
 | **Goes on** | The form, in `properties.uagAnonymous` (the form's custom properties) |
 | **Default** | Not set: only callers with a credential may use the form's agent operations |
 
-`"true"` lets a visitor who is not signed in call the form's [agent operations](/developers/agent-api), such as [Agent Input](/developers/renderer) or the [chat](/developers/chat) on a public intake form, without a backend relay. It applies only when the form also lets the Anonymous role create submissions; otherwise anonymous requests answer `403`.
+`"true"` lets a visitor who is not signed in call the form's [agent operations](./agent-api.md), such as [Agent Input](./renderer.md) or the [chat](./chat.md) on a public intake form, without a backend relay. It applies only when the form also lets the Anonymous role create submissions; otherwise anonymous requests answer `403`.
 
-Every such request may call a model, so anonymous use is rate-limited, per client address and in total (`AGENT_ANONYMOUS_RATE_LIMIT` and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`, see [Deployment](/developers/deployment#connection-and-identity)). Over a limit the UAG answers `429` with `Retry-After`, before any engine is called.
+Every such request may call a model, so anonymous use is rate-limited, per client address and in total (`AGENT_ANONYMOUS_RATE_LIMIT` and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`, see [Deployment](./deployment.md#connection-and-identity)). Over a limit the UAG answers `429` with `Retry-After`, before any engine is called.
 
 ```json
 "properties": { "uagAnonymous": "true" }
@@ -91,7 +91,7 @@ Every such request may call a model, so anonymous use is rate-limited, per clien
 | **Goes on** | The form, in `properties.uagChat` (the form's custom properties) |
 | **Default** | Not set: any form tagged `uag` can be used for chat |
 
-`"false"` turns the form's [chat](/developers/chat) (`{form}/agent/chat`) off: its turns answer `403`, before any engine is called. Its other agent operations, its MCP tools and its submissions are unaffected.
+`"false"` turns the form's [chat](./chat.md) (`{form}/agent/chat`) off: its turns answer `403`, before any engine is called. Its other agent operations, its MCP tools and its submissions are unaffected.
 
 ```json
 "properties": { "uagChat": "false" }
@@ -162,7 +162,7 @@ A **file** component can be a task's input (or be listed in its `uagContext`). E
   "properties": { "uag": "transcriber", "uagField": "input" } }
 ```
 
-The engine reads `{ "name": "contract.pdf", "type": "application/pdf", "content": "Section 1. …", "format": "text" }`. The file's type is identified from its bytes, and it is read through the converters that have a route to text: the built-in ones read PDF (its text layer), text, Markdown, CSV, JSON, HTML and XML; converter plugins add other formats (see [Plugins](/developers/plugins)). The file is loaded wherever Form.io keeps it: base64 from the submission, S3 and Azure through Form.io's storage endpoints with the caller's credentials, and `url` storage only from the project's own origin or the component's upload URL. A file that cannot be read reaches the engine as its name and the reason, never as its bytes. `agentApi.files.maxBytes` (10 MB) and `agentApi.files.maxChars` (200000) bound what is read.
+The engine reads `{ "name": "contract.pdf", "type": "application/pdf", "content": "Section 1. …", "format": "text" }`. The file's type is identified from its bytes, and it is read through the converters that have a route to text: the built-in ones read PDF (its text layer), text, Markdown, CSV, JSON, HTML and XML; converter plugins add other formats (see [Plugins](./plugins.md)). The file is loaded wherever Form.io keeps it: base64 from the submission, S3 and Azure through Form.io's storage endpoints with the caller's credentials, and `url` storage only from the project's own origin or the component's upload URL. A file that cannot be read reaches the engine as its name and the reason, never as its bytes. `agentApi.files.maxBytes` (10 MB) and `agentApi.files.maxChars` (200000) bound what is read.
 
 Files that are not a task's input or context are never sent to engines: they are described by name, type and size. Signatures are described as `(signed)`.
 
@@ -198,7 +198,7 @@ Values at these paths (or inside them, for a container) are sent to engines unde
 
 Read-only tools an agent engine may call to research the task's **value** fields before it answers, in a form's `agent/generate` and in an "Agent: Run task" action that answers the whole task. Extract, decide and decisions-only runs never research. The tools run with the identity of the caller (for Run task, the user who submitted, never the action's agent role), so Form.io permissions apply to what they return; a server that calls or submits with the project key researches as administrator.
 
-A tool that may write, or that does not exist, is refused when the task is planned for research: generate answers `400`, naming the tool, and a Run task run fails with the same error. An agent engine that does not support tool use is passed over for such a task. Remote engines receive a scoped token limited to these tools; see [Security](/developers/security#scoped-tokens-for-remote-engines).
+A tool that may write, or that does not exist, is refused when the task is planned for research: generate answers `400`, naming the tool, and a Run task run fails with the same error. An agent engine that does not support tool use is passed over for such a task. Remote engines receive a scoped token limited to these tools; see [Security](./security.md#scoped-tokens-for-remote-engines).
 
 ```json
 "properties": { "uag": "admissions", "uagField": "criteria", "uagTools": "find_submissions" }
@@ -220,11 +220,11 @@ Overrides which engines answer. Names of engines that are not enabled are skippe
 "properties": { "uag": "triage", "uagEngine": "deep, agent" }
 ```
 
-Engine instances are named in `UAG_ENGINES`; see [Engines](/developers/engines).
+Engine instances are named in `UAG_ENGINES`; see [Engines](./engines.md).
 
 ## Decision field settings
 
-These apply to decision fields: radio and select with static values, checkbox, select boxes, survey, and resource selects small enough to decide. See [Decision fields and value fields](/developers/concepts#decision-fields-and-value-fields).
+These apply to decision fields: radio and select with static values, checkbox, select boxes, survey, and resource selects small enough to decide. See [Decision fields and value fields](./concepts.md#decision-fields-and-value-fields).
 
 ### `uagThreshold`
 
@@ -338,7 +338,7 @@ Marks a field the task owns: only the task sets it. It has two effects, both on 
 
 Fields without it stay editable, so a person's correction to a suggested value is kept.
 
-Use it for fields that drive sensitive routing or outcomes and must not be set by a browser, such as a fraud flag or an admissions decision. It protects only requests sent to the UAG; to keep users off the field on Form.io too, act with an agent role, as in [Project setup for agents](/developers/project-setup).
+Use it for fields that drive sensitive routing or outcomes and must not be set by a browser, such as a fraud flag or an admissions decision. It protects only requests sent to the UAG; to keep users off the field on Form.io too, act with an agent role, as in [Project setup for agents](./project-setup.md).
 
 ```json
 { "type": "number", "key": "overallScore", "label": "Overall score", "properties": { "uag": "admissions", "uagAuthoritative": "true" } }
@@ -372,4 +372,4 @@ Each Run task run asks the agent again, so a person's later change to the field 
 | `task`, `answer`, `when` | "Agent: Run task" action settings | none, `task`, `after` | The task the action runs, whether it answers the whole task or its decision fields only, and whether it runs before or after the save. |
 | `clearOnHide` | Each decision field | Form.io's default, `true` | Set `false` on decision fields that conditionals can hide, or hiding a page wipes the values that decided it. The setting on a surrounding panel or page does not protect the field. |
 
-See [Engines](/developers/engines) for the configuration and [Workflows](/developers/workflows) for the action.
+See [Engines](./engines.md) for the configuration and [Workflows](./workflows.md) for the action.

@@ -7,7 +7,7 @@ order: 10
 
 The `formio/uag` Docker image is one way to run the UAG. The other is to embed it: install `@formio/uag` from npm, create a `UAGServer`, and mount its router in an Express application you own. You then control the process, the configuration and the modules, and your own routes run next to `/mcp`, `/agent/capabilities` and the project's routes.
 
-This page covers the `UAGServer` class and its configuration, modules, the project and form interfaces your code and custom tools work with, the package's exports, and the `uag` command. For what goes inside a module, see [Modules](/developers/modules). For engines, see [Engines and routing](/developers/engines).
+This page covers the `UAGServer` class and its configuration, modules, the project and form interfaces your code and custom tools work with, the package's exports, and the `uag` command. For what goes inside a module, see [Modules](./modules.md). For engines, see [Engines and routing](./engines.md).
 
 ## Requirements
 
@@ -16,7 +16,7 @@ This page covers the `UAGServer` class and its configuration, modules, the proje
 | Node.js 22 or later | `@formio/uag` and every engine package declare `"node": ">=22.0.0"`. |
 | `--no-node-snapshot` | Form logic (conditionals, calculated values, custom validation) runs in `isolated-vm`, which needs Node's startup snapshot turned off: without it the process can crash later, in native code. Pass it to `node`, or set `NODE_OPTIONS=--no-node-snapshot`. The `UAGServer` constructor refuses to start without it, saying so; the `uag` command adds it for you. |
 | A Form.io project | `PROJECT` must point at a reachable Open Source server (with `ADMIN_KEY`), a project on Form.io's hosted service (with `PROJECT_KEY`; no license needed), or a self-hosted Enterprise project (with `PROJECT_KEY` and a `LICENSE_KEY` that includes the UAG). Without one, `router()` throws. |
-| `JWT_SECRET` | Tokens the UAG issues are signed with it. With an agent role, it must be the Form.io Enterprise server's. See [Deployment](/developers/deployment). |
+| `JWT_SECRET` | Tokens the UAG issues are signed with it. With an agent role, it must be the Form.io Enterprise server's. See [Deployment](./deployment.md). |
 | Optional: `MONGO` | The UAG's own database, for run records, runs that survive a restart and remote MCP sign-in (`MCP_OAUTH`). See [The UAG database](#the-uag-database). |
 
 ## Install
@@ -127,7 +127,7 @@ The UAG's router mounts the project routes and an admin passthrough, then `/mcp`
 1. With `MONGO` set, connects to the UAG's database and checks it without writing anything. A database the UAG may not use (unreachable, holding `uag-*` collections it did not create, or created by a newer UAG) stops startup.
 2. Resolves each module's `settings`. An invalid setting stops startup, naming the module.
 3. Connects to `PROJECT`, retrying with backoff (`retries`, `retryDelay`) while the project is unreachable, for example while a Form.io container in the same compose file is still starting.
-4. Installs the module's project template, when `templateSync` allows it (see [Modules](/developers/modules#the-project-template)).
+4. Installs the module's project template, when `templateSync` allows it (see [Modules](./modules.md#the-project-template)).
 5. Loads the project's forms and resources, and registers every form tagged `uag`.
 6. Lists the plugins: the built-in converters, the engines named in `config.engines` (or else `UAG_ENGINES`), and the MCP tools. An engine that is not installed, has a missing setting or a duplicate name stops startup, with the instance named in the error.
 7. Starts the plugins, then calls each module's `initialize`.
@@ -142,17 +142,17 @@ check the database -> module settings -> connect to PROJECT, with retries -> syn
 
 | Route | Served by | Purpose |
 |---|---|---|
-| `POST /mcp`, `GET /mcp` | `UAGRouter` | The MCP endpoint (Streamable HTTP, stateless: a new MCP server per request). Needs a bearer token. See [MCP tools](/developers/mcp-tools). |
-| `GET /uag-js/uag.use.js`, `/uag-js/uag-js.css`, `/uag-js/portal.js`, `/uag-js/portal.css`, `/uag-js/components/<type>.js` and `.css` | `uagJsRouter` | `@formio/uag-js` from the UAG's own installation: `uag.use.js` registers itself with this UAG's URL, its plugin manifest and every module's component. Public (no credential, `Access-Control-Allow-Origin: *`), `no-cache` with an ETag; `404` for `uag.use.js`, `uag-js.css`, `portal.js` and `portal.css` when `@formio/uag-js` is not installed with the UAG (module components are served either way). See [Renderer](/developers/renderer). |
-| `GET /agent/capabilities` | `AgentRouter` | The Agent API's capabilities. Mounted ahead of the project routes. See [Agent API](/developers/agent-api#capabilities). |
+| `POST /mcp`, `GET /mcp` | `UAGRouter` | The MCP endpoint (Streamable HTTP, stateless: a new MCP server per request). Needs a bearer token. See [MCP tools](./mcp-tools.md). |
+| `GET /uag-js/uag.use.js`, `/uag-js/uag-js.css`, `/uag-js/portal.js`, `/uag-js/portal.css`, `/uag-js/components/<type>.js` and `.css` | `uagJsRouter` | `@formio/uag-js` from the UAG's own installation: `uag.use.js` registers itself with this UAG's URL, its plugin manifest and every module's component. Public (no credential, `Access-Control-Allow-Origin: *`), `no-cache` with an ETag; `404` for `uag.use.js`, `uag-js.css`, `portal.js` and `portal.css` when `@formio/uag-js` is not installed with the UAG (module components are served either way). See [Renderer](./renderer.md). |
+| `GET /agent/capabilities` | `AgentRouter` | The Agent API's capabilities. Mounted ahead of the project routes. See [Agent API](./agent-api.md#capabilities). |
 | `POST /auth/token` | PKCE provider | Token exchange: the `client_credentials` grant, always on; authorization codes too with `MCP_OAUTH`. |
 | `GET /.well-known/oauth-authorization-server`, `GET /.well-known/oauth-protected-resource`, `GET /auth/authorize`, `POST /auth/authorize`, `GET /auth/config.js`, `POST /auth/register` | PKCE provider | OAuth discovery, the login page and client registration for remote MCP clients. Only with `MCP_OAUTH=true`, and answering `404` until the UAG's database is in use. |
 | `GET /action`, `GET /action/:id` | `ActionLogRouter` | Action Logs for a portal stage connected to the UAG: Form.io's entries with the UAG's run records. Without the database, passed through to Form.io. |
 | `GET /status` | Server | The `status` object (package versions by default). |
-| `GET {project}/plugins` | Project router | The installed plugins (engines, tools, actions, converters, modules), for any authenticated caller of the project. See [Plugins](/developers/plugins). |
+| `GET {project}/plugins` | Project router | The installed plugins (engines, tools, actions, converters, modules), for any authenticated caller of the project. See [Plugins](./plugins.md). |
 | Form and submission paths, admin passthrough | Project router | Form.io's API for the project's forms, and admin requests forwarded to the Form.io server. |
-| `POST {form}/agent/extract`, `{form}/agent/decide`, `{form}/agent/generate`, `{form}/agent/chat` | `FormAgentRouter`, on each form's routes | A form's agent operations and its [chat](/developers/chat), under the form's path or `form/{formId}`, with the form's credentials (`agentCredentials`), or anonymously where the form allows it. See [Agent API](/developers/agent-api#urls). |
-| `<METHOD> {form}/<path>` for each module route | The module's `routes.form`, on each form's routes | Every route a module declares, on every form, by path and by id, behind the agent operations' caller check, body limit, request id, rate limits and error shape. On a form with `uagAnonymous: "true"` whose Anonymous role may create submissions, visitors who are not signed in reach them too, under `AGENT_ANONYMOUS_RATE_LIMIT` and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`; a route that must not be public declares `access: ['update']` or checks `req.auth.user`. See [Modules](/developers/modules#settings-routes-and-components). |
+| `POST {form}/agent/extract`, `{form}/agent/decide`, `{form}/agent/generate`, `{form}/agent/chat` | `FormAgentRouter`, on each form's routes | A form's agent operations and its [chat](./chat.md), under the form's path or `form/{formId}`, with the form's credentials (`agentCredentials`), or anonymously where the form allows it. See [Agent API](./agent-api.md#urls). |
+| `<METHOD> {form}/<path>` for each module route | The module's `routes.form`, on each form's routes | Every route a module declares, on every form, by path and by id, behind the agent operations' caller check, body limit, request id, rate limits and error shape. On a form with `uagAnonymous: "true"` whose Anonymous role may create submissions, visitors who are not signed in reach them too, under `AGENT_ANONYMOUS_RATE_LIMIT` and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`; a route that must not be public declares `access: ['update']` or checks `req.auth.user`. See [Modules](./modules.md#settings-routes-and-components). |
 
 ## new UAGServer(config)
 
@@ -178,15 +178,15 @@ The constructor checks that the `@formio/appserver-core` that `@formio/appserver
 |---|---|---|---|
 | `baseUrl` | `string` | `BASE_URL`, else `''` | Optional. Overrides the public URL the UAG otherwise derives from each request (see [Behind a reverse proxy](#behind-a-reverse-proxy)). Published in the OAuth discovery documents, and, while OAuth sign-in is on, in the `WWW-Authenticate` challenges on `/mcp`. |
 | `database` | `{ url, name?, config?, retentionDays? }` | from `MONGO`, `UAG_DATABASE` (`uag`), `MONGO_CONFIG`, `TASK_RUN_RETENTION_DAYS` (`90`) | The UAG's own database. See [The UAG database](#the-uag-database). |
-| `responseTemplates` | `UAGTemplateConfig` | `{}` | Lodash templates by name: replacements for built-in response templates, and new ones for your tools. See [Modules](/developers/modules#response-templates). |
-| `toolOverrides` | `UAGToolOverride` | `{}` | Per built-in tool, fields merged over its definition (description, title, schema, `execute`). See [Modules](/developers/modules#overriding-built-in-tools). |
-| `documents` | `UAGDocumentsConfig` | see [AI Document](/developers/ai-document#limits) | Limits for uploaded documents, and the engine that reads them (`DOCUMENTS_ENGINE`). `maxFileBytes` (`DOCUMENTS_MAX_FILE_BYTES`) also bounds `read_document`, and `maxTotalBytes` what one request sends a remote engine. |
+| `responseTemplates` | `UAGTemplateConfig` | `{}` | Lodash templates by name: replacements for built-in response templates, and new ones for your tools. See [Modules](./modules.md#response-templates). |
+| `toolOverrides` | `UAGToolOverride` | `{}` | Per built-in tool, fields merged over its definition (description, title, schema, `execute`). See [Modules](./modules.md#overriding-built-in-tools). |
+| `documents` | `UAGDocumentsConfig` | see [AI Document](./ai-document.md#limits) | Limits for uploaded documents, and the engine that reads them (`DOCUMENTS_ENGINE`). `maxFileBytes` (`DOCUMENTS_MAX_FILE_BYTES`) also bounds `read_document`, and `maxTotalBytes` what one request sends a remote engine. |
 | `tools` | `ToolInfo[]` | `[]` | Custom MCP tools, served next to the built-in ones; a tool's `bind(project)` builds its project-specific part. |
 | `engines` | `UAGEngineEntry[]` | `UAG_ENGINES` | Engine instances to enable: `"<type>"`, `"<name>:<type>"`, or `{ name, type, options }`, where `type` may be an engine type definition. When this is an array (even empty), `UAG_ENGINES` is ignored. |
 | `engineTypes` | `Record<string, EngineTypeDefinition>` | none | Engine types your application provides, by type name. Resolved before the built-in types and installed packages. |
-| `routing` | `UAGRoutingConfig` | `{ decision: ['decision', 'agent'], value: ['agent'] }` | Engine preference lists and per-engine timeouts. See [Engines and routing](/developers/engines#routing). |
-| `agentApi` | `UAGAgentApiConfig` | see [Engines and routing](/developers/engines#agent-api-defaults) | Thresholds, timeouts, research limits and rate limits for Agentic Formflow. |
-| `loginForm` | `string` | none | Declared on `UAGConfig`, but not read by this version. To change the login form, set `auth.loginForm` (`LOGIN_FORM`); to replace the login page, set `auth.authAppHtml`. See [Modules](/developers/modules#the-login-page). |
+| `routing` | `UAGRoutingConfig` | `{ decision: ['decision', 'agent'], value: ['agent'] }` | Engine preference lists and per-engine timeouts. See [Engines and routing](./engines.md#routing). |
+| `agentApi` | `UAGAgentApiConfig` | see [Engines and routing](./engines.md#agent-api-defaults) | Thresholds, timeouts, research limits and rate limits for Agentic Formflow. |
+| `loginForm` | `string` | none | Declared on `UAGConfig`, but not read by this version. To change the login form, set `auth.loginForm` (`LOGIN_FORM`); to replace the login page, set `auth.authAppHtml`. See [Modules](./modules.md#the-login-page). |
 
 ### Server options
 
@@ -200,7 +200,7 @@ The constructor checks that the `@formio/appserver-core` that `@formio/appserver
 | `submissionProxy` | `boolean \| string` | `true` | Where submissions go. `true` forwards them to the project's own submission API; a URL forwards them there. The UAG always runs in proxy mode: it stores no submissions, and runs only its own actions and modules' actions, never Form.io's. |
 | `processAsClient` | `boolean` | `true` | Evaluate form logic as a client would (the `processAsClient` flag in the evaluation context). |
 | `ttl` | `number` (seconds) | `PROJECT_TTL`, else `900` | How often the project is re-read for changed forms and actions. `0` means never: only a restart picks up changes. |
-| `templateSync` | `'boot' \| 'refresh' \| 'off'` | `TEMPLATE_SYNC`, else `'boot'` | When the module's project template is installed. See [Modules](/developers/modules#the-project-template). |
+| `templateSync` | `'boot' \| 'refresh' \| 'off'` | `TEMPLATE_SYNC`, else `'boot'` | When the module's project template is installed. See [Modules](./modules.md#the-project-template). |
 | `template` | `ProjectTemplate` | none | The project template the module needs the project to have. Usually set by a module. |
 | `retries` | `number` | `PROJECT_RETRIES`, else `5` | Attempts to load the project at startup. Also used by `remote` engines to describe themselves. |
 | `retryDelay` | `number` (ms) | `PROJECT_RETRY_DELAY`, else `5000` | First delay between attempts, doubled each time. |
@@ -223,7 +223,7 @@ The constructor checks that the `@formio/appserver-core` that `@formio/appserver
 | `pkce` | `boolean` | `true` | The provider that issues UAG tokens at `/auth/token` and checks them on `/mcp` and the Agent API. |
 | `mcpOAuth` | `boolean` | `MCP_OAUTH === 'true'` | OAuth sign-in for remote MCP clients: discovery, the login page and client registration. Needs the UAG's database; without it, the UAG starts with sign-in off and says why. |
 | `loginForm` | `string` | `LOGIN_FORM`, else `<PROJECT>/user/login` | The login form's JSON URL, loaded by the browser on `/auth/authorize` (with `mcpOAuth`). |
-| `authAppHtml` | `string` | the built-in page | The HTML of the `/auth/authorize` page (with `mcpOAuth`). See [Modules](/developers/modules#the-login-page). |
+| `authAppHtml` | `string` | the built-in page | The HTML of the `/auth/authorize` page (with `mcpOAuth`). See [Modules](./modules.md#the-login-page). |
 | `oidc` | `OIDCConfig` | from `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_SCOPE` (`openid profile email`), `OIDC_RESPONSE_TYPE` (`code`), `OIDC_RESPONSE_MODE` (`query`) | An OpenID Connect provider for sign-in. |
 | `local` | `LocalAuthConfig` | none | Local login settings: `userfield`, `passfield`, `allowedAttempts`, `lockWait`, `attemptWindow`, `resources`. |
 
@@ -295,11 +295,11 @@ type ServerModule<Api> = {
 
 Import every module type from `@formio/uag`: `UAGModule`, `UAGModuleApi`, `UAGModuleRoute`, `ModuleForm`, `ModuleComponent`. In JavaScript, `/** @type {import('@formio/uag').UAGModule} */` types a module, and `/** @type {import('@formio/uag').UAGModuleRoute} */` a route, `api` included.
 
-`ProjectInterface` and `FormInterface` replace the classes the server builds the project and its forms from. The `UAGServer` constructor installs `UAGProjectInterface` and `UAGFormInterface`; a module that replaces them must extend the UAG's classes, or the UAG loses its MCP tools and Agent API. What each part of a module does is covered in [Modules](/developers/modules).
+`ProjectInterface` and `FormInterface` replace the classes the server builds the project and its forms from. The `UAGServer` constructor installs `UAGProjectInterface` and `UAGFormInterface`; a module that replaces them must extend the UAG's classes, or the UAG loses its MCP tools and Agent API. What each part of a module does is covered in [Modules](./modules.md).
 
 ## The project: UAGProjectInterface
 
-`server.uagProject` is the loaded project, an instance of `UAGProjectInterface`. Custom tools receive the same object as `extra.project`, and a bound tool's `bind` receives it when it builds the tool (see [Modules](/developers/modules#custom-mcp-tools)).
+`server.uagProject` is the loaded project, an instance of `UAGProjectInterface`. Custom tools receive the same object as `extra.project`, and a bound tool's `bind` receives it when it builds the tool (see [Modules](./modules.md#custom-mcp-tools)).
 
 ```ts
 class UAGProjectInterface extends ProjectInterface implements FormflowHost {
@@ -441,7 +441,7 @@ app.post('/internal/triage', express.json(), async (req, res) => {
 });
 ```
 
-The service applies the same license check, permissions, routing, validation and rate limits as the HTTP endpoints, and throws `Formflow.FormflowError` with an HTTP `status` (and `code`) on failure. Its methods are `extract`, `decide`, `generate` and `capabilities`, with the request bodies described in [Agent API](/developers/agent-api) plus `form`, the form's name (which the HTTP operations take from the URL), and `runTask(form, task, submission, auth, options)`, which runs a task on a submission as "Agent: Run task" does, without saving it. For `runTask`, `form` is the form object, not its name (`await project.formflowForm('claim')`), and the result is a `TaskRun`: the reconciled submission in `submission`, with `fields`, `written`, `cleared`, `refused`, `task`, `answer`, `results` and `failed`. `identity` decides who research tools and scoped tokens act as.
+The service applies the same license check, permissions, routing, validation and rate limits as the HTTP endpoints, and throws `Formflow.FormflowError` with an HTTP `status` (and `code`) on failure. Its methods are `extract`, `decide`, `generate` and `capabilities`, with the request bodies described in [Agent API](./agent-api.md) plus `form`, the form's name (which the HTTP operations take from the URL), and `runTask(form, task, submission, auth, options)`, which runs a task on a submission as "Agent: Run task" does, without saving it. For `runTask`, `form` is the form object, not its name (`await project.formflowForm('claim')`), and the result is a `TaskRun`: the reconciled submission in `submission`, with `fields`, `written`, `cleared`, `refused`, `task`, `answer`, `results` and `failed`. `identity` decides who research tools and scoped tokens act as.
 
 ## Public exports
 
@@ -467,12 +467,12 @@ The service applies the same license check, permissions, routing, validation and
 | `BUILT_IN_ENGINES`, `RemoteEngine`, `StubDecisionEngine`, `StubAgentEngine`, `MIN_KEY_LENGTH`, `UAG_ROOT` | values | The built-in engine types, the shortest engine server key (32), and the UAG's install root, where engine packages are looked up first. |
 | `AgentRouter(project, authenticate)` | function | The router for `GET /agent/capabilities` on its own. |
 | `FormAgentRouter(project, credentials)`, `agentCredentials(project)`, `agentNotFound(project)` | functions | A form's agent operations (`agent/extract`, `agent/decide`, `agent/generate`, `agent/chat`), mounted on each form's routes; the credential check they run behind; and the `404` for an agent operation of a form the project does not have. |
-| `definePlugin(plugin)`, `definePluginType(type)`, `PluginRegistry`, `loadPluginFile(path)`, `PLUGIN_NAME`, `Plugin`, `PluginType`, `PluginEntry` | functions, class, types | The plugin framework, from `@formio/appserver-core`. `server.plugins` is the server's registry. See [Plugins](/developers/plugins). |
-| `usePluginFiles(server, env?)`, `pluginFiles(env?)`, `pluginFilesIn(path)`, `DEFAULT_PLUGINS_DIR` | functions, constant | Load the plugins files `UAG_PLUGINS` names (or those in `/app/plugins` when it exists), as the `uag` command does after the module, and return the files loaded; the files a setting or a path gives, in load order; and `/app/plugins`. See [Plugins](/developers/plugins#adding-plugins). |
+| `definePlugin(plugin)`, `definePluginType(type)`, `PluginRegistry`, `loadPluginFile(path)`, `PLUGIN_NAME`, `Plugin`, `PluginType`, `PluginEntry` | functions, class, types | The plugin framework, from `@formio/appserver-core`. `server.plugins` is the server's registry. See [Plugins](./plugins.md). |
+| `usePluginFiles(server, env?)`, `pluginFiles(env?)`, `pluginFilesIn(path)`, `DEFAULT_PLUGINS_DIR` | functions, constant | Load the plugins files `UAG_PLUGINS` names (or those in `/app/plugins` when it exists), as the `uag` command does after the module, and return the files loaded; the files a setting or a path gives, in load order; and `/app/plugins`. See [Plugins](./plugins.md#adding-plugins). |
 | `Converter`, `DocumentPlugin`, `DocumentContext`, `DocumentResult`, `DocumentFile`, `Issue` | types | The `converter` and `document` plugin contracts (experimental in 2.0). |
 | `BUILT_IN_CONVERTERS`, `identify(buffer, hint, converters?)`, `ConverterRoutes`, `runConverter` | values, functions | Converters: the built-in ones, byte-based identification, converter routes and conversion. Modules reach them through `api.converters`. |
-| `UAGModule`, `UAGModuleApi`, `UAGModuleRequest`, `UAGModuleRoute`, `ModuleForm`, `ModuleComponent`, `GeneratingEngine` | types | The module API and its types. See [Modules](/developers/modules#the-module-api). |
-| `@formio/uag/testing`: `createTestModuleApi`, `mountModuleRoutes`, `testForm`, `testAuth` | functions | Test a module without a project. See [Modules](/developers/modules#testing-a-module). |
+| `UAGModule`, `UAGModuleApi`, `UAGModuleRequest`, `UAGModuleRoute`, `ModuleForm`, `ModuleComponent`, `GeneratingEngine` | types | The module API and its types. See [Modules](./modules.md#the-module-api). |
+| `@formio/uag/testing`: `createTestModuleApi`, `mountModuleRoutes`, `testForm`, `testAuth` | functions | Test a module without a project. See [Modules](./modules.md#testing-a-module). |
 | `sanitizeMarkdown(markdown)` | function | The Markdown the AI Document keeps: raw HTML removed (its text kept), only `http`, `https` and `mailto` links, no images, no code fence around the whole value. |
 | The Form.io server classes | various | `Server`, `ProjectInterface`, `FormInterface`, `AuthRequest`, `Action`, `ActionInfo`, `SubmissionRequest`, `SubmissionResponse`, `ServerConfig`, `Utils`, `Database`, the `Formflow` namespace and the rest of the Form.io logic the UAG is built on. |
 
@@ -480,7 +480,7 @@ The package's types are in `lib/index.d.ts` (`"types": "lib/index.d.ts"`).
 
 ## The uag command
 
-The package installs two commands: `uag`, which starts a server like the Docker image does, and `uag-eval` (see [Evaluation](/developers/evaluation)).
+The package installs two commands: `uag`, which starts a server like the Docker image does, and `uag-eval` (see [Evaluation](./evaluation.md)).
 
 ```bash
 npx uag                                   # the UAG, no module
@@ -527,6 +527,6 @@ The `uag` command and the Docker image set it themselves. Test runners need it t
 
 ## Next steps
 
-- [Modules](/developers/modules): forms, tools, actions, templates and the login page.
-- [Engines and routing](/developers/engines): enable and route engines.
-- [Deployment](/developers/deployment): environment variables, Docker, Compose and licensing.
+- [Modules](./modules.md): forms, tools, actions, templates and the login page.
+- [Engines and routing](./engines.md): enable and route engines.
+- [Deployment](./deployment.md): environment variables, Docker, Compose and licensing.

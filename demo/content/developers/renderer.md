@@ -7,14 +7,14 @@ order: 40
 
 `@formio/uag-js` connects a [formio.js](https://github.com/formio/formio.js) application to the UAG. You register it once, and render forms exactly as before, from their Form.io URLs. For every form tagged `uag`:
 
-- **Its submissions are saved through the UAG,** so the form's [Run task](/developers/workflows) actions run on them. Other forms, and every other request, still go straight to Form.io.
-- **Agent Input is attached** when one of the form's tasks has an input. The user describes something in their own words, and the rest of the form is filled from the form's own [agent operations](/developers/agent-api): fast decisions first, so conditional pages react at once, then extracted values. Every value it writes is one the user can see, check and change, and it never writes over a value the user entered.
+- **Its submissions are saved through the UAG,** so the form's [Run task](./workflows.md) actions run on them. Other forms, and every other request, still go straight to Form.io.
+- **Agent Input is attached** when one of the form's tasks has an input. The user describes something in their own words, and the rest of the form is filled from the form's own [agent operations](./agent-api.md): fast decisions first, so conditional pages react at once, then extracted values. Every value it writes is one the user can see, check and change, and it never writes over a value the user entered.
 
-The same registration adds a third: **any `uag` form can be rendered as a chat** with `Formio.createChat`, where a person fills it in by conversation. See [Chat widget](/developers/chat).
+The same registration adds a third: **any `uag` form can be rendered as a chat** with `Formio.createChat`, where a person fills it in by conversation. See [Chat widget](./chat.md).
 
-Tagging a form `uag` in the portal is then all it takes to move it onto the UAG; the application does not change. See it running in the [Agentic Formflow demo](/examples/formflow).
+Tagging a form `uag` in the portal is then all it takes to move it onto the UAG; the application does not change. See it running in the [Agentic Formflow demo](../../public/apps/formflow).
 
-> **Tip:** The [Agentic Coding Plugin](/developers/agentic-coding)'s `formio-uag` skill registers `@formio/uag-js` in formio.js, React and Angular applications, and designs the task Agent Input runs. The [claim wizard prompt](https://github.com/formio/ai/blob/main/examples/agents/claim-formflow.md) builds the Agentic Formflow demo.
+> **Tip:** The [Agentic Coding Plugin](./agentic-coding.md)'s `formio-uag` skill registers `@formio/uag-js` in formio.js, React and Angular applications, and designs the task Agent Input runs. The [claim wizard prompt](https://github.com/formio/ai/blob/main/examples/agents/claim-formflow.md) builds the Agentic Formflow demo.
 
 ```sequence
 participants: User, formio.js + @formio/uag-js, UAG*, Form.io
@@ -34,7 +34,7 @@ UAG -> Form.io: the submission, after Run task
 | File | What it is |
 |---|---|
 | `index.js`, `index.mjs` | The module. |
-| `uag-js.css` | Default styles for the notes Agent Input adds, and for the [chat](/developers/chat). Override them freely. |
+| `uag-js.css` | Default styles for the notes Agent Input adds, and for the [chat](./chat.md). Override them freely. |
 | `index.d.ts` | TypeScript types. |
 
 The script that registers itself, `uag.use.js`, is not in the package: the UAG serves it, with its own URL and modules built in. See below.
@@ -49,7 +49,7 @@ Every UAG serves the `@formio/uag-js` it is installed with, under `/uag-js/`. A 
 <script src="https://uag.example.com/uag-js/uag.use.js"></script>
 ```
 
-`uag.use.js` registers itself, so the page needs no `Formio.use()`: with the UAG's URL, taken from the script's own `src`, with the UAG's plugin manifest embedded, and with the component of every [module](/developers/modules#components) the UAG uses. Do not also call `Formio.use(FormioUAG.UAG(...))` on top of it: registering twice would build the chat on Agent Input's form display.
+`uag.use.js` registers itself, so the page needs no `Formio.use()`: with the UAG's URL, taken from the script's own `src`, with the UAG's plugin manifest embedded, and with the component of every [module](./modules.md#components) the UAG uses. Do not also call `Formio.use(FormioUAG.UAG(...))` on top of it: registering twice would build the chat on Agent Input's form display.
 
 | Path | What it is |
 |---|---|
@@ -125,7 +125,7 @@ A form rendered from a definition object, rather than its URL, has no Form.io UR
 
 ### This is not a security boundary
 
-Routing happens in the browser, and a client can always send a submission straight to Form.io instead. What keeps a user from setting the fields an agent owns is on the server: an agent role and the form's permissions, which refuse that user's direct writes at Form.io, and `uagAuthoritative` on the fields, which the UAG removes from what clients send. See [Project setup for agents](/developers/project-setup).
+Routing happens in the browser, and a client can always send a submission straight to Form.io instead. What keeps a user from setting the fields an agent owns is on the server: an agent role and the form's permissions, which refuse that user's direct writes at Form.io, and `uagAuthoritative` on the fields, which the UAG removes from what clients send. See [Project setup for agents](./project-setup.md).
 
 ### What the `uag` tag means
 
@@ -134,11 +134,11 @@ The tag now does four things at once. A form tagged `uag`:
 1. is visible to agents over MCP;
 2. can use the Agent API and "Agent: Run task";
 3. is saved through the UAG by applications that register `@formio/uag-js`;
-4. can be rendered as a [chat](/developers/chat), unless it sets `uagChat: "false"`.
+4. can be rendered as a [chat](./chat.md), unless it sets `uagChat: "false"`.
 
 ## Chat
 
-`Formio.createChat(element, src, options)` renders a `uag` form as a conversation instead of a form. Each turn is the form's `agent/chat` on the UAG, a formio.js form sits behind the chat (so its conditionals and validation apply), and the person submits through the UAG after confirming a summary. It needs no Agentic Formflow license. Templates, translations, styles, options and events are on [Chat widget](/developers/chat).
+`Formio.createChat(element, src, options)` renders a `uag` form as a conversation instead of a form. Each turn is the form's `agent/chat` on the UAG, a formio.js form sits behind the chat (so its conditionals and validation apply), and the person submits through the UAG after confirming a summary. It needs no Agentic Formflow license. Templates, translations, styles, options and events are on [Chat widget](./chat.md).
 
 ## Options
 
@@ -158,7 +158,7 @@ The tag now does four things at once. A form tagged `uag`:
 
 ## Set up the form
 
-The form is a UAG form with a task (see [Form properties](/developers/form-properties)). Agent Input needs one more thing: the task's **input**, the field (or container) whose text is read. Give it the custom properties:
+The form is a UAG form with a task (see [Form properties](./form-properties.md)). Agent Input needs one more thing: the task's **input**, the field (or container) whose text is read. Give it the custom properties:
 
 | Property | Value |
 |---|---|
@@ -284,7 +284,7 @@ type ResultEvent = {
 };
 ```
 
-`fields` entries are the Agent API's field results (`status` of `confident`, `uncertain`, `suggested` or `missing`, `confidence`, up to three `alternatives`, `engine`, `model`); see [Agent API](/developers/agent-api). The `done` event's data is passed to `onDone`.
+`fields` entries are the Agent API's field results (`status` of `confident`, `uncertain`, `suggested` or `missing`, `confidence`, up to three `alternatives`, `engine`, `model`); see [Agent API](./agent-api.md). The `done` event's data is passed to `onDone`.
 
 A new request aborts the one in flight. An aborted request calls neither `onError` nor `onDone`.
 
@@ -301,7 +301,7 @@ When decision results changed values and the `done` summary lists fields exclude
 - **The form keeps working.** If the request fails, the user sees a short message under the input ("Filling in from your description is unavailable right now (503).") and carries on by hand.
 - **Annotations follow the wizard.** A field on a page that was not drawn when its result arrived is annotated when the page renders.
 
-Values Agent Input writes are values the user submits. To make decisions that drive sensitive routing trustworthy, re-decide them on the server: the form's submissions already go to the UAG, so add an "Agent: Run task" action that runs before the save and answers the task's decision fields only, with those fields marked `uagAuthoritative` (see [Security](/developers/security#fields-the-server-owns)).
+Values Agent Input writes are values the user submits. To make decisions that drive sensitive routing trustworthy, re-decide them on the server: the form's submissions already go to the UAG, so add an "Agent: Run task" action that runs before the save and answers the task's decision fields only, with those fields marked `uagAuthoritative` (see [Security](./security.md#fields-the-server-owns)).
 
 ### Styles
 
@@ -320,7 +320,7 @@ Values Agent Input writes are values the user submits. To make decisions that dr
 
 A visitor who is not signed in has no Form.io token. Two ways to give such a form Agent Input:
 
-- **Anonymous use.** Set [`uagAnonymous: "true"`](/developers/form-properties#uaganonymous) on the form and let the Anonymous role create submissions. The UAG then answers visitors directly, rate-limited per address and in total (`AGENT_ANONYMOUS_RATE_LIMIT`, `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`).
+- **Anonymous use.** Set [`uagAnonymous: "true"`](./form-properties.md#uaganonymous) on the form and let the Anonymous role create submissions. The UAG then answers visitors directly, rate-limited per address and in total (`AGENT_ANONYMOUS_RATE_LIMIT`, `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`).
 - **A relay of your own,** when you need more than that: a CAPTCHA, a spending budget, your own sessions. The browser calls your server, which calls the UAG with a key the browser never sees, and Agent Input is pointed at it with `formUrl`.
 
 ```sequence
@@ -474,7 +474,7 @@ npm install express @formio/uag-js
 
 ## For module components: `client`
 
-A [module's component](/developers/modules#components) builds on `client`, the public browser API of `@formio/uag-js`, stable within a major version. It works once the UAG is registered (`Formio.use(UAG(url))`, or `uag.use.js`), and is one object under several names: `Formio.uagClient` on the formio.js it was registered with, `FormioUAG.client` with script tags, `UAG.client`, and the `client` export. Look it up when a component uses it, not when its script loads.
+A [module's component](./modules.md#components) builds on `client`, the public browser API of `@formio/uag-js`, stable within a major version. It works once the UAG is registered (`Formio.use(UAG(url))`, or `uag.use.js`), and is one object under several names: `Formio.uagClient` on the formio.js it was registered with, `FormioUAG.client` with script tags, `UAG.client`, and the `client` export. Look it up when a component uses it, not when its script loads.
 
 | Member | What it gives |
 |---|---|
@@ -505,11 +505,11 @@ const answer = await client.stream(client.formUrl(this.root) + '/address-check/c
 });
 ```
 
-A module route answers in the Agent API's error shape, behind the same caller check; see [Settings, routes and components](/developers/modules#settings-routes-and-components).
+A module route answers in the Agent API's error shape, behind the same caller check; see [Settings, routes and components](./modules.md#settings-routes-and-components).
 
 ## Next steps
 
-- [Agent API](/developers/agent-api): a form's agent operations and the field results.
-- [Form properties](/developers/form-properties): tasks, inputs, thresholds, confidence fields and `uagAnonymous`.
-- [Security](/developers/security): re-deciding on the server, credentials and rate limits.
-- [Modules](/developers/modules#components): components that build on `client`.
+- [Agent API](./agent-api.md): a form's agent operations and the field results.
+- [Form properties](./form-properties.md): tasks, inputs, thresholds, confidence fields and `uagAnonymous`.
+- [Security](./security.md): re-deciding on the server, credentials and rate limits.
+- [Modules](./modules.md#components): components that build on `client`.

@@ -23,7 +23,7 @@ An "Agent: Run task" action acts at Form.io in one of two ways, set by its **Age
 
 Use an agent role for agentic workflows: anything where the agent's answer must not come from the person being judged. Use no agent role when the agent only helps a person fill their own form.
 
-> **Tip:** The [admissions workflow prompt](https://github.com/formio/ai/blob/main/examples/agents/admissions-workflow.md) builds an agent role setup like this with the [Agentic Coding Plugin](/developers/agentic-coding). Its `formio-uag` skill marks the owned fields authoritative and hands the agent role and form permissions to its `formio-auth` skill.
+> **Tip:** The [admissions workflow prompt](https://github.com/formio/ai/blob/main/examples/agents/admissions-workflow.md) builds an agent role setup like this with the [Agentic Coding Plugin](./agentic-coding.md). Its `formio-uag` skill marks the owned fields authoritative and hands the agent role and form permissions to its `formio-auth` skill.
 
 ## What you need
 
@@ -31,7 +31,7 @@ Use an agent role for agentic workflows: anything where the agent's answer must 
 |---|---|
 | Form.io Enterprise, self-hosted | The UAG signs tokens with the server's JWT secret. Form.io's hosted service does not share its secret, so on it every task acts as the user. |
 | The same `JWT_SECRET` on the UAG and the Form.io server | Form.io accepts the agent's tokens only if they are signed with its own secret. |
-| A license that includes the UAG | Agentic Formflow needs one. See [Deployment](/developers/deployment). |
+| A license that includes the UAG | Agentic Formflow needs one. See [Deployment](./deployment.md). |
 | Applications that send submissions to the UAG | The UAG runs tasks only on submissions it receives. Point the application's project URL at the UAG. |
 
 ## 1. Create the agent role
@@ -59,7 +59,7 @@ Administrators are unaffected: they edit submissions on Form.io as before, and t
 
 ## 3. Mark the fields the agent owns
 
-Give each field a task writes the property `uagAuthoritative: "true"`, alongside its `uag` task property. Set it on each field: on a panel or other container it is ignored. See [Form properties](/developers/form-properties).
+Give each field a task writes the property `uagAuthoritative: "true"`, alongside its `uag` task property. Set it on each field: on a panel or other container it is ignored. See [Form properties](./form-properties.md).
 
 Once the form has a Run task action for the field's task (step 4), the UAG removes any value a client sends for these fields, on every request to the UAG, whatever the action's conditions or methods. On an update, the field keeps its stored value. Fields without `uagAuthoritative` stay editable, so a person can still correct a suggestion.
 
@@ -114,7 +114,7 @@ An applicant submits to the UAG. The agent creates the application, owned by the
 ## Security notes
 
 - `JWT_SECRET` is equivalent to administrator access on the Form.io server: anyone who holds it can sign any token. Keep it as secret as the Form.io server's own.
-- The UAG never signs a token that makes its holder an administrator, nor one with an admin role. Its tokens expire after 5 minutes and are never logged or stored. None is given to an engine, except that a token for research reaches a remote engine server sealed inside a [scoped token](/developers/security#scoped-tokens-for-remote-engines), which it cannot read.
+- The UAG never signs a token that makes its holder an administrator, nor one with an admin role. Its tokens expire after 5 minutes and are never logged or stored. None is given to an engine, except that a token for research reaches a remote engine server sealed inside a [scoped token](./security.md#scoped-tokens-for-remote-engines), which it cannot read.
 - Tasks research with the identity of the user who submitted, never the agent role, so an agent never sees more than that user may.
 - The UAG uses its project API key to read the project (at startup and on each `PROJECT_TTL` refresh) and for template sync, never to run a task. A caller who sends an API key, such as a server using `x-token`, has its tasks run with that key: give such callers an agent role's action, or have users submit with their own tokens.
 

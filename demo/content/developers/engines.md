@@ -5,7 +5,7 @@ section: Extend
 order: 30
 ---
 
-The Agent API does not call a model directly. It sorts a task's fields, sends each group to an **engine**, validates what comes back, and decides what to keep. This page covers the engines that ship with the UAG, how to enable and configure them, how fields are routed between them, and where they run. To write your own engine, see [Engine SDK](/developers/engine-sdk).
+The Agent API does not call a model directly. It sorts a task's fields, sends each group to an **engine**, validates what comes back, and decides what to keep. This page covers the engines that ship with the UAG, how to enable and configure them, how fields are routed between them, and where they run. To write your own engine, see [Engine SDK](./engine-sdk.md).
 
 ## Terms
 
@@ -55,11 +55,11 @@ Three types are built into every UAG, whatever is installed:
 
 | Type | Kinds | Purpose |
 |---|---|---|
-| `remote` | decision or agent | An engine hosted by an engine server. See [Engine server](/developers/engine-server). |
+| `remote` | decision or agent | An engine hosted by an engine server. See [Engine server](./engine-server.md). |
 | `stub-decision` | decision | Answers every decision with a fixed, predictable value. For tests and local development. |
 | `stub-agent` | agent | Extracts nothing, and generates a predictable answer from the text it is given. For tests and local development. |
 
-With only the stub engines enabled (`UAG_ENGINES=stub-decision,stub-agent`), the Agent API runs without a license, so you can build against it before you have model keys. Every other engine needs a `LICENSE_KEY` that includes the UAG, or a project on Form.io's hosted service. See [Agent API](/developers/agent-api).
+With only the stub engines enabled (`UAG_ENGINES=stub-decision,stub-agent`), the Agent API runs without a license, so you can build against it before you have model keys. Every other engine needs a `LICENSE_KEY` that includes the UAG, or a project on Form.io's hosted service. See [Agent API](./agent-api.md).
 
 ## Enabling engines
 
@@ -222,18 +222,18 @@ On a form, send one task's open values to the deeper model by setting `uagEngine
 | `agentApi.rateLimits.caller` | none | Per caller, by operation (`extract`, `decide`, `generate`, `chat`), a module route's name (AI Document: `document`), or `default`: `{ limit, windowMs }`. |
 | `agentApi.rateLimits.engine` | none | Per engine name, or `default`: `{ limit, windowMs }`. An engine over its limit is skipped. |
 
-`windowMs` defaults to 60000. Counters are kept in memory per process. Choose thresholds with [`uag-eval`](/developers/evaluation) rather than leaving the defaults.
+`windowMs` defaults to 60000. Counters are kept in memory per process. Choose thresholds with [`uag-eval`](./evaluation.md) rather than leaving the defaults.
 
 ## Chat
 
-A form's [chat](/developers/chat) (`{form}/agent/chat`) is answered by an agent engine, through the same `extract` contract that fills value fields (see [Engine SDK](/developers/engine-sdk#agent-engines)). Each turn asks for the form's collectable fields plus two of the turn's own, `-reply` (the next message) and `-confirmed`, so every agent engine can serve chat as it is: the official ones, your own, and remote ones on an engine server. Decision engines are not used.
+A form's [chat](./chat.md) (`{form}/agent/chat`) is answered by an agent engine, through the same `extract` contract that fills value fields (see [Engine SDK](./engine-sdk.md#agent-engines)). Each turn asks for the form's collectable fields plus two of the turn's own, `-reply` (the next message) and `-confirmed`, so every agent engine can serve chat as it is: the official ones, your own, and remote ones on an engine server. Decision engines are not used.
 
 - **Routing.** Engines are tried in the order of `agentApi.chat.engines`: instance names, or `agent` for every enabled agent engine. The default, `['agent']`, is every agent engine in the order enabled. Decision engines in the list are skipped. With no agent engine, chat answers `503`.
 - **Timeouts and failures.** Each engine gets `agentApi.chat.timeout`, else its routing timeout (`routing.timeouts[name]`, else `agentApi.timeout`). An engine that fails, times out or is over its rate limit (`agentApi.rateLimits.engine`) is passed over for the next.
 - **Checking values.** Agent engines that run in the UAG and declare `toolUse` get one read-only tool, `check_values`, for up to `agentApi.chat.maxIterations` rounds (default 3), so they can see what the form refuses before they reply. Remote engines get no tool; when the form refuses one of their values, the UAG asks the same engine once more for the reply alone, with the refusals.
 - **No Agentic Formflow license.** Chat is part of conversation forms. It runs with any agent engine whether or not Agentic Formflow is licensed; `GET /agent/capabilities` lists the engines under `operations.chat`.
 
-To give the chat a faster model than value fields, enable a second instance for it and name it in both lists: `UAG_ENGINES=jev,deep:claude,chat:claude` with `UAG_ENGINE_CHAT_MODEL=claude-haiku-5-5` (see [Settings](#settings)), `routing: { value: ['deep'] }` and `agentApi: { chat: { engines: ['chat', 'deep'] } }`. See [Chat settings](/developers/agent-api#chat-settings).
+To give the chat a faster model than value fields, enable a second instance for it and name it in both lists: `UAG_ENGINES=jev,deep:claude,chat:claude` with `UAG_ENGINE_CHAT_MODEL=claude-haiku-5-5` (see [Settings](#settings)), `routing: { value: ['deep'] }` and `agentApi: { chat: { engines: ['chat', 'deep'] } }`. See [Chat settings](./agent-api.md#chat-settings).
 
 ## Where engines run
 
@@ -245,7 +245,7 @@ To give the chat a faster model than value fields, enable a second instance for 
 | Research | In process, through `callTool`. | Back into the UAG's `/mcp`, with a scoped token. |
 | Containers | One. | Two, on a private network. |
 
-A deployment can mix both: `UAG_ENGINES=jev,claude:remote` keeps Jev in the UAG and moves Claude out. See [Engine server](/developers/engine-server).
+A deployment can mix both: `UAG_ENGINES=jev,claude:remote` keeps Jev in the UAG and moves Claude out. See [Engine server](./engine-server.md).
 
 ## Building a smaller image
 
@@ -318,7 +318,7 @@ CLAUDE_API_KEY=...
 - **Research:** Claude may call the task's tools for up to `agentApi.research.maxIterations` turns, then answers with tools turned off.
 - **Refusals:** with `fallbacks: default`, a refused request is re-run on a fallback model server-side, for the models that have one (such as Claude Opus 5.5 and Sonnet 5.5; Claude Haiku 5.5 has none). A refusal that stands is an engine failure, and routing moves on.
 - **Token limit:** a research turn or an answer cut off at `maxTokens` (16,000 by default) is an engine failure, and routing moves on.
-- **Documents (generate):** Claude also writes free text over attached documents, text and PDF, for modules and plugins such as AI Document. It is the only official engine that does; `api.engines.select` picks the engine, and `documents.engine` (`DOCUMENTS_ENGINE`) chooses one for AI Document. See [AI Document: Limits](/developers/ai-document#limits), [Modules: The module API](/developers/modules#the-module-api) and [Engine server](/developers/engine-server#post-v1enginesnamegenerate).
+- **Documents (generate):** Claude also writes free text over attached documents, text and PDF, for modules and plugins such as AI Document. It is the only official engine that does; `api.engines.select` picks the engine, and `documents.engine` (`DOCUMENTS_ENGINE`) chooses one for AI Document. See [AI Document: Limits](./ai-document.md#limits), [Modules: The module API](./modules.md#the-module-api) and [Engine server](./engine-server.md#post-v1enginesnamegenerate).
 - Set `model` to a specific model ID; a new release may change the default. Every request sends `effort`, so the model must accept it: the current models take all five levels, Claude Opus 4.6 and Sonnet 4.6 all but `xhigh`, and Claude Haiku 4.5 and Sonnet 4.5 refuse it, so they cannot be used.
 - Coming from `@formio/uag-claude` 1.x, the standalone integration server: see its README's [Upgrading from 1.x](../../../engines/claude/README.md#upgrading-from-1x).
 
@@ -552,6 +552,6 @@ UAG_ENGINES: jev,decide:openai,local:openai,claude:remote
 
 ## Next steps
 
-- [Engine SDK](/developers/engine-sdk): write an engine package.
-- [Engine server](/developers/engine-server): run engines in their own container.
-- [Evaluation](/developers/evaluation): choose thresholds for a decision engine.
+- [Engine SDK](./engine-sdk.md): write an engine package.
+- [Engine server](./engine-server.md): run engines in their own container.
+- [Evaluation](./evaluation.md): choose thresholds for a decision engine.

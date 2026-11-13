@@ -7,15 +7,15 @@ order: 1
 
 The Universal Agent Gateway (UAG) is a server that sits between AI agents and a Form.io project. It reads the project's forms and gives agents two things: context they can understand, and a governed way to write data back. Everything an agent knows about your data (which forms exist, what each field means, which values are valid, what a task should decide) comes from Form JSON that you already manage in Form.io.
 
-This page explains the moving parts. If you want to run something first, go to the [Quickstart](/developers/quickstart) and come back.
+This page explains the moving parts. If you want to run something first, go to the [Quickstart](./quickstart.md) and come back.
 
-> **Tip:** To have your coding agent build this for you instead, install the [Agentic Coding Plugin](/developers/agentic-coding) with `npx skills add formio/ai`. Its `formio-uag` skill tags your forms, designs their tasks, deploys the UAG and wires your application to it.
+> **Tip:** To have your coding agent build this for you instead, install the [Agentic Coding Plugin](./agentic-coding.md) with `npx skills add formio/ai`. Its `formio-uag` skill tags your forms, designs their tasks, deploys the UAG and wires your application to it.
 
 ## Forms are the contract
 
 The Form.io JavaScript renderer turns Form JSON into an interface a person can use: labels, inputs, validation messages, conditional pages. The UAG does the same thing for an agent. It turns the same Form JSON into Markdown and structured JSON that a model can read: each field's data path, type, description, allowed options, format and validation rules, plus instructions written in the form itself.
 
-![The UAG renders Form JSON for an agent the way the JavaScript renderer renders it for a person.](/images/uag-agent-rendering.png)
+![The UAG renders Form JSON for an agent the way the JavaScript renderer renders it for a person.](../../public/images/uag-agent-rendering.png)
 
 Because the form is the contract, the behavior of every agent connected to the UAG follows the form:
 
@@ -31,19 +31,19 @@ The form also stays the gate on writes. Every value an agent proposes is validat
 
 The UAG is built from layers that either supply context to the agent or accept deterministic data from it.
 
-![Who calls the UAG, its layers, and the Form.io project and engines behind it.](/images/uag-architecture.svg)
+![Who calls the UAG, its layers, and the Form.io project and engines behind it.](../../public/images/uag-architecture.svg)
 
 | Layer | What it does | Where to read more |
 |---|---|---|
-| **MCP interface** | `/mcp` serves the [Model Context Protocol](https://modelcontextprotocol.io) over Streamable HTTP. Each request gets its own MCP server instance (stateless mode), so concurrent requests never share a transport. | [MCP tools](/developers/mcp-tools) |
-| **Agent API** | `{form}/agent/*`, under each form's URL on the UAG, runs a form's tasks inside the UAG with model engines you enable, and returns validated values. It is the HTTP surface for applications. It saves nothing. | [Agent API](/developers/agent-api) |
-| **Authentication** | Form.io's own: a Form.io user token works against the UAG as against Form.io, and is forwarded unchanged. For MCP, the UAG issues its own tokens: servers use the `client_credentials` grant or an admin credential, and remote MCP clients can sign users in through an OAuth 2.0 flow with PKCE (`MCP_OAUTH`), with whatever login the project uses (Form.io login, SAML, OIDC, custom). | [Security](/developers/security) |
-| **Built-in tools** | Twelve MCP tools that list forms, describe fields, validate and collect data, submit, search, update, expose tasks, and read uploaded documents. Each is annotated as read or write. | [MCP tools](/developers/mcp-tools) |
-| **Custom tools and actions** | A module can add MCP tools, override the built-in ones, and add form actions: Express middleware that runs after the UAG has validated what an agent sent. It can also add form routes, formio.js components, settings and [plugins](/developers/plugins), such as converters that read other file types. | [Modules](/developers/modules) |
-| **Built-in actions** | The UAG forwards every submission to Form.io, which runs the form's own actions (Save Submission, Webhook, Email and the rest) as it always does. The UAG adds one action of its own, "Agent: Run task", which runs one of the form's tasks before the save or after it. | [Workflows](/developers/workflows) |
-| **Response templates** | What the tools return to the agent is rendered from Lodash templates, which a module can override. | [Modules](/developers/modules) |
-| **Pre-defined forms** | A module can ship a project template (forms, resources, actions, roles) that the UAG installs into the project. | [Modules](/developers/modules) |
-| **Database** | The UAG stores no submissions: it reads and writes them through the Form.io REST API. An optional database of its own (`MONGO`) holds sign-in codes for remote MCP clients and a record of every task run. | [Deployment](/developers/deployment#the-database) |
+| **MCP interface** | `/mcp` serves the [Model Context Protocol](https://modelcontextprotocol.io) over Streamable HTTP. Each request gets its own MCP server instance (stateless mode), so concurrent requests never share a transport. | [MCP tools](./mcp-tools.md) |
+| **Agent API** | `{form}/agent/*`, under each form's URL on the UAG, runs a form's tasks inside the UAG with model engines you enable, and returns validated values. It is the HTTP surface for applications. It saves nothing. | [Agent API](./agent-api.md) |
+| **Authentication** | Form.io's own: a Form.io user token works against the UAG as against Form.io, and is forwarded unchanged. For MCP, the UAG issues its own tokens: servers use the `client_credentials` grant or an admin credential, and remote MCP clients can sign users in through an OAuth 2.0 flow with PKCE (`MCP_OAUTH`), with whatever login the project uses (Form.io login, SAML, OIDC, custom). | [Security](./security.md) |
+| **Built-in tools** | Twelve MCP tools that list forms, describe fields, validate and collect data, submit, search, update, expose tasks, and read uploaded documents. Each is annotated as read or write. | [MCP tools](./mcp-tools.md) |
+| **Custom tools and actions** | A module can add MCP tools, override the built-in ones, and add form actions: Express middleware that runs after the UAG has validated what an agent sent. It can also add form routes, formio.js components, settings and [plugins](./plugins.md), such as converters that read other file types. | [Modules](./modules.md) |
+| **Built-in actions** | The UAG forwards every submission to Form.io, which runs the form's own actions (Save Submission, Webhook, Email and the rest) as it always does. The UAG adds one action of its own, "Agent: Run task", which runs one of the form's tasks before the save or after it. | [Workflows](./workflows.md) |
+| **Response templates** | What the tools return to the agent is rendered from Lodash templates, which a module can override. | [Modules](./modules.md) |
+| **Pre-defined forms** | A module can ship a project template (forms, resources, actions, roles) that the UAG installs into the project. | [Modules](./modules.md) |
+| **Database** | The UAG stores no submissions: it reads and writes them through the Form.io REST API. An optional database of its own (`MONGO`) holds sign-in codes for remote MCP clients and a record of every task run. | [Deployment](./deployment.md#the-database) |
 
 The UAG is built on Form.io's core logic. Every submission runs through the [`@formio/core`](https://github.com/formio/core) processors, the same validation, conditional and calculation rules Form.io itself applies, so the data the UAG saves is valid and deterministic: a value the UAG accepts is a value Form.io would accept. Form.io then saves the submission and runs the form's actions, with the caller's own permissions.
 
@@ -53,7 +53,7 @@ The UAG registers only forms tagged `uag`. A form without the tag is invisible t
 
 Inside a tagged form, custom properties on components define **tasks**: a criteria content component with the instructions, the agent fields the task fills, and optionally an input field to read from. Tasks are what autonomous workflows and Agentic Formflow run. Conversation forms need no task at all: a tagged form with ordinary fields is enough.
 
-[Concepts](/developers/concepts) explains tasks in depth, and [Form properties](/developers/form-properties) lists every property the UAG reads.
+[Concepts](./concepts.md) explains tasks in depth, and [Form properties](./form-properties.md) lists every property the UAG reads.
 
 ## Project sync and caching
 
@@ -78,7 +78,7 @@ Two consequences matter in practice:
 
 The UAG supports three usage patterns. They share the same forms, authentication and validation, and one deployment can serve all three at once.
 
-![Conversation forms, agentic workflows and Agentic Formflow, step by step.](/images/uag-usage-patterns.svg)
+![Conversation forms, agentic workflows and Agentic Formflow, step by step.](../../public/images/uag-usage-patterns.svg)
 
 | Pattern | Who drives | Entry point | Model runs | License |
 |---|---|---|---|---|
@@ -90,7 +90,7 @@ The UAG supports three usage patterns. They share the same forms, authentication
 
 A person talks to an agent, and the agent fills in a form for them. The agent can be an existing MCP client (Claude Desktop, claude.ai, Claude Code) or a chat application you write. The model runs in the client; the UAG supplies context and performs the writes.
 
-![The conversation demo, recorded: a person describes an outage in a chat and files a validated service request.](/images/demo-conversation.gif)
+![The conversation demo, recorded: a person describes an outage in a chat and files a validated service request.](../../public/images/demo-conversation.gif)
 
 ```sequence
 participants: User, Your agent (MCP client + model), UAG*, Form.io
@@ -111,17 +111,17 @@ UAG -> Form.io: saves the validated submission
 
 The same tools let the agent find records (`find_submissions`) and change them (`submission_update`). The caller's Form.io permissions apply to every call, so an agent signed in as an employee cannot do what an employee cannot do.
 
-Build this with [MCP tools](/developers/mcp-tools) or [Connect Claude](/developers/connect-claude).
+Build this with [MCP tools](./mcp-tools.md) or [Connect Claude](./connect-claude.md).
 
 ### Conversation forms in your own page
 
-Without an MCP client, a page can offer the same conversation with the [chat widget](/developers/chat): `Formio.createChat(element, formUrl)` from `@formio/uag-js` renders one `uag` form as a chat. Each turn is the form's `{form}/agent/chat` on the UAG, which asks an agent engine and checks every value against the form; the form sits behind the chat in the browser, and is submitted through the UAG once the person confirms. No model code and no server of your own, and no license. See it live at [/examples/conversation](/examples/conversation).
+Without an MCP client, a page can offer the same conversation with the [chat widget](./chat.md): `Formio.createChat(element, formUrl)` from `@formio/uag-js` renders one `uag` form as a chat. Each turn is the form's `{form}/agent/chat` on the UAG, which asks an agent engine and checks every value against the form; the form sits behind the chat in the browser, and is submitted through the UAG once the person confirms. No model code and no server of your own, and no license. See it live at [/examples/conversation](../../public/apps/conversation).
 
 ### Agentic workflows
 
 A submission starts an agent with no person in the loop. The application sends the submission to the UAG instead of Form.io; an "Agent: Run task" action on the form runs one of its tasks after the save, in the background, and saves the results as an update. Because that save is an ordinary update, its own Run task actions can start the next task.
 
-![The workflow demo, recorded: an application is scored by one agent, and its save starts a second.](/images/demo-workflow.gif)
+![The workflow demo, recorded: an application is scored by one agent, and its save starts a second.](../../public/images/demo-workflow.gif)
 
 ```sequence
 participants: Applicant, UAG*, Form.io, Engines
@@ -142,13 +142,13 @@ UAG -> Form.io: saves the changes as an update; its Run task actions can start t
 4. The UAG reconciles the answers with the stored submission, validates the result with the form, and saves only if something changed, as an update through its own pipeline. Provenance for each value goes into `metadata.uag`.
 5. That update runs the form's update actions. A second Run task action, on update, with a condition on a field the first task set, starts the next task.
 
-No model holds a write tool at any point. A client cannot set the fields a task owns (`uagAuthoritative`), and on Form.io Enterprise the agent can save with a role of its own, on the user's behalf ([Project setup for agents](/developers/project-setup)). Build this with [Workflows](/developers/workflows). See it live at [/examples/workflow](/examples/workflow).
+No model holds a write tool at any point. A client cannot set the fields a task owns (`uagAuthoritative`), and on Form.io Enterprise the agent can save with a role of its own, on the user's behalf ([Project setup for agents](./project-setup.md)). Build this with [Workflows](./workflows.md). See it live at [/examples/workflow](../../public/apps/workflow).
 
 ### Agentic Formflow
 
 An application asks the UAG to fill a form from free text or in-flight data, and nothing is saved. The typical case is a person describing what happened while the form fills itself in: fast decisions choose which pages of a wizard apply, then extracted values prefill the rest for the person to check.
 
-![The formflow demo, recorded: a description chooses the wizard's steps and prefills them.](/images/demo-formflow.gif)
+![The formflow demo, recorded: a description chooses the wizard's steps and prefills them.](../../public/images/demo-formflow.gif)
 
 ```sequence
 participants: User, formio.js + @formio/uag-js, UAG*, Engines
@@ -168,37 +168,37 @@ note formio.js + @formio/uag-js: fills empty fields as suggestions
 4. A `done` event carries the merged data, validated by the form.
 5. When the person submits to the UAG, a Run task action that runs before the save, on the decision fields only, re-decides the closed-set fields on the server, so routing never depends on values the browser sent.
 
-`{form}/agent/decide` and `{form}/agent/generate` do the same on in-flight data, for decisions only or open values only. Build this with the [Agent API](/developers/agent-api) and [`@formio/uag-js`](/developers/renderer). See it live at [/examples/formflow](/examples/formflow).
+`{form}/agent/decide` and `{form}/agent/generate` do the same on in-flight data, for decisions only or open values only. Build this with the [Agent API](./agent-api.md) and [`@formio/uag-js`](./renderer.md). See it live at [/examples/formflow](../../public/apps/formflow).
 
 ## Where the models run
 
-The UAG never trains or hosts a model. In MCP conversations, the client's model does the reasoning. In a form's [chat](/developers/chat), workflows and Agentic Formflow, the UAG calls **engines**: adapters for a model provider, each its own npm package (`jev`, `claude`, `openai`, `grok`, `gemini`). The `formio/uag` image includes all of them, and none runs until you name it in `UAG_ENGINES`. Engines can also run in a separate engine server container, so model keys and model traffic stay out of the UAG.
+The UAG never trains or hosts a model. In MCP conversations, the client's model does the reasoning. In a form's [chat](./chat.md), workflows and Agentic Formflow, the UAG calls **engines**: adapters for a model provider, each its own npm package (`jev`, `claude`, `openai`, `grok`, `gemini`). The `formio/uag` image includes all of them, and none runs until you name it in `UAG_ENGINES`. Engines can also run in a separate engine server container, so model keys and model traffic stay out of the UAG.
 
-Engines only answer. The UAG decides which fields each engine sees, validates every answer, and performs every write. See [Engines](/developers/engines) and [Engine server](/developers/engine-server).
+Engines only answer. The UAG decides which fields each engine sees, validates every answer, and performs every write. See [Engines](./engines.md) and [Engine server](./engine-server.md).
 
 ## Map of these docs
 
 | If you want to | Read |
 |---|---|
-| Run the UAG and make your first calls | [Quickstart](/developers/quickstart) |
-| Understand tasks, criteria, inputs and decision fields | [Concepts](/developers/concepts) |
-| Look up a custom property | [Form properties](/developers/form-properties) |
-| Build an MCP client or call the tools | [MCP tools](/developers/mcp-tools) |
-| Call extract, decide or generate | [Agent API](/developers/agent-api) |
-| Run a task on every save with "Agent: Run task" | [Workflows](/developers/workflows) |
-| Let an agent save with a role of its own on Form.io Enterprise | [Project setup for agents](/developers/project-setup) |
-| Connect Claude Desktop or claude.ai | [Connect Claude](/developers/connect-claude) |
-| Fill forms as users type | [JavaScript (formio.js)](/developers/renderer) |
-| Embed a form as a chat in your own page | [Chat widget](/developers/chat) |
-| Embed the UAG in a Node.js application | [Node.js API](/developers/node-api) |
-| Add tools, actions, forms and templates | [Modules](/developers/modules) |
-| Add converters and document processes | [Plugins](/developers/plugins) |
-| Turn uploaded files into AI-generated content people review | [AI Document](/developers/ai-document) |
-| Choose, configure and route engines | [Engines](/developers/engines) |
-| Write your own engine | [Engine SDK](/developers/engine-sdk) |
-| Keep model keys out of the UAG | [Engine server](/developers/engine-server) |
-| Measure decision accuracy before going live | [Evaluation](/developers/evaluation) |
-| Understand the trust model and harden a deployment | [Security](/developers/security) |
-| Deploy and configure the UAG | [Deployment](/developers/deployment) |
-| Have your coding agent tag forms, deploy the UAG and wire your application | [Agentic Coding Plugin](/developers/agentic-coding) |
-| Fix something that does not work | [Troubleshooting](/developers/troubleshooting) |
+| Run the UAG and make your first calls | [Quickstart](./quickstart.md) |
+| Understand tasks, criteria, inputs and decision fields | [Concepts](./concepts.md) |
+| Look up a custom property | [Form properties](./form-properties.md) |
+| Build an MCP client or call the tools | [MCP tools](./mcp-tools.md) |
+| Call extract, decide or generate | [Agent API](./agent-api.md) |
+| Run a task on every save with "Agent: Run task" | [Workflows](./workflows.md) |
+| Let an agent save with a role of its own on Form.io Enterprise | [Project setup for agents](./project-setup.md) |
+| Connect Claude Desktop or claude.ai | [Connect Claude](./connect-claude.md) |
+| Fill forms as users type | [JavaScript (formio.js)](./renderer.md) |
+| Embed a form as a chat in your own page | [Chat widget](./chat.md) |
+| Embed the UAG in a Node.js application | [Node.js API](./node-api.md) |
+| Add tools, actions, forms and templates | [Modules](./modules.md) |
+| Add converters and document processes | [Plugins](./plugins.md) |
+| Turn uploaded files into AI-generated content people review | [AI Document](./ai-document.md) |
+| Choose, configure and route engines | [Engines](./engines.md) |
+| Write your own engine | [Engine SDK](./engine-sdk.md) |
+| Keep model keys out of the UAG | [Engine server](./engine-server.md) |
+| Measure decision accuracy before going live | [Evaluation](./evaluation.md) |
+| Understand the trust model and harden a deployment | [Security](./security.md) |
+| Deploy and configure the UAG | [Deployment](./deployment.md) |
+| Have your coding agent tag forms, deploy the UAG and wire your application | [Agentic Coding Plugin](./agentic-coding.md) |
+| Fix something that does not work | [Troubleshooting](./troubleshooting.md) |

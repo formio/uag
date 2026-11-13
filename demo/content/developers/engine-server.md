@@ -86,7 +86,7 @@ UAG_SERVER=http://formio-uag:3200 npx uag-engines
 |---|---|---|
 | `UAG_ENGINE_SERVER_KEY` | **Required.** The key every request must carry, at least 32 characters. The engine server refuses to start without one. | |
 | `UAG_ENGINES` | The engine instances to host, as on the UAG: `jev,fast:claude,local:openai`. At least one, or it refuses to start. | |
-| `UAG_ENGINE_<NAME>_<SETTING>` and each engine's own variables | Each instance's settings, resolved as on the UAG. See [Engines and routing](/developers/engines#the-official-engines). | |
+| `UAG_ENGINE_<NAME>_<SETTING>` and each engine's own variables | Each instance's settings, resolved as on the UAG. See [Engines and routing](./engines.md#the-official-engines). | |
 | `UAG_SERVER` | The UAG's URL, for research: research calls go to `${UAG_SERVER}/mcp`, never to a URL taken from a request. Must be `http` or `https`. Without it, research extracts are refused. | |
 | `UAG_ENGINE_PATH` | Absolute directories, separated by `:`, with more engine packages installed. | |
 | `PORT`, `HOST` | Where it listens. The `formio/uag-engines` image sets `HOST=0.0.0.0`. | `3300`, `127.0.0.1` |
@@ -250,7 +250,7 @@ X-Request-Id: 6f1c2a1e-8d0b-4c7e-9a52-0d7f3b2e9c41
 }
 ```
 
-`state` must have `input` (an object) and `today` (a string); each question must be a `choice`, `score` or `noul` with `instructions`. Question ids are opaque: answer with the ids you were sent. The shapes of questions and answers are the engine contract's; see [Engine SDK](/developers/engine-sdk#decision-engines). The engine server passes on only the answers to questions that were asked.
+`state` must have `input` (an object) and `today` (a string); each question must be a `choice`, `score` or `noul` with `instructions`. Question ids are opaque: answer with the ids you were sent. The shapes of questions and answers are the engine contract's; see [Engine SDK](./engine-sdk.md#decision-engines). The engine server passes on only the answers to questions that were asked.
 
 ### POST /v1/engines/:name/extract
 
@@ -579,6 +579,6 @@ Then point a UAG at it with `UAG_ENGINES=triage:remote`, `UAG_ENGINE_TRIAGE_URL`
 
 ## Next steps
 
-- [Engines and routing](/developers/engines): route fields to remote instances.
-- [Engine SDK](/developers/engine-sdk): write the engines the server hosts.
-- [Security](/developers/security): credentials, scoped tokens and deployment boundaries.
+- [Engines and routing](./engines.md): route fields to remote instances.
+- [Engine SDK](./engine-sdk.md): write the engines the server hosts.
+- [Security](./security.md): credentials, scoped tokens and deployment boundaries.

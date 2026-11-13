@@ -3,11 +3,17 @@
  * marked into the site layout, with a sidebar built from their front matter
  * and an "On this page" list built from their headings.
  *
- * A page links to a file of the repository by its relative path
- * (`../../samples/custom-module`), which GitHub resolves on any branch; the
- * site turns it into a link to that path at the release the site is built for
- * (`source` for a folder, `sourceFile` for a file). `{{releaseTag}}` in a code
- * block becomes that release's tag (`git clone -b {{releaseTag}} ...`).
+ * Pages are written to read on GitHub as well as on the site, so every link is a
+ * relative path that GitHub resolves on any branch. The site turns a link to
+ * another page (`./chat.md#anchor`) into its route (`/developers/chat#anchor`),
+ * a link to a demo's source folder (`../../public/apps/workflow`) into the demo
+ * page (`/examples/workflow`), and a link or image under `demo/public`
+ * (`../../public/images/login.png`) into its site path (`/images/login.png`).
+ * A link to any other file of the repository (`../../samples/custom-module`)
+ * points to that path at the release the site is built for (`source` for a
+ * folder, `sourceFile` for a file). Heading ids follow GitHub's, so an anchor
+ * works in both places. `{{releaseTag}}` in a code block becomes that release's
+ * tag (`git clone -b {{releaseTag}} ...`).
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,15 +22,16 @@ import { pipeline, sequence } from './diagrams.mjs';
 
 export const SECTIONS = ['Start here', 'Concepts', 'Build', 'Extend', 'Operate'];
 
+/** A heading's id, as GitHub makes it from the heading's rendered text. */
 export function slugify(text) {
-    return String(text).toLowerCase()
+    return String(text)
         .replace(/<[^>]+>/g, '')
-        // Entities, named or numeric (an apostrophe renders as &#39;), are not part of an id.
-        .replace(/&(?:[a-z]+|#\d+|#x[0-9a-f]+);/g, '')
-        .replace(/[`*_~]/g, '')
-        .replace(/[^a-z0-9\s-]/g, '')
+        // Entities, named or numeric (an apostrophe renders as &#39;), are punctuation, which an id leaves out.
+        .replace(/&(?:[a-z]+|#\d+|#x[0-9a-f]+);/gi, '')
         .trim()
-        .replace(/\s+/g, '-');
+        .toLowerCase()
+        .replace(/[^\p{L}\p{M}\p{N}\p{Pc} -]/gu, '')
+        .replace(/ /g, '-');
 }
 
 export function escapeHtml(value) {
@@ -52,10 +59,30 @@ const DEFAULT_SOURCE = {
 };
 
 /**
+ * The site path of a page's relative link to another page, a demo's source
+ * folder, or a file under `demo/public` (`null` for any other link).
+ */
+export function siteLink(href, { dir }) {
+    if (!href || /^(?:[a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) return null;
+    const [, pathname, rest] = /^([^?#]*)(.*)$/.exec(href);
+    const target = path.resolve(dir, pathname);
+    const page = path.relative(dir, target).split(path.sep).join('/');
+    if (/^[a-z0-9-]+\.md$/.test(page) && page !== 'README.md') {
+        const slug = page.replace(/\.md$/, '');
+        return `${slug === 'index' ? '/developers' : `/developers/${slug}`}${rest}`;
+    }
+    const pub = path.relative(path.resolve(dir, '..', '..', 'public'), target).split(path.sep).join('/');
+    if (!pub || pub.startsWith('..') || path.isAbsolute(pub)) return null;
+    const demo = /^apps\/([a-z0-9-]+)\/?$/.exec(pub);
+    return demo ? `/examples/${demo[1]}${rest}` : `/${pub}${rest}`;
+}
+
+/**
  * Where a page's relative link to a repository file points on the site, and the
  * repository path it names (`null` for a link that is not to a repository file).
  */
 export function sourceLink(href, { dir, repoRoot, source, sourceFile }) {
+    if (siteLink(href, { dir })) return null;
     if (!href || /^(?:[a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) return null;
     const [, pathname, rest] = /^([^?#]*)(.*)$/.exec(href);
     const repoPath = path.relative(repoRoot, path.resolve(dir, pathname)).split(path.sep).join('/');
@@ -89,9 +116,12 @@ function renderPage(body, context) {
             },
             // A diagram or screenshot opens full size, for reading its labels on a phone.
             image(token) {
+                token = { ...token, href: siteLink(token.href, context) || token.href };
                 return `<a class="image-link" href="${escapeHtml(token.href)}" target="_blank" rel="noopener">${Renderer.prototype.image.call(this, token)}</a>`;
             },
             link(token) {
+                const site = siteLink(token.href, context);
+                if (site) return Renderer.prototype.link.call(this, { ...token, href: site });
                 const linked = sourceLink(token.href, context);
                 if (!linked) return Renderer.prototype.link.call(this, token);
                 sources.push(linked.repoPath);

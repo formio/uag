@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Docs, SECTIONS, parseFrontMatter, slugify, sourceLink } from '../lib/docs.mjs';
+import { Docs, SECTIONS, parseFrontMatter, siteLink, slugify, sourceLink } from '../lib/docs.mjs';
 import { PAGES } from '../lib/pages.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -24,9 +24,37 @@ function exists(pathname) {
 }
 
 describe('Demo site content', function () {
-    it('makes heading ids without the entities a heading renders with', function () {
+    it('makes heading ids as GitHub does, without the entities a heading renders with', function () {
         expect(slugify('The UAG&#39;s database')).to.equal('the-uags-database');
-        expect(slugify('Fish &amp; chips &#x27;here&#x27;')).to.equal('fish-chips-here');
+        expect(slugify('Fish &amp; chips &#x27;here&#x27;')).to.equal('fish--chips-here');
+        expect(slugify('<code>read_document</code>')).to.equal('read_document');
+        expect(slugify('Before the save (blocking) — 1.x')).to.equal('before-the-save-blocking--1x');
+    });
+
+    it('links pages, demos and public files by relative paths that read on GitHub too', function () {
+        const context = { dir: path.join(root, 'content/developers') };
+        expect(siteLink('./chat.md', context)).to.equal('/developers/chat');
+        expect(siteLink('chat.md#the-widget', context)).to.equal('/developers/chat#the-widget');
+        expect(siteLink('./index.md#three-ways-to-use-it', context)).to.equal('/developers#three-ways-to-use-it');
+        expect(siteLink('../../public/apps/workflow', context)).to.equal('/examples/workflow');
+        expect(siteLink('../../public/apps/workflow/workflow.js', context)).to.equal('/apps/workflow/workflow.js');
+        expect(siteLink('../../public/images/login.png', context)).to.equal('/images/login.png');
+        for (const href of ['./README.md', '../../samples/custom-module', '../../../MIGRATING-2.0.md', '/developers/chat', '#anchor', 'https://form.io']) {
+            expect(siteLink(href, context), href).to.equal(null);
+        }
+        const page = docs.get('chat');
+        expect(page.html).to.include('src="/images/uag-chat.svg"');
+        for (const each of docs.ordered) expect(each.html, each.slug).not.to.match(/href="(?!https?:)[^"]*\.md[#"]/);
+        expect(page.sources).not.to.satisfy((sources) => sources.some((source) => source.startsWith('demo/public/') || source.startsWith('demo/content/')));
+    });
+
+    it('writes no site paths in developer pages, which would not resolve on GitHub', function () {
+        const absolute = [];
+        for (const name of fs.readdirSync(path.join(root, 'content/developers')).filter((file) => file.endsWith('.md'))) {
+            const body = fs.readFileSync(path.join(root, 'content/developers', name), 'utf8').replace(/^(```|~~~)[\s\S]*?^\1/gm, '');
+            for (const match of body.matchAll(/\]\((\/[^)\s]*)\)|<(?:img|a)\s[^>]*(?:src|href)="(\/[^"]*)"/g)) absolute.push(`${name}: ${match[1] || match[2]}`);
+        }
+        expect(absolute).to.deep.equal([]);
     });
 
     it('gives every developer page a title, a description and a known section', function () {

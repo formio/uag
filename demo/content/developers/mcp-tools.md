@@ -7,7 +7,7 @@ order: 10
 
 The UAG serves the [Model Context Protocol](https://modelcontextprotocol.io) at `/mcp`. Any MCP client can connect: Claude Desktop, claude.ai connectors, Claude Code, or an application you write with an MCP SDK. The tools turn your `uag`-tagged forms into context a model can use, and they are the only way an MCP agent can write to Form.io: every write goes through the form's validation and the caller's permissions.
 
-To offer a conversation on a web page without running an MCP client and a model yourself, use the [chat widget](/developers/chat) instead: the UAG runs each turn of one form's chat with its own agent engine.
+To offer a conversation on a web page without running an MCP client and a model yourself, use the [chat widget](./chat.md) instead: the UAG runs each turn of one form's chat with its own agent engine.
 
 > **Note:** This is the endpoint agents use to fill in your forms. The Form.io MCP server in the [Agentic Coding Plugin](https://github.com/formio/ai) is a separate one: coding agents use it to build forms.
 
@@ -19,8 +19,8 @@ To offer a conversation on a web page without running an MCP client and a model 
 | **Transport** | Streamable HTTP. `POST` for JSON-RPC requests, `GET` for the server stream. |
 | **Sessions** | None. The UAG runs in stateless mode and builds a fresh MCP server for every request, so requests are independent and can run concurrently. A client does not need to keep a session id. |
 | **Server info** | `name: "formio-uag"` |
-| **Authentication** | `Authorization: Bearer <UAG access token>` on every request. Without a valid token the UAG answers `401` with `WWW-Authenticate: Bearer realm="uag-server"` (RFC 6750): when a token was sent, the header adds `error="invalid_token"` and its reason, and the body is `{ "error": "invalid_token", "error_description": "..." }`; with no token, the body's `error` is `unauthorized`. When OAuth sign-in for remote clients is on (`MCP_OAUTH`, with the UAG's database), the header also names `resource_metadata`, the UAG's `/.well-known/oauth-protected-resource`. Server keys (`x-admin-key`, `x-token`) are not accepted on `/mcp`: such a request is passed on to Form.io, which answers `404`. Exchange the key for a token at `/auth/token` instead ([`client_credentials`](#local-clients-clientcredentials)). A [scoped token](/developers/security#scoped-tokens-for-remote-engines) lists and runs only the read-only tools it names. |
-| **Capabilities** | Tools. The tool list is built per request from the forms currently registered, plus any custom tools from a [module](/developers/modules). |
+| **Authentication** | `Authorization: Bearer <UAG access token>` on every request. Without a valid token the UAG answers `401` with `WWW-Authenticate: Bearer realm="uag-server"` (RFC 6750): when a token was sent, the header adds `error="invalid_token"` and its reason, and the body is `{ "error": "invalid_token", "error_description": "..." }`; with no token, the body's `error` is `unauthorized`. When OAuth sign-in for remote clients is on (`MCP_OAUTH`, with the UAG's database), the header also names `resource_metadata`, the UAG's `/.well-known/oauth-protected-resource`. Server keys (`x-admin-key`, `x-token`) are not accepted on `/mcp`: such a request is passed on to Form.io, which answers `404`. Exchange the key for a token at `/auth/token` instead ([`client_credentials`](#local-clients-client_credentials)). A [scoped token](./security.md#scoped-tokens-for-remote-engines) lists and runs only the read-only tools it names. |
+| **Capabilities** | Tools. The tool list is built per request from the forms currently registered, plus any custom tools from a [module](./modules.md). |
 
 The `form_name` argument of every built-in tool except `read_document` is an enumeration of the registered form names, so a client sees exactly which forms exist in the tool schema, and a call naming any other form fails argument validation. `read_document` takes `form_name` as a string, and answers an unknown form with an `isError` result. Clients read the tool list when they connect, so a form tagged afterwards appears once the client reconnects.
 
@@ -71,7 +71,7 @@ Content-Type: application/json
 | `200` | A token. `expires_in` is in seconds: `JWT_EXPIRE_TIME` minutes times 60. |
 | `400` | An OAuth error (RFC 6749, section 5.2), `{ "error": "...", "error_description": "..." }`: `invalid_request` (a parameter is missing), `invalid_client` (a wrong project-name prefix or secret), `invalid_grant` (an unknown, used or expired code, a wrong `code_verifier`, or a refresh token whose sign-in expired), `unsupported_grant_type` (an unknown grant, or `authorization_code` while OAuth sign-in is off). Token responses and errors carry `Cache-Control: no-store`. |
 
-A `client_credentials` token acts as the project administrator. Every tool call can then read and write anything in the project, so use it for trusted automation only. To act as a particular person, authenticate that person and use their token instead (see [Security](/developers/security#credential-modes)).
+A `client_credentials` token acts as the project administrator. Every tool call can then read and write anything in the project, so use it for trusted automation only. To act as a particular person, authenticate that person and use their token instead (see [Security](./security.md#credential-modes)).
 
 Cache the token and request a new one with `client_credentials` shortly before `expires_in` runs out. A `client_credentials` exchange returns no refresh token (RFC 6749, section 4.4.3).
 
@@ -81,7 +81,7 @@ A token from OAuth sign-in wraps the user's Form.io login token, so neither it n
 
 Remote MCP clients discover the UAG's authorization server and run the standard OAuth 2.0 authorization code flow with PKCE (`S256`). The user signs in with the project's own login form, so whatever authentication the project uses (Form.io accounts, SAML, OIDC, custom) applies.
 
-This sign-in is off by default. Turn it on with `MCP_OAUTH=true`, and give the UAG its own database (`MONGO`), where it keeps the one-time authorization codes. Using the database needs a license that includes the UAG; see [Deployment](/developers/deployment#the-database). Without a usable database the UAG starts with OAuth sign-in off and says why in its log, the endpoints below other than `POST /auth/token` answer `404`, and `GET /agent/capabilities` reports `mcpOAuth: false`.
+This sign-in is off by default. Turn it on with `MCP_OAUTH=true`, and give the UAG its own database (`MONGO`), where it keeps the one-time authorization codes. Using the database needs a license that includes the UAG; see [Deployment](./deployment.md#the-database). Without a usable database the UAG starts with OAuth sign-in off and says why in its log, the endpoints below other than `POST /auth/token` answer `404`, and `GET /agent/capabilities` reports `mcpOAuth: false`.
 
 ```sequence
 participants: MCP client, Browser, UAG*, Form.io
@@ -103,12 +103,12 @@ UAG --> MCP client: access token for /mcp
 | `GET /.well-known/oauth-authorization-server` | Authorization, token and registration endpoints; `code_challenge_methods_supported: ["S256"]`. |
 | `POST /auth/register` | Dynamic client registration. Returns a `client_id` for the client. |
 | `GET /auth/authorize` | The login page. It loads the form at `LOGIN_FORM` (default `{PROJECT}/user/login`) in the user's browser. |
-| `POST /auth/authorize` | Called by the login page with the user's Form.io token and the `code_challenge`. Issues a one-time code and answers `{ "redirect": "<redirect_uri>?code=…" }`; the login page then goes to that address (a [module](/developers/modules)'s own login page must do the same). Refusals are OAuth errors (`invalid_request`, `access_denied`), which the login page shows to the person. |
+| `POST /auth/authorize` | Called by the login page with the user's Form.io token and the `code_challenge`. Issues a one-time code and answers `{ "redirect": "<redirect_uri>?code=…" }`; the login page then goes to that address (a [module](./modules.md)'s own login page must do the same). Refusals are OAuth errors (`invalid_request`, `access_denied`), which the login page shows to the person. |
 | `POST /auth/token` | `authorization_code` (with `code_verifier`), `refresh_token`, or `client_credentials`. |
 
 A Form.io token the UAG can verify with its own `JWT_SECRET` is trusted as issued only when it names no Form.io session. Form.io Enterprise login tokens name one (`jti`), so they are confirmed with Form.io, and a Form.io logout ends the access token wrapping them. Any other token is trusted only after the project that issued it confirms it, and then the user's roles come from Form.io, never from the token's claims; a user of another project is refused. Every later tool call runs as that user, with that user's permissions.
 
-Everything the flow advertises is built from the UAG's public URL. The UAG derives it from each request: the `Host` header, or, when `TRUST_PROXY` is set, the reverse proxy's `X-Forwarded-Proto` and `X-Forwarded-Host`. `BASE_URL` overrides it. If the advertised URL is one the client cannot reach (`http` behind a TLS proxy without `TRUST_PROXY`, for example), authentication fails even though the UAG is running. [Connect Claude](/developers/connect-claude) walks through both Claude clients.
+Everything the flow advertises is built from the UAG's public URL. The UAG derives it from each request: the `Host` header, or, when `TRUST_PROXY` is set, the reverse proxy's `X-Forwarded-Proto` and `X-Forwarded-Host`. `BASE_URL` overrides it. If the advertised URL is one the client cannot reach (`http` behind a TLS proxy without `TRUST_PROXY`, for example), authentication fails even though the UAG is running. [Connect Claude](./connect-claude.md) walks through both Claude clients.
 
 ## The tools
 
@@ -124,22 +124,22 @@ Every built-in tool carries [MCP annotations](https://modelcontextprotocol.io/sp
 
 | Tool | Annotation | What it does |
 |---|---|---|
-| [`get_forms`](#getforms) | Reads | Lists the tagged forms and the caller's permissions on each. |
-| [`get_form_fields`](#getformfields) | Reads | An overview of a form's fields, with data paths and value rules. |
-| [`get_field_info`](#getfieldinfo) | Reads | Full detail for chosen fields: required, format, options, validation. |
-| [`collect_field_data`](#collectfielddata) | Reads | Validates collected values and says what is still needed. Saves nothing. |
-| [`confirm_form_submission`](#confirmformsubmission) | Reads | A summary of the collected data for the user to approve. |
-| [`submit_completed_form`](#submitcompletedform) | Creates | Creates the submission. |
-| [`find_submissions`](#findsubmissions) | Reads | Searches submissions, counts them, or loads one. |
-| [`submission_update`](#submissionupdate) | Overwrites | Changes fields of an existing submission. |
-| [`agent_provide`](#agentprovide) | Reads | A task's criteria, a submission's values and the task's fields, as instructions. |
-| [`agent_decide`](#agentdecide) | Reads | A task's decision questions as structured JSON. |
-| [`fetch_external_data`](#fetchexternaldata) | Reads | Options or data for a URL, resource or data source component. |
-| [`read_document`](#readdocument) | Reads | The text of a document uploaded to a submission: a file field, or an AI Document's files. |
+| [`get_forms`](#get_forms) | Reads | Lists the tagged forms and the caller's permissions on each. |
+| [`get_form_fields`](#get_form_fields) | Reads | An overview of a form's fields, with data paths and value rules. |
+| [`get_field_info`](#get_field_info) | Reads | Full detail for chosen fields: required, format, options, validation. |
+| [`collect_field_data`](#collect_field_data) | Reads | Validates collected values and says what is still needed. Saves nothing. |
+| [`confirm_form_submission`](#confirm_form_submission) | Reads | A summary of the collected data for the user to approve. |
+| [`submit_completed_form`](#submit_completed_form) | Creates | Creates the submission. |
+| [`find_submissions`](#find_submissions) | Reads | Searches submissions, counts them, or loads one. |
+| [`submission_update`](#submission_update) | Overwrites | Changes fields of an existing submission. |
+| [`agent_provide`](#agent_provide) | Reads | A task's criteria, a submission's values and the task's fields, as instructions. |
+| [`agent_decide`](#agent_decide) | Reads | A task's decision questions as structured JSON. |
+| [`fetch_external_data`](#fetch_external_data) | Reads | Options or data for a URL, resource or data source component. |
+| [`read_document`](#read_document) | Reads | The text of a document uploaded to a submission: a file field, or an AI Document's files. |
 
-Results are Markdown text in a single `text` content block, rendered from [response templates](/developers/modules) a module can override. A result that reports a failure sets `isError: true`: an unknown form, a save refused by validation (`submit_completed_form`, `submission_update`), a missing submission for `submission_update`, `agent_provide`, `agent_decide` or `read_document`, a refused search, and a document `read_document` cannot read. Validation errors from `collect_field_data` and `confirm_form_submission` are ordinary results, since they are part of the conversation: the agent asks again. `agent_decide`, `read_document`, and `collect_field_data` with `as_json`, return JSON text plus the same object as `structuredContent`; with `as_json`, validation errors come back as `{ "errors": [{ "path", "label", "error" }] }` with `isError: true`.
+Results are Markdown text in a single `text` content block, rendered from [response templates](./modules.md) a module can override. A result that reports a failure sets `isError: true`: an unknown form, a save refused by validation (`submit_completed_form`, `submission_update`), a missing submission for `submission_update`, `agent_provide`, `agent_decide` or `read_document`, a refused search, and a document `read_document` cannot read. Validation errors from `collect_field_data` and `confirm_form_submission` are ordinary results, since they are part of the conversation: the agent asks again. `agent_decide`, `read_document`, and `collect_field_data` with `as_json`, return JSON text plus the same object as `structuredContent`; with `as_json`, validation errors come back as `{ "errors": [{ "path", "label", "error" }] }` with `isError: true`.
 
-Uploaded files and signatures are never put into a result as they are stored (a base64 upload would fill the model's context): in the submission data a result shows, a file is described as `{ "name", "type", "size" }`, a signature as `(signed)` and a sketch pad as `(a drawing)`. To read an uploaded document's text, call [`read_document`](#readdocument).
+Uploaded files and signatures are never put into a result as they are stored (a base64 upload would fill the model's context): in the submission data a result shows, a file is described as `{ "name", "type", "size" }`, a signature as `(signed)` and a sketch pad as `(a drawing)`. To read an uploaded document's text, call [`read_document`](#read_document).
 
 All tools run with the caller's identity. A form the caller cannot access is still listed by `get_forms`, marked as having no access, and Form.io refuses the operations the caller is not permitted.
 
@@ -153,7 +153,7 @@ Tools address fields by **data path**: the field's full key path in the submissi
 { "firstName": "Joe", "company.name": "Acme Corp", "children[0].name": "Tom", "children[0].age": 5 }
 ```
 
-The UAG converts it into a submission: comma-separated strings become arrays for multi-value fields, and objects for select boxes. HTML written into a rich text field is reduced to the markup its editor keeps, as an engine's is (see [Rich text fields](/developers/form-properties#rich-text-fields)); this applies to `collect_field_data`, `confirm_form_submission`, `submit_completed_form` and `submission_update`.
+The UAG converts it into a submission: comma-separated strings become arrays for multi-value fields, and objects for select boxes. HTML written into a rich text field is reduced to the markup its editor keeps, as an engine's is (see [Rich text fields](./form-properties.md#rich-text-fields)); this applies to `collect_field_data`, `confirm_form_submission`, `submit_completed_form` and `submission_update`.
 
 Nested forms, Data Grids and Edit Grids are collected separately. `get_field_info` marks them **Has Nested Components**; pass their data path as `parent_path` to `get_form_fields` and `collect_field_data` to work inside them.
 
@@ -252,7 +252,7 @@ Applies `updates` to an existing submission and saves it through Form.io, with f
 
 ### `agent_provide`
 
-Returns a task's criteria, the submission's values and the task's fields as one prompt, instructing the agent to work out the values and write them with `submission_update`. It only reads; the write is the client's own `submission_update` call. This is how an MCP client can run a task with its own model. For automation, prefer the "Agent: Run task" action, which runs the task inside the UAG on each save without giving any model a write tool (see [Workflows](/developers/workflows)).
+Returns a task's criteria, the submission's values and the task's fields as one prompt, instructing the agent to work out the values and write them with `submission_update`. It only reads; the write is the client's own `submission_update` call. This is how an MCP client can run a task with its own model. For automation, prefer the "Agent: Run task" action, which runs the task inside the UAG on each save without giving any model a write tool (see [Workflows](./workflows.md)).
 
 | Argument | Type | Required | Description |
 |---|---|---|---|
@@ -286,7 +286,7 @@ Returns a task's decision questions as JSON, so the client can answer them with 
 }
 ```
 
-Question ids start with their role (`choice`, `choice-reversed`, `score`, `mention`, `affirm`, `deny`). `mappings` turns each answer back into a field value. [Concepts](/developers/concepts#how-decisions-are-asked) explains how the answers combine.
+Question ids start with their role (`choice`, `choice-reversed`, `score`, `mention`, `affirm`, `deny`). `mappings` turns each answer back into a field value. [Concepts](./concepts.md#how-decisions-are-asked) explains how the answers combine.
 
 ### `fetch_external_data`
 
@@ -303,7 +303,7 @@ For a select it returns each option's label and value; the agent must use the va
 
 ### `read_document`
 
-Returns the text of a document uploaded to a submission: a file in a file component, or one of an [AI Document](/developers/ai-document)'s files. The submission is loaded with the caller's identity, and the file wherever Form.io keeps it, with the caller's credentials. Its type is identified from its bytes, and it is read through the installed converters, as a task's [document input](/developers/form-properties#documents-as-input) is: the built-in ones read PDF (its text layer), text, Markdown, CSV, JSON, HTML and XML, and [converter plugins](/developers/plugins) add other formats.
+Returns the text of a document uploaded to a submission: a file in a file component, or one of an [AI Document](./ai-document.md)'s files. The submission is loaded with the caller's identity, and the file wherever Form.io keeps it, with the caller's credentials. Its type is identified from its bytes, and it is read through the installed converters, as a task's [document input](./form-properties.md#documents-as-input) is: the built-in ones read PDF (its text layer), text, Markdown, CSV, JSON, HTML and XML, and [converter plugins](./plugins.md) add other formats.
 
 | Argument | Type | Required | Description |
 |---|---|---|---|
@@ -319,9 +319,9 @@ It returns JSON text plus the same object as `structuredContent`:
 
 `pages` is `null` when the converters do not count pages. `text` is cut at `agentApi.files.maxChars` (default 200000 characters), and `truncated` is then `true`. A file larger than `documents.maxFileBytes` (`DOCUMENTS_MAX_FILE_BYTES`, default 25 MB) is not read.
 
-A failure is an `isError: true` result: an unknown form or submission, from the [response templates](/developers/modules#response-templates), or `{ "error": "..." }` when there is no uploaded file at `data_path`, the file is stored where the UAG cannot read it or could not be downloaded, it is over the size limit, no installed converter reads its type, or it has no text to read (a scan or a photo with no text layer). The message names the file and the reason, never its content.
+A failure is an `isError: true` result: an unknown form or submission, from the [response templates](./modules.md#response-templates), or `{ "error": "..." }` when there is no uploaded file at `data_path`, the file is stored where the UAG cannot read it or could not be downloaded, it is over the size limit, no installed converter reads its type, or it has no text to read (a scan or a photo with no text layer). The message names the file and the reason, never its content.
 
-`read_document` is annotated read-only, so a task may list it in [`uagTools`](/developers/form-properties#uagtools). It needs no license.
+`read_document` is annotated read-only, so a task may list it in [`uagTools`](./form-properties.md#uagtools). It needs no license.
 
 ## The conversation sequence
 
@@ -338,7 +338,7 @@ To change a record: `find_submissions`, then `submission_update` after the user 
 
 ## A minimal MCP client
 
-This is a complete chat client in about 100 lines: it gets a token, connects to `/mcp`, offers the UAG's tools to Claude, and runs the tool loop until Claude answers in text. It contains no form-specific knowledge; change the form and the conversation changes. To offer a conversation on a web page without running this loop yourself, use the [chat widget](/developers/chat), whose turns the UAG runs with its own agent engine.
+This is a complete chat client in about 100 lines: it gets a token, connects to `/mcp`, offers the UAG's tools to Claude, and runs the tool loop until Claude answers in text. It contains no form-specific knowledge; change the form and the conversation changes. To offer a conversation on a web page without running this loop yourself, use the [chat widget](./chat.md), whose turns the UAG runs with its own agent engine.
 
 ```bash
 npm install @anthropic-ai/sdk @modelcontextprotocol/sdk
@@ -447,7 +447,7 @@ try {
 }
 ```
 
-Run it against the [Quickstart](/developers/quickstart) stack:
+Run it against the [Quickstart](./quickstart.md) stack:
 
 ```bash
 UAG_CLIENT_SECRET=CHANGEME ANTHROPIC_API_KEY=sk-ant-... node chat.mjs "I need to report that my internet is down"

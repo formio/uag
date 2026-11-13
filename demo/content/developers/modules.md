@@ -47,10 +47,10 @@ type UAGModule = {
 | `config.auth.authAppHtml` | The HTML of the login page for remote MCP sign-in (`MCP_OAUTH`). | [The login page](#the-login-page) |
 | `actions` | Custom form actions, by name. | [Custom actions](#custom-actions) |
 | `hooks` | Middleware added around submission requests and actions. | [Hooks](#hooks) |
-| `config.engines`, `config.engineTypes`, `config.routing`, `config.agentApi` | Engines and how fields are routed to them. | [Engines and routing](/developers/engines) |
+| `config.engines`, `config.engineTypes`, `config.routing`, `config.agentApi` | Engines and how fields are routed to them. | [Engines and routing](./engines.md) |
 | `name`, `title`, `version`, `apiVersion` | The module's identity, and the module API it is written against. | [Settings, routes and components](#settings-routes-and-components) |
 | `settings`, `routes.form`, `components`, `initialize`, `close`, `host` | Settings checked at startup, routes on every form, formio.js components for browsers, start-up and shutdown calls, and the host it needs. | [Settings, routes and components](#settings-routes-and-components) |
-| Every other `config` key | Any server option, such as `cors` or `templateSync`. | [Node.js API](/developers/node-api#new-uagserverconfig) |
+| Every other `config` key | Any server option, such as `cors` or `templateSync`. | [Node.js API](./node-api.md#new-uagserverconfig) |
 
 `processors`, `providers`, `db`, `ProjectInterface` and `FormInterface` are lower-level extension points of the Form.io logic the UAG is built on; most modules never need them. A replacement `ProjectInterface` or `FormInterface` must extend `UAGProjectInterface` or `UAGFormInterface`; the UAG's tools and Agent API live in them.
 
@@ -95,7 +95,7 @@ server.use(require('./module'));
 app.use(await server.router());   // app: your Express application
 ```
 
-Call `use()` before `router()`. Several modules can be used; their `config` objects are merged key by key, later modules winning. See [Where a value comes from](/developers/node-api#where-a-value-comes-from) for how arrays such as `tools` merge.
+Call `use()` before `router()`. Several modules can be used; their `config` objects are merged key by key, later modules winning. See [Where a value comes from](./node-api.md#where-a-value-comes-from) for how arrays such as `tools` merge.
 
 ## The project template
 
@@ -119,7 +119,7 @@ Because `boot` runs at every startup, a form or action from the template that wa
 
 To apply a changed form or action from a new version of your module, change it in the portal, deploy it as a stage, or post the template to the project's `/import` endpoint with an admin or project key. An import updates existing forms in place, keeping their submissions, and replaces their actions.
 
-> **Tip:** Tag every form the agent should see with `uag` in the template. Untagged forms are installed but not exposed to MCP tools or the Agent API. Task properties (`uag`, `uagField`, `uagEngine` and the rest) are covered in [Form properties](/developers/form-properties).
+> **Tip:** Tag every form the agent should see with `uag` in the template. Untagged forms are installed but not exposed to MCP tools or the Agent API. Task properties (`uag`, `uagField`, `uagEngine` and the rest) are covered in [Form properties](./form-properties.md).
 
 ## Custom MCP tools
 
@@ -200,7 +200,7 @@ annotations: { title: 'CRM pipeline summary', readOnlyHint: true, destructiveHin
 
 `execute` returns an MCP tool result, `{ content: [{ type: 'text', text }], isError? }`. Report failures the model can act on (a missing form, no permission, a bad argument) as a result with `isError: true` and a sentence that says what to do next. A thrown exception also reaches the client as an error result, with the exception's message as its text, so do not let messages that carry URLs, keys or internal details escape.
 
-The full methods of the project and form interfaces are in [Node.js API](/developers/node-api#the-project-uagprojectinterface).
+The full methods of the project and form interfaces are in [Node.js API](./node-api.md#the-project-uagprojectinterface).
 
 ### Bound tools
 
@@ -235,7 +235,7 @@ The UAG builds its tool list on every `/mcp` request and every research plan, so
 
 ### Tools in the Agent API
 
-The Agent API offers tools to agent engines for research when a task's criteria component lists them in `uagTools`. Custom tools qualify when they are annotated read-only. Each is converted for the engine: its Zod shape becomes a JSON schema, arguments the model sends are validated with the same schema, and the call runs in process with the caller's identity. A remote engine on an engine server calls the same tools back over `/mcp` with a scoped token that lists only them. See [Engine server](/developers/engine-server#research-and-scoped-tokens).
+The Agent API offers tools to agent engines for research when a task's criteria component lists them in `uagTools`. Custom tools qualify when they are annotated read-only. Each is converted for the engine: its Zod shape becomes a JSON schema, arguments the model sends are validated with the same schema, and the call runs in process with the caller's identity. A remote engine on an engine server calls the same tools back over `/mcp` with a scoped token that lists only them. See [Engine server](./engine-server.md#research-and-scoped-tokens).
 
 ## Settings, routes and components
 
@@ -332,11 +332,11 @@ A route's `access` is the form methods a caller needs, one of which is enough: b
 
 ### Anonymous visitors
 
-A visitor who is not signed in reaches a module's routes on a form with [`uagAnonymous: "true"`](/developers/form-properties#uaganonymous) whose Anonymous role may create submissions, as they reach its agent operations, under the same anonymous limits per address and in total (`AGENT_ANONYMOUS_RATE_LIMIT`, `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`; see [Security](/developers/security#anonymous-visitors)). On any other form they get `401`. A route that must not be public declares an `access` the Anonymous role lacks, such as `['update']` (anonymous visitors are admitted for create), or checks `req.auth.user` itself (see [Modules and plugins](/developers/security#modules-and-plugins) in Security). Anonymous visitors also share one caller for `agentApi.rateLimits.caller`; to count them per address, key your own limit with `api.callerKey(req)`, which gives `anonymous:<ip>` for them.
+A visitor who is not signed in reaches a module's routes on a form with [`uagAnonymous: "true"`](./form-properties.md#uaganonymous) whose Anonymous role may create submissions, as they reach its agent operations, under the same anonymous limits per address and in total (`AGENT_ANONYMOUS_RATE_LIMIT`, `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`; see [Security](./security.md#anonymous-visitors)). On any other form they get `401`. A route that must not be public declares an `access` the Anonymous role lacks, such as `['update']` (anonymous visitors are admitted for create), or checks `req.auth.user` itself (see [Modules and plugins](./security.md#modules-and-plugins) in Security). Anonymous visitors also share one caller for `agentApi.rateLimits.caller`; to count them per address, key your own limit with `api.callerKey(req)`, which gives `anonymous:<ip>` for them.
 
 ### Components
 
-A module's component is a function of the page's `Formio` that returns the formio.js module; the build wraps it in a script that registers it once `Formio` is on the page. The UAG wraps each component script in its own `try`, so one that throws while loading is logged and the others still register. It builds on `Formio.uagClient`, the public browser API of `@formio/uag-js` (set when the UAG is registered, so look it up when used): the UAG's URL, the user's token, the installed plugins, `stream()` for routes, and Markdown rendering. See [For module components: `client`](/developers/renderer#for-module-components-client) for every member. It never bundles formio.js: it uses the one the page registered.
+A module's component is a function of the page's `Formio` that returns the formio.js module; the build wraps it in a script that registers it once `Formio` is on the page. The UAG wraps each component script in its own `try`, so one that throws while loading is logged and the others still register. It builds on `Formio.uagClient`, the public browser API of `@formio/uag-js` (set when the UAG is registered, so look it up when used): the UAG's URL, the user's token, the installed plugins, `stream()` for routes, and Markdown rendering. See [For module components: `client`](./renderer.md#for-module-components-client) for every member. It never bundles formio.js: it uses the one the page registered.
 
 ```js
 // address-check/client.js
@@ -363,7 +363,7 @@ Build it with the published build (it needs `esbuild`: install it as a dev depen
 npx -p @formio/uag-extras@^1 -p esbuild uag-build-client client.js --name address-check --style style.css --out dist
 ```
 
-Components reach browsers three ways, always matching the installed module: the UAG adds them to `uag.use.js` and the portal script; an application with a bundler imports the module's client and calls `Formio.use()` with it; a page without one loads the module's script from a CDN, such as jsDelivr, after `uag.use.js`, or from the UAG itself, `{uag}/uag-js/components/<type>.js` (and `.css`), after registering `@formio/uag-js` with its own options (see [Or load it from the UAG](/developers/renderer#or-load-it-from-the-uag)).
+Components reach browsers three ways, always matching the installed module: the UAG adds them to `uag.use.js` and the portal script; an application with a bundler imports the module's client and calls `Formio.use()` with it; a page without one loads the module's script from a CDN, such as jsDelivr, after `uag.use.js`, or from the UAG itself, `{uag}/uag-js/components/<type>.js` (and `.css`), after registering `@formio/uag-js` with its own options (see [Or load it from the UAG](./renderer.md#or-load-it-from-the-uag)).
 
 ### The module API
 
@@ -421,7 +421,7 @@ Start from the samples in the `@formio/uag-extras` source repository: in a clone
 
 A **module** customizes your UAG deployment: it is the one place you wire the server — your project template, form actions, MCP tools, hooks, interface overrides, and which plugins to load. A **plugin** is one capability of a known type — "convert Word documents to PDF", "extract a document's exact text" — that describes itself, so operators can enable it and form builders can select and configure it. Modules can bring plugins; plugins never change how the server itself works.
 
-A module lists its plugins in `plugins`, and any plugin types it defines in `pluginTypes`. They are added to the UAG's one plugin registry in the order modules are used, and never merged with each other. Plugins files (`UAG_PLUGINS`, or each folder under `/app/plugins` in the image) add more the same way, and a plugin may use a type another of them defines. See [Plugins](/developers/plugins).
+A module lists its plugins in `plugins`, and any plugin types it defines in `pluginTypes`. They are added to the UAG's one plugin registry in the order modules are used, and never merged with each other. Plugins files (`UAG_PLUGINS`, or each folder under `/app/plugins` in the image) add more the same way, and a plugin may use a type another of them defines. See [Plugins](./plugins.md).
 
 ```js
 module.exports = {
@@ -432,7 +432,7 @@ module.exports = {
 
 ### Documents as task inputs
 
-A file component that is a task's input, or in its `uagContext`, is read for the engines (see [Documents as input](/developers/form-properties#documents-as-input)) through the installed converters: every file type with a route to text is read, the built-in converters giving PDF (its text layer), text, Markdown, CSV, JSON, HTML and XML, and converters from plugins the rest. To read another format, add a converter plugin; there are no file readers in the module configuration.
+A file component that is a task's input, or in its `uagContext`, is read for the engines (see [Documents as input](./form-properties.md#documents-as-input)) through the installed converters: every file type with a route to text is read, the built-in converters giving PDF (its text layer), text, Markdown, CSV, JSON, HTML and XML, and converters from plugins the rest. To read another format, add a converter plugin; there are no file readers in the module configuration.
 
 ## Overriding built-in tools
 
@@ -461,7 +461,7 @@ toolOverrides: {
 | `fetch_external_data` | Options for resource, URL-backed select and data source fields. |
 | `read_document` | The text of a file uploaded to a submission. |
 
-What each tool does is covered in [MCP tools](/developers/mcp-tools). The useful overrides are `description` and `title`, which change how the model uses a tool. Overriding `execute` replaces the implementation. `inputSchema` is merged key by key into Zod objects; to change a tool's arguments, write a custom tool instead.
+What each tool does is covered in [MCP tools](./mcp-tools.md). The useful overrides are `description` and `title`, which change how the model uses a tool. Overriding `execute` replaces the implementation. `inputSchema` is merged key by key into Zod objects; to change a tool's arguments, write a custom tool instead.
 
 Because only tools with a name are registered, `{ name: '' }` removes a built-in tool:
 
@@ -618,7 +618,7 @@ The UAG reads a project's actions when it loads the project, so a new instance t
 | `webhook` | Form.io | Calls a URL with the submission. |
 | `email` | Form.io | Sends an email. |
 | `group` | Form.io | Group permissions. |
-| `agentRunTask` | the UAG | "Agent: Run task": runs one of the form's tasks on the submission, before the save or after it in the background. See [Workflows](/developers/workflows). |
+| `agentRunTask` | the UAG | "Agent: Run task": runs one of the form's tasks on the submission, before the save or after it in the background. See [Workflows](./workflows.md). |
 
 ### Actions in proxy mode
 
@@ -655,7 +655,7 @@ module.exports = {
 
 ## The login page
 
-Remote MCP clients, such as claude.ai connectors, sign users in through the browser, at `/auth/authorize` on the UAG's public URL. The page exists only with `MCP_OAUTH=true`, and answers `404` until the UAG's database is in use (see [Node.js API](/developers/node-api#the-uag-database)). Clients that get tokens with `client_credentials` never load it.
+Remote MCP clients, such as claude.ai connectors, sign users in through the browser, at `/auth/authorize` on the UAG's public URL. The page exists only with `MCP_OAUTH=true`, and answers `404` until the UAG's database is in use (see [Node.js API](./node-api.md#the-uag-database)). Clients that get tokens with `client_credentials` never load it.
 
 The built-in page renders the login form from `auth.loginForm` (`LOGIN_FORM`) with formio.js and completes the OAuth flow. To brand it, or to change how users sign in, replace the page with `config.auth.authAppHtml`, the page's HTML as a string:
 
@@ -1056,7 +1056,7 @@ docker compose logs -f formio-uag
 ```
 
 
-When the UAG starts, it installs the Contact resource and its two actions into the project, then serves them. Connect an MCP client to `http://localhost:3200/mcp` (see [Connect Claude](/developers/connect-claude)), sign in, and try:
+When the UAG starts, it installs the Contact resource and its two actions into the project, then serves them. Connect an MCP client to `http://localhost:3200/mcp` (see [Connect Claude](./connect-claude.md)), sign in, and try:
 
 - "Add a contact: Dana Reyes, dana@example.com, Director of Operations at Acme. She has budget for this quarter."
 - "How does the pipeline look for Acme?"
@@ -1064,10 +1064,10 @@ When the UAG starts, it installs the Contact resource and its two actions into t
 
 The first request ends in `submit_completed_form`; before the save, Lead Score sets `leadScore` to 65. The second calls `crm_pipeline_summary` with `company: "Acme"`. The third uses `find_submissions` and `submission_update`, and Lead Score runs again on the update.
 
-To use the module from your own server instead, `server.use(require('./module'))` (see [Node.js API](/developers/node-api)).
+To use the module from your own server instead, `server.use(require('./module'))` (see [Node.js API](./node-api.md)).
 
 ## Next steps
 
-- [Form properties](/developers/form-properties): tasks, criteria and agent fields on the forms in your template.
-- [MCP tools](/developers/mcp-tools): the built-in tools your module works with.
-- [Engines and routing](/developers/engines): add Agent API engines in `config`.
+- [Form properties](./form-properties.md): tasks, criteria and agent fields on the forms in your template.
+- [MCP tools](./mcp-tools.md): the built-in tools your module works with.
+- [Engines and routing](./engines.md): add Agent API engines in `config`.

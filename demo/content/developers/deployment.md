@@ -7,7 +7,7 @@ order: 20
 
 The UAG is a long-lived HTTP server you deploy next to a Form.io project. It is not a stdio MCP server that a client spawns: deploy it, then point clients at its URL. This page covers how to run it, every setting an operator sets, how editions and licensing apply, and how to keep a deployment reproducible.
 
-> **Tip:** The [Agentic Coding Plugin](/developers/agentic-coding)'s `formio-uag` skill writes a Compose stack or Kubernetes manifest and an `.env.example` for your edition, with every secret left as a placeholder for your secret store.
+> **Tip:** The [Agentic Coding Plugin](./agentic-coding.md)'s `formio-uag` skill writes a Compose stack or Kubernetes manifest and an `.env.example` for your edition, with every secret left as a placeholder for your secret store.
 
 ## Ways to run it
 
@@ -16,7 +16,7 @@ The UAG is a long-lived HTTP server you deploy next to a Form.io project. It is 
 | **Docker image** `formio/uag` | Almost always | Includes the UAG and every official engine (`jev`, `claude`, `openai`, `grok`, `gemini`). Listens on `PORT` (default 3200). |
 | **Docker Compose** | Running Form.io and the UAG together, or with an engine server | The samples are Compose stacks. |
 | **`npx uag`** | A Node.js host without Docker | Install `@formio/uag` and the engine packages you need. Reads the same environment, plus `UAG_MODULE` and `UAG_PLUGINS`. |
-| **Embedded in Express** | Your own Node.js application hosts the UAG | `new UAGServer(config)`; see [Node.js API](/developers/node-api). |
+| **Embedded in Express** | Your own Node.js application hosts the UAG | `new UAGServer(config)`; see [Node.js API](./node-api.md). |
 
 Outside Docker, the UAG needs Node.js 22 or newer, and Node must run with `--no-node-snapshot` (the `uag` command adds it itself) because `isolated-vm`, which runs form logic, requires it.
 
@@ -30,14 +30,14 @@ docker run -d --name formio-uag --restart unless-stopped -p 3200:3200 \
   formio/uag
 ```
 
-The image starts `node --no-node-snapshot index.js`, which loads the module in `/app/module`, then the plugins folder `/app/plugins` when it exists (or what `UAG_PLUGINS` names). Mount your own [module](/developers/modules) at `/app/module` to add forms, actions, tools and configuration, and a folder with an `index.mjs` of [plugins](/developers/plugins) in a folder under `/app/plugins` to add converters and document processes:
+The image starts `node --no-node-snapshot index.js`, which loads the module in `/app/module`, then the plugins folder `/app/plugins` when it exists (or what `UAG_PLUGINS` names). Mount your own [module](./modules.md) at `/app/module` to add forms, actions, tools and configuration, and a folder with an `index.mjs` of [plugins](./plugins.md) in a folder under `/app/plugins` to add converters and document processes:
 
 ```bash
 docker run -v "$PWD/module:/app/module" ... formio/uag
 docker run -v "$PWD/my-plugins:/app/plugins/my-plugins:ro" ... formio/uag
 ```
 
-For AI Document, the `formio/uag-documents` add-on brings the plugins for you: it runs beside the UAG and copies its plugins folder into a volume the UAG mounts at `/app/plugins/documents`. Each add-on, and each folder of your own, is a folder under `/app/plugins`; the UAG loads them all. See [AI Document: Run it with Docker](/developers/ai-document#run-it-with-docker) and [Plugins: Add-ons](/developers/plugins#add-ons) for Compose, `docker run` and Kubernetes.
+For AI Document, the `formio/uag-documents` add-on brings the plugins for you: it runs beside the UAG and copies its plugins folder into a volume the UAG mounts at `/app/plugins/documents`. Each add-on, and each folder of your own, is a folder under `/app/plugins`; the UAG loads them all. See [AI Document: Run it with Docker](./ai-document.md#run-it-with-docker) and [Plugins: Add-ons](./plugins.md#add-ons) for Compose, `docker run` and Kubernetes.
 
 Modules and plugins are trusted code: they run in the UAG process.
 
@@ -45,7 +45,7 @@ On `SIGTERM` or `SIGINT` (`docker stop`, a Kubernetes pod being stopped, Ctrl-C)
 
 ### Docker Compose
 
-A self-contained stack on Form.io Open Source is in the [Quickstart](/developers/quickstart#self-hosted-with-formio-open-source). Points that apply to every Compose deployment:
+A self-contained stack on Form.io Open Source is in the [Quickstart](./quickstart.md#self-hosted-with-formio-open-source). Points that apply to every Compose deployment:
 
 - `PROJECT` is a **container-to-container** address (`http://formio:3001`), not a browser URL.
 - Hold the UAG back until Form.io answers (a `healthcheck` with `depends_on: condition: service_healthy`). The UAG also retries a project that is still starting (`PROJECT_RETRIES`, `PROJECT_RETRY_DELAY`) and exits if it never loads.
@@ -81,11 +81,11 @@ services:
 
 The project API key must exist before the UAG starts, which is why the [demo stack](../..), self-hosted (`docker-compose.enterprise.yml`), starts Form.io, runs a setup job that creates the project and installs the key ([`scripts/setup.mjs`](../../scripts/setup.mjs)), and only then starts the UAG.
 
-To run engines in their own container, see [Engine server](/developers/engine-server).
+To run engines in their own container, see [Engine server](./engine-server.md).
 
 ## The three URLs
 
-Three settings name places, and confusing them causes most deployment problems. Whether any needs to be public depends on [how agents connect](/developers/mcp-tools#how-agents-connect).
+Three settings name places, and confusing them causes most deployment problems. Whether any needs to be public depends on [how agents connect](./mcp-tools.md#how-agents-connect).
 
 | Setting | Who uses it | Must be reachable from |
 |---|---|---|
@@ -124,12 +124,12 @@ The login form JSON endpoint the `/auth/authorize` page loads, such as `https://
 | `PROJECT` | none, **required** | The Open Source server URL, or the Enterprise or hosted project endpoint. |
 | `PROJECT_KEY` | none | Enterprise and hosted: the project API key (**Project Settings → API Keys**). Also accepted from callers as `x-token`. |
 | `ADMIN_KEY` | none | Open Source: the server's admin key. Also accepted from callers as `x-admin-key`. |
-| `JWT_SECRET` | random per start, with a warning | **Required in practice.** Signs the UAG's own tokens. Set it to the Form.io Enterprise server's `JWT_SECRET` for an agent to act on users' behalf (see [Project setup for agents](/developers/project-setup)). Set it the same on every instance, or tokens break on restart. |
+| `JWT_SECRET` | random per start, with a warning | **Required in practice.** Signs the UAG's own tokens. Set it to the Form.io Enterprise server's `JWT_SECRET` for an agent to act on users' behalf (see [Project setup for agents](./project-setup.md)). Set it the same on every instance, or tokens break on restart. |
 | `JWT_EXPIRE_TIME` | `60` | Lifetime of the UAG's access tokens, in **minutes**. A token from OAuth sign-in ends with the user's Form.io login token if that is sooner, and its refresh token cannot outlive it either. `client_credentials` returns no refresh token. |
 | `BASE_URL` | derived from each request | The URL clients reach the UAG at, for the OAuth discovery documents. Set it only when the derived URL is wrong. |
 | `TRUST_PROXY` | unset | Express's `trust proxy`: `true`, a number of proxy hops, or addresses (`loopback, 10.0.0.0/8`). Set it behind a reverse proxy, so the UAG reads its public URL and callers' addresses from the forwarded headers. Read by the `uag` command and the Docker image; an application that embeds the UAG calls `app.set('trust proxy', ...)` itself. |
 | `MCP_OAUTH` | `false` | `true` turns on OAuth sign-in for remote MCP clients (claude.ai and Claude Desktop connectors): the browser sign-in page, client registration and the discovery documents. Needs the UAG's database (`MONGO`), and a license to use it. Local clients use `/auth/token`, which is always on. |
-| `AGENT_ANONYMOUS_RATE_LIMIT` | `10` | Requests a minute one client address may make to the agent operations of forms that allow anonymous use ([`uagAnonymous`](/developers/form-properties#uaganonymous)). Counted by each UAG process; behind a reverse proxy, set `TRUST_PROXY` so the address is the visitor's. `0` turns anonymous use off. |
+| `AGENT_ANONYMOUS_RATE_LIMIT` | `10` | Requests a minute one client address may make to the agent operations of forms that allow anonymous use ([`uagAnonymous`](./form-properties.md#uaganonymous)). Counted by each UAG process; behind a reverse proxy, set `TRUST_PROXY` so the address is the visitor's. `0` turns anonymous use off. |
 | `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT` | `100` | Requests a minute from all anonymous visitors together, per UAG process: with several replicas, the total is replicas × this. `0` turns anonymous use off. |
 | `LOGIN_FORM` | `{PROJECT}/user/login` | The login form the browser loads at `/auth/authorize`. |
 | `PORTAL_SECRET` | none | Enterprise: lets a Form.io Enterprise portal stage connect to the UAG. See [Connecting the Enterprise portal](#connecting-the-enterprise-portal). |
@@ -166,7 +166,7 @@ The login form JSON endpoint the `/auth/authorize` page loads, such as `https://
 | `AGENT_BODY_LIMIT` | `5242880` (5 MB) | Largest request body, in bytes, of a form's agent operations (`{form}/agent/*`) and of module routes. `agentApi.bodyLimit` in a module's `config` takes precedence. A larger body is refused with `413` and `code: "payload_too_large"`, naming the limit. `MAX_BODY_SIZE` still applies first. |
 | `NODE_TLS_REJECT_UNAUTHORIZED` | unset | `0` to accept a self-signed `PROJECT` certificate. Never on a deployment reachable from outside. |
 | `DEBUG` | unset | Debug logging, for example `formio:*` or `formio:uag*`. |
-| `AUTHORIZE_HTML` | the built-in page | With `MCP_OAUTH`: the HTML of the `/auth/authorize` sign-in page itself (not a path), in place of the built-in one. Read once, at startup. A module's `config.auth.authAppHtml` takes precedence. See [The login page](/developers/modules#the-login-page). |
+| `AUTHORIZE_HTML` | the built-in page | With `MCP_OAUTH`: the HTML of the `/auth/authorize` sign-in page itself (not a path), in place of the built-in one. Read once, at startup. A module's `config.auth.authAppHtml` takes precedence. See [The login page](./modules.md#the-login-page). |
 
 ### Modules, plugins and documents
 
@@ -174,14 +174,14 @@ The login form JSON endpoint the `/auth/authorize` page loads, such as `https://
 |---|---|---|
 | `UAG_MODULE` | none | For the `uag` command only: a file or folder exporting a module. The Docker image loads `/app/module` instead. |
 | `MODULES_DISABLED` | none | Modules to leave out, by name, comma-separated (`ai-document`, the AI Document module the `formio/uag-documents` add-on brings): for a module you load but do not want. |
-| `UAG_PLUGINS` | `/app/plugins`, when it exists | The plugins the `uag` command and the image load after the module: a file (an ES module, `.mjs`, or CommonJS file exporting plugins, modules, or a list of both), a folder with an `index.mjs`, or a folder of such folders, one per add-on, loaded in name order. `off` loads none. See [Plugins](/developers/plugins#adding-plugins). An application that embeds the UAG calls `usePluginFiles(server)` itself. |
+| `UAG_PLUGINS` | `/app/plugins`, when it exists | The plugins the `uag` command and the image load after the module: a file (an ES module, `.mjs`, or CommonJS file exporting plugins, modules, or a list of both), a folder with an `index.mjs`, or a folder of such folders, one per add-on, loaded in name order. `off` loads none. See [Plugins](./plugins.md#adding-plugins). An application that embeds the UAG calls `usePluginFiles(server)` itself. |
 | `PLUGINS_DISABLED` | none | Plugins to leave out, as `<type>:<name>`, comma-separated (`converter:image-pdf`). Also `config.plugins.disabled`. |
-| `DOCUMENTS_MAX_FILE_BYTES` | `26214400` (25 MB) | The largest uploaded file the `read_document` MCP tool reads, in bytes. `documents.maxFileBytes` in a module's `config` takes precedence. The AI Document module reads it too, beside its other `DOCUMENTS_*` settings: see [AI Document](/developers/ai-document#limits). |
+| `DOCUMENTS_MAX_FILE_BYTES` | `26214400` (25 MB) | The largest uploaded file the `read_document` MCP tool reads, in bytes. `documents.maxFileBytes` in a module's `config` takes precedence. The AI Document module reads it too, beside its other `DOCUMENTS_*` settings: see [AI Document](./ai-document.md#limits). |
 | `DOCUMENTS_MAX_IMAGE_PIXELS` | `50000000` | The largest PNG the built-in `image-pdf` converter takes, in pixels (width × height); a larger one is refused before it is decoded. Also `config.plugins.settings.converter['image-pdf'].maxPixels`. |
 
 ### Engines
 
-None of these does anything until `UAG_ENGINES` names an engine. See [Engines](/developers/engines) for each engine's settings.
+None of these does anything until `UAG_ENGINES` names an engine. See [Engines](./engines.md) for each engine's settings.
 
 | Variable | Description |
 |---|---|
@@ -198,7 +198,7 @@ None of these does anything until `UAG_ENGINES` names an engine. See [Engines](/
 
 A misconfigured engine (a type that is not installed, a duplicate name, a missing setting) stops startup with the instance named, rather than failing the first request.
 
-Which engine answers which work (`routing`), timeouts, rate limits, and the engines and bounds of a form's chat (`agentApi.chat`) are configuration, not variables: set them in a [module](/developers/modules)'s `config`. See [Routing](/developers/engines#routing) and [Chat settings](/developers/agent-api#chat-settings).
+Which engine answers which work (`routing`), timeouts, rate limits, and the engines and bounds of a form's chat (`agentApi.chat`) are configuration, not variables: set them in a [module](./modules.md)'s `config`. See [Routing](./engines.md#routing) and [Chat settings](./agent-api.md#chat-settings).
 
 ## Editions
 
@@ -207,7 +207,7 @@ Which engine answers which work (`routing`), timeouts, rate limits, and the engi
 | Form.io server | `formio/formio` | `formio/formio-enterprise` | `portal.form.io` |
 | UAG credential | `ADMIN_KEY` | `PROJECT_KEY` | `PROJECT_KEY` |
 | `client_credentials` id | `formio-oss-x-admin-key` | `<project>-x-token` | `<project>-x-token` |
-| License for MCP and conversation forms (the MCP tools, and a form's [chat](/developers/chat)) | Not needed | Needed (includes the UAG) | Not needed |
+| License for MCP and conversation forms (the MCP tools, and a form's [chat](./chat.md)) | Not needed | Needed (includes the UAG) | Not needed |
 | Agentic Formflow (Agent API `extract`, `decide`, `generate`; "Agent: Run task") | Needs a license that includes the UAG | Needs a license that includes the UAG | Allowed |
 | An agent role acting on users' behalf | No | Yes (shared `JWT_SECRET`) | No |
 | The UAG's database (`MONGO`) | With a license | With a license | With a license |
@@ -234,10 +234,10 @@ Running against a self-hosted Enterprise project and Agentic Formflow are licens
 
 **Agentic Formflow.** The Agent API's `extract`, `decide` and `generate`, the "Agent: Run task" action, the `agent_decide` and `agent_provide` MCP tools and `uag-eval` need a license that includes the UAG for the project's endpoint on a self-hosted project, Open Source or Enterprise. Without it they run only:
 
-- against a project on Form.io's hosted SaaS (`reason: "hosted"`), except `uag-eval`, which runs offline and needs `LICENSE_KEY` (see [Evaluation](/developers/evaluation));
+- against a project on Form.io's hosted SaaS (`reason: "hosted"`), except `uag-eval`, which runs offline and needs `LICENSE_KEY` (see [Evaluation](./evaluation.md));
 - with only the built-in stub engines (`reason: "stub-engines"`), which answer with placeholders, except `agent_decide` and `agent_provide`, which call no engine.
 
-Conversation forms need no license: the MCP tools and a form's [chat](/developers/chat) (`{form}/agent/chat`, which needs an agent engine) run on Form.io Open Source with an unlicensed UAG.
+Conversation forms need no license: the MCP tools and a form's [chat](./chat.md) (`{form}/agent/chat`, which needs an agent engine) run on Form.io Open Source with an unlicensed UAG.
 
 Otherwise each Agentic Formflow request is refused with `403` and `code: "license_required"`. A Run task action that runs before the save refuses the submission the same way, so nothing is saved; one that runs after the save fails in the background, and the failure is logged. `GET /agent/capabilities` always answers with the current `edition` and `formflow.reason`.
 
@@ -307,7 +307,7 @@ Until the license is known, the UAG only reads the database.
 
 ### Runs after the save
 
-An "Agent: Run task" action that runs after the save (see [Workflows](/developers/workflows)) runs in the background, after the submitter has Form.io's response. Where that run lives depends on the database and on the action's **Agent role** (see [Project setup for agents](/developers/project-setup)):
+An "Agent: Run task" action that runs after the save (see [Workflows](./workflows.md)) runs in the background, after the submitter has Form.io's response. Where that run lives depends on the database and on the action's **Agent role** (see [Project setup for agents](./project-setup.md)):
 
 | | No database | Database, no agent role | Database and an agent role |
 |---|---|---|---|
@@ -325,7 +325,7 @@ Running against Form.io Enterprise (self-hosted or hosted) adds controls that ma
 - **Form revisions.** Every form change is a revision, and each submission records the revision it was made against. Because agent behavior comes from the form, rolling back a bad criteria edit is reverting a revision; no model is retrained.
 - **Submission revisions.** Every change to a submission is recorded with who made it. Together with the UAG's provenance in `metadata.uag`, an audit can follow a value from the engine that proposed it to the person who confirmed or changed it.
 - **Stage versions and deployments.** Tag a version across all of a project's forms and deploy it between stages, so the set of forms (and therefore agent behaviors) in production is versioned as a whole. Set `TEMPLATE_SYNC=off` when stages manage the project, so a module template does not reinstall forms you removed.
-- **Agents that act on users' behalf** with a role of their own, so Form.io's permissions keep users off the fields agents own. See [Project setup for agents](/developers/project-setup).
+- **Agents that act on users' behalf** with a role of their own, so Form.io's permissions keep users off the fields agents own. See [Project setup for agents](./project-setup.md).
 - **Action Logs** in a stage connected to the UAG, with each task run beside Form.io's own entries (with the UAG's database; see below).
 
 ### Connecting the Enterprise portal
@@ -337,7 +337,7 @@ The UAG adds an action of its own, "Agent: Run task", which Form.io Enterprise d
 3. Enter the UAG's root URL and the same secret, choose **Subdirectories** as the project path type, and **Continue**.
 4. Choose the UAG's project and **Connect Stage**.
 
-In that stage, forms and actions are read and saved through the UAG, which passes them on to Form.io. Every member of the project's team can work there with their own permission: the owner and team admins as administrators, `team_write` members editing forms, roles, actions and submissions, and `team_read` members reading them. The UAG applies Form.io's team rules itself; see [Portal team members](/developers/security#portal-team-members). The UAG describes only its own actions: Run task opens with its **Task**, **Answer**, **When**, **Agent role** and **Submitter roles** settings. Every other action's settings form comes from Form.io, fetched with your own credential, so a webhook or email action is edited exactly as it would be on Form.io, conditions included.
+In that stage, forms and actions are read and saved through the UAG, which passes them on to Form.io. Every member of the project's team can work there with their own permission: the owner and team admins as administrators, `team_write` members editing forms, roles, actions and submissions, and `team_read` members reading them. The UAG applies Form.io's team rules itself; see [Portal team members](./security.md#portal-team-members). The UAG describes only its own actions: Run task opens with its **Task**, **Answer**, **When**, **Agent role** and **Submitter roles** settings. Every other action's settings form comes from Form.io, fetched with your own credential, so a webhook or email action is edited exactly as it would be on Form.io, conditions included.
 
 **Action Logs.** With the UAG's database, the stage's Action Logs list Form.io's own entries and the UAG's run records together, newest first. Each run shows the action's title, the task, its state (new, in progress, complete or error), the fields it saved or the error, and the engines that answered. Form.io decides who may read Action Logs: the UAG asks Form.io with your credential before it shows them. This works in the classic portal, which asks the stage's URL for Action Logs. The new portal asks its own API server instead, so the UAG's records do not appear there.
 
@@ -356,7 +356,7 @@ From 2.0.0, the UAG and the packages released with it (the engines, the engine S
 | `@formio/uag-gemini` | 2.x | >= 2.0.0 | Built on `@formio/uag-openai`. No default model. |
 | `@formio/uag-engines` | 2.x | >= 2.0.0 | The engine server. Docker image `formio/uag-engines`. |
 | `@formio/uag-js` | 2.x | >= 2.0.0 | The formio.js module, for the browser: saves `uag` forms through the UAG and adds Agent Input. Published on npm, and served by the UAG at `/uag-js/` (the image includes it). |
-| `@formio/uag-extras` | 1.x | >= 2.0.0 | Versioned on its own, and needs Node.js 24 or later: extras such as the AI Document module, document plugins and converters ([npm](https://www.npmjs.com/package/@formio/uag-extras)). Docker image `formio/uag-documents` (`:1`), an add-on that runs beside `formio/uag` and fills its plugins folder: see [AI Document](/developers/ai-document#run-it-with-docker). |
+| `@formio/uag-extras` | 1.x | >= 2.0.0 | Versioned on its own, and needs Node.js 24 or later: extras such as the AI Document module, document plugins and converters ([npm](https://www.npmjs.com/package/@formio/uag-extras)). Docker image `formio/uag-documents` (`:1`), an add-on that runs beside `formio/uag` and fills its plugins folder: see [AI Document](./ai-document.md#run-it-with-docker). |
 | `@formio/uag-claude` | 1.3.x | 1.12.0 – 1.13.x | The retired Claude integration, deprecated. Against 2.0 only its direct commands work: its `agent_provide_data` webhooks need 1.x. |
 | `@formio/uag-claude` | 1.2.x | 1.10.0 – 1.11.x | The retired Claude integration. |
 
@@ -365,7 +365,7 @@ From 2.0.0, the UAG and the packages released with it (the engines, the engine S
 For a reproducible deployment:
 
 - **Pin image tags.** The samples use untagged images (`latest`), which move to each new release. Production should pin `formio/uag:<version>` (and `formio/uag-engines:<version>`, `formio/formio-enterprise:<version>`). The `formio/uag-documents` add-on follows `@formio/uag-extras`'s versions: `:1` moves to each 1.x release; pin an exact one, such as `formio/uag-documents:1.0.0`.
-- **Pin models.** Set `CLAUDE_MODEL`, `TYPESAFE_MODEL` and the other model variables to specific versions. A new UAG release may change an engine's default, and answers differ between models. Run [`uag-eval`](/developers/evaluation) before changing one.
+- **Pin models.** Set `CLAUDE_MODEL`, `TYPESAFE_MODEL` and the other model variables to specific versions. A new UAG release may change an engine's default, and answers differ between models. Run [`uag-eval`](./evaluation.md) before changing one.
 - **Keep `@formio/appserver` current.** When embedding the UAG, it reaches `@formio/appserver-core` only through `@formio/appserver`, so there is one copy of it, which must be 2.26.4 or later; the UAG refuses to start with an older one, and says what to upgrade.
 - **Roll back** by pinning the previous image. Stored submissions are unaffected; UAG 1.x ignores the `metadata.uag.generated` provenance that 2.0 adds. See [MIGRATING-2.0.md](../../../MIGRATING-2.0.md) when upgrading from 1.x.
 
@@ -423,4 +423,4 @@ curl -s -o /dev/null -w '%{http_code}\n' https://uag.example.com/.well-known/oau
 curl -s https://uag.example.com/agent/capabilities -H "x-token: $PROJECT_KEY"
 ```
 
-The UAG's log shows whether it uses a database (`Using the database "uag": ...`, `No database (MONGO): ...`, or `The database (MONGO) is not used: ...` with the reason), the edition line, and `Form.io UAG server running on port 3200` once it is serving. If it exits instead, the `Failed to start server:` line says why: `No Form.io project could be loaded` (`PROJECT` is not set), `Unable to load project from ...` or `Unable to load the project template from ...` (`PROJECT` is unreachable, or paired with the wrong credential; set `DEBUG=formio:error` to see each attempt's status), a license problem, a database the UAG may not use (see [The signature check](#the-signature-check)), or a misconfigured engine. See [Troubleshooting](/developers/troubleshooting).
+The UAG's log shows whether it uses a database (`Using the database "uag": ...`, `No database (MONGO): ...`, or `The database (MONGO) is not used: ...` with the reason), the edition line, and `Form.io UAG server running on port 3200` once it is serving. If it exits instead, the `Failed to start server:` line says why: `No Form.io project could be loaded` (`PROJECT` is not set), `Unable to load project from ...` or `Unable to load the project template from ...` (`PROJECT` is unreachable, or paired with the wrong credential; set `DEBUG=formio:error` to see each attempt's status), a license problem, a database the UAG may not use (see [The signature check](#the-signature-check)), or a misconfigured engine. See [Troubleshooting](./troubleshooting.md).
