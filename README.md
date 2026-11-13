@@ -38,7 +38,7 @@ The form is the contract. Add a field and agents ask for it; rewrite a task's in
 
 The UAG is built on Form.io's core logic. Every value an agent sends runs through the [`@formio/core`](https://github.com/formio/core) processors, the same validation, conditional and calculation rules Form.io itself applies, so the data it saves is valid and deterministic. More detail: [How the UAG works](./demo/content/developers/index.md).
 
-## Three ways to use it
+## Ways to use it
 
 ![Conversation forms, agentic workflows and Agentic Formflow, step by step.](./demo/public/images/uag-usage-patterns.svg)
 
@@ -62,7 +62,11 @@ A person describes what happened, and the form fills itself in: decisions choose
 
 ![A policyholder describes a collision; JEV adds the wizard's steps in milliseconds, Claude prefills dates, places and names as suggestions, and the claim is submitted.](./demo/public/images/demo-formflow.gif)
 
-One deployment can serve all three. Conversation forms run on Form.io Open Source with no license; the other two need a license or a hosted project (see [License](#license)). The whole demo site, static pages that call the UAG straight from the browser, with a flow log of every call they make, is in [`demo/`](./demo); these recordings are made from it by [`demo/recordings`](./demo/recordings).
+### AI Documents
+
+A person uploads a file to a form, and the form reads it. An **AI Document** component sends the uploaded files (PDF, Word, Excel, text, or a scan or photo) to the UAG, where an agent engine produces what the form designer's instructions ask for: an exact extraction, a summary, an assessment or a translation. The person reviews the result before they submit, and edits it where the process allows, or in the form field it writes to. What it does is a document plugin installed on the UAG (`extract`, `analyze`, `translate`, or one of your own) that the designer picks in the form builder; `extract` checks its copy word for word against the file's text and flags a copy it cannot match. It is a module from [`@formio/uag-extras`](https://www.npmjs.com/package/@formio/uag-extras), added to the `formio/uag` image by the `formio/uag-documents` add-on. [source](./demo/public/apps/documents) · build it with [AI Document](./demo/content/developers/ai-document.md) and [Plugins](./demo/content/developers/plugins.md).
+
+One deployment can serve all four. Conversation forms run on Form.io Open Source with no license; the others need a license or a hosted project (see [License](#license)). The whole demo site, static pages that call the UAG straight from the browser, with a flow log of every call they make, is in [`demo/`](./demo); these recordings are made from it by [`demo/recordings`](./demo/recordings).
 
 ## Quickstart
 
@@ -244,7 +248,7 @@ Engines run inside the UAG, or on an [engine server](./packages/engine-server) (
 |---|---|
 | MCP and conversation forms (including a form's chat, `{form}/agent/chat`), on Form.io Open Source or a hosted project | Nothing |
 | MCP and conversation forms, on a self-hosted Form.io Enterprise project | A Form.io license that includes the UAG, in `LICENSE_KEY`, whose endpoint allowlist includes `PROJECT`'s host. Otherwise the project does not load, and the UAG says why. |
-| Agentic workflows and Agentic Formflow (the Agent API's `extract`, `decide` and `generate`, the **Agent: Run task** action, the `agent_decide` and `agent_provide` tools, `uag-eval`) on a self-hosted project, Open Source or Enterprise | A Form.io license that includes the UAG, in `LICENSE_KEY` |
+| Agentic workflows, Agentic Formflow and AI Documents (the Agent API's `extract`, `decide` and `generate`, the **Agent: Run task** action, an AI Document's `{form}/document/process`, the `agent_decide` and `agent_provide` tools, `uag-eval`) on a self-hosted project, Open Source or Enterprise | A Form.io license that includes the UAG, in `LICENSE_KEY` |
 | The same on a project on Form.io's hosted service (`https://*.form.io`) | Nothing, as the project runs under Form.io's license; except `uag-eval`, which runs offline and needs `LICENSE_KEY`. Leave `LICENSE_KEY` unset there unless the UAG has its own database. |
 | The UAG's own database (`MONGO`), and with it remote MCP sign-in (`MCP_OAUTH`), on any project | A Form.io license that includes the UAG. Without one, the UAG starts with its database features off and says why. |
 | The Agent API, Run task and `uag-eval` with only the stub engines (`UAG_ENGINES=stub-decision,stub-agent`), to try them out | Nothing. The `agent_decide` and `agent_provide` tools still need a license or a hosted project. |
