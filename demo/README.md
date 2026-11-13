@@ -34,7 +34,7 @@ The site is **static files**, and the demos are what any application embedding t
 
 ## Settings
 
-The build reads its settings from the environment ([`lib/config.mjs`](./lib/config.mjs)), and from `demo/.env.local` when that file exists and `NODE_ENV` is not `production`. Everything the build reads ends up in the pages, so none of it may be a secret: the build fails if the value of any environment variable whose name says it is a secret (`KEY`, `SECRET`, `PASS`, `LICENSE`, `TOKEN`) appears in its output.
+The build reads its settings from the environment ([`lib/config.mjs`](./lib/config.mjs)), and from `demo/.env.local` when that file exists and `NODE_ENV` is not `production`. Every page carries the site's Content-Security-Policy in a `<meta>` tag, so a host that cannot send headers keeps it. Everything the build reads ends up in the pages, so none of it may be a secret: the build fails if the value of any environment variable whose name says it is a secret (`KEY`, `SECRET`, `PASS`, `LICENSE`, `TOKEN`) appears in its output.
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -42,7 +42,8 @@ The build reads its settings from the environment ([`lib/config.mjs`](./lib/conf
 | `FORMIO_PROJECT_URL` | `https://uag.form.io` | The project the forms load from. |
 | `DEMO_UAG_PROJECT_PATH` | `/<project name>` | Where the UAG serves the project's forms: under the project's name (its subdomain, or the last segment of a self-hosted project's URL), or at the UAG's root (`""`) for Form.io Open Source. |
 | `FORMIO_BASE_URL` | Derived from the project URL | formio.js's base URL. |
-| `DEMO_DOMAIN`, `DEMO_PUBLIC_URL` | `ai.form.io`, `https://<DEMO_DOMAIN>` | The site's own address, for canonical links and social cards. |
+| `DEMO_PUBLIC_URL` | `https://<DEMO_DOMAIN>` when `DEMO_DOMAIN` is set, else `https://formio.github.io/uag` | The site's own address, for canonical links and social cards, and the live demos a local run's notice links to. |
+| `DEMO_BASE_PATH` | `""` | The path the site is served under, such as `/uag` for a GitHub Pages project site. Every link and source the build writes from the root starts with it, the pages give it to their scripts (`data-base-path`), and `yarn workspace @formio/uag-demo serve` serves the build under it. |
 | `DEMO_OUT` | `dist` | Where the build is written. |
 | `DEMO_ASSET_VERSION` | The release's version | Added to the URLs of scripts and styles (`?v=`). |
 | `CONTACT_FORM_URL` | `https://formio.form.io/contact` | The hosted form the Contact Us page renders. |

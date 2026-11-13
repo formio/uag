@@ -3,9 +3,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { contentSecurityPolicy, formioBaseOf, projectNameOf, readConfig } from '../lib/config.mjs';
+import { basePathOf, contentSecurityPolicy, formioBaseOf, projectNameOf, readConfig } from '../lib/config.mjs';
 import { render } from '../lib/pages.mjs';
-import { build, fileOf } from '../scripts/build.mjs';
+import { build, fileOf, finishHtml, metaPolicy } from '../scripts/build.mjs';
 import { createServer, resolve } from '../scripts/serve.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -21,14 +21,45 @@ describe('Demo site build', function () {
             expect(formioBaseOf('http://localhost:3001/demo')).to.equal('http://localhost:3001');
         });
 
-        it('derives the public URL from DEMO_DOMAIN, unless DEMO_PUBLIC_URL names it', function () {
-            expect(readConfig({}).publicUrl).to.equal('https://ai.form.io');
+        it('derives the public URL from DEMO_DOMAIN, unless DEMO_PUBLIC_URL names it, and defaults to GitHub Pages', function () {
+            expect(readConfig({}).publicUrl).to.equal('https://formio.github.io/uag');
+            expect(readConfig({}).links.liveDemo).to.equal('https://formio.github.io/uag');
             expect(readConfig({ DEMO_DOMAIN: 'agents.example.com' }).publicUrl).to.equal('https://agents.example.com');
             expect(readConfig({ DEMO_PUBLIC_URL: 'http://localhost:8080/' }).publicUrl).to.equal('http://localhost:8080');
         });
 
+        it('reads the path the site is served under, with no trailing slash, and refuses anything else', function () {
+            expect(readConfig({}).basePath).to.equal('');
+            expect(basePathOf({ DEMO_BASE_PATH: '/uag/' })).to.equal('/uag');
+            expect(basePathOf({ DEMO_BASE_PATH: '/' })).to.equal('');
+            for (const value of ['uag', '/uag"><script>', 'https://formio.github.io/uag']) {
+                expect(() => basePathOf({ DEMO_BASE_PATH: value }), value).to.throw(/DEMO_BASE_PATH/);
+            }
+        });
+
         it('refuses a production build that does not name its UAG', function () {
             expect(() => readConfig({ NODE_ENV: 'production' })).to.throw(/DEMO_UAG_URL/);
+        });
+    });
+
+    describe('finishing the HTML', function () {
+        const config = readConfig({ DEMO_UAG_URL: 'https://ai.example.com', FORMIO_PROJECT_URL: 'https://uag.form.io', DEMO_BASE_PATH: '/uag' });
+        const page = '<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <link rel="stylesheet" href="/css/site.css?v=1">\n</head>\n<body><a href="/developers/chat#x">a</a> <a href="https://form.io/">b</a> <a href="//cdn.example.com/x.js">c</a> <img src="/images/a.png"> <a href="#top">d</a> <a href="chat.js">e</a> <svg><use href="/images/icons.svg#lock"/></svg> <form action="/contact"></form> <iframe data-src="/apps/chat/"></iframe> <button data-watch="/images/a.gif"></button></body></html>';
+
+        it('starts every link and source from the root with the base path, and leaves the others alone', function () {
+            const html = finishHtml(page, config);
+            for (const prefixed of ['href="/uag/css/site.css?v=1"', 'href="/uag/developers/chat#x"', 'src="/uag/images/a.png"', 'href="/uag/images/icons.svg#lock"', 'action="/uag/contact"', 'data-src="/uag/apps/chat/"', 'data-watch="/uag/images/a.gif"']) expect(html).to.include(prefixed);
+            for (const kept of ['href="https://form.io/"', 'href="//cdn.example.com/x.js"', 'href="#top"', 'href="chat.js"']) expect(html).to.include(kept);
+            expect(html).to.include('<html data-base-path="/uag" lang="en">');
+            expect(finishHtml(page, { ...config, basePath: '' })).to.include('href="/developers/chat#x"').and.include('data-base-path=""');
+        });
+
+        it('carries the Content-Security-Policy and the referrer policy as meta tags, without frame-ancestors', function () {
+            const html = finishHtml(page, config);
+            expect(metaPolicy(config)).to.equal(contentSecurityPolicy({ uagOrigin: 'https://ai.example.com', projectOrigin: 'https://uag.form.io' }).replace("; frame-ancestors 'self'", ''));
+            expect(html).to.include(`<meta http-equiv="Content-Security-Policy" content="${metaPolicy(config).replaceAll("'", '&#39;')}">`);
+            expect(html).to.include('<meta name="referrer" content="strict-origin-when-cross-origin">');
+            expect(html.indexOf('http-equiv')).to.be.lessThan(html.indexOf('/uag/css/site.css'));
         });
     });
 
@@ -112,6 +143,70 @@ describe('Demo site build', function () {
         it('does not take text the site\'s own sources contain for a secret', function () {
             // The name the docs give the UAG, as a password might also be.
             expect(() => build(config, { ...env, SOME_PASSWORD: 'Universal Agent Gateway' })).to.not.throw();
+        });
+    });
+
+    describe('a build for GitHub Pages', function () {
+        let out;
+        let config;
+        const env = { DEMO_UAG_URL: 'https://ai.example.com', FORMIO_PROJECT_URL: 'https://uag.form.io', NODE_ENV: 'production', DEMO_BASE_PATH: '/uag', DEMO_PUBLIC_URL: 'https://formio.github.io/uag' };
+
+        before(function () {
+            this.timeout(60000);
+            out = fs.mkdtempSync(path.join(os.tmpdir(), 'uag-demo-pages-'));
+            config = readConfig({ ...env, DEMO_OUT: path.join(out, 'dist') });
+            build(config, env);
+        });
+
+        after(function () {
+            fs.rmSync(out, { recursive: true, force: true });
+        });
+
+        it('starts every link and source from the root with /uag, in every page, doc and demo app', function () {
+            const offenders = [];
+            let pages = 0;
+            const walk = (dir) => {
+                for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                    const file = path.join(dir, entry.name);
+                    if (entry.isDirectory()) walk(file);
+                    else if (entry.name.endsWith('.html')) {
+                        pages++;
+                        const html = fs.readFileSync(file, 'utf8');
+                        // Any data-* attribute too: a script may use its value as a URL.
+                        for (const match of html.matchAll(/\s(href|src|action|poster|xlink:href|data-[a-z-]+)=["'](\/(?!\/)[^"']*)/g)) {
+                            if (match[1] !== 'data-base-path' && !match[2].startsWith('/uag/')) offenders.push(`${path.relative(config.out, file)}: ${match[1]}=${match[2]}`);
+                        }
+                        if (!html.includes('data-base-path="/uag"')) offenders.push(`${path.relative(config.out, file)}: no data-base-path`);
+                        if (!html.includes('http-equiv="Content-Security-Policy"')) offenders.push(`${path.relative(config.out, file)}: no policy`);
+                    }
+                }
+            };
+            walk(config.out);
+            expect(pages).to.be.greaterThan(30);
+            expect(offenders).to.deep.equal([]);
+        });
+
+        it('names the canonical URL on GitHub Pages', function () {
+            expect(fs.readFileSync(path.join(config.out, 'developers/chat/index.html'), 'utf8')).to.include('https://formio.github.io/uag/developers/chat');
+        });
+
+        it('is served under /uag, as GitHub Pages serves a project site', async function () {
+            const server = createServer(config.out, {}, '/uag');
+            await new Promise((done) => server.listen(0, '127.0.0.1', done));
+            try {
+                const base = `http://127.0.0.1:${server.address().port}`;
+                const bare = await fetch(`${base}/uag`, { redirect: 'manual' });
+                expect(bare.status).to.equal(301);
+                expect(bare.headers.get('location')).to.equal('/uag/');
+                expect((await fetch(`${base}/uag/`)).status).to.equal(200);
+                expect((await fetch(`${base}/uag/developers/chat`)).status).to.equal(200);
+                expect((await fetch(`${base}/uag/css/site.css?v=1`)).status).to.equal(200);
+                expect((await fetch(`${base}/developers/chat`)).status).to.equal(404);
+                expect((await fetch(`${base}/uag/nope`)).status).to.equal(404);
+            }
+            finally {
+                server.close();
+            }
         });
     });
 

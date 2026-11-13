@@ -9,6 +9,9 @@
 // license (a local UAG only; the hosted project needs none).
 (function () {
   var settings = document.documentElement.dataset;
+  // The path the site is served under (data-base-path, written by the build): '' at
+  // the root of a host, '/uag' on GitHub Pages.
+  var base = settings.basePath || '';
 
   function tell(code, error) {
     if (window.parent !== window) window.parent.postMessage({ type: 'uag-demo', code: code, error: error }, location.origin);
@@ -29,7 +32,7 @@
     box.style.cssText = 'position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:rgba(246,247,249,.97);font:15px/1.55 Inter,system-ui,sans-serif;color:#0c141d;text-align:center';
     box.innerHTML = '<div style="max-width:460px"><h2 style="margin:0 0 10px;font-size:22px">Start the demo first</h2>' +
       '<p style="color:#566073">This demo runs as a temporary guest of the demo\'s project. Start it from its example page, then open it full screen again.</p>' +
-      '<p><a style="color:#5a9a39;font-weight:600" href="/examples/' + encodeURIComponent(name) + '">Go to the example</a></p></div>';
+      '<p><a style="color:#5a9a39;font-weight:600" href="' + base + '/examples/' + encodeURIComponent(name) + '">Go to the example</a></p></div>';
     document.body.appendChild(box);
   }
 
@@ -49,6 +52,8 @@
       // For the flow log only: formio.js makes its own requests with a bundled fetch,
       // which js/flow-log.js would not see. An application needs nothing like this.
       Formio.fetch = function (url, options) { return window.fetch(url, options); };
+      // Before the token: formio.js keeps it under this namespace (uagDemoToken).
+      Formio.namespace = window.UAGDemoGuest.namespace;
       Formio.setBaseUrl(settings.formioBaseUrl);
       Formio.setProjectUrl(settings.projectUrl);
       Formio.setToken(token);

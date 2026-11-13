@@ -16,7 +16,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isSecretName, readConfig } from '../lib/config.mjs';
+import { contentSecurityPolicy, isSecretName, readConfig } from '../lib/config.mjs';
+import { escapeHtml } from '../lib/docs.mjs';
 import { Docs } from '../lib/docs.mjs';
 import { PAGES, Views, render, siteValues } from '../lib/pages.mjs';
 import { PROFILES } from '../module/applicants.mjs';
@@ -76,6 +77,29 @@ export function renderSite(config) {
         html: views.page('404', siteValues(config, { route: '/404', view: '404', nav: '', title: 'Page not found', description: '' })),
     })));
     return out;
+}
+
+/**
+ * The policy a page carries in a `<meta>` tag, for hosts that cannot send headers
+ * (GitHub Pages): the site's Content-Security-Policy without `frame-ancestors`,
+ * which browsers ignore there.
+ */
+export function metaPolicy(config) {
+    return contentSecurityPolicy({ uagOrigin: new URL(config.uag.url).origin, projectOrigin: new URL(config.projectUrl).origin })
+        .split('; ').filter((directive) => !directive.startsWith('frame-ancestors ')).join('; ');
+}
+
+/**
+ * Every HTML file the build writes, finished for where it is served: links and
+ * sources from the root (`/developers`, `/js/site.js`) start with the base path,
+ * the `<html>` element names it for scripts (`data-base-path`), and the head
+ * carries the Content-Security-Policy and referrer policy as `<meta>` tags.
+ */
+export function finishHtml(html, config) {
+    const base = config.basePath || '';
+    if (base) html = html.replace(/(\s(?:href|src|action|poster|xlink:href|data-src|data-watch)=)(["'])\/(?!\/)/g, `$1$2${base}/`);
+    html = html.replace(/<html(?=[\s>])/, `<html data-base-path="${escapeHtml(base)}"`);
+    return html.replace(/(<head>\s*<meta charset="utf-8">)/i, `$1\n  <meta http-equiv="Content-Security-Policy" content="${escapeHtml(metaPolicy(config))}">\n  <meta name="referrer" content="strict-origin-when-cross-origin">`);
 }
 
 /** The values a demo app's HTML is rendered with: where its UAG and project are. */
@@ -143,10 +167,10 @@ export function build(config = readConfig(), env = process.env) {
         // The assets as they are, and the demo apps' pages with their UAG and project filled in.
         const values = appValues(config);
         copyDir(path.join(config.root, 'public'), temp, (html, source) =>
-            (source.includes(`${path.sep}apps${path.sep}`) ? render(html, values) : html));
+            finishHtml(source.includes(`${path.sep}apps${path.sep}`) ? render(html, values) : html, config));
         for (const { file, html } of pages) {
             fs.mkdirSync(path.join(temp, path.dirname(file)), { recursive: true });
-            fs.writeFileSync(path.join(temp, file), html);
+            fs.writeFileSync(path.join(temp, file), finishHtml(html, config));
         }
         // The workflow demo's sample applicants.
         fs.writeFileSync(path.join(temp, 'apps/workflow/applicants.json'), JSON.stringify(PROFILES, null, 2));

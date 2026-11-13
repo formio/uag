@@ -13,6 +13,10 @@
   if (window.UAGDemoGuest) return;
   // Where the guest is kept in localStorage.
   var STORED_AS = 'uag-demo-guest';
+  // formio.js's localStorage namespace (Formio.namespace), so its token and user
+  // (uagDemoToken, uagDemoUser) never collide with another formio.js application
+  // on the same origin, such as other sites on formio.github.io.
+  var NAMESPACE = 'uagDemo';
   // A token this close to expiring is not used: a demo started now would fail part way.
   var MARGIN_MS = 5 * 60 * 1000;
 
@@ -77,7 +81,11 @@
   function clear() {
     try { localStorage.removeItem(STORED_AS); } catch (e) { /* storage unavailable */ }
     if (window.Formio && typeof window.Formio.setToken === 'function') {
-      try { window.Formio.setToken(null); } catch (e) { /* formio.js not ready */ }
+      try {
+        window.Formio.namespace = NAMESPACE;
+        window.Formio.setToken(null);
+      }
+      catch (e) { /* formio.js not ready */ }
     }
   }
 
@@ -93,6 +101,7 @@
 
   window.UAGDemoGuest = {
     settings: settings,
+    namespace: NAMESPACE,
     token: function () { var guest = read(); return guest ? guest.token : null; },
     start: start,
     clear: clear,

@@ -3,8 +3,9 @@
  *
  * The site is static: everything here ends up in the pages, so nothing here
  * may be a secret. Everything that names a host lives here, so moving the
- * site to another domain is a change to DEMO_DOMAIN (or DEMO_PUBLIC_URL), and
- * moving the UAG is a change to DEMO_UAG_URL.
+ * site to another domain is a change to DEMO_PUBLIC_URL (and DEMO_BASE_PATH,
+ * when the site is served under a path, as a GitHub Pages project site is),
+ * and moving the UAG is a change to DEMO_UAG_URL.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,11 +17,24 @@ const version = JSON.parse(fs.readFileSync(path.join(here, '..', 'package.json')
 /** The demo's own project, on Form.io's hosted service. */
 export const DEFAULT_PROJECT_URL = 'https://uag.form.io';
 
-const DEFAULT_DOMAIN = 'ai.form.io';
+/** Where the demo site is published, on GitHub Pages. */
+export const DEFAULT_PUBLIC_URL = 'https://formio.github.io/uag';
 
-/** The site's public URL: DEMO_PUBLIC_URL, or else DEMO_DOMAIN over HTTPS. */
+/** The site's public URL: DEMO_PUBLIC_URL, or else DEMO_DOMAIN over HTTPS, or else GitHub Pages. */
 export function publicUrlOf(env) {
-    return (env.DEMO_PUBLIC_URL || `https://${env.DEMO_DOMAIN || DEFAULT_DOMAIN}`).replace(/\/+$/, '');
+    return (env.DEMO_PUBLIC_URL || (env.DEMO_DOMAIN ? `https://${env.DEMO_DOMAIN}` : DEFAULT_PUBLIC_URL)).replace(/\/+$/, '');
+}
+
+/**
+ * The path the site is served under (DEMO_BASE_PATH), such as `/uag` for a GitHub
+ * Pages project site, or `''` for a site at the root of its host. Every link the
+ * build writes from the root starts with it.
+ */
+export function basePathOf(env) {
+    const base = String(env.DEMO_BASE_PATH || '').trim().replace(/\/+$/, '');
+    if (!base) return '';
+    if (!/^\/[A-Za-z0-9._~\/-]*$/.test(base)) throw new Error(`DEMO_BASE_PATH must be a path such as /uag, not ${JSON.stringify(env.DEMO_BASE_PATH)}.`);
+    return base;
 }
 
 /**
@@ -105,6 +119,7 @@ export function readConfig(env = process.env) {
     return {
         production,
         publicUrl,
+        basePath: basePathOf(env),
         root: path.resolve(here, '..'),
         out: path.resolve(here, '..', env.DEMO_OUT || 'dist'),
         // What the pages are given: the UAG they embed, the project's URL on it, and the
@@ -126,7 +141,7 @@ export function readConfig(env = process.env) {
             formio: env.FORMIO_SITE_URL || 'https://form.io',
             schedule: env.SCHEDULE_URL || 'https://form.io/contact-us',
             // Where the demos run for anyone, named by the notice a local run shows.
-            liveDemo: env.DEMO_LIVE_URL || 'https://ai.form.io',
+            liveDemo: env.DEMO_LIVE_URL || DEFAULT_PUBLIC_URL,
         },
         formioJsVersion: env.FORMIO_JS_VERSION || '5.6.1',
         // Added to the URLs of the site's scripts and stylesheets (?v=), so a new

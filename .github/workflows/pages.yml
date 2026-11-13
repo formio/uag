@@ -1,0 +1,67 @@
+# Builds the demo site (demo/) and publishes it to GitHub Pages, at
+# https://formio.github.io/uag: on each release tag (not a prerelease), and when
+# run by hand (Actions → Demo site → Run workflow), from any branch or tag.
+name: Demo site
+
+on:
+  push:
+    tags: ["v[0-9]*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch' || !contains(github.ref_name, '-')
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: production
+      DEMO_UAG_URL: https://ai.form.io
+      FORMIO_PROJECT_URL: https://uag.form.io
+      DEMO_PUBLIC_URL: https://formio.github.io/uag
+      DEMO_BASE_PATH: /uag
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+
+      # The site needs only the demo workspace's own dependencies.
+      - name: Install the demo's dependencies
+        run: yarn workspaces focus @formio/uag-demo
+
+      - name: Build the site
+        run: yarn demo:build
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: demo/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

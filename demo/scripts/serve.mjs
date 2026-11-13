@@ -47,16 +47,27 @@ export function resolve(root, urlPath) {
 }
 
 /**
- * A static server for `root`. `headers` are sent with every answer.
+ * A static server for `root`. `headers` are sent with every answer. With a
+ * `basePath` (`/uag`), the site is served under it, as GitHub Pages serves a
+ * project site: `/uag` redirects to `/uag/`, and a path outside it is not found.
  */
-export function createServer(root, headers = {}) {
+export function createServer(root, headers = {}, basePath = '') {
     root = path.resolve(root);
     return http.createServer((req, res) => {
         if (req.method !== 'GET' && req.method !== 'HEAD') {
             res.writeHead(405, { Allow: 'GET, HEAD' }).end();
             return;
         }
-        const found = resolve(root, req.url || '/');
+        let url = req.url || '/';
+        if (basePath) {
+            const [pathname] = url.split('?');
+            if (pathname === basePath) {
+                res.writeHead(301, { Location: `${basePath}/` }).end();
+                return;
+            }
+            url = pathname.startsWith(`${basePath}/`) ? url.slice(basePath.length) : null;
+        }
+        const found = url === null ? null : resolve(root, url);
         const file = found || path.join(root, '404.html');
         const type = TYPES[path.extname(file)] || 'application/octet-stream';
         // HTML is revalidated on every load; nothing is cached for long in development.
@@ -83,7 +94,7 @@ export function securityHeaders(config) {
 export async function serveSite({ port, env, host = '127.0.0.1' }) {
     const config = readConfig(env);
     build(config, { ...process.env, ...env });
-    const server = createServer(config.out, securityHeaders(config));
+    const server = createServer(config.out, securityHeaders(config), config.basePath);
     await new Promise((resolve, reject) => {
         server.once('error', reject);
         server.listen(Number(port), host, resolve);
@@ -91,7 +102,7 @@ export async function serveSite({ port, env, host = '127.0.0.1' }) {
     return {
         config,
         env,
-        url: `http://${host}:${port}`,
+        url: `http://${host}:${port}${config.basePath}`,
         close: () => new Promise((resolve) => {
             server.closeAllConnections?.();
             server.close(() => resolve());
@@ -150,7 +161,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         console.error('[demo:serve] Nothing to serve: build the site first (yarn demo:build), or pass --watch.');
         process.exit(1);
     }
-    createServer(config.out, securityHeaders(config)).listen(port, '127.0.0.1', () => {
-        console.log(`[demo:serve] The site is at http://localhost:${port}, against the UAG at ${config.uag.url}.`);
+    createServer(config.out, securityHeaders(config), config.basePath).listen(port, '127.0.0.1', () => {
+        console.log(`[demo:serve] The site is at http://localhost:${port}${config.basePath}/, against the UAG at ${config.uag.url}.`);
     });
 }
