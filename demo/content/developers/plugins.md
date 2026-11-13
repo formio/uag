@@ -39,7 +39,7 @@ import myConverter from './my-converter.mjs';
 export default [UAGDocument, Extract, Analyze, Translate, OfficeText, myConverter];
 ```
 
-These plugins come from `@formio/uag-extras`, the package of UAG extras (modules, actions, MCP tools, engine types, document plugins and converters) from Form.io and the community: `npm install @formio/uag-extras@^1` in the plugins folder (it needs `@formio/uag` 2.0.0 or later and Node.js 24 or later). See [`@formio/uag-extras` on npm](https://www.npmjs.com/package/@formio/uag-extras). Each extra is its own import, `@formio/uag-extras/<kind>/<name>`: its default export is a module for `server.use()`, and its plugin is a named export, for plugins files. In Docker, the [`formio/uag-documents` add-on](./ai-document.md#run-it-with-docker) brings the AI Document module and these plugins, so your own folder beside it lists only yours (see [Add-ons](#add-ons)). A plugin that needs system packages (an OCR engine) needs them in the UAG's container: build an image `FROM formio/uag:<version>` that adds them with `apk add`, and mount or copy the plugins there.
+These plugins come from `@formio/uag-extras`, the package of UAG extras (modules, actions, MCP tools, engine types, document plugins and converters) from Form.io and the community: `npm install @formio/uag-extras@^2` in the plugins folder (it needs `@formio/uag` 2.0.0 or later and Node.js 24 or later). See [`@formio/uag-extras` on npm](https://www.npmjs.com/package/@formio/uag-extras). Each extra is its own import, `@formio/uag-extras/<kind>/<name>`: its default export is a module for `server.use()`, and its plugin is a named export, for plugins files. In Docker, the [`formio/uag-documents` add-on](./ai-document.md#run-it-with-docker) brings the AI Document module and these plugins, so your own folder beside it lists only yours (see [Add-ons](#add-ons)). A plugin that needs system packages (an OCR engine) needs them in the UAG's container: build an image `FROM formio/uag:<version>` that adds them with `apk add`, and mount or copy the plugins there.
 
 ### Add-ons
 
@@ -48,7 +48,7 @@ In Docker, each set of plugins is a folder of its own under `/app/plugins`, with
 ```yaml
 services:
   uag-documents:
-    image: formio/uag-documents:1
+    image: formio/uag-documents:2
     volumes:
       - uag-documents:/out
   uag-crm:                      # an example: any add-on is run the same way
@@ -82,7 +82,7 @@ The UAG loads `/app/plugins/crm/index.mjs`, `/app/plugins/documents/index.mjs` a
 - Two folders that register the same plugin (`type:name`), plugin type, form route or component type stop startup, naming both files: `Plugin document:translate is registered twice: by /app/plugins/documents/index.mjs… and by /app/plugins/my-plugins/index.mjs`.
 - `PLUGINS_DISABLED` and `MODULES_DISABLED` leave out what you do not want from any of them.
 
-`restart: true` restarts the UAG when Compose runs a newer add-on, so `docker compose pull` and `docker compose up -d` upgrade it. To remove an add-on, delete its service, its `depends_on` entry, its mount and its volume. With `docker run`, run each add-on into its volume first (`docker run --rm -v uag-documents:/out formio/uag-documents:1`), then mount the volumes (`-v uag-documents:/app/plugins/documents:ro`). On Kubernetes, each add-on is an initContainer writing to its own `emptyDir` at `/out`, mounted at `/app/plugins/<name>` in the UAG's container. Loading folders under `/app/plugins` needs `formio/uag` 2.0.0 or later.
+`restart: true` restarts the UAG when Compose runs a newer add-on, so `docker compose pull` and `docker compose up -d` upgrade it. To remove an add-on, delete its service, its `depends_on` entry, its mount and its volume. With `docker run`, run each add-on into its volume first (`docker run --rm -v uag-documents:/out formio/uag-documents:2`), then mount the volumes (`-v uag-documents:/app/plugins/documents:ro`). On Kubernetes, each add-on is an initContainer writing to its own `emptyDir` at `/out`, mounted at `/app/plugins/<name>` in the UAG's container. Loading folders under `/app/plugins` needs `formio/uag` 2.0.0 or later.
 
 To ship your own plugins folder the same way, build an add-on of your own:
 

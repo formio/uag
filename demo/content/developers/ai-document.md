@@ -7,7 +7,7 @@ order: 48
 
 The **AI Document** component (`uagdocument`) lets the people filling a form drop files and get AI-generated content from them: an exact extraction, a summary, an assessment. The form designer picks a **process** (a document plugin) and writes the instructions; converters bring each file to what the AI engine reads (PDF or text). Files upload to the form's own storage; the submission holds the file references and the result, never file bytes from the UAG. The [lease review example](../../public/apps/documents) shows it at work.
 
-AI Document is a [module](./modules.md#settings-routes-and-components): it comes with `@formio/uag-extras/modules/ai-document`, which brings the component, the process route and the `document` plugin type, and the plugins it runs come from the document extras of `@formio/uag-extras` or your own (see [Plugins](./plugins.md)). With Docker, the `formio/uag-documents` add-on brings all of them to the `formio/uag` image (see [Run it with Docker](#run-it-with-docker)). In your own server (`@formio/uag-extras` 1.x needs `@formio/uag` 2.0.0 or later and Node.js 24 or later), after `npm install @formio/uag-extras@^1`:
+AI Document is a [module](./modules.md#settings-routes-and-components): it comes with `@formio/uag-extras/modules/ai-document`, which brings the component, the process route and the `document` plugin type, and the plugins it runs come from the document extras of `@formio/uag-extras` or your own (see [Plugins](./plugins.md)). With Docker, the `formio/uag-documents` add-on brings all of them to the `formio/uag` image (see [Run it with Docker](#run-it-with-docker)). In your own server (`@formio/uag-extras` 2.x needs `@formio/uag` 2.0.0 or later and Node.js 24 or later), after `npm install @formio/uag-extras@^2`:
 
 ```js
 import { UAGDocument } from '@formio/uag-extras/modules/ai-document';
@@ -35,7 +35,7 @@ They drop one or more files, which formio.js uploads to the configured storage. 
 ## For the application developer
 
 ```js
-// npm install @formio/uag-js @formio/uag-extras@^1
+// npm install @formio/uag-js @formio/uag-extras@^2
 import { Formio } from '@formio/js';
 import { UAG } from '@formio/uag-js';
 import aiDocument from '@formio/uag-extras/modules/ai-document/client';
@@ -43,7 +43,7 @@ Formio.use(UAG('https://uag.example.com'));
 Formio.use(aiDocument);
 ```
 
-Rendering a form that contains an AI Document needs nothing else. An application with its own form builder awaits the manifest first: `await UAG.ready`. A page without a bundler loads `https://uag.example.com/uag-js/uag.use.js`, which registers itself with that UAG and carries the component of every module the UAG uses; or it loads the module's script and style from a CDN, after `uag.use.js`: `https://cdn.jsdelivr.net/npm/@formio/uag-extras@1/dist/modules/ai-document.min.js` and `ai-document.css` beside it.
+Rendering a form that contains an AI Document needs nothing else. An application with its own form builder awaits the manifest first: `await UAG.ready`. A page without a bundler loads `https://uag.example.com/uag-js/uag.use.js`, which registers itself with that UAG and carries the component of every module the UAG uses; or it loads the module's script and style from a CDN, after `uag.use.js`: `https://cdn.jsdelivr.net/npm/@formio/uag-extras@2/dist/modules/ai-document.min.js` and `ai-document.css` beside it.
 
 ### The target field
 
@@ -59,14 +59,14 @@ In this release the UAG neither signs results nor checks AI Document values when
 
 ## For the operator
 
-`formio/uag-documents` is an add-on that runs beside the `formio/uag` image; it does not contain the UAG. It holds a plugins folder: an `index.mjs` that loads the AI Document module (`module:ai-document`), the `extract`, `analyze` and `translate` document plugins and the `office-text` converter (Word and Excel files), and a `node_modules` with `@formio/uag-extras` and the converter's libraries. It copies that folder into its own volume and exits; the UAG mounts that volume in a folder under `/app/plugins` and loads it at startup with any other add-ons (see [Plugins: Add-ons](./plugins.md#add-ons)). The extras use the UAG's own `@formio/uag` and `zod`. It needs `formio/uag` 2.0.0 or later. Its tags follow `@formio/uag-extras`: `formio/uag-documents:1` (the newest 1.x), or an exact version such as `formio/uag-documents:1.0.0`.
+`formio/uag-documents` is an add-on that runs beside the `formio/uag` image; it does not contain the UAG. It holds a plugins folder: an `index.mjs` that loads the AI Document module (`module:ai-document`), the `extract`, `analyze` and `translate` document plugins and the `office-text` converter (Word and Excel files), and a `node_modules` with `@formio/uag-extras` and the converter's libraries. It copies that folder into its own volume and exits; the UAG mounts that volume in a folder under `/app/plugins` and loads it at startup with any other add-ons (see [Plugins: Add-ons](./plugins.md#add-ons)). The extras use the UAG's own `@formio/uag` and `zod`. It needs `formio/uag` 2.0.0 or later. Its tags follow `@formio/uag-extras`, whose major version is the UAG's: `formio/uag-documents:2` (the newest 2.x, for `formio/uag` 2.x), or an exact version such as `formio/uag-documents:2.0.0`. Its minor and patch versions are its own, not the UAG's. For a ready-made deployment, the [deployment kit](https://github.com/formio/uag-extras/tree/main/deploy) in formio/uag-extras has a Compose file and an `.env` template that run both, with an optional database.
 
 ### Run it with Docker
 
 ```yaml
 services:
   uag-documents:
-    image: formio/uag-documents:1
+    image: formio/uag-documents:2
     volumes:
       - uag-documents:/out
 
@@ -88,7 +88,7 @@ volumes:
 - The add-on runs once at each `docker compose up`: it replaces what its volume holds with its folder and exits with `0`. Do not give it `restart: always`.
 - `condition: service_completed_successfully` keeps the UAG from starting before the files are there; the volume is how they reach it.
 - To upgrade, run `docker compose pull` and `docker compose up -d`. With `restart: true`, Compose stops the UAG, runs the newer add-on, then starts the UAG on its files.
-- Without Compose: `docker volume create uag-documents`, then `docker run --rm -v uag-documents:/out formio/uag-documents:1`, then run `formio/uag` with `-v uag-documents:/app/plugins/documents:ro`.
+- Without Compose: `docker volume create uag-documents`, then `docker run --rm -v uag-documents:/out formio/uag-documents:2`, then run `formio/uag` with `-v uag-documents:/app/plugins/documents:ro`.
 - On Kubernetes, run the add-on as an initContainer that writes to an `emptyDir` volume mounted at `/out`, and mount that `emptyDir` at `/app/plugins/documents` (read-only) in the UAG's container.
 - Other add-ons and your own plugins go in folders of their own beside it (see [Plugins: Add-ons](./plugins.md#add-ons)). A document plugin of your own uses the `document` type this add-on's module defines.
 - `MODULES_DISABLED=ai-document` turns the module off, and `PLUGINS_DISABLED` (`document:translate`, say) one of its plugins.

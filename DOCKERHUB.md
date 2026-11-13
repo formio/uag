@@ -140,7 +140,7 @@ Forms and resources are cached and refreshed on the `PROJECT_TTL` interval, so a
 - Documentation: https://github.com/formio/uag/blob/main/demo/content/developers/index.md · Source: https://github.com/formio/uag
 - Demos of conversation forms, agentic workflows and Agentic Formflow (source): https://github.com/formio/uag/tree/main/demo
 - Engine server image, for running engines in their own container: https://hub.docker.com/r/formio/uag-engines
-- AI Document add-on, which runs beside this image and fills its plugins folder with the AI Document module and the document extras of `@formio/uag-extras`: https://hub.docker.com/r/formio/uag-documents (`formio/uag-documents:1`); see https://github.com/formio/uag/blob/main/demo/content/developers/ai-document.md#run-it-with-docker
+- AI Document add-on, which runs beside this image and fills its plugins folder with the AI Document module and the document extras of `@formio/uag-extras`: https://hub.docker.com/r/formio/uag-documents (`formio/uag-documents:2`, whose major version is the UAG's); see https://github.com/formio/uag/blob/main/demo/content/developers/ai-document.md#run-it-with-docker, and https://github.com/formio/uag-extras/tree/main/deploy for a Compose file and `.env` template that run both
 - MCP server for building and managing Form.io forms from a coding agent: https://hub.docker.com/r/formio/mcp
 - Agentic Coding Plugin, so your coding agent can tag forms, deploy the UAG and wire applications to it: https://github.com/formio/ai (`npx skills add formio/ai`)
 - License: MIT
