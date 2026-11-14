@@ -83,9 +83,9 @@ The UAG supports four usage patterns. They share the same forms, authentication 
 | Pattern | Who drives | Entry point | Model runs | License |
 |---|---|---|---|---|
 | **Conversation forms** | A person, through an agent or a chat on your page | `/mcp`, or a form's `agent/chat` | In the MCP client (Claude, your own app), or in the UAG through an agent engine | None |
-| **Agentic workflows** | A submission sent to the UAG | The "Agent: Run task" action, after the save | In the UAG, through an engine | A license that includes the UAG, or a hosted project |
-| **Agentic Formflow** | An application, or a person typing in a form | `{form}/agent/extract`, `/decide`, `/generate` | In the UAG, through engines | A license that includes the UAG, or a hosted project |
-| **AI Documents** | A person uploading files to a form | An AI Document component's `{form}/document/process` | In the UAG, through an agent engine | A license that includes the UAG, or a hosted project |
+| **Agentic workflows** | A submission sent to the UAG | The "Agent: Run task" action, after the save | In the UAG, through an engine | A license that includes the UAG, or a trial project |
+| **Agentic Formflow** | An application, or a person typing in a form | `{form}/agent/extract`, `/decide`, `/generate` | In the UAG, through engines | A license that includes the UAG, or a trial project |
+| **AI Documents** | A person uploading files to a form | An AI Document component's `{form}/document/process` | In the UAG, through an agent engine | A license that includes the UAG, or a trial project |
 
 ### Conversation forms over MCP
 

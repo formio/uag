@@ -1,14 +1,16 @@
 ---
 title: Quickstart
-description: Run the UAG yourself, inside your own network or against a hosted Form.io project, and make your first MCP and Agent API calls.
+description: Run the UAG yourself inside your own network, or try it on a 30-day free trial project, and make your first MCP and Agent API calls.
 section: Start here
 order: 3
 ---
 
-This page gets a UAG running and answering in about ten minutes. There are two ways to run it:
+This page gets a UAG running and answering in about ten minutes. There are two ways to try it:
 
 - **[Self-hosted](#self-hosted-with-formio-open-source)**: Form.io Open Source and the UAG in one Docker Compose stack, on your machine or your own servers. Free, and nothing leaves your network unless you enable a model engine that calls out.
-- **[Against a hosted project](#against-a-hosted-formio-project)**: the UAG in Docker, connected to a project on Form.io's hosted SaaS at `portal.form.io`.
+- **[On a 30-day free trial](#try-it-on-a-30-day-free-trial)**: the UAG in Docker, connected to a trial project on `portal.form.io`, to try the features that need a license.
+
+For production, run the UAG self-hosted with Form.io Enterprise and a license that includes the UAG; see [Deployment](./deployment.md).
 
 Both end with the same [first calls](#first-calls): a token, the MCP tool list, and the Agent API's capabilities.
 
@@ -119,11 +121,11 @@ Wait `PROJECT_TTL` seconds (10 here) for the UAG to register it, or run `docker 
 
 To make the UAG reachable from outside the host, put it behind a reverse proxy with TLS, and set `TRUST_PROXY` so the UAG reads its public URL from the proxy's forwarded headers (or set `BASE_URL` to that URL). Remote MCP clients such as claude.ai connectors also need `MCP_OAUTH=true` and a database of the UAG's own (`MONGO`); see [Connect Claude](./connect-claude.md). Read [Deployment](./deployment.md) and [Security](./security.md) before you expose it.
 
-## Against a hosted Form.io project
+## Try it on a 30-day free trial
 
-If your forms already live on Form.io's hosted SaaS, run the UAG yourself and point it at the project. The UAG still runs where you run it, so its tokens, logs and engine traffic stay in your infrastructure.
+To try the features that need a license, such as Agentic Formflow, start a 30-day free trial on `portal.form.io`, run the UAG yourself and point it at the trial project. The UAG still runs where you run it, so its tokens, logs and engine traffic stay in your infrastructure. The trial is for trying the UAG; for production, run it self-hosted with Form.io Enterprise.
 
-1. **Create a project.** Sign in at https://portal.form.io and create a project, or open an existing one. Note its API endpoint, `https://<project>.form.io`.
+1. **Create a project.** Start a free trial at https://portal.form.io and create a project. Note its API endpoint, `https://<project>.form.io`.
 2. **Create an API key.** In the project, open **Project Settings → API Keys** and add a key. The UAG uses it as `PROJECT_KEY`. Treat it as a secret: it grants administrator access to the project.
 3. **Tag a form.** Open a form, add `uag` under **Settings → Tags**, and save.
 4. **Run the UAG.**
@@ -136,11 +138,11 @@ docker run -d --name formio-uag -p 3200:3200 \
   formio/uag
 ```
 
-Hosted SaaS projects need no license: they run under Form.io's own license, as the Enterprise edition, and Agentic Formflow is allowed (`/agent/capabilities` reports `reason: "hosted"`). A license is needed when you self-host Form.io, for Form.io Enterprise or for Agentic Formflow; see [Deployment](./deployment.md#licensing).
+Against a trial project, the UAG needs no license of its own, and Agentic Formflow is allowed (`/agent/capabilities` reports `reason: "hosted"`). A self-hosted UAG serving Form.io Enterprise, or running Agentic Formflow on your own Form.io, needs a license that includes the UAG; see [Deployment](./deployment.md#licensing).
 
-> **Note:** A database of the UAG's own (`MONGO`) needs a license that includes the UAG (`LICENSE_KEY`), with a hosted project too.
+> **Note:** A database of the UAG's own (`MONGO`) needs a license that includes the UAG (`LICENSE_KEY`), with a trial project too.
 
-In the commands below, a hosted project uses its own name in the `client_id` (`<project>-x-token`) and its API key as the secret: set `PROJECT_KEY` instead of `ADMIN_KEY`, send `-H "x-token: $PROJECT_KEY"` where a command sends `x-admin-key`, and where a step runs `docker compose up -d`, remove the container (`docker rm -f formio-uag`) and run the `docker run` command again with the new `-e` settings.
+In the commands below, a trial project uses its own name in the `client_id` (`<project>-x-token`) and its API key as the secret: set `PROJECT_KEY` instead of `ADMIN_KEY`, send `-H "x-token: $PROJECT_KEY"` where a command sends `x-admin-key`, and where a step runs `docker compose up -d`, remove the container (`docker rm -f formio-uag`) and run the `docker run` command again with the new `-e` settings.
 
 ## First calls
 
@@ -158,9 +160,9 @@ Server-side clients exchange a key for a UAG access token with the `client_crede
 | Deployment | `client_id` | `client_secret` |
 |---|---|---|
 | Form.io Open Source | `formio-oss-x-admin-key` | `ADMIN_KEY` |
-| Form.io Enterprise or hosted SaaS | `<project name>-x-token` | `PROJECT_KEY` |
+| Form.io Enterprise, or a trial project on portal.form.io | `<project name>-x-token` | `PROJECT_KEY` |
 
-The token endpoint is `/auth/token` on the UAG, on every edition, and it is always on: it needs no `BASE_URL`, `MONGO` or `MCP_OAUTH`. Against an Enterprise or hosted project, the project's routes are also served under its name, so `/<project name>/auth/token` works too.
+The token endpoint is `/auth/token` on the UAG, on every edition, and it is always on: it needs no `BASE_URL`, `MONGO` or `MCP_OAUTH`. Against an Enterprise or trial project, the project's routes are also served under its name, so `/<project name>/auth/token` works too.
 
 ```bash
 curl -s -X POST $UAG/auth/token \
@@ -256,13 +258,13 @@ curl -s -X POST $UAG/supportrequest/agent/decide \
   -d '{"data":{}}'
 ```
 
-A form's operations are under the form's URL on the UAG, as its submissions are: here the form's path, `supportrequest`, at the UAG's root. Against an Enterprise or hosted project, the form is under the project's name (`$UAG/<project name>/supportrequest/agent/decide`), and the key is `-H "x-token: $PROJECT_KEY"`.
+A form's operations are under the form's URL on the UAG, as its submissions are: here the form's path, `supportrequest`, at the UAG's root. Against an Enterprise or trial project, the form is under the project's name (`$UAG/<project name>/supportrequest/agent/decide`), and the key is `-H "x-token: $PROJECT_KEY"`.
 
 ```json
 { "requestId": "b011c34d-9bda-447c-bb8d-9e53f8d362dc", "error": "The form \"supportRequest\" defines no tasks.", "code": "invalid_request" }
 ```
 
-The form defines no task yet, so the UAG answers `400` and says so. Give it one: a criteria content component, and the `uag` property on the field the task decides (see [Concepts](./concepts.md)). This replaces the form with the same fields plus a `triage` task that decides `urgency` (on a hosted project, add the same two properties in the form builder instead):
+The form defines no task yet, so the UAG answers `400` and says so. Give it one: a criteria content component, and the `uag` property on the field the task decides (see [Concepts](./concepts.md)). This replaces the form with the same fields plus a `triage` task that decides `urgency` (on a trial project, add the same two properties in the form builder instead):
 
 ```bash
 FORM_ID=$(curl -s http://localhost:3000/supportrequest -H "x-admin-key: $ADMIN_KEY" \

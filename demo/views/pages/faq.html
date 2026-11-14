@@ -12,7 +12,7 @@
           <summary>What is the Universal Agent Gateway?</summary>
           <div class="faq-answer">
             <p>The UAG sits between AI agents and your Form.io project. Your forms become the instructions, guardrails and APIs agents work through: an agent discovers a form's fields, has every value checked against the form's own validation, and saves through the same permissions as any other Form.io client. The UAG is open source under the MIT license, and runs in your own environment.</p>
-            <p>It works with Form.io Open Source, a self-hosted Form.io Enterprise server, or a project on Form.io's hosted service. See <a href="/developers">How the UAG works</a>.</p>
+            <p>It works with a self-hosted Form.io Enterprise server or Form.io Open Source, and you can try it on a 30-day free trial project on portal.form.io. See <a href="/developers">How the UAG works</a>.</p>
           </div>
         </details>
 
@@ -85,11 +85,11 @@
           <summary>When do I need a license, and which one?</summary>
           <div class="faq-answer">
             <ul>
-              <li><strong>Agentic Formflow</strong> needs a license that includes the UAG, or a project on Form.io's hosted service, which runs under Form.io's own license.</li>
+              <li><strong>Agentic Formflow</strong> needs a license that includes the UAG. A 30-day free trial project on portal.form.io runs it too, to try it.</li>
               <li><strong>A self-hosted Form.io Enterprise project</strong> needs a license that includes the UAG before the UAG will load it at all.</li>
               <li><strong>A license includes the UAG</strong> when it is an online license whose key has the <code>uagServer</code> scope, which allows a number of UAG servers (each project a UAG serves counts as one), or an offline license with the <code>uag</code> option, issued for the one project it serves.</li>
-              <li><strong>The UAG's own database</strong> (<code>MONGO</code>), which remote MCP sign-in (<code>MCP_OAUTH</code>), run records in Action Logs and runs that survive a restart use, needs a license on every edition, the hosted service included. Without a license the UAG starts with those features off, and says why in its log.</li>
-              <li><strong>Everything else</strong>, including conversation forms, the chat widget and everything marked "Available" in the table above, needs no license on Form.io Open Source or the hosted service.</li>
+              <li><strong>The UAG's own database</strong> (<code>MONGO</code>), which remote MCP sign-in (<code>MCP_OAUTH</code>), run records in Action Logs and runs that survive a restart use, needs a license on every edition, a trial project included. Without a license the UAG starts with those features off, and says why in its log.</li>
+              <li><strong>Everything else</strong>, including conversation forms, the chat widget and everything marked "Available" in the table above, needs no license on Form.io Open Source or a trial project.</li>
             </ul>
             <p>Put the license in <code>LICENSE_KEY</code>, the same variable Form.io Enterprise reads, so one Form.io license that includes the UAG runs both. <code>UAG_LICENSE</code> still works, and is deprecated. See <a href="/developers/deployment#licensing">Licensing</a>, or <a href="{{links.contact}}">ask us for a trial</a>.</p>
           </div>
@@ -100,7 +100,7 @@
           <div class="faq-answer">
             <p>Yes, two ways:</p>
             <ul>
-              <li>Connect the UAG to a project on Form.io's hosted service (<code>https://&lt;project&gt;.form.io</code>). Agentic Formflow runs there with any engine, and <code>/agent/capabilities</code> reports <code>reason: "hosted"</code>.</li>
+              <li>Start a <a href="{{links.trial}}">30-day free trial</a> on portal.form.io and connect the UAG to its project (<code>https://&lt;project&gt;.form.io</code>). Agentic Formflow runs there with any engine, and <code>/agent/capabilities</code> reports <code>reason: "hosted"</code>.</li>
               <li>Enable only the stub engines (<code>UAG_ENGINES=stub-decision,stub-agent</code>). The Agent API and "Agent: Run task" actions then run anywhere, with placeholder answers, so you can build against it before you have model keys.</li>
             </ul>
           </div>

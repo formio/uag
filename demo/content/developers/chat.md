@@ -332,7 +332,7 @@ The UAG refuses project and admin keys on browser requests, so a key cannot be u
 
 ## Limits and licensing
 
-- **No Agentic Formflow license.** Chat is part of conversation forms, like the MCP tools: it runs on Form.io Open Source and on the hosted service with an unlicensed UAG. A self-hosted Enterprise project needs a license that includes the UAG to be served at all, and nothing more for chat (see [Editions](./deployment.md#editions)). `GET /agent/capabilities` reports `operations.chat`. The rest of the Agent API (`extract`, `decide`, `generate`), Agent Input and Run task are Agentic Formflow, and need a license or a hosted project.
+- **No Agentic Formflow license.** Chat is part of conversation forms, like the MCP tools: it runs on Form.io Open Source and on the hosted service with an unlicensed UAG. A self-hosted Enterprise project needs a license that includes the UAG to be served at all, and nothing more for chat (see [Editions](./deployment.md#editions)). `GET /agent/capabilities` reports `operations.chat`. The rest of the Agent API (`extract`, `decide`, `generate`), Agent Input and Run task are Agentic Formflow, and need a license or a trial project.
 - **Engines.** A turn needs an agent engine. The UAG tries the engines in `agentApi.chat.engines` (default: every agent engine) in order, each within its timeout, and moves to the next on a failure. See [Engines](./engines.md#chat).
 - **Bounds.** A turn carries at most 40 messages of at most 2000 characters each, and the UAG sends the engine the newest 24,000 characters of the conversation (`agentApi.chat`). Callers are rate-limited per operation with `agentApi.rateLimits.caller.chat`. See [Agent API](./agent-api.md#chat).
 

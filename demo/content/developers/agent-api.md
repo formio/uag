@@ -41,7 +41,7 @@ A form's operations take the same credentials as the form's submissions, so an a
 | `x-jwt-token: <Form.io user token>` | That user, verified with Form.io as for submissions. Form.io roles and permissions apply, including to any research the task does. | Browsers and applications acting for a signed-in user |
 | `x-remote-token: <portal remote token>` | The portal team member, with what Form.io grants their team permission (`team_admin` and the owner as administrator; `team_write` may run the operations; `team_read` and `team_access` may not). | The Form.io portal, on a stage connected to the UAG |
 | `Authorization: Bearer <UAG access token>` | That user (or, for `client_credentials`, administrator). | Servers, and MCP clients signed in with OAuth |
-| `x-token: <PROJECT_KEY>` | Administrator | Servers (Enterprise and hosted projects) |
+| `x-token: <PROJECT_KEY>` | Administrator | Servers (Enterprise and trial projects) |
 | `x-admin-key: <ADMIN_KEY>` | Administrator | Servers (Open Source) |
 
 - **Bearer tokens** are the UAG's own access tokens, the same ones `/mcp` accepts: from the `client_credentials` grant at `/auth/token` for a server (which acts as administrator), always available, or, with `MCP_OAUTH`, from the browser OAuth (PKCE) sign-in for a user. See [MCP tools](./mcp-tools.md#how-agents-connect).
@@ -430,7 +430,7 @@ curl -s https://uag.example.com/agent/capabilities -H "Authorization: Bearer $TO
 |---|---|
 | `engines` | Each instance: `name` (as named in `UAG_ENGINES`), `kind` (`decision` or `agent`), `model`, and the `type`, `package` and `version` it came from. Never its settings. |
 | `operations` | For each operation, whether it can be served (`available`: licensed or allowed, and at least one engine can do its work) and the engines that would. Agent engines appear under `decide` because they are the fallback for decision fields. `chat` needs no Agentic Formflow license: it is available whenever an agent engine is enabled, and lists the engines `agentApi.chat.engines` names. |
-| `edition` | `enterprise` when a license verified or the project is on Form.io's hosted SaaS, otherwise `open-source`. |
+| `edition` | `enterprise` when a license verified or the project is on Form.io's hosted service (such as a trial project on portal.form.io), otherwise `open-source`. |
 | `formflow.reason` | `licensed`, `hosted`, `stub-engines` or `unlicensed`. See [Licensing](#licensing). |
 | `durableRuns` | `true` when the UAG's database is in use: Run task runs are recorded, and runs after the save that act with an agent role survive a restart. `false` means runs after the save are kept in memory, best effort. |
 | `mcpOAuth` | `true` when remote MCP clients can sign in with OAuth: `MCP_OAUTH=true` and the UAG's database is in use. |
@@ -490,9 +490,9 @@ Each limit is `{ limit, windowMs }`, a fixed window (`windowMs` defaults to 6000
 
 ## Licensing
 
-The Agent API's `extract`, `decide` and `generate`, the "Agent: Run task" action, the `agent_decide` and `agent_provide` MCP tools and `uag-eval` together are **Agentic Formflow**. On a self-hosted project, Open Source or Enterprise, they need a license (`LICENSE_KEY`) that includes the UAG (see [Licensing](./deployment.md#licensing)) and allows the project's endpoint. A project on Form.io's hosted SaaS (`https://<project>.form.io`) needs none: it runs under Form.io's own license (`reason: "hosted"`), except for `uag-eval`, which runs offline and needs `LICENSE_KEY`. Conversation forms need neither, and run on Form.io Open Source with an unlicensed UAG.
+The Agent API's `extract`, `decide` and `generate`, the "Agent: Run task" action, the `agent_decide` and `agent_provide` MCP tools and `uag-eval` together are **Agentic Formflow**. On a self-hosted project, Open Source or Enterprise, they need a license (`LICENSE_KEY`) that includes the UAG (see [Licensing](./deployment.md#licensing)) and allows the project's endpoint. A 30-day free trial project on portal.form.io (`https://<project>.form.io`), for trying it, needs none: it runs under Form.io's own license (`reason: "hosted"`), except for `uag-eval`, which runs offline and needs `LICENSE_KEY`. Conversation forms need neither, and run on Form.io Open Source with an unlicensed UAG.
 
-The one other allowance is the built-in stub engines, `UAG_ENGINES=stub-decision,stub-agent` (`reason: "stub-engines"`), which answer with placeholders so you can build against the API's shape. It covers work that calls engines; `agent_decide` and `agent_provide`, which call none, still need a license or a hosted project.
+The one other allowance is the built-in stub engines, `UAG_ENGINES=stub-decision,stub-agent` (`reason: "stub-engines"`), which answer with placeholders so you can build against the API's shape. It covers work that calls engines; `agent_decide` and `agent_provide`, which call none, still need a license or a trial project.
 
 Otherwise every Agentic Formflow request is refused with `403`:
 

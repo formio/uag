@@ -21,8 +21,8 @@ This page builds the college application workflow from the [demo site's project]
 |---|---|
 | A form with at least one [task](./concepts.md#tasks) | The criteria, and the fields the task fills. |
 | An engine enabled on the UAG | `UAG_ENGINES`, for example `claude` with `CLAUDE_API_KEY`. See [Engines](./engines.md). |
-| A `LICENSE_KEY` that includes the UAG, or a project on Form.io's hosted service | Run task is Agentic Formflow. It runs on Form.io Open Source and Enterprise alike with a license. Without one, a run before the save refuses the submission with `403` (`code: "license_required"`), and a run after the save fails and is logged. |
-| Submissions sent to the UAG | Run task runs only for submissions the UAG receives: through its submission API or its MCP tools. Point the application's project URL at the UAG: the UAG's root for an Open Source server, `/<project name>` on the UAG for an Enterprise or hosted project. A submission sent straight to Form.io runs no task. |
+| A `LICENSE_KEY` that includes the UAG, or, to try it, a 30-day free trial project on portal.form.io | Run task is Agentic Formflow. It runs on Form.io Open Source and Enterprise alike with a license. Without one, a run before the save refuses the submission with `403` (`code: "license_required"`), and a run after the save fails and is logged. |
+| Submissions sent to the UAG | Run task runs only for submissions the UAG receives: through its submission API or its MCP tools. Point the application's project URL at the UAG: the UAG's root for an Open Source server, `/<project name>` on the UAG for an Enterprise or trial project. A submission sent straight to Form.io runs no task. |
 
 Nothing has to be public. Applications reach the UAG over your network, the UAG reaches Form.io, and the UAG calls the model providers outward.
 

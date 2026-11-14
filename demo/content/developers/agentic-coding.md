@@ -39,7 +39,7 @@ The plugin includes the skills and the Form.io MCP server in one install. Plugin
 
 ## Point it at your project
 
-The plugin's tools work against a project on [Form.io's hosted service](https://portal.form.io) or a Form.io Enterprise server. You need one value, the **Project URL**, such as `https://myproject.form.io`. The first Form.io tool call that needs it asks for it, and records it for this folder. The first call that needs to sign in opens the Form.io login in your browser. There are no API keys to paste.
+The plugin's tools work against a Form.io Enterprise server or a project on [portal.form.io](https://portal.form.io), such as a 30-day free trial. You need one value, the **Project URL**, such as `https://myproject.form.io`. The first Form.io tool call that needs it asks for it, and records it for this folder. The first call that needs to sign in opens the Form.io login in your browser. There are no API keys to paste.
 
 To share the project with everyone who clones the application, commit a `formio.json` in the application's folder:
 
