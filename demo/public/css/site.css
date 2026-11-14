@@ -158,7 +158,10 @@ a:hover .arrow::after, .btn:hover .arrow::after, a.arrow:hover::after { transfor
 .hero-title > span + span { margin-top: .08em; }
 @media (max-width: 980px) { .hero .hero-title { font-size: clamp(1.4rem, 7.4vw, 3.2rem); } }
 .hero .lede { max-width: 560px; margin-bottom: 30px; }
-.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.hero-actions { display: flex; align-items: center; gap: 12px 20px; flex-wrap: wrap; }
+/* Next to a button, a secondary call to action reads as dark text with an arrow, as on form.io. */
+.hero-actions .link-arrow { color: var(--char); }
+.hero-actions .link-arrow:hover { color: var(--ink); }
 .hero .hero-actions { justify-content: center; max-width: 560px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 30px; }
 .hero .chips { justify-content: center; max-width: 560px; }

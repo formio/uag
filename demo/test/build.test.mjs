@@ -307,6 +307,17 @@ describe('Demo site build', function () {
             }
         });
 
+        it('uses light sections only outside the examples, with sales as a green button and the trial as a text link', function () {
+            for (const file of htmlFiles().filter((name) => !isApp(name) && !isExample(name))) {
+                expect(read(file), file).to.not.match(/class="[^"]*\b(section-dark|section-ink|section-green|card-dark)\b/);
+            }
+            for (const file of ['index.html', 'getting-started/index.html']) {
+                const html = read(file);
+                expect(html, file).to.include(`<a class="btn btn-primary" href="${config.links.contact}">Talk to Sales`);
+                expect(html, file).to.include(`<a class="link-arrow" href="${config.links.trial}">Try free for 30 days</a>`);
+            }
+        });
+
         it('offers the examples nowhere in the header, the menu or the footer', function () {
             const home = read('index.html');
             const header = home.slice(home.indexOf('<header'), home.indexOf('</header>'));
