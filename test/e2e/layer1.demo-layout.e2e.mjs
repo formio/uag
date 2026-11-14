@@ -91,4 +91,29 @@ describe('Layer 1: the demo site header', function () {
         for (const pathname of PAGES) expect(seen[pathname], pathname).to.deep.equal(seen['/']);
         expect(seen['/']).to.have.length.greaterThan(4);
     });
+
+    it('fits the header in one row without overlap at every desktop width', async function () {
+        const context = await browser.newContext({ viewport: { width: 1400, height: 400 } });
+        const page = await context.newPage();
+        await page.goto(`${base}/`);
+        await page.evaluate(() => document.fonts.ready);
+        for (let width = 981; width <= 1400; width += 10) {
+            await page.setViewportSize({ width, height: 400 });
+            // The brand's parts, not the brand: its box shrinks while its text overflows.
+            const crowded = await page.evaluate(() => {
+                const items = [...document.querySelectorAll('.site-header .brand img, .site-header .brand-product, .site-header .nav a, .site-header .header-actions a, .site-header .menu-toggle')]
+                    .filter((item) => item.offsetParent)
+                    .map((item) => ({ text: item.textContent.trim() || item.className, box: item.getBoundingClientRect() }));
+                const row = document.querySelector('.site-header .container').getBoundingClientRect();
+                const problems = [];
+                for (let i = 1; i < items.length; i++) {
+                    if (items[i].box.left < items[i - 1].box.right) problems.push(`"${items[i - 1].text}" overlaps "${items[i].text}"`);
+                }
+                if (items.at(-1).box.right > row.right + 1) problems.push(`"${items.at(-1).text}" runs past the header`);
+                return problems;
+            });
+            expect(crowded, `${width}px`).to.deep.equal([]);
+        }
+        await context.close();
+    });
 });

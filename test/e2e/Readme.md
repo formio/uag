@@ -231,7 +231,8 @@ agents, so the workflow needs no webhooks and runs on Open Source.
   a local run needs, while the conversation page shows no notice.
 - *Header* (`layer1.demo-layout.e2e.mjs`, Chromium only: no stack): on a
   fresh build, every header link sits at the same place on short and long
-  pages with classic scrollbars, and does not move when the font arrives.
+  pages with classic scrollbars, and does not move when the font arrives; at
+  every desktop width the header's items fit in one row without overlapping.
 
 The demo site's own unit tests (`demo/test`, run by `yarn test`) cover the
 build (every page written, no template left unfilled, no `/api` call, no
