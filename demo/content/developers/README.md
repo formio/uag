@@ -27,7 +27,7 @@ groups pages by section in that order, and sorts each group by `order`.
 - Every heading gets an anchor, the id GitHub gives it; `##` headings also feed the "On this page" list.
 - Every link is a relative path, so the pages read on GitHub as well as on the site:
   - Links between pages: `./<slug>.md` (and `#anchor`); the site links `/developers/<slug>`.
-  - Demos: their source folder, `../../public/apps/conversation` (`workflow`, `formflow`, `documents`); the site links the demo page, `/examples/conversation`.
+  - The live demos are not linked from these pages.
 - Source links: the file's path relative to the page, such as `../../samples/custom-module` or `../../../MIGRATING-2.0.md`. GitHub resolves it on any branch, and the site build turns it into a link to that path at the release the site is built for. Never link to a tag or `main` by hand. In a code block, `{{releaseTag}}` becomes that release's tag (`git clone -b {{releaseTag}} ...`). Site HTML uses `{{links.source}}` and `{{links.sourceFile}}`. The "Edit this page" link stays on `main`.
 - Images: `../../public/images/<file>`; the site serves them at `/images/<file>`.
 - Callouts: a blockquote whose first word is bold, `> **Note:**`, `> **Warning:**`, `> **Tip:**`, `> **Important:**`.

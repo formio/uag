@@ -7,7 +7,7 @@ order: 30
 
 An agentic workflow runs a form's tasks with no person in the loop. The application sends its submissions to the UAG, which forwards each one to Form.io. An **Agent: Run task** action on the form runs one of the form's [tasks](./concepts.md#tasks) on the submission, before the save or after it, and the UAG saves the task's answers. A task's save is an update, and an update can start the next task. The instructions live in the form, so changing what an agent does is a form edit, not a deployment.
 
-This page builds the college application workflow from the [demo site's project](../../module/project.json): an `admissions` task scores each application and decides, and a `finance` task assigns a scholarship award to the applicants admissions puts on the scholarship track. See it running at [/examples/workflow](../../public/apps/workflow).
+This page builds the college application workflow from the [demo site's project](../../module/project.json): an `admissions` task scores each application and decides, and a `finance` task assigns a scholarship award to the applicants admissions puts on the scholarship track.
 
 > **Tip:** Build this workflow in your own project with the [admissions workflow prompt](https://github.com/formio/ai/blob/main/examples/agents/admissions-workflow.md) and the [Agentic Coding Plugin](./agentic-coding.md). Its `formio-uag` skill adds the "Agent: Run task" actions in a project template, a UAG module or a portal stage connected to the UAG.
 
@@ -248,7 +248,7 @@ A run reads, saves and creates submissions at Form.io with one of two identities
 
 Either way, a run never uses the UAG's own project API key, and the task's engines research with the identity of the user who submitted, never the agent role. [Project setup for agents](./project-setup.md) walks through the roles, permissions and secret an agent role needs.
 
-The [demo site](../../public/apps/workflow) saves each application from the browser as the visitor's guest user, so its runs act as that guest: the guest may create and update its own applications, and the task's fields are `uagAuthoritative`, so only the run may set them. It runs on Form.io's hosted service, which does not share its secret, so its actions name no agent role.
+The demo site saves each application from the browser as the visitor's guest user, so its runs act as that guest: the guest may create and update its own applications, and the task's fields are `uagAuthoritative`, so only the run may set them. It runs on Form.io's hosted service, which does not share its secret, so its actions name no agent role.
 
 ## Letting the task research
 

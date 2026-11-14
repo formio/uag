@@ -32,7 +32,6 @@
               <li><strong>Conversation forms:</strong> a person fills in a form by talking. Either your agent (Claude, a chat app, any MCP client) runs the model and calls the UAG's <a href="/developers/mcp-tools">MCP tools</a> to discover forms, validate answers and submit, or you embed the <a href="/developers/chat">chat widget</a> in a page, and each turn is the form's <code>agent/chat</code> on the UAG, answered by one of the UAG's agent engines. Either way every answer is checked against the form, and nothing is submitted until the person confirms.</li>
               <li><strong>Agentic Formflow:</strong> the UAG decides and fills in fields itself, with the engines you enable, from tasks and criteria you define on the form. As a licensed feature it covers two patterns, agentic workflows and formflow: the <a href="/developers/agent-api">Agent API</a>, the "Agent: Run task" action, which runs a task when a submission is saved through the UAG (before the save, or after it with no client in the loop), and evaluating engines.</li>
             </ul>
-            <p>The <a href="/examples/conversation">conversation demo</a> is a conversation form, embedded with the chat widget; the <a href="/examples/workflow">workflow</a> and <a href="/examples/formflow">formflow</a> demos are its two Agentic Formflow patterns.</p>
           </div>
         </details>
 
@@ -66,7 +65,7 @@
                 </tbody>
               </table>
             </div>
-            <p>"License needed" means a license that includes the UAG, in <code>LICENSE_KEY</code>. With one, Agentic Formflow runs against Open Source too, including the <a href="/examples/workflow">workflow</a>: "Agent: Run task" actions run in the UAG, on the submissions your applications send to it. Only an action's <strong>Agent role</strong>, which acts at Form.io on the user's behalf, needs a self-hosted Form.io Enterprise server; see <a href="/developers/project-setup">Project setup for agents</a>.</p>
+            <p>"License needed" means a license that includes the UAG, in <code>LICENSE_KEY</code>. With one, Agentic Formflow runs against Open Source too, including workflows: "Agent: Run task" actions run in the UAG, on the submissions your applications send to it. Only an action's <strong>Agent role</strong>, which acts at Form.io on the user's behalf, needs a self-hosted Form.io Enterprise server; see <a href="/developers/project-setup">Project setup for agents</a>.</p>
 
             <h3>What you can build with Open Source alone</h3>
             <ul>
@@ -104,7 +103,6 @@
               <li>Connect the UAG to a project on Form.io's hosted service (<code>https://&lt;project&gt;.form.io</code>). Agentic Formflow runs there with any engine, and <code>/agent/capabilities</code> reports <code>reason: "hosted"</code>.</li>
               <li>Enable only the stub engines (<code>UAG_ENGINES=stub-decision,stub-agent</code>). The Agent API and "Agent: Run task" actions then run anywhere, with placeholder answers, so you can build against it before you have model keys.</li>
             </ul>
-            <p>Or try every demo live on the <a href="/examples">Examples</a> page.</p>
           </div>
         </details>
 

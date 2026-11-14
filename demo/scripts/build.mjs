@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { contentSecurityPolicy, isSecretName, readConfig } from '../lib/config.mjs';
 import { escapeHtml } from '../lib/docs.mjs';
 import { Docs } from '../lib/docs.mjs';
-import { PAGES, Views, render, siteValues } from '../lib/pages.mjs';
+import { Views, pagesFor, render, siteValues } from '../lib/pages.mjs';
 import { PROFILES } from '../module/applicants.mjs';
 
 /** Where a route's page is written: `/a/b` → `a/b/index.html`. */
@@ -28,7 +28,10 @@ export function fileOf(route) {
     return clean ? path.join(clean, 'index.html') : 'index.html';
 }
 
-/** The pages and docs of the site, as `{ file, html }`. Throws, naming the source, on any render error. */
+/**
+ * The pages and docs of the site, as `{ file, html, unlisted }`: `unlisted` for the
+ * examples, which no other page links to. Throws, naming the source, on any render error.
+ */
 export function renderSite(config) {
     const views = new Views(path.join(config.root, 'views'));
     const docs = new Docs(path.join(config.root, 'content/developers'), config.links);
@@ -42,14 +45,14 @@ export function renderSite(config) {
         }
     };
 
-    for (const page of PAGES) {
+    for (const page of pagesFor(config.examplesPath)) {
         out.push(attempt(`views/pages/${page.view}.html`, () => {
             const values = siteValues(config, page);
             // What a demo frame shows in place of a demo the UAG cannot run (see js/demo.js).
-            if (page.app) values.demoUnsupported = views.read('partials/demo-unsupported');
+            if (page.app) values.demoUnsupported = render(views.read('partials/demo-unsupported'), values);
             // Shown by js/demo.js when a local UAG cannot run Agentic Formflow.
             if (page.nav === 'examples') values.licenseNotice = render(views.read('partials/license-notice'), values);
-            return { file: fileOf(page.route), html: views.page(page.view, values) };
+            return { file: fileOf(page.route), html: views.page(page.view, values), unlisted: !!page.unlisted };
         }));
     }
 
@@ -89,17 +92,22 @@ export function metaPolicy(config) {
         .split('; ').filter((directive) => !directive.startsWith('frame-ancestors ')).join('; ');
 }
 
+/** What an unlisted page (the examples and their apps) tells search engines. */
+export const NOINDEX = '<meta name="robots" content="noindex, nofollow, noarchive">';
+
 /**
  * Every HTML file the build writes, finished for where it is served: links and
  * sources from the root (`/developers`, `/js/site.js`) start with the base path,
  * the `<html>` element names it for scripts (`data-base-path`), and the head
- * carries the Content-Security-Policy and referrer policy as `<meta>` tags.
+ * carries the Content-Security-Policy and referrer policy as `<meta>` tags. An
+ * `unlisted` page (an example or a demo app) also asks not to be indexed.
  */
-export function finishHtml(html, config) {
+export function finishHtml(html, config, { unlisted = false } = {}) {
     const base = config.basePath || '';
     if (base) html = html.replace(/(\s(?:href|src|action|poster|xlink:href|data-src|data-watch)=)(["'])\/(?!\/)/g, `$1$2${base}/`);
     html = html.replace(/<html(?=[\s>])/, `<html data-base-path="${escapeHtml(base)}"`);
-    return html.replace(/(<head>\s*<meta charset="utf-8">)/i, `$1\n  <meta http-equiv="Content-Security-Policy" content="${escapeHtml(metaPolicy(config))}">\n  <meta name="referrer" content="strict-origin-when-cross-origin">`);
+    const robots = unlisted ? `\n  ${NOINDEX}` : '';
+    return html.replace(/(<head>\s*<meta charset="utf-8">)/i, `$1\n  <meta http-equiv="Content-Security-Policy" content="${escapeHtml(metaPolicy(config))}">\n  <meta name="referrer" content="strict-origin-when-cross-origin">${robots}`);
 }
 
 /** The values a demo app's HTML is rendered with: where its UAG and project are. */
@@ -166,11 +174,13 @@ export function build(config = readConfig(), env = process.env) {
     try {
         // The assets as they are, and the demo apps' pages with their UAG and project filled in.
         const values = appValues(config);
-        copyDir(path.join(config.root, 'public'), temp, (html, source) =>
-            finishHtml(source.includes(`${path.sep}apps${path.sep}`) ? render(html, values) : html, config));
-        for (const { file, html } of pages) {
+        copyDir(path.join(config.root, 'public'), temp, (html, source) => {
+            const app = source.includes(`${path.sep}apps${path.sep}`);
+            return finishHtml(app ? render(html, values) : html, config, { unlisted: app });
+        });
+        for (const { file, html, unlisted } of pages) {
             fs.mkdirSync(path.join(temp, path.dirname(file)), { recursive: true });
-            fs.writeFileSync(path.join(temp, file), finishHtml(html, config));
+            fs.writeFileSync(path.join(temp, file), finishHtml(html, config, { unlisted }));
         }
         // The workflow demo's sample applicants.
         fs.writeFileSync(path.join(temp, 'apps/workflow/applicants.json'), JSON.stringify(PROFILES, null, 2));

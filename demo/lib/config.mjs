@@ -37,6 +37,27 @@ export function basePathOf(env) {
     return base;
 }
 
+/** Where the live examples are served when DEMO_EXAMPLES_PATH does not say. */
+export const DEFAULT_EXAMPLES_PATH = '/examples';
+
+/** First path segments the site's own pages and assets use, which the examples may not take. */
+const RESERVED_SEGMENTS = new Set(['apps', 'css', 'developers', 'faq', 'fonts', 'getting-started', 'images', 'js', '404.html', 'index.html']);
+
+/**
+ * The path the live examples are served under (DEMO_EXAMPLES_PATH), such as
+ * `/examples`: the examples index there and each example below it. Nothing
+ * outside the examples links to it, so the published site can keep it unlisted.
+ */
+export function examplesPathOf(env) {
+    const raw = String(env.DEMO_EXAMPLES_PATH || '').trim();
+    if (!raw) return DEFAULT_EXAMPLES_PATH;
+    const value = raw.replace(/\/+$/, '');
+    if (!/^(\/[A-Za-z0-9._~-]+)+$/.test(value) || RESERVED_SEGMENTS.has(value.split('/')[1])) {
+        throw new Error('DEMO_EXAMPLES_PATH must be a path of its own, such as /examples.');
+    }
+    return value;
+}
+
 /**
  * Whether a UAG's capabilities let it run Agentic Formflow: it needs a UAG
  * license or a project on Form.io's hosted service.
@@ -120,6 +141,7 @@ export function readConfig(env = process.env) {
         production,
         publicUrl,
         basePath: basePathOf(env),
+        examplesPath: examplesPathOf(env),
         root: path.resolve(here, '..'),
         out: path.resolve(here, '..', env.DEMO_OUT || 'dist'),
         // What the pages are given: the UAG they embed, the project's URL on it, and the

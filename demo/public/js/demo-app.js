@@ -9,9 +9,6 @@
 // license (a local UAG only; the hosted project needs none).
 (function () {
   var settings = document.documentElement.dataset;
-  // The path the site is served under (data-base-path, written by the build): '' at
-  // the root of a host, '/uag' on GitHub Pages.
-  var base = settings.basePath || '';
 
   function tell(code, error) {
     if (window.parent !== window) window.parent.postMessage({ type: 'uag-demo', code: code, error: error }, location.origin);
@@ -24,15 +21,16 @@
     else if (e.status === 403 && /"license_required"/.test(e.detail || '')) tell('license_required');
   });
 
-  /** Opened on its own with no guest yet: send the visitor to the example page, which starts the demo. */
+  /**
+   * Opened on its own with no guest yet: ask the visitor to start the demo from its
+   * example page. No link: the apps' path is public, the examples' is not.
+   */
   function cover() {
-    var name = (location.pathname.match(/\/apps\/([^/]+)/) || [])[1] || '';
     var box = document.createElement('div');
     box.setAttribute('role', 'alert');
     box.style.cssText = 'position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:rgba(246,247,249,.97);font:15px/1.55 Inter,system-ui,sans-serif;color:#0c141d;text-align:center';
     box.innerHTML = '<div style="max-width:460px"><h2 style="margin:0 0 10px;font-size:22px">Start the demo first</h2>' +
-      '<p style="color:#566073">This demo runs as a temporary guest of the demo\'s project. Start it from its example page, then open it full screen again.</p>' +
-      '<p><a style="color:#5a9a39;font-weight:600" href="' + base + '/examples/' + encodeURIComponent(name) + '">Go to the example</a></p></div>';
+      '<p style="color:#566073">This demo runs as a temporary guest of the demo\'s project. Start it from its example page, then open it full screen again.</p></div>';
     document.body.appendChild(box);
   }
 

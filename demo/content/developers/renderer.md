@@ -12,7 +12,7 @@ order: 40
 
 The same registration adds a third: **any `uag` form can be rendered as a chat** with `Formio.createChat`, where a person fills it in by conversation. See [Chat widget](./chat.md).
 
-Tagging a form `uag` in the portal is then all it takes to move it onto the UAG; the application does not change. See it running in the [Agentic Formflow demo](../../public/apps/formflow).
+Tagging a form `uag` in the portal is then all it takes to move it onto the UAG; the application does not change.
 
 > **Tip:** The [Agentic Coding Plugin](./agentic-coding.md)'s `formio-uag` skill registers `@formio/uag-js` in formio.js, React and Angular applications, and designs the task Agent Input runs. The [claim wizard prompt](https://github.com/formio/ai/blob/main/examples/agents/claim-formflow.md) builds the Agentic Formflow demo.
 

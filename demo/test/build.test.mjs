@@ -3,9 +3,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { basePathOf, contentSecurityPolicy, formioBaseOf, projectNameOf, readConfig } from '../lib/config.mjs';
+import { basePathOf, contentSecurityPolicy, examplesPathOf, formioBaseOf, projectNameOf, readConfig } from '../lib/config.mjs';
 import { render } from '../lib/pages.mjs';
-import { build, fileOf, finishHtml, metaPolicy } from '../scripts/build.mjs';
+import { NOINDEX, build, fileOf, finishHtml, metaPolicy } from '../scripts/build.mjs';
 import { createServer, resolve } from '../scripts/serve.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -35,6 +35,19 @@ describe('Demo site build', function () {
             for (const value of ['uag', '/uag"><script>', 'https://formio.github.io/uag']) {
                 expect(() => basePathOf({ DEMO_BASE_PATH: value }), value).to.throw(/DEMO_BASE_PATH/);
             }
+        });
+
+        it('reads the path the examples are served under, /examples unless DEMO_EXAMPLES_PATH names another', function () {
+            expect(readConfig({}).examplesPath).to.equal('/examples');
+            expect(examplesPathOf({ DEMO_EXAMPLES_PATH: '/x-7f3c9a/' })).to.equal('/x-7f3c9a');
+            expect(examplesPathOf({ DEMO_EXAMPLES_PATH: '/demos/live' })).to.equal('/demos/live');
+            for (const value of ['x y', '/x y', 'examples', 'https://example.com/x', '/', '/x"><script>', '/developers', '/apps/x', '/images']) {
+                expect(() => examplesPathOf({ DEMO_EXAMPLES_PATH: value }), value).to.throw(/DEMO_EXAMPLES_PATH/);
+            }
+        });
+
+        it('never repeats the examples path in its error, since the published one is a secret', function () {
+            expect(() => examplesPathOf({ DEMO_EXAMPLES_PATH: '/x secret' })).to.throw().with.property('message').that.does.not.include('secret');
         });
 
         it('refuses a production build that does not name its UAG', function () {
@@ -207,6 +220,74 @@ describe('Demo site build', function () {
             finally {
                 server.close();
             }
+        });
+    });
+
+    describe('a build with unlisted examples', function () {
+        let out;
+        let config;
+        const EXAMPLES = '/x-test-examples';
+        const env = { DEMO_UAG_URL: 'https://ai.example.com', FORMIO_PROJECT_URL: 'https://uag.form.io', NODE_ENV: 'production', DEMO_BASE_PATH: '/uag', DEMO_EXAMPLES_PATH: EXAMPLES };
+        const htmlFiles = () => {
+            const files = [];
+            const walk = (dir) => {
+                for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                    const file = path.join(dir, entry.name);
+                    if (entry.isDirectory()) walk(file);
+                    else if (entry.name.endsWith('.html')) files.push(path.relative(config.out, file).split(path.sep).join('/'));
+                }
+            };
+            walk(config.out);
+            return files;
+        };
+        const read = (file) => fs.readFileSync(path.join(config.out, file), 'utf8');
+        const isExample = (file) => file.startsWith(`${EXAMPLES.slice(1)}/`);
+        const isApp = (file) => file.startsWith('apps/');
+
+        before(function () {
+            this.timeout(60000);
+            out = fs.mkdtempSync(path.join(os.tmpdir(), 'uag-demo-unlisted-'));
+            config = readConfig({ ...env, DEMO_OUT: path.join(out, 'dist') });
+            build(config, env);
+        });
+
+        after(function () {
+            fs.rmSync(out, { recursive: true, force: true });
+        });
+
+        it('serves the examples under the examples path, and nothing under /examples', function () {
+            for (const route of [EXAMPLES, `${EXAMPLES}/conversation`, `${EXAMPLES}/workflow`, `${EXAMPLES}/formflow`, `${EXAMPLES}/documents`]) {
+                expect(fs.existsSync(path.join(config.out, fileOf(route))), route).to.equal(true);
+            }
+            expect(fs.existsSync(path.join(config.out, 'examples'))).to.equal(false);
+            expect(read(fileOf(`${EXAMPLES}/conversation`))).to.include(`href="/uag${EXAMPLES}/workflow"`).and.include(`href="/uag${EXAMPLES}"`);
+            expect(htmlFiles().filter((file) => /["']\/(uag\/)?examples\b/.test(read(file)))).to.deep.equal([]);
+        });
+
+        it('asks search engines not to index the examples and their apps, and only those', function () {
+            const files = htmlFiles();
+            expect(files.filter(isExample)).to.have.lengthOf(5);
+            expect(files.filter(isApp)).to.have.lengthOf(4);
+            for (const file of files) {
+                expect(read(file).includes(NOINDEX), file).to.equal(isExample(file) || isApp(file));
+            }
+        });
+
+        it('links to the examples only from the examples, and never names their path in an app', function () {
+            const linking = htmlFiles().filter((file) => read(file).includes(EXAMPLES));
+            expect(linking.filter((file) => !isExample(file))).to.deep.equal([]);
+            for (const file of fs.readdirSync(path.join(config.out, 'apps'), { recursive: true })) {
+                const full = path.join(config.out, 'apps', file);
+                if (fs.statSync(full).isFile()) expect(fs.readFileSync(full, 'utf8').includes(EXAMPLES), file).to.equal(false);
+            }
+        });
+
+        it('offers the examples nowhere in the header, the menu or the footer', function () {
+            const home = read('index.html');
+            const header = home.slice(home.indexOf('<header'), home.indexOf('</header>'));
+            const footer = home.slice(home.indexOf('<footer'), home.indexOf('</footer>'));
+            expect(header).to.not.match(/Examples/);
+            expect(footer).to.not.match(/Examples/);
         });
     });
 

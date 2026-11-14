@@ -36,7 +36,6 @@ describe('Demo site content', function () {
         expect(siteLink('./chat.md', context)).to.equal('/developers/chat');
         expect(siteLink('chat.md#the-widget', context)).to.equal('/developers/chat#the-widget');
         expect(siteLink('./index.md#ways-to-use-it', context)).to.equal('/developers#ways-to-use-it');
-        expect(siteLink('../../public/apps/workflow', context)).to.equal('/examples/workflow');
         expect(siteLink('../../public/apps/workflow/workflow.js', context)).to.equal('/apps/workflow/workflow.js');
         expect(siteLink('../../public/images/login.png', context)).to.equal('/images/login.png');
         for (const href of ['./README.md', '../../samples/custom-module', '../../../MIGRATING-2.0.md', '/developers/chat', '#anchor', 'https://form.io']) {
@@ -46,6 +45,15 @@ describe('Demo site content', function () {
         expect(page.html).to.include('src="/images/uag-chat.svg"');
         for (const each of docs.ordered) expect(each.html, each.slug).not.to.match(/href="(?!https?:)[^"]*\.md[#"]/);
         expect(page.sources).not.to.satisfy((sources) => sources.some((source) => source.startsWith('demo/public/') || source.startsWith('demo/content/')));
+    });
+
+    it('links no live example from the developer pages', function () {
+        const offenders = [];
+        for (const name of fs.readdirSync(path.join(root, 'content/developers')).filter((file) => file.endsWith('.md'))) {
+            const body = fs.readFileSync(path.join(root, 'content/developers', name), 'utf8');
+            for (const match of body.matchAll(/\]\(([^)\s]*public\/apps\/[a-z0-9-]+\/?(?:[#?][^)\s]*)?)\)|\/examples\/(?:conversation|workflow|formflow|documents)\b|[Ss]ee it (?:live|running)/g)) offenders.push(`${name}: ${match[0]}`);
+        }
+        expect(offenders).to.deep.equal([]);
     });
 
     it('writes no site paths in developer pages, which would not resolve on GitHub', function () {

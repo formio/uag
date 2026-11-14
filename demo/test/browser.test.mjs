@@ -111,6 +111,32 @@ describe('Demo site browser scripts', function () {
         });
     });
 
+    describe('a demo app opened on its own (js/demo-app.js)', function () {
+        function openApp(dataset) {
+            const appended = [];
+            const window = {
+                location: { pathname: '/uag/apps/workflow/', origin: 'https://formio.github.io' },
+                document: {
+                    documentElement: { dataset },
+                    createElement: () => ({ style: {}, setAttribute() {} }),
+                    body: { appendChild: (node) => appended.push(node) },
+                },
+                addEventListener() {},
+            };
+            window.window = window;
+            window.parent = window;
+            vm.createContext(window);
+            vm.runInContext(fs.readFileSync(path.join(js, 'demo-app.js'), 'utf8'), window, { filename: 'demo-app.js' });
+            return window.DemoApp.ready().then(() => { throw new Error('ready() resolved without a guest'); }, () => appended[0].innerHTML);
+        }
+
+        it('asks the visitor to start the demo from its example page, without linking to it', async function () {
+            const html = await openApp({ basePath: '/uag' });
+            expect(html).to.include('Start the demo first');
+            expect(html).to.not.include('<a ');
+        });
+    });
+
     describe('the guest (js/guest.js)', function () {
         it('registers a guest through the UAG only when asked, keeps its token until it expires, and never its password', async function () {
             const exp = Math.floor(Date.now() / 1000) + 3600;

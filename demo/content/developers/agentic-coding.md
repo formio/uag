@@ -51,13 +51,13 @@ The **UAG URL** is a separate value: where your applications, browsers and MCP c
 
 ## What to ask for
 
-Describe the outcome, not the settings. The plugin's `formio-uag` skill maps the request to one of the UAG's [usage patterns](./index.md#ways-to-use-it), and says up front whether it needs a license. Each prompt below builds one of this site's live demos in your own project.
+Describe the outcome, not the settings. The plugin's `formio-uag` skill maps the request to one of the UAG's [usage patterns](./index.md#ways-to-use-it), and says up front whether it needs a license. Each prompt below builds a working example in your own project.
 
-| You want | Ask your coding agent | See it running |
+| You want | Ask your coding agent | Learn more |
 |---|---|---|
-| A chat on your page that fills in a form | [Service chat prompt](https://github.com/formio/ai/blob/main/examples/agents/service-chat.md): *"Put a chat on our public support page where customers describe their problem and it fills in our serviceRequest form, then submits it once they confirm."* | [Conversation Forms](../../public/apps/conversation) |
-| Agents that review every submission | [Admissions workflow prompt](https://github.com/formio/ai/blob/main/examples/agents/admissions-workflow.md): *"Every college application should be scored by an admissions agent, and scholarship candidates by a finance agent that picks the award level."* | [Agentic Workflow](../../public/apps/workflow) |
-| A wizard that fills itself in from a description | [Claim wizard prompt](https://github.com/formio/ai/blob/main/examples/agents/claim-formflow.md): *"When the policyholder describes the incident, decide the claim type so the right pages appear, and prefill the date and location for them to check."* | [Agentic Formflow](../../public/apps/formflow) |
+| A chat on your page that fills in a form | [Service chat prompt](https://github.com/formio/ai/blob/main/examples/agents/service-chat.md): *"Put a chat on our public support page where customers describe their problem and it fills in our serviceRequest form, then submits it once they confirm."* | [Chat widget](./chat.md) |
+| Agents that review every submission | [Admissions workflow prompt](https://github.com/formio/ai/blob/main/examples/agents/admissions-workflow.md): *"Every college application should be scored by an admissions agent, and scholarship candidates by a finance agent that picks the award level."* | [Workflows](./workflows.md) |
+| A wizard that fills itself in from a description | [Claim wizard prompt](https://github.com/formio/ai/blob/main/examples/agents/claim-formflow.md): *"When the policyholder describes the incident, decide the claim type so the right pages appear, and prefill the date and location for them to check."* | [Agent API](./agent-api.md) |
 | Claude or your own agent talking to your forms | *"Connect Claude Desktop to our Form.io forms through the UAG, signing in with our users' own Form.io logins."* | [Connect Claude](./connect-claude.md) |
 
 Start a prompt with `/formio-uag` to load the skill explicitly in agents that take slash commands. Without it, the skill loads from the request's wording.

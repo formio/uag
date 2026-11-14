@@ -6,9 +6,8 @@
  * Pages are written to read on GitHub as well as on the site, so every link is a
  * relative path that GitHub resolves on any branch. The site turns a link to
  * another page (`./chat.md#anchor`) into its route (`/developers/chat#anchor`),
- * a link to a demo's source folder (`../../public/apps/workflow`) into the demo
- * page (`/examples/workflow`), and a link or image under `demo/public`
- * (`../../public/images/login.png`) into its site path (`/images/login.png`).
+ * and a link or image under `demo/public` (`../../public/images/login.png`) into
+ * its site path (`/images/login.png`). The docs do not link the live examples.
  * A link to any other file of the repository (`../../samples/custom-module`)
  * points to that path at the release the site is built for (`source` for a
  * folder, `sourceFile` for a file). Heading ids follow GitHub's, so an anchor
@@ -86,8 +85,7 @@ export function siteLink(href, { dir }) {
     }
     const pub = path.relative(path.resolve(dir, '..', '..', 'public'), target).split(path.sep).join('/');
     if (!pub || pub.startsWith('..') || path.isAbsolute(pub)) return null;
-    const demo = /^apps\/([a-z0-9-]+)\/?$/.exec(pub);
-    return demo ? `/examples/${demo[1]}${rest}` : `/${pub}${rest}`;
+    return `/${pub}${rest}`;
 }
 
 /**
