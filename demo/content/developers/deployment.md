@@ -1,6 +1,6 @@
 ---
 title: Deployment
-description: Run the UAG with Docker, Compose or Node.js, configure it with the full environment variable reference, choose between Open Source, Enterprise and hosted Form.io, and pin a compatible set of images and packages.
+description: Run the UAG with Docker, Compose or Node.js, configure it with the full environment variable reference, choose between Enterprise, Open Source and a trial project, and pin a compatible set of images and packages.
 section: Operate
 order: 20
 ---
@@ -320,7 +320,7 @@ A durable run is taken by one instance under a lease of 2 minutes, which that in
 
 ## Form.io Enterprise benefits
 
-Running against Form.io Enterprise (self-hosted or hosted) adds controls that matter when agents change your data and your forms change what agents do:
+Running against Form.io Enterprise adds controls that matter when agents change your data and your forms change what agents do:
 
 - **Form revisions.** Every form change is a revision, and each submission records the revision it was made against. Because agent behavior comes from the form, rolling back a bad criteria edit is reverting a revision; no model is retrained.
 - **Submission revisions.** Every change to a submission is recorded with who made it. Together with the UAG's provenance in `metadata.uag`, an audit can follow a value from the engine that proposed it to the person who confirmed or changed it.

@@ -248,7 +248,7 @@ A run reads, saves and creates submissions at Form.io with one of two identities
 
 Either way, a run never uses the UAG's own project API key, and the task's engines research with the identity of the user who submitted, never the agent role. [Project setup for agents](./project-setup.md) walks through the roles, permissions and secret an agent role needs.
 
-The demo site saves each application from the browser as the visitor's guest user, so its runs act as that guest: the guest may create and update its own applications, and the task's fields are `uagAuthoritative`, so only the run may set them. It runs on Form.io's hosted service, which does not share its secret, so its actions name no agent role.
+On Form.io's hosted service, which does not share its secret, actions name no agent role. Save each application from the browser as the signed-in user, so its runs act as that user: let the user create and update their own applications, and make the task's fields `uagAuthoritative`, so only the run may set them.
 
 ## Letting the task research
 

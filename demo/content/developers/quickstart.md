@@ -292,7 +292,7 @@ curl -s -X PUT http://localhost:3000/form/$FORM_ID \
   }'
 ```
 
-Wait `PROJECT_TTL` seconds and run the `decide` call again: `urgency` now comes back with the stub's placeholder answer. To decide for real, enable a real engine such as `jev` or `claude` (see [Engines](./engines.md)), which needs a `LICENSE_KEY` that includes the UAG, or a project on Form.io's hosted service.
+Wait `PROJECT_TTL` seconds and run the `decide` call again: `urgency` now comes back with the stub's placeholder answer. To decide for real, enable a real engine such as `jev` or `claude` (see [Engines](./engines.md)), which needs a `LICENSE_KEY` that includes the UAG, or a trial project on Form.io's hosted service.
 
 ## Next steps
 
