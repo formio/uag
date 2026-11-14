@@ -92,6 +92,31 @@ describe('Layer 1: the demo site header', function () {
         expect(seen['/']).to.have.length.greaterThan(4);
     });
 
+    it('barely moves the header links when the font arrives late, on a slow first visit', async function () {
+        const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+        // The font takes 800ms, so the page is laid out in its fallback first.
+        await context.route('**/*.woff2', async (route) => {
+            await new Promise((done) => setTimeout(done, 800));
+            await route.continue();
+        });
+        const page = await context.newPage();
+        const lefts = () => page.evaluate(() => [...document.querySelectorAll('.site-header .nav a, .site-header .header-actions a')]
+            .filter((link) => link.offsetParent)
+            .map((link) => ({ text: link.textContent.trim(), left: link.getBoundingClientRect().left })));
+        await page.goto(`${base}/`, { waitUntil: 'commit' });
+        await page.waitForSelector('.site-header .header-actions a');
+        const before = await lefts();
+        expect(await page.evaluate(() => document.fonts.check('500 15px Inter')), 'Inter loaded before the first read').to.equal(false);
+        await page.evaluate(() => document.fonts.ready);
+        const after = await lefts();
+        expect(after.map((link) => link.text)).to.deep.equal(before.map((link) => link.text));
+        // No fallback has Inter's every width: within 2px is out of sight; without the matched fallback it is 9px.
+        const moved = after.map((link, i) => `${link.text} ${Math.abs(link.left - before[i].left).toFixed(1)}px`)
+            .filter((entry) => parseFloat(entry.split(' ').pop()) > 2);
+        expect(moved).to.deep.equal([]);
+        await context.close();
+    });
+
     it('fits the header in one row without overlap at every desktop width', async function () {
         const context = await browser.newContext({ viewport: { width: 1400, height: 400 } });
         const page = await context.newPage();

@@ -4,6 +4,14 @@
    fonts/*-OFL.txt), so they are cached with the site and the header does not
    shift while a font loads from another host. Inter is preloaded by the layout. */
 @font-face { font-family: 'Inter'; font-style: normal; font-weight: 100 900; font-display: swap; src: url('../fonts/inter-latin.woff2') format('woff2'); }
+/*
+ * Until Inter arrives, text is set in Arial scaled to Inter's widths and heights
+ * (size-adjust, then Inter's ascent and descent over that scale), so the header
+ * barely moves when it swaps in. Tuned on the header's own labels: medium for its
+ * links, bold for its buttons.
+ */
+@font-face { font-family: 'Inter Fallback'; font-weight: 100 549; src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('Arimo'); size-adjust: 108.6%; ascent-override: 89.2%; descent-override: 22.2%; line-gap-override: 0%; }
+@font-face { font-family: 'Inter Fallback'; font-weight: 550 900; src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'), local('Arimo Bold'); size-adjust: 100.5%; ascent-override: 96.4%; descent-override: 24%; line-gap-override: 0%; }
 @font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 100 800; font-display: swap; src: url('../fonts/jetbrains-mono-latin.woff2') format('woff2'); }
 
 :root {
@@ -36,7 +44,7 @@
     --radius-lg: 14px;
     --shadow: 0 1px 2px rgba(12, 20, 29, .06), 0 8px 24px rgba(12, 20, 29, .08);
     --shadow-lg: 0 2px 4px rgba(12, 20, 29, .06), 0 24px 60px rgba(12, 20, 29, .16);
-    --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font: 'Inter', 'Inter Fallback', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     --header: 72px;
 }
