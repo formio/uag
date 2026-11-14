@@ -23,7 +23,6 @@ describe('Demo site build', function () {
 
         it('derives the public URL from DEMO_DOMAIN, unless DEMO_PUBLIC_URL names it, and defaults to GitHub Pages', function () {
             expect(readConfig({}).publicUrl).to.equal('https://formio.github.io/uag');
-            expect(readConfig({}).links.liveDemo).to.equal('https://formio.github.io/uag');
             expect(readConfig({ DEMO_DOMAIN: 'agents.example.com' }).publicUrl).to.equal('https://agents.example.com');
             expect(readConfig({ DEMO_PUBLIC_URL: 'http://localhost:8080/' }).publicUrl).to.equal('http://localhost:8080');
         });
@@ -50,6 +49,11 @@ describe('Demo site build', function () {
             expect(() => examplesPathOf({ DEMO_EXAMPLES_PATH: '/x secret' })).to.throw().with.property('message').that.does.not.include('secret');
         });
 
+        it('sends sales calls to action to Form.io\'s contact page and the trial to its sign-up, unless told otherwise', function () {
+            expect(readConfig({}).links).to.include({ contact: 'https://form.io/contact-us', trial: 'https://portal.form.io' });
+            expect(readConfig({ CONTACT_URL: 'https://form.io/uag-contact', TRIAL_URL: 'https://form.io/uag-trial' }).links).to.include({ contact: 'https://form.io/uag-contact', trial: 'https://form.io/uag-trial' });
+        });
+
         it('refuses a production build that does not name its UAG', function () {
             expect(() => readConfig({ NODE_ENV: 'production' })).to.throw(/DEMO_UAG_URL/);
         });
@@ -57,11 +61,11 @@ describe('Demo site build', function () {
 
     describe('finishing the HTML', function () {
         const config = readConfig({ DEMO_UAG_URL: 'https://ai.example.com', FORMIO_PROJECT_URL: 'https://uag.form.io', DEMO_BASE_PATH: '/uag' });
-        const page = '<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <link rel="stylesheet" href="/css/site.css?v=1">\n</head>\n<body><a href="/developers/chat#x">a</a> <a href="https://form.io/">b</a> <a href="//cdn.example.com/x.js">c</a> <img src="/images/a.png"> <a href="#top">d</a> <a href="chat.js">e</a> <svg><use href="/images/icons.svg#lock"/></svg> <form action="/contact"></form> <iframe data-src="/apps/chat/"></iframe> <button data-watch="/images/a.gif"></button></body></html>';
+        const page = '<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <link rel="stylesheet" href="/css/site.css?v=1">\n</head>\n<body><a href="/developers/chat#x">a</a> <a href="https://form.io/">b</a> <a href="//cdn.example.com/x.js">c</a> <img src="/images/a.png"> <a href="#top">d</a> <a href="chat.js">e</a> <svg><use href="/images/icons.svg#lock"/></svg> <form action="/search"></form> <iframe data-src="/apps/chat/"></iframe> <button data-watch="/images/a.gif"></button></body></html>';
 
         it('starts every link and source from the root with the base path, and leaves the others alone', function () {
             const html = finishHtml(page, config);
-            for (const prefixed of ['href="/uag/css/site.css?v=1"', 'href="/uag/developers/chat#x"', 'src="/uag/images/a.png"', 'href="/uag/images/icons.svg#lock"', 'action="/uag/contact"', 'data-src="/uag/apps/chat/"', 'data-watch="/uag/images/a.gif"']) expect(html).to.include(prefixed);
+            for (const prefixed of ['href="/uag/css/site.css?v=1"', 'href="/uag/developers/chat#x"', 'src="/uag/images/a.png"', 'href="/uag/images/icons.svg#lock"', 'action="/uag/search"', 'data-src="/uag/apps/chat/"', 'data-watch="/uag/images/a.gif"']) expect(html).to.include(prefixed);
             for (const kept of ['href="https://form.io/"', 'href="//cdn.example.com/x.js"', 'href="#top"', 'href="chat.js"']) expect(html).to.include(kept);
             expect(html).to.include('<html data-base-path="/uag" lang="en">');
             expect(finishHtml(page, { ...config, basePath: '' })).to.include('href="/developers/chat#x"').and.include('data-base-path=""');
@@ -279,6 +283,18 @@ describe('Demo site build', function () {
             for (const file of fs.readdirSync(path.join(config.out, 'apps'), { recursive: true })) {
                 const full = path.join(config.out, 'apps', file);
                 if (fs.statSync(full).isFile()) expect(fs.readFileSync(full, 'utf8').includes(EXAMPLES), file).to.equal(false);
+            }
+        });
+
+        it('has no contact page of its own: every sales call to action leaves for Form.io\'s', function () {
+            expect(fs.existsSync(path.join(config.out, 'contact'))).to.equal(false);
+            const files = htmlFiles();
+            expect(files.filter((file) => /(?:href|action)="(?:\/uag)?\/contact\b/.test(read(file)))).to.deep.equal([]);
+            for (const file of files.filter((name) => !isApp(name))) {
+                const html = read(file);
+                const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'));
+                expect(header, file).to.include(`href="${config.links.contact}">Talk to Sales</a>`);
+                expect(header, file).to.include(`href="${config.links.trial}">Try free for 30 days</a>`);
             }
         });
 

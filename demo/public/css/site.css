@@ -103,7 +103,9 @@ a:hover .arrow::after, .btn:hover .arrow::after, a.arrow:hover::after { transfor
 .nav a { color: var(--char); font-weight: 500; font-size: 15px; padding: 8px 12px; border-radius: 6px; white-space: nowrap; }
 .nav a:hover { color: var(--ink); background: var(--gray2); text-decoration: none; }
 .nav a[aria-current] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--green); border-radius: 0; }
-.header-actions { display: flex; gap: 10px; }
+.header-actions { display: flex; align-items: center; gap: 10px; }
+.header-link { color: var(--char); font-weight: 500; font-size: 15px; white-space: nowrap; margin-right: 6px; }
+.header-link:hover { color: var(--ink); }
 /* The header buttons, repeated in the collapsed menu, where the buttons are hidden. */
 .nav .nav-menu-only { display: none; }
 .menu-toggle { display: none; margin-left: auto; background: none; border: 1px solid var(--gray4); border-radius: 6px; padding: 8px 10px; cursor: pointer; }
@@ -387,15 +389,6 @@ a:hover .arrow::after, .btn:hover .arrow::after, a.arrow:hover::after { transfor
 .pager-next { text-align: right; }
 
 /* Contact ------------------------------------------------------------- */
-.contact-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 56px; align-items: start; }
-.contact-card { background: #fff; border: 1px solid var(--gray4); border-radius: var(--radius-lg); padding: 36px; box-shadow: var(--shadow); }
-.contact-card .formio-form { font-family: var(--font); }
-.contact-points { display: grid; gap: 18px; margin-top: 28px; }
-.contact-point { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; }
-.contact-point .card-icon { width: 44px; height: 44px; margin: 0; }
-.contact-point h4 { margin: 2px 0 2px; font-size: 16px; }
-.contact-point p { margin: 0; color: var(--muted); font-size: 15px; }
-.form-loading { color: var(--muted); padding: 24px 0; }
 
 /* Footer -------------------------------------------------------------- */
 .site-footer { background: var(--char-darker); color: #9aa5b2; padding: 64px 0 32px; font-size: 14.5px; }
@@ -435,7 +428,7 @@ a:hover .arrow::after, .btn:hover .arrow::after, a.arrow:hover::after { transfor
     .site-header.open .nav { display: flex; position: absolute; left: 0; right: 0; top: var(--header); flex-direction: column; align-items: stretch; background: #fff; padding: 12px 24px 20px; border-bottom: 1px solid var(--gray4); box-shadow: var(--shadow); }
     .site-header.open .nav a[aria-current] { box-shadow: inset 3px 0 0 var(--green); }
     .site-header.open .nav .nav-menu-only { display: block; }
-    .hero-grid, .split, .contact-grid, .compare, .example-card { grid-template-columns: minmax(0, 1fr); }
+    .hero-grid, .split, .compare, .example-card { grid-template-columns: minmax(0, 1fr); }
     .split-reverse > :first-child { order: 0; }
     .grid-3, .how { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     /* An odd last card spans the row instead of sitting beside an empty cell. */
@@ -468,7 +461,6 @@ a:hover .arrow::after, .btn:hover .arrow::after, a.arrow:hover::after { transfor
     .section-head.center { text-align: left; }
     .install-card { padding: 18px 16px 16px; }
     .install code { font-size: 13px; }
-    .contact-card { padding: 22px 18px; }
     .hero .chips { display: grid; grid-template-columns: repeat(2, max-content); }
     .example-card .example-body { padding: 24px 20px; }
     .example-card .example-visual { padding: 20px; }
@@ -507,25 +499,6 @@ html:has(.watch[open]) { overflow: hidden; }
 .notes .card h3 { font-size: 1.05rem; }
 @media (max-width: 980px) { .notes { grid-template-columns: minmax(0, 1fr); } }
 
-/* The hosted contact form, rendered by formio.js without Bootstrap. */
-.contact-card .formio-component { margin-bottom: 18px; }
-.contact-card label, .contact-card .col-form-label { display: block; font-weight: 600; font-size: 14px; color: var(--ink); margin-bottom: 6px; }
-.contact-card .field-required::after { content: ' *'; color: var(--red); }
-.contact-card .form-control { display: block; width: 100%; padding: 11px 13px; font: 15px/1.4 var(--font); color: var(--ink); background: #fff; border: 1px solid var(--gray5); border-radius: 6px; transition: border-color .15s, box-shadow .15s; }
-.contact-card .form-control:focus { outline: 0; border-color: var(--green); box-shadow: 0 0 0 3px rgba(105, 179, 66, .2); }
-/* The form library fixes input height; let padding set it, at a thumb-sized minimum. */
-.contact-card .form-control { height: auto; min-height: 44px; }
-.contact-card textarea.form-control { min-height: 130px; }
-.contact-card .choices__inner { border-radius: 6px; border-color: var(--gray5); background: #fff; min-height: 44px; font-size: 15px; }
-.contact-card .btn-primary, .contact-card button[type="submit"] { background: var(--green); color: #fff; border: 0; padding: 12px 22px; border-radius: 6px; font: 600 15px var(--font); cursor: pointer; }
-.contact-card .btn-primary:hover { background: var(--green-dark); }
-.contact-card .formio-errors .error, .contact-card .invalid-feedback { color: var(--red); font-size: 13px; margin-top: 4px; }
-.contact-card .alert { padding: 12px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 14px; }
-.contact-card .alert-success { background: var(--green-tint); color: var(--green-dark); }
-.contact-card .alert-danger { background: #fdecee; color: #a23442; }
-.contact-done { text-align: center; padding: 40px 0; }
-.contact-done .card-icon { margin: 0 auto 16px; }
-.contact-done[hidden] { display: none; }
 .doc-diagram { margin: 8px 0 28px; padding: 20px; background: var(--gray1); border: 1px solid var(--gray4); border-radius: var(--radius-lg); }
 .doc-diagram svg { max-width: 760px; margin: 0 auto; }
 /* Below desktop a detailed diagram keeps a readable size and scrolls sideways

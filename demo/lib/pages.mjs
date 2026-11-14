@@ -24,7 +24,6 @@ export const PAGES = [
     { route: '/examples/formflow', view: 'example-formflow', nav: 'examples', unlisted: true, title: 'Agentic Formflow', description: 'A claims wizard that chooses its own pages and fills itself in from a description. Live demo.', app: true },
     { route: '/examples/documents', view: 'example-documents', nav: 'examples', unlisted: true, title: 'AI Document', description: 'A lease review form that copies a lease\'s key clauses word for word, checks the copy, summarizes the lease and translates it into Spanish. Live demo.', app: true },
     { route: '/faq', view: 'faq', title: 'FAQ', description: 'Common questions about Form.io Agentic Forms: the Universal Agent Gateway, the Agentic Coding Plugin, licensing, and what you can build on Form.io Open Source.' },
-    { route: '/contact', view: 'contact', nav: 'contact', title: 'Contact Us', description: 'Talk to the Form.io team about Agentic Forms, self-hosted UAG deployments and enterprise licensing.' },
 ];
 
 /** The pages, with the examples served under `examplesPath` (`/examples` by default). */

@@ -150,7 +150,10 @@ export function readConfig(env = process.env) {
         projectUrl,
         formioBaseUrl: trim(env.FORMIO_BASE_URL || formioBaseOf(projectUrl)),
         links: {
-            contactForm: env.CONTACT_FORM_URL || 'https://formio.form.io/contact',
+            // Where sales calls to action go: Form.io's contact page, which marketing tracks.
+            contact: env.CONTACT_URL || 'https://form.io/contact-us',
+            // Where "Try free for 30 days" goes: Form.io's trial sign-up.
+            trial: env.TRIAL_URL || 'https://portal.form.io',
             portal: env.PORTAL_URL || 'https://portal.form.io',
             github: env.GITHUB_URL || 'https://github.com/formio/uag',
             // Links into the repository's files point at this release's tag, so they
@@ -161,9 +164,6 @@ export function readConfig(env = process.env) {
             // The Agentic Coding Plugin (skills and the Form.io MCP server).
             plugin: env.PLUGIN_URL || 'https://github.com/formio/ai',
             formio: env.FORMIO_SITE_URL || 'https://form.io',
-            schedule: env.SCHEDULE_URL || 'https://form.io/contact-us',
-            // Where the demos run for anyone, named by the notice a local run shows.
-            liveDemo: env.DEMO_LIVE_URL || DEFAULT_PUBLIC_URL,
         },
         formioJsVersion: env.FORMIO_JS_VERSION || '5.6.1',
         // Added to the URLs of the site's scripts and stylesheets (?v=), so a new

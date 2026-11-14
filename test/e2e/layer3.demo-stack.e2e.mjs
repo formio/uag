@@ -265,7 +265,7 @@ describe('Layer 3: the demo site, as it ships', function () {
     });
 
     it('serves every page, and a 404 for a page it does not have', async function () {
-        for (const pathname of ['/', '/getting-started', '/examples', '/examples/conversation', '/examples/workflow', '/examples/formflow', '/examples/documents', '/faq', '/contact', '/developers', '/developers/agent-api']) {
+        for (const pathname of ['/', '/getting-started', '/examples', '/examples/conversation', '/examples/workflow', '/examples/formflow', '/examples/documents', '/faq', '/developers', '/developers/agent-api']) {
             const response = await fetch(`${SITE}${pathname}`);
             expect(response.status, pathname).to.equal(200);
             expect(await response.text(), pathname).to.include(`data-uag-url="${UAG}"`);

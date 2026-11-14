@@ -11,7 +11,6 @@ The marketing and demo site for the Form.io Universal Agent Gateway:
   - **Agentic Formflow** (`/examples/formflow`): a claims wizard that chooses its own pages and fills itself in from a description.
   - **AI Document** (`/examples/documents`): a lease review whose AI Document components copy an uploaded lease's key clauses word for word into a field, check the copy, and summarize the lease. It needs the AI Document module and the document plugins in the UAG's plugins folder: in Docker, the `formio/uag-documents:2` add-on brings them, run beside `formio/uag` with its volume mounted at `/app/plugins/documents`; with `yarn demo:local`, set `UAG_PLUGINS` to a plugins file that lists them. Without them, the demo answers that its process is not installed.
 - **Developers** (`/developers`): the technical documentation, from how the UAG works to the engine SDK.
-- **Contact Us** (`/contact`): the hosted Form.io contact form.
 
 ## How it works
 
@@ -42,11 +41,12 @@ The build reads its settings from the environment ([`lib/config.mjs`](./lib/conf
 | `FORMIO_PROJECT_URL` | `https://uag.form.io` | The project the forms load from. |
 | `DEMO_UAG_PROJECT_PATH` | `/<project name>` | Where the UAG serves the project's forms: under the project's name (its subdomain, or the last segment of a self-hosted project's URL), or at the UAG's root (`""`) for Form.io Open Source. |
 | `FORMIO_BASE_URL` | Derived from the project URL | formio.js's base URL. |
-| `DEMO_PUBLIC_URL` | `https://<DEMO_DOMAIN>` when `DEMO_DOMAIN` is set, else `https://formio.github.io/uag` | The site's own address, for canonical links and social cards, and the live demos a local run's notice links to. |
+| `DEMO_PUBLIC_URL` | `https://<DEMO_DOMAIN>` when `DEMO_DOMAIN` is set, else `https://formio.github.io/uag` | The site's own address, for canonical links and social cards. |
 | `DEMO_BASE_PATH` | `""` | The path the site is served under, such as `/uag` for a GitHub Pages project site. Every link and source the build writes from the root starts with it, the pages give it to their scripts (`data-base-path`), and `yarn workspace @formio/uag-demo serve` serves the build under it. |
 | `DEMO_OUT` | `dist` | Where the build is written. |
 | `DEMO_ASSET_VERSION` | The release's version | Added to the URLs of scripts and styles (`?v=`). |
-| `CONTACT_FORM_URL` | `https://formio.form.io/contact` | The hosted form the Contact Us page renders. |
+| `CONTACT_URL` | `https://form.io/contact-us` | Where "Talk to Sales" and the other sales calls to action go. |
+| `TRIAL_URL` | `https://portal.form.io` | Where "Try free for 30 days" goes. |
 | `FORMIO_JS_VERSION` | `5.6.1` | The formio.js the demo apps load. |
 
 The UAG's settings are in [`.env.example`](./.env.example).
