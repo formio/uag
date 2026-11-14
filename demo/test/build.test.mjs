@@ -298,6 +298,15 @@ describe('Demo site build', function () {
             }
         });
 
+        it('closes every page with a one-line footer: copyright and the open-source notice, and no links', function () {
+            for (const file of htmlFiles().filter((name) => !isApp(name))) {
+                const html = read(file);
+                const footer = html.slice(html.indexOf('<footer'), html.indexOf('</footer>'));
+                expect(footer, file).to.include('Form.io LLC. All rights reserved.').and.include('MIT license');
+                expect(footer, file).to.not.include('<a ');
+            }
+        });
+
         it('offers the examples nowhere in the header, the menu or the footer', function () {
             const home = read('index.html');
             const header = home.slice(home.indexOf('<header'), home.indexOf('</header>'));

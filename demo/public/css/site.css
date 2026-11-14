@@ -391,18 +391,10 @@ a:hover .arrow::after, .btn:hover .arrow::after, a.arrow:hover::after { transfor
 /* Contact ------------------------------------------------------------- */
 
 /* Footer -------------------------------------------------------------- */
-.site-footer { background: var(--char-darker); color: #9aa5b2; padding: 64px 0 32px; font-size: 14.5px; }
-.footer-grid { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 40px; }
-.site-footer h4 { color: #fff; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 14px; }
-.site-footer ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
-.site-footer a { color: #c4ccd6; }
-.site-footer a:hover { color: #fff; }
-.footer-brand img { height: 30px; width: auto; margin-bottom: 16px; }
-.footer-bottom { margin-top: 48px; padding-top: 24px; border-top: 1px solid #2c3540; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 13px; }
+.site-footer { background: var(--gray1); border-top: 1px solid var(--gray3); color: var(--muted); padding: 28px 0; font-size: 13px; }
+.site-footer p { margin: 0; }
 /* Thumb-sized hit areas on touch screens, without changing the desktop rhythm. */
 @media (pointer: coarse) {
-    .site-footer ul { gap: 0; }
-    .site-footer li a { display: inline-block; padding: 6px 0; }
     .copy { padding: 8px 12px; }
 }
 
@@ -437,7 +429,6 @@ a:hover .arrow::after, .btn:hover .arrow::after, a.arrow:hover::after { transfor
     .hero .hero-actions, .hero .chips { justify-content: flex-start; }
     .example-card .example-visual svg { max-width: 420px; }
     .grid-shots { grid-template-columns: minmax(0, 1fr); }
-    .footer-grid { grid-template-columns: 1fr 1fr; }
     .docs { grid-template-columns: minmax(0, 1fr); gap: 24px; }
     .docs-nav { position: static; max-height: none; border: 1px solid var(--gray4); border-radius: var(--radius); padding: 16px; }
     .docs-menu { position: static; border: 1px solid var(--gray4); border-radius: var(--radius); background: #fff; }
@@ -451,7 +442,7 @@ a:hover .arrow::after, .btn:hover .arrow::after, a.arrow:hover::after { transfor
 }
 @media (max-width: 640px) {
     .container { padding-left: 16px; padding-right: 16px; }
-    .grid-2, .grid-3, .how, .footer-grid { grid-template-columns: minmax(0, 1fr); }
+    .grid-2, .grid-3, .how { grid-template-columns: minmax(0, 1fr); }
     .brand-product { display: none; }
     .tab-panel { padding: 20px; }
     .browser iframe { height: 680px; }
