@@ -268,6 +268,19 @@ describe('Demo site build', function () {
             expect(htmlFiles().filter((file) => /["']\/(uag\/)?examples\b/.test(read(file)))).to.deep.equal([]);
         });
 
+        it('names no examples page anywhere outside the examples: not in a page, image, script or stylesheet', function () {
+            // A path on the site (after a quote, bracket, space or tag), not the
+            // formio/ai repository's examples folder on GitHub.
+            const sitePath = new RegExp(`(^|[\\s>"'(=])(/uag)?(/examples|${EXAMPLES})\\b`);
+            const offenders = [];
+            for (const file of fs.readdirSync(config.out, { recursive: true })) {
+                const name = String(file).split(path.sep).join('/');
+                if (isExample(name) || !/\.(html|svg|js|css|json|txt|xml)$/.test(name)) continue;
+                if (sitePath.test(read(name))) offenders.push(name);
+            }
+            expect(offenders).to.deep.equal([]);
+        });
+
         it('asks search engines not to index the examples and their apps, and only those', function () {
             const files = htmlFiles();
             expect(files.filter(isExample)).to.have.lengthOf(5);

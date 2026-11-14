@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 494" role="img" aria-labelledby="t d">
   <title id="t">Three ways to use the UAG</title>
-  <desc id="d">Conversation forms: a person talks to an MCP client, whose model reads the form with get_forms, get_form_fields and get_field_info, sends answers with collect_field_data, and saves with submit_completed_form; or to the chat widget embedded in a page, whose turns are the form's {form}/agent/chat, answered by a UAG engine, and which submits the form through the UAG once the person confirms; no Agentic Formflow license. Agentic workflows: an applicant submits through the UAG, which forwards the save to Form.io; an Agent: Run task action then runs the task after the save, in the background; engines answer the task's fields; and the UAG saves the results as an update, whose update actions can run the next task. Agentic Formflow: a person describes what happened, @formio/uag-js calls the form's {form}/agent/extract, fast decisions usually arrive first so pages appear, then values follow as suggestions and nothing is saved until the person submits. Workflows and Formflow run models in the UAG's engines and need a UAG license or a hosted Form.io project.</desc>
+  <desc id="d">Conversation forms: a person talks to an MCP client, whose model reads the form with get_forms, get_form_fields and get_field_info, sends answers with collect_field_data, and saves with submit_completed_form; or to the chat widget embedded in a page, whose turns are the form's {form}/agent/chat, answered by a UAG engine, and which submits the form through the UAG once the person confirms; no Agentic Formflow license. Agentic workflows: an applicant submits through the UAG, which forwards the save to Form.io; an Agent: Run task action then runs the task after the save, in the background; engines answer the task's fields; and the UAG saves the results as an update, whose update actions can run the next task. Agentic Formflow: a person describes what happened, @formio/uag-js calls the form's {form}/agent/extract, fast decisions usually arrive first so pages appear, then values follow as suggestions and nothing is saved until the person submits. Workflows and Formflow run models in the UAG's engines and need a UAG license or a trial project on Form.io's hosted service.</desc>
   <defs>
     <style>
       text { font-family: Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; fill: #0c141d; }
@@ -18,7 +18,7 @@
     </style>
     <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#69b342"/></marker>
   </defs>
-  <rect x="1" y="1" width="998" height="518" rx="18" fill="#ffffff" stroke="#e0e5ec"/>
+  <rect x="1" y="1" width="998" height="492" rx="18" fill="#ffffff" stroke="#e0e5ec"/>
 
   <!-- Column 1: Conversation forms -->
   <g transform="translate(20 20)">
@@ -49,10 +49,9 @@
     <text x="42" y="350" class="st">The person confirms; the UAG saves</text>
     <text x="42" y="372" class="mono code">submit_completed_form · submission</text>
 
-    <rect y="402" width="304" height="96" rx="10" fill="#f5f7fa" stroke="#e0e5ec"/>
+    <rect y="402" width="304" height="70" rx="10" fill="#f5f7fa" stroke="#e0e5ec"/>
     <text x="16" y="426" class="k">MODEL RUNS</text><text x="104" y="426" class="v">the MCP client, or a UAG engine</text>
     <text x="16" y="452" class="k">LICENSE</text><text x="104" y="452" class="v">none on Open Source</text>
-    <text x="16" y="478" class="k">LIVE DEMO</text><text x="104" y="478" class="v mono" style="font-size:11.5px">/examples/conversation</text>
   </g>
 
   <!-- Column 2: Agentic workflows -->
@@ -84,10 +83,9 @@
     <text x="42" y="350" class="st">The UAG saves them as an update</text>
     <text x="42" y="372" class="s">Its update actions can run the next task.</text>
 
-    <rect y="402" width="304" height="96" rx="10" fill="#f5f7fa" stroke="#e0e5ec"/>
+    <rect y="402" width="304" height="70" rx="10" fill="#f5f7fa" stroke="#e0e5ec"/>
     <text x="16" y="426" class="k">MODEL RUNS</text><text x="104" y="426" class="v">in the UAG's engines</text>
-    <text x="16" y="452" class="k">LICENSE</text><text x="104" y="452" class="v">UAG license or hosted project</text>
-    <text x="16" y="478" class="k">LIVE DEMO</text><text x="104" y="478" class="v mono" style="font-size:11.5px">/examples/workflow</text>
+    <text x="16" y="452" class="k">LICENSE</text><text x="104" y="452" class="v">UAG license or trial project</text>
   </g>
 
   <!-- Column 3: Agentic Formflow -->
@@ -119,9 +117,8 @@
     <text x="42" y="350" class="st">Values follow as suggestions</text>
     <text x="42" y="372" class="s">Nothing is saved until the person submits.</text>
 
-    <rect y="402" width="304" height="96" rx="10" fill="#f5f7fa" stroke="#e0e5ec"/>
+    <rect y="402" width="304" height="70" rx="10" fill="#f5f7fa" stroke="#e0e5ec"/>
     <text x="16" y="426" class="k">MODEL RUNS</text><text x="104" y="426" class="v">in the UAG's engines</text>
-    <text x="16" y="452" class="k">LICENSE</text><text x="104" y="452" class="v">UAG license or hosted project</text>
-    <text x="16" y="478" class="k">LIVE DEMO</text><text x="104" y="478" class="v mono" style="font-size:11.5px">/examples/formflow</text>
+    <text x="16" y="452" class="k">LICENSE</text><text x="104" y="452" class="v">UAG license or trial project</text>
   </g>
 </svg>
