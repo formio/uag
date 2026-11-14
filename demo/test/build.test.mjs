@@ -40,7 +40,7 @@ describe('Demo site build', function () {
             expect(readConfig({}).examplesPath).to.equal('/examples');
             expect(examplesPathOf({ DEMO_EXAMPLES_PATH: '/x-7f3c9a/' })).to.equal('/x-7f3c9a');
             expect(examplesPathOf({ DEMO_EXAMPLES_PATH: '/demos/live' })).to.equal('/demos/live');
-            for (const value of ['x y', '/x y', 'examples', 'https://example.com/x', '/', '/x"><script>', '/developers', '/apps/x', '/images']) {
+            for (const value of ['x y', '/x y', 'examples', 'https://example.com/x', '/', '/x"><script>', '/developers', '/apps/x', '/images', '/x/..', '/..', '/.', '/./x', '/x/../developers', '/Developers', '/FAQ', ' ', '\n']) {
                 expect(() => examplesPathOf({ DEMO_EXAMPLES_PATH: value }), value).to.throw(/DEMO_EXAMPLES_PATH/);
             }
         });
@@ -284,6 +284,11 @@ describe('Demo site build', function () {
                 const full = path.join(config.out, 'apps', file);
                 if (fs.statSync(full).isFile()) expect(fs.readFileSync(full, 'utf8').includes(EXAMPLES), file).to.equal(false);
             }
+        });
+
+        it('names a leaking example page by a path that holds the examples path whole, so CI logs mask it', function () {
+            // A "secret" only the built example pages contain: the examples path itself.
+            expect(() => build(config, { ...env, SOME_API_KEY: EXAMPLES })).to.throw().with.property('message').that.matches(new RegExp(`SOME_API_KEY in ${EXAMPLES}/`));
         });
 
         it('has no contact page of its own: every sales call to action leaves for Form.io\'s', function () {

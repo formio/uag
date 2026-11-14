@@ -31,7 +31,7 @@ jobs:
     steps:
       - name: Check the examples path is set
         run: |
-          if [ -z "$DEMO_EXAMPLES_PATH" ]; then
+          if [ -z "$(printf '%s' "$DEMO_EXAMPLES_PATH" | tr -d '[:space:]')" ]; then
             echo "::error::Set the DEMO_EXAMPLES_PATH secret: the path the live examples are served under."
             exit 1
           fi

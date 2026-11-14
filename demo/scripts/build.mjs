@@ -160,7 +160,9 @@ export function leakedSecrets(dir, env = process.env, root = null) {
     for (const file of textFiles(dir)) {
         const text = fs.readFileSync(file, 'utf8');
         for (const [name, value] of secrets) {
-            if (text.includes(value)) found.push(`${name} in ${path.relative(dir, file)}`);
+            // From the site's root, with its leading slash: under the examples path, the
+            // file then contains that path whole, which CI logs mask as a secret.
+            if (text.includes(value)) found.push(`${name} in /${path.relative(dir, file).split(path.sep).join('/')}`);
         }
     }
     return found;

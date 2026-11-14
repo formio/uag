@@ -49,12 +49,16 @@ const RESERVED_SEGMENTS = new Set(['apps', 'css', 'developers', 'faq', 'fonts', 
  * outside the examples links to it, so the published site can keep it unlisted.
  */
 export function examplesPathOf(env) {
-    const raw = String(env.DEMO_EXAMPLES_PATH || '').trim();
-    if (!raw) return DEFAULT_EXAMPLES_PATH;
-    const value = raw.replace(/\/+$/, '');
-    if (!/^(\/[A-Za-z0-9._~-]+)+$/.test(value) || RESERVED_SEGMENTS.has(value.split('/')[1])) {
-        throw new Error('DEMO_EXAMPLES_PATH must be a path of its own, such as /examples.');
-    }
+    const error = new Error('DEMO_EXAMPLES_PATH must be a path of its own, such as /examples.');
+    if (!env.DEMO_EXAMPLES_PATH) return DEFAULT_EXAMPLES_PATH;
+    // Set but blank is a mistake (an empty secret, say), not a request for the default.
+    const value = String(env.DEMO_EXAMPLES_PATH).trim().replace(/\/+$/, '');
+    if (!/^(\/[A-Za-z0-9._~-]+)+$/.test(value)) throw error;
+    const segments = value.split('/').slice(1);
+    // `.` and `..` would put the examples over the home page or outside the build.
+    if (segments.some((segment) => segment === '.' || segment === '..')) throw error;
+    // Compared without case: on a case-insensitive disk, /Developers is /developers.
+    if (RESERVED_SEGMENTS.has(segments[0].toLowerCase())) throw error;
     return value;
 }
 
