@@ -318,6 +318,15 @@ describe('Demo site build', function () {
             }
         });
 
+        it('opens Getting Started on Enterprise, self-hosted, with the trial last', function () {
+            const html = read('getting-started/index.html');
+            const tabs = [...html.matchAll(/<button role="tab" id="(tab-[a-z]+)" aria-controls="panel-[a-z]+" aria-selected="(true|false)"/g)].slice(0, 3);
+            expect(tabs.map(([, id, selected]) => `${id}:${selected}`)).to.deep.equal(['tab-ent:true', 'tab-oss:false', 'tab-saas:false']);
+            expect(html).to.include('id="panel-ent" aria-labelledby="tab-ent">').and.include('id="panel-saas" aria-labelledby="tab-saas" hidden>');
+            const cards = [...html.matchAll(/<div class="card[^"]*">\s*<span class="num">[^<]*<\/span>\s*<h3>([^<]*)<\/h3>/g)].map((match) => match[1]);
+            expect(cards).to.deep.equal(['Enterprise, self-hosted', 'Open Source stack', '30-day free trial']);
+        });
+
         it('offers the examples nowhere in the header, the menu or the footer', function () {
             const home = read('index.html');
             const header = home.slice(home.indexOf('<header'), home.indexOf('</header>'));
