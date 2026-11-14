@@ -43,6 +43,7 @@ The build reads its settings from the environment ([`lib/config.mjs`](./lib/conf
 | `FORMIO_BASE_URL` | Derived from the project URL | formio.js's base URL. |
 | `DEMO_PUBLIC_URL` | `https://<DEMO_DOMAIN>` when `DEMO_DOMAIN` is set, else `https://formio.github.io/uag` | The site's own address, for canonical links and social cards. |
 | `DEMO_BASE_PATH` | `""` | The path the site is served under, such as `/uag` for a GitHub Pages project site. Every link and source the build writes from the root starts with it, the pages give it to their scripts (`data-base-path`), and `yarn workspace @formio/uag-demo serve` serves the build under it. |
+| `DEMO_EXAMPLES_PATH` | `/examples` | The path the live examples are served under. Only the example pages link to it, and they ask search engines not to index them. It must be a path of its own, not one the site's pages or assets use. |
 | `DEMO_OUT` | `dist` | Where the build is written. |
 | `DEMO_ASSET_VERSION` | The release's version | Added to the URLs of scripts and styles (`?v=`). |
 | `CONTACT_URL` | `https://form.io/contact-us` | Where "Talk to Sales" and the other sales calls to action go. |
