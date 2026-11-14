@@ -1,4 +1,11 @@
 /* Form.io UAG demo site. Brand tokens follow form.io's own theme. */
+
+/* The site's fonts, served with it (Latin subsets, SIL Open Font License: see
+   fonts/*-OFL.txt), so they are cached with the site and the header does not
+   shift while a font loads from another host. Inter is preloaded by the layout. */
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 100 900; font-display: swap; src: url('../fonts/inter-latin.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 100 800; font-display: swap; src: url('../fonts/jetbrains-mono-latin.woff2') format('woff2'); }
+
 :root {
     --green: #69b342;
     --green-dark: #5a9a39;
@@ -35,7 +42,9 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header) + 16px); }
+/* A scrollbar on every page, so a short page and a long one place the header alike
+   (scrollbar-gutter would do the same, but not everywhere). */
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header) + 16px); overflow-y: scroll; }
 body {
     margin: 0;
     font-family: var(--font);

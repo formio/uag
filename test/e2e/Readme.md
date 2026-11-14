@@ -15,7 +15,7 @@ yarn test:e2e
 | Docker (with `docker compose`) | Spins up Form.io Open Source and MongoDB for layer 1 and the layer 3 Agent API and conversation suites, and Form.io Enterprise for `layer3.demo-stack` and the Enterprise Getting Started guide |
 | `CLAUDE_API_KEY` env var (or in the root `.env`) | Real Claude API calls in layer 3. Suites that need it are skipped when it is not set. |
 | A built `lib/` (`yarn build`) | The UAG server is booted from the compiled output |
-| Chromium for Playwright (`npx playwright install chromium`, once) | The browser suites and tests (`layer1.demo-conversation`, `layer1.demo-workflow`, `layer1.demo-formflow`, `layer1.demo-documents`, `layer1.demo-unlicensed`, `layer3.demo-stack`). They are skipped, with that command, when it is not installed. |
+| Chromium for Playwright (`npx playwright install chromium`, once) | The browser suites and tests (`layer1.demo-conversation`, `layer1.demo-workflow`, `layer1.demo-formflow`, `layer1.demo-documents`, `layer1.demo-unlicensed`, `layer1.demo-layout`, `layer3.demo-stack`). They are skipped, with that command, when it is not installed. |
 | Internet access | The demo site's pages load formio.js, Bootstrap and fonts from CDNs, so the browser suites need it |
 
 Optional:
@@ -229,6 +229,9 @@ agents, so the workflow needs no webhooks and runs on Open Source.
   still works, the Agent API refuses the formflow demo's extraction
   (`license_required`), and the page says the demo is not supported, with what
   a local run needs, while the conversation page shows no notice.
+- *Header* (`layer1.demo-layout.e2e.mjs`, Chromium only: no stack): on a
+  fresh build, every header link sits at the same place on short and long
+  pages with classic scrollbars, and does not move when the font arrives.
 
 The demo site's own unit tests (`demo/test`, run by `yarn test`) cover the
 build (every page written, no template left unfilled, no `/api` call, no
