@@ -94,6 +94,8 @@ Each turn goes to the form's chat on the UAG, addressed by id like its submissio
 
 Render from the form's URL when the chat should save: a form rendered from a definition has no URL to submit to, as with `Formio.createForm`.
 
+Try it live: [Chat widget](../examples/09-chat-widget/example.md).
+
 ## How a conversation goes
 
 1. The chat shows a greeting (your `greeting`, or one naming the form) and any `suggestions`.
@@ -105,6 +107,8 @@ Render from the form's URL when the chat should save: a form rendered from a def
 At any time, **Review form** shows the formio.js form behind the chat, filled in as the person talks, and **Back to chat** returns. A value the person changes in the form is theirs: the chat sends it as `locked`, so the UAG neither asks for it nor changes it, and the chat never writes over it. When a required field is one the chat [cannot collect](#the-fields-a-chat-collects), the chat says so and opens the form, once for each set of such fields. **Start over** clears the conversation and the values the chat wrote; after a submission, it starts a new one with an empty form, rather than updating the one just saved. A save still in flight when the person starts over is ignored by the new conversation.
 
 Nothing is submitted without the person's confirmation. The UAG never submits: it only answers turns.
+
+Try it live: [Validation in the chat widget](../examples/10-chat-validation/example.md).
 
 ## Set up the form
 

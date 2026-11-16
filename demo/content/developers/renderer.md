@@ -179,6 +179,8 @@ When the trigger fires, Agent Input sends the form's current data, and the UAG r
 
 > **Tip:** If decision fields can be hidden by conditionals, set `clearOnHide: false` on the fields themselves, so hiding a page does not wipe the values that decided it.
 
+Try it live: [Fill a form from a description](../examples/01-fill-from-description/example.md).
+
 ## Attaching by hand
 
 `UAG.attach(form, options)` attaches Agent Input to one rendered form, for example with `agentInput: false`, or to call a relay of your own. It replaces the form's earlier attachment, the automatic one included, so the form never extracts twice. The package includes TypeScript types.
@@ -288,6 +290,8 @@ type ResultEvent = {
 
 A new request aborts the one in flight. An aborted request calls neither `onError` nor `onDone`.
 
+Try it live: [Streamed results](../examples/02-streamed-results/example.md).
+
 ### Fields the decisions reveal
 
 When decision results changed values and the `done` summary lists fields excluded as hidden by the form's conditionals, Agent Input asks once more, with the new data, so the fields on the pages that triage just turned on are filled too. That follow-up calls `onStart` and `onDone` with `followUp: true`, keeps the annotations already shown, and finishes before the first request's `done` promise resolves. It happens once per request.
@@ -302,6 +306,8 @@ When decision results changed values and the `done` summary lists fields exclude
 - **Annotations follow the wizard.** A field on a page that was not drawn when its result arrived is annotated when the page renders.
 
 Values Agent Input writes are values the user submits. To make decisions that drive sensitive routing trustworthy, re-decide them on the server: the form's submissions already go to the UAG, so add an "Agent: Run task" action that runs before the save and answers the task's decision fields only, with those fields marked `uagAuthoritative` (see [Security](./security.md#fields-the-server-owns)).
+
+Try it live: [The person's own input wins](../examples/06-your-input-wins/example.md).
 
 ### Styles
 

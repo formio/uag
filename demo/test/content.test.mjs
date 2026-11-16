@@ -40,6 +40,13 @@ describe('Demo site content', function () {
         expect(siteLink('./index.md#ways-to-use-it', context)).to.equal('/developers#ways-to-use-it');
         expect(siteLink('../../public/apps/workflow/workflow.js', context)).to.equal('/apps/workflow/workflow.js');
         expect(siteLink('../../public/images/login.png', context)).to.equal('/images/login.png');
+        // A feature example, by its example.md or its folder, from a developer page and from another example.
+        expect(siteLink('../examples/01-fill-from-description/example.md#x', context)).to.equal('/examples/fill-from-description#x');
+        expect(siteLink('../examples/09-chat-widget/', context)).to.equal('/examples/chat-widget');
+        const example = { dir: path.join(root, 'content/examples/02-streamed-results'), contentRoot: path.join(root, 'content') };
+        expect(siteLink('../01-fill-from-description/example.md', example)).to.equal('/examples/fill-from-description');
+        expect(siteLink('../../developers/renderer.md#triggers', example)).to.equal('/developers/renderer#triggers');
+        expect(siteLink('../01-fill-from-description/form.json', example)).to.equal(null);
         for (const href of ['./README.md', '../../samples/custom-module', '../../../MIGRATING-2.0.md', '/developers/chat', '#anchor', 'https://form.io']) {
             expect(siteLink(href, context), href).to.equal(null);
         }
@@ -47,6 +54,13 @@ describe('Demo site content', function () {
         expect(page.html).to.include('src="/images/uag-chat.svg"');
         for (const each of docs.ordered) expect(each.html, each.slug).not.to.match(/href="(?!https?:)[^"]*\.md[#"]/);
         expect(page.sources).not.to.satisfy((sources) => sources.some((source) => source.startsWith('demo/public/') || source.startsWith('demo/content/')));
+    });
+
+    it('links each feature example from the developer page it shows', function () {
+        const linked = new Set();
+        for (const page of docs.ordered) for (const match of page.html.matchAll(/href="(\/examples\/[a-z0-9-]+)"/g)) linked.add(match[1]);
+        const examples = loadExamples(path.join(root, 'content/examples'));
+        expect([...linked].sort()).to.deep.equal(examples.map((example) => example.href).sort());
     });
 
     it('links no showcase demo from the developer pages', function () {
