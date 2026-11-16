@@ -40,23 +40,30 @@
     }
 
     /**
-     * Empty a component. formio.js's own resetValue() when it has one: some
-     * components ignore setValue() with their empty value (a number field keeps
-     * its value when given null).
+     * A component's value as the form's data holds it. formio.js updates the data
+     * as soon as a value is set, but a select drawn with Choices.js shows the new
+     * value, in getValue(), only a moment later.
+     */
+    function currentValue(component) {
+        return component.dataValue !== undefined ? component.dataValue : component.getValue();
+    }
+
+    /**
+     * Empty a component, with a change event, so the form's conditions and
+     * calculations follow. The resetValue flag makes formio.js take the empty
+     * value even when it is null, which a number field otherwise ignores.
      */
     function emptyComponent(component) {
-        if (typeof component.resetValue === 'function') component.resetValue();
-        else component.setValue(component.emptyValue !== undefined ? component.emptyValue : '');
+        component.setValue(component.emptyValue !== undefined ? component.emptyValue : '', { resetValue: true });
     }
 
     /**
      * The value a component holds after a write, to recognize as the writer's own
-     * later: formio.js may normalize it (select boxes, dates), and a select drawn
-     * with Choices.js shows it only a moment later, its getValue() still empty
-     * right after setValue(); then the value written is the one to recognize.
+     * later: formio.js may normalize it (select boxes, dates). When the component
+     * does not hold it yet, the value written is the one to recognize.
      */
     function heldValue(component, value) {
-        var held = component.getValue();
+        var held = currentValue(component);
         return held === undefined || (isEmpty(held) && !isEmpty(value)) ? value : held;
     }
 
@@ -406,7 +413,7 @@
                 Object.keys(patch).forEach(function (path) {
                     var component = form.getComponent(path);
                     if (!component) return;
-                    if (!state.canApply(path, component.getValue())) return;
+                    if (!state.canApply(path, currentValue(component))) return;
                     component.setValue(patch[path]);
                     // What the field holds after formio.js normalizes it (select boxes,
                     // dates), so it is still recognized as extraction's own value later.
@@ -440,7 +447,7 @@
             try {
                 Object.keys(state.agentValues).forEach(function (path) {
                     var component = form.getComponent(path);
-                    if (component && state.canApply(path, component.getValue())) {
+                    if (component && state.canApply(path, currentValue(component))) {
                         emptyComponent(component);
                     }
                     delete state.agentValues[path];
@@ -1279,7 +1286,7 @@
                     Object.keys(patch).forEach(function (path) {
                         var component = self.getComponent(path);
                         if (!component) return;
-                        if (!self.chat.state.canApply(path, component.getValue())) return;
+                        if (!self.chat.state.canApply(path, currentValue(component))) return;
                         component.setValue(patch[path]);
                         self.chat.state.recordAgent(path, heldValue(component, patch[path]));
                     });
@@ -1341,7 +1348,7 @@
                     }
                     Object.keys(this.chat.state.agentValues).forEach(function (path) {
                         var component = self.getComponent(path);
-                        if (component && self.chat.state.canApply(path, component.getValue())) {
+                        if (component && self.chat.state.canApply(path, currentValue(component))) {
                             emptyComponent(component);
                         }
                     });

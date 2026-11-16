@@ -319,14 +319,54 @@ describe('Agent Input renderer', () => {
             expect(JSON.parse(fetch.calls[1].init.body).data.topic).to.equal('');
         });
 
+        it('recognizes a select it rewrites while the stream arrives, as the value it now holds', async () => {
+            const form: any = fakeForm({ description: 'Do you ship to Canada?', topic: '' }, { topic: { uag: 'triage' } });
+            // A select drawn with Choices.js: its data changes at once, but getValue() shows the
+            // previous value until the widget catches up.
+            const topic = form.getComponent('topic');
+            const write = topic.setValue;
+            let shown = '';
+            Object.defineProperty(topic, 'dataValue', { get: () => form.values.topic });
+            topic.getValue = () => shown;
+            topic.setValue = (value: any, flags?: any) => { write(value, flags); setTimeout(() => { shown = form.values.topic; }, 0); };
+            // Two results for the topic, the second after the first has been drawn.
+            const first = sse([['result', { kind: 'decision', fields: {}, patch: { topic: 'question' } }]]);
+            const second = sse([['result', { kind: 'value', fields: {}, patch: { topic: 'problem' } }], ['done', {}]]);
+            const encoder = new TextEncoder();
+            const calls: any[] = [];
+            const fetch = async (url: string, init: any) => {
+                calls.push(init);
+                const chunks = calls.length === 1 ? [first, second] : [sse([['done', {}]])];
+                return {
+                    ok: true, status: 200,
+                    body: { getReader: () => ({ read: async () => {
+                        await new Promise((resolve) => setTimeout(resolve, 5));
+                        return chunks.length ? { done: false, value: encoder.encode(chunks.shift()) } : { done: true };
+                    } }) },
+                };
+            };
+            const agent = attach(form, { uagUrl: 'https://uag.test', trigger: 'button', fetch });
+            await agent.extract().done;
+            await new Promise((resolve) => setTimeout(resolve, 5));
+            expect(form.values.topic).to.equal('problem');
+            expect(agent.state.source('topic')).to.equal('agent');
+            form.userTypes('description', 'My last order arrived damaged');
+            await agent.extract().done;
+            expect(JSON.parse(calls[1].body).data.topic).to.equal('');
+        });
+
         it('empties a number it wrote when the description changes, though the number ignores setValue(null)', async () => {
             const form: any = fakeForm({ description: 'Thanks, all fixed', topicConfidence: null }, { topicConfidence: { uag: 'triage' } });
-            // formio.js's number component: null, its empty value, is ignored by setValue(); resetValue() empties it.
+            // formio.js's number component: null, its empty value, is ignored by setValue()
+            // unless the resetValue flag says to empty it. resetValue() empties it without a
+            // change event, so conditions on the field would not run.
             const number = form.getComponent('topicConfidence');
             const write = number.setValue;
             number.emptyValue = null;
-            number.setValue = (value: any) => { if (value !== null) write(value); };
-            number.resetValue = () => write(null);
+            number.setValue = (value: any, flags: any = {}) => { if (value !== null || flags.resetValue) write(value); };
+            number.resetValue = () => { form.values.topicConfidence = null; };
+            const changed: string[] = [];
+            form.on('change', (event: any) => changed.push(event.changed.instance.path));
             let body = sse([['result', { kind: 'decision', fields: {}, patch: { topicConfidence: 0.99 } }]]);
             const calls: any[] = [];
             const fetch = async (url: string, init: any) => { calls.push(init); return { ok: true, status: 200, text: async () => body }; };
@@ -338,6 +378,8 @@ describe('Agent Input renderer', () => {
             await agent.extract().done;
             expect(JSON.parse(calls[1].body).data.topicConfidence).to.equal(null);
             expect(form.values.topicConfidence).to.equal(0.49);
+            // Emptied with a change event, as each write is: the form's conditions follow.
+            expect(changed.filter((path) => path === 'topicConfidence')).to.have.lengthOf(3);
         });
 
         it('recognizes its own value after formio.js normalizes it, so it can update it later', async () => {

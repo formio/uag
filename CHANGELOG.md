@@ -4,8 +4,8 @@
 
 ### Fixed
 
-- `@formio/uag-js`: Agent Input and the chat now recognize the value they wrote into a select. A select drawn with Choices.js returns its old value for a moment after a write, so the value was recorded as empty: a new description then left the select's earlier answer in place, and Agent Input treated it as the person's choice.
-- `@formio/uag-js`: Agent Input and the chat now empty a number field they filled when the description changes, or the chat starts over. formio.js's number field ignores `setValue()` with its empty value, so the old number stayed, and the next answer was refused as if the person had typed it. Fields are now emptied with the component's own `resetValue()`.
+- `@formio/uag-js`: Agent Input and the chat now recognize the value they wrote into a select, including one they rewrite while results stream in. A select drawn with Choices.js shows a new value only a moment after it is set, so the value recorded was the one shown before: a new description then left the select's answer in place, and Agent Input treated it as the person's choice. Fields are now compared by the value in the form's data.
+- `@formio/uag-js`: Agent Input and the chat now empty a number field they filled when the description changes, or the chat starts over. formio.js's number field ignores `setValue()` with its empty value, so the old number stayed, and the next answer was refused as if the person had typed it. Emptying a field now also fires a change, so the form's conditions and calculations follow.
 
 ### Changed
 
