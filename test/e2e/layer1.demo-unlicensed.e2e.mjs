@@ -51,14 +51,14 @@ describe('Layer 1: the demo site, Open Source and unlicensed', function () {
         expect(body.code).to.equal('license_required');
     });
 
-    it('says the formflow demo is not supported without a license or SaaS project, with what a local run needs', async function () {
+    it('says the formflow demo is not supported without a license, with what a local run needs', async function () {
         const page = await browser.page();
         const frame = await startExample(page, 'formflow');
         await frame.locator('#examples button', { hasText: 'Car stolen' }).click();
         await frame.locator('#claim .btn-wizard-nav-next').click();
         const panel = page.locator('[data-demo-unsupported]');
         await panel.waitFor();
-        expect(await panel.locator('h3').textContent()).to.equal('Not supported without a license or SaaS project');
+        expect(await panel.locator('h3').textContent()).to.equal('Not supported without a license');
         expect(await page.locator('iframe[data-demo-frame]').isVisible()).to.equal(false);
         await page.locator('[data-license-notice]').waitFor();
         expect(await page.locator('[data-license-notice]').textContent()).to.include('the UAG needs a license that includes the UAG');
