@@ -5,7 +5,7 @@ section: Build
 order: 45
 ---
 
-The chat widget turns a Form.io form into a conversation. A person describes what they need in their own words; the chat asks only for what is still missing, maps their answers onto the form's own fields and options, refuses what the form would refuse, and, once they confirm a summary, submits the form. It is the widget in the [Conversation Forms demo](../../public/apps/conversation), and you embed it the way you embed a form:
+The chat widget turns a Form.io form into a conversation. A person describes what they need in their own words; the chat asks only for what is still missing, maps their answers onto the form's own fields and options, refuses what the form would refuse, and, once they confirm a summary, submits the form. You embed it the way you embed a form:
 
 ```js
 import { Formio } from '@formio/js';
@@ -94,6 +94,8 @@ Each turn goes to the form's chat on the UAG, addressed by id like its submissio
 
 Render from the form's URL when the chat should save: a form rendered from a definition has no URL to submit to, as with `Formio.createForm`.
 
+Try it live: [Chat widget](../examples/10-chat-widget/example.md).
+
 ## How a conversation goes
 
 1. The chat shows a greeting (your `greeting`, or one naming the form) and any `suggestions`.
@@ -105,6 +107,8 @@ Render from the form's URL when the chat should save: a form rendered from a def
 At any time, **Review form** shows the formio.js form behind the chat, filled in as the person talks, and **Back to chat** returns. A value the person changes in the form is theirs: the chat sends it as `locked`, so the UAG neither asks for it nor changes it, and the chat never writes over it. When a required field is one the chat [cannot collect](#the-fields-a-chat-collects), the chat says so and opens the form, once for each set of such fields. **Start over** clears the conversation and the values the chat wrote; after a submission, it starts a new one with an empty form, rather than updating the one just saved. A save still in flight when the person starts over is ignored by the new conversation.
 
 Nothing is submitted without the person's confirmation. The UAG never submits: it only answers turns.
+
+Try it live: [Validation in the chat widget](../examples/11-chat-validation/example.md).
 
 ## Set up the form
 
@@ -326,13 +330,13 @@ The conversation lives in the browser: the UAG stores nothing between turns. Wit
 A visitor who is not signed in has no Form.io token. Two ways to offer them a chat:
 
 - **Anonymous use.** Set [`uagAnonymous: "true"`](./form-properties.md#uaganonymous) on the form, and let the Anonymous role create its submissions. The UAG then answers visitors directly, rate-limited per address and in total, together with the form's other anonymous agent operations (`AGENT_ANONYMOUS_RATE_LIMIT`, default 10 a minute per address, and `AGENT_ANONYMOUS_TOTAL_RATE_LIMIT`, default 100). Every anonymous turn spends your model budget: set the limits for what you are prepared to pay, and a spend limit at your model provider.
-- **A relay of your own,** when you need more: a CAPTCHA, a daily budget, your own sessions. The relay checks what it must, then calls the UAG with a key the browser never sees. Either point only the turns at it with `chatUrl`, or register the relay's base URL as the UAG's URL (`Formio.use(UAG(relayUrl))`) and have it serve the UAG's paths for your form: the form (`{relay}/{formPath}`), its turns (`{relay}[/project/{id}]/form/{id}/agent/chat`) and its save (`{relay}[/project/{id}]/form/{id}/submission`). The [demo](../../public/apps/conversation) needs no relay: it signs each visitor in as a guest user of its project and calls the UAG with that user's token, under per-user rate limits (`agentApi.rateLimits.caller`).
+- **A relay of your own,** when you need more: a CAPTCHA, a daily budget, your own sessions. The relay checks what it must, then calls the UAG with a key the browser never sees. Either point only the turns at it with `chatUrl`, or register the relay's base URL as the UAG's URL (`Formio.use(UAG(relayUrl))`) and have it serve the UAG's paths for your form: the form (`{relay}/{formPath}`), its turns (`{relay}[/project/{id}]/form/{id}/agent/chat`) and its save (`{relay}[/project/{id}]/form/{id}/submission`). A public page can also go without a relay: sign each visitor in as a user of your project, a guest user for example, and call the UAG with that user's token, under per-user rate limits (`agentApi.rateLimits.caller`).
 
 The UAG refuses project and admin keys on browser requests, so a key cannot be used from a page; see [Security](./security.md#chat).
 
 ## Limits and licensing
 
-- **No Agentic Formflow license.** Chat is part of conversation forms, like the MCP tools: it runs on Form.io Open Source and on the hosted service with an unlicensed UAG. A self-hosted Enterprise project needs a license that includes the UAG to be served at all, and nothing more for chat (see [Editions](./deployment.md#editions)). `GET /agent/capabilities` reports `operations.chat`. The rest of the Agent API (`extract`, `decide`, `generate`), Agent Input and Run task are Agentic Formflow, and need a license or a hosted project.
+- **No Agentic Formflow license.** Chat is part of conversation forms, like the MCP tools: it runs on Form.io Open Source and on a trial project with an unlicensed UAG. A self-hosted Enterprise project needs a license that includes the UAG to be served at all, and nothing more for chat (see [Editions](./deployment.md#editions)). `GET /agent/capabilities` reports `operations.chat`. The rest of the Agent API (`extract`, `decide`, `generate`), Agent Input and Run task are Agentic Formflow, and need a license or a trial project.
 - **Engines.** A turn needs an agent engine. The UAG tries the engines in `agentApi.chat.engines` (default: every agent engine) in order, each within its timeout, and moves to the next on a failure. See [Engines](./engines.md#chat).
 - **Bounds.** A turn carries at most 40 messages of at most 2000 characters each, and the UAG sends the engine the newest 24,000 characters of the conversation (`agentApi.chat`). Callers are rate-limited per operation with `agentApi.rateLimits.caller.chat`. See [Agent API](./agent-api.md#chat).
 

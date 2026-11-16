@@ -7,7 +7,7 @@ order: 30
 
 An agentic workflow runs a form's tasks with no person in the loop. The application sends its submissions to the UAG, which forwards each one to Form.io. An **Agent: Run task** action on the form runs one of the form's [tasks](./concepts.md#tasks) on the submission, before the save or after it, and the UAG saves the task's answers. A task's save is an update, and an update can start the next task. The instructions live in the form, so changing what an agent does is a form edit, not a deployment.
 
-This page builds the college application workflow from the [demo site's project](../../module/project.json): an `admissions` task scores each application and decides, and a `finance` task assigns a scholarship award to the applicants admissions puts on the scholarship track. See it running at [/examples/workflow](../../public/apps/workflow).
+This page builds the college application workflow from the [demo site's project](../../module/project.json): an `admissions` task scores each application and decides, and a `finance` task assigns a scholarship award to the applicants admissions puts on the scholarship track.
 
 > **Tip:** Build this workflow in your own project with the [admissions workflow prompt](https://github.com/formio/ai/blob/main/examples/agents/admissions-workflow.md) and the [Agentic Coding Plugin](./agentic-coding.md). Its `formio-uag` skill adds the "Agent: Run task" actions in a project template, a UAG module or a portal stage connected to the UAG.
 
@@ -21,8 +21,8 @@ This page builds the college application workflow from the [demo site's project]
 |---|---|
 | A form with at least one [task](./concepts.md#tasks) | The criteria, and the fields the task fills. |
 | An engine enabled on the UAG | `UAG_ENGINES`, for example `claude` with `CLAUDE_API_KEY`. See [Engines](./engines.md). |
-| A `LICENSE_KEY` that includes the UAG, or a project on Form.io's hosted service | Run task is Agentic Formflow. It runs on Form.io Open Source and Enterprise alike with a license. Without one, a run before the save refuses the submission with `403` (`code: "license_required"`), and a run after the save fails and is logged. |
-| Submissions sent to the UAG | Run task runs only for submissions the UAG receives: through its submission API or its MCP tools. Point the application's project URL at the UAG: the UAG's root for an Open Source server, `/<project name>` on the UAG for an Enterprise or hosted project. A submission sent straight to Form.io runs no task. |
+| A `LICENSE_KEY` that includes the UAG, or, to try it, a 30-day free trial project on portal.form.io | Run task is Agentic Formflow. It runs on Form.io Open Source and Enterprise alike with a license. Without one, a run before the save refuses the submission with `403` (`code: "license_required"`), and a run after the save fails and is logged. |
+| Submissions sent to the UAG | Run task runs only for submissions the UAG receives: through its submission API or its MCP tools. Point the application's project URL at the UAG: the UAG's root for an Open Source server, `/<project name>` on the UAG for an Enterprise or trial project. A submission sent straight to Form.io runs no task. |
 
 Nothing has to be public. Applications reach the UAG over your network, the UAG reaches Form.io, and the UAG calls the model providers outward.
 
@@ -117,6 +117,8 @@ Add an **Agent: Run task** action to the form. The sample's template installs it
 The handler is fixed: keep `handler` as `["before", "after"]` in a template, and choose the timing with **When**.
 
 To add it in the Form.io Enterprise portal, use a stage connected to the UAG; see [Connecting the Enterprise portal](./deployment.md#connecting-the-enterprise-portal). In that stage the portal reads Run task's settings form from the UAG, and every other action's from Form.io. On an Open Source server, post it to the form's actions; see [Attaching an action to a form](./modules.md#attaching-an-action-to-a-form). A new action, or a criteria edit, takes effect after the UAG's next `PROJECT_TTL` refresh or a restart.
+
+Try it live: [Run an agent task after a submission](../examples/08-run-task/example.md).
 
 ## Before or after the save
 
@@ -248,7 +250,7 @@ A run reads, saves and creates submissions at Form.io with one of two identities
 
 Either way, a run never uses the UAG's own project API key, and the task's engines research with the identity of the user who submitted, never the agent role. [Project setup for agents](./project-setup.md) walks through the roles, permissions and secret an agent role needs.
 
-The [demo site](../../public/apps/workflow) saves each application from the browser as the visitor's guest user, so its runs act as that guest: the guest may create and update its own applications, and the task's fields are `uagAuthoritative`, so only the run may set them. It runs on Form.io's hosted service, which does not share its secret, so its actions name no agent role.
+On Form.io's hosted service, which does not share its secret, actions name no agent role. Save each application from the browser as the signed-in user, so its runs act as that user: let the user create and update their own applications, and make the task's fields `uagAuthoritative`, so only the run may set them.
 
 ## Letting the task research
 

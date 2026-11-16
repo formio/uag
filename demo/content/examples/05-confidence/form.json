@@ -1,0 +1,109 @@
+{
+  "title": "Example: Confidence and the unsure band",
+  "name": "exampleConfidence",
+  "path": "example-confidence",
+  "type": "form",
+  "display": "form",
+  "tags": [
+    "uag"
+  ],
+  "properties": {
+    "description": "A general request: its topic, with how sure the decision is, and whether it needs a follow-up."
+  },
+  "components": [
+    {
+      "type": "textarea",
+      "key": "description",
+      "label": "Describe your request",
+      "input": true,
+      "placeholder": "Tell us what you need, in your own words.",
+      "rows": 4,
+      "validate": {
+        "required": true
+      },
+      "properties": {
+        "uag": "triage",
+        "uagField": "input"
+      }
+    },
+    {
+      "type": "radio",
+      "key": "topic",
+      "label": "What is the message about?",
+      "input": true,
+      "values": [
+        {
+          "label": "Question",
+          "value": "question"
+        },
+        {
+          "label": "Problem",
+          "value": "problem"
+        },
+        {
+          "label": "Request",
+          "value": "request"
+        },
+        {
+          "label": "Feedback",
+          "value": "feedback"
+        }
+      ],
+      "properties": {
+        "uag": "triage",
+        "uagThreshold": "0.7",
+        "uagConfidenceField": "topicConfidence"
+      }
+    },
+    {
+      "type": "number",
+      "key": "topicConfidence",
+      "label": "Confidence in the topic",
+      "input": true,
+      "disabled": true,
+      "properties": {
+        "uag": "triage"
+      }
+    },
+    {
+      "type": "htmlelement",
+      "key": "unsureNote",
+      "tag": "p",
+      "input": false,
+      "className": "alert alert-warning",
+      "content": "We are not sure about the topic. Please check it, and choose another if it is wrong.",
+      "conditional": {
+        "show": true,
+        "conjunction": "all",
+        "conditions": [
+          {
+            "component": "topicConfidence",
+            "operator": "isNotEmpty"
+          },
+          {
+            "component": "topicConfidence",
+            "operator": "lessThan",
+            "value": 0.7
+          }
+        ]
+      }
+    },
+    {
+      "type": "checkbox",
+      "key": "followUp",
+      "label": "Does the sender ask to be contacted?",
+      "input": true,
+      "properties": {
+        "uag": "triage",
+        "uagUncertainBand": "0.3-0.7"
+      }
+    },
+    {
+      "type": "button",
+      "key": "submit",
+      "label": "Submit",
+      "action": "submit",
+      "input": true
+    }
+  ]
+}

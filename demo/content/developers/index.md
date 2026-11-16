@@ -83,9 +83,9 @@ The UAG supports four usage patterns. They share the same forms, authentication 
 | Pattern | Who drives | Entry point | Model runs | License |
 |---|---|---|---|---|
 | **Conversation forms** | A person, through an agent or a chat on your page | `/mcp`, or a form's `agent/chat` | In the MCP client (Claude, your own app), or in the UAG through an agent engine | None |
-| **Agentic workflows** | A submission sent to the UAG | The "Agent: Run task" action, after the save | In the UAG, through an engine | A license that includes the UAG, or a hosted project |
-| **Agentic Formflow** | An application, or a person typing in a form | `{form}/agent/extract`, `/decide`, `/generate` | In the UAG, through engines | A license that includes the UAG, or a hosted project |
-| **AI Documents** | A person uploading files to a form | An AI Document component's `{form}/document/process` | In the UAG, through an agent engine | A license that includes the UAG, or a hosted project |
+| **Agentic workflows** | A submission sent to the UAG | The "Agent: Run task" action, after the save | In the UAG, through an engine | A license that includes the UAG, or a trial project |
+| **Agentic Formflow** | An application, or a person typing in a form | `{form}/agent/extract`, `/decide`, `/generate` | In the UAG, through engines | A license that includes the UAG, or a trial project |
+| **AI Documents** | A person uploading files to a form | An AI Document component's `{form}/document/process` | In the UAG, through an agent engine | A license that includes the UAG, or a trial project |
 
 ### Conversation forms over MCP
 
@@ -116,7 +116,7 @@ Build this with [MCP tools](./mcp-tools.md) or [Connect Claude](./connect-claude
 
 ### Conversation forms in your own page
 
-Without an MCP client, a page can offer the same conversation with the [chat widget](./chat.md): `Formio.createChat(element, formUrl)` from `@formio/uag-js` renders one `uag` form as a chat. Each turn is the form's `{form}/agent/chat` on the UAG, which asks an agent engine and checks every value against the form; the form sits behind the chat in the browser, and is submitted through the UAG once the person confirms. No model code and no server of your own, and no license. See it live at [/examples/conversation](../../public/apps/conversation).
+Without an MCP client, a page can offer the same conversation with the [chat widget](./chat.md): `Formio.createChat(element, formUrl)` from `@formio/uag-js` renders one `uag` form as a chat. Each turn is the form's `{form}/agent/chat` on the UAG, which asks an agent engine and checks every value against the form; the form sits behind the chat in the browser, and is submitted through the UAG once the person confirms. No model code and no server of your own, and no license.
 
 ### Agentic workflows
 
@@ -143,7 +143,7 @@ UAG -> Form.io: saves the changes as an update; its Run task actions can start t
 4. The UAG reconciles the answers with the stored submission, validates the result with the form, and saves only if something changed, as an update through its own pipeline. Provenance for each value goes into `metadata.uag`.
 5. That update runs the form's update actions. A second Run task action, on update, with a condition on a field the first task set, starts the next task.
 
-No model holds a write tool at any point. A client cannot set the fields a task owns (`uagAuthoritative`), and on Form.io Enterprise the agent can save with a role of its own, on the user's behalf ([Project setup for agents](./project-setup.md)). Build this with [Workflows](./workflows.md). See it live at [/examples/workflow](../../public/apps/workflow).
+No model holds a write tool at any point. A client cannot set the fields a task owns (`uagAuthoritative`), and on Form.io Enterprise the agent can save with a role of its own, on the user's behalf ([Project setup for agents](./project-setup.md)). Build this with [Workflows](./workflows.md).
 
 ### Agentic Formflow
 
@@ -169,7 +169,7 @@ note formio.js + @formio/uag-js: fills empty fields as suggestions
 4. A `done` event carries the merged data, validated by the form.
 5. When the person submits to the UAG, a Run task action that runs before the save, on the decision fields only, re-decides the closed-set fields on the server, so routing never depends on values the browser sent.
 
-`{form}/agent/decide` and `{form}/agent/generate` do the same on in-flight data, for decisions only or open values only. Build this with the [Agent API](./agent-api.md) and [`@formio/uag-js`](./renderer.md). See it live at [/examples/formflow](../../public/apps/formflow).
+`{form}/agent/decide` and `{form}/agent/generate` do the same on in-flight data, for decisions only or open values only. Build this with the [Agent API](./agent-api.md) and [`@formio/uag-js`](./renderer.md).
 
 ### AI Documents
 
@@ -195,7 +195,7 @@ note formio.js + AI Document: the person reviews it, then submits
 4. The document plugin asks an agent engine for the content and checks it. `extract` compares its copy with the file's text, retries a copy that differs, then flags it; a scan or photo has no text to compare, so its copy is flagged for the person to check.
 5. The component shows the progress and the result. The submission keeps the file references and the result, and the person submits it as any other.
 
-Nothing checks the result again when the submission is saved: the person's review is the control. AI Document is a module from `@formio/uag-extras`, added to the `formio/uag` image by the `formio/uag-documents` add-on. Build this with [AI Document](./ai-document.md) and [Plugins](./plugins.md). See it live at [/examples/documents](../../public/apps/documents).
+Nothing checks the result again when the submission is saved: the person's review is the control. AI Document is a module from `@formio/uag-extras`, added to the `formio/uag` image by the `formio/uag-documents` add-on. Build this with [AI Document](./ai-document.md) and [Plugins](./plugins.md).
 
 ## Where the models run
 

@@ -1,0 +1,89 @@
+{
+  "title": "Example: Generate written text",
+  "name": "exampleGenerateText",
+  "path": "example-generate-text",
+  "type": "form",
+  "display": "form",
+  "tags": [
+    "uag"
+  ],
+  "properties": {
+    "description": "A message received, and a reply to send back."
+  },
+  "components": [
+    {
+      "type": "select",
+      "key": "topic",
+      "label": "Topic",
+      "input": true,
+      "dataSrc": "values",
+      "data": {
+        "values": [
+          {
+            "label": "Question",
+            "value": "question"
+          },
+          {
+            "label": "Problem",
+            "value": "problem"
+          },
+          {
+            "label": "Request",
+            "value": "request"
+          },
+          {
+            "label": "Feedback",
+            "value": "feedback"
+          }
+        ]
+      }
+    },
+    {
+      "type": "textarea",
+      "key": "message",
+      "label": "Message received",
+      "input": true,
+      "rows": 4,
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "type": "content",
+      "key": "replyCriteria",
+      "label": "Criteria",
+      "input": false,
+      "html": "<p>Write a reply to the message in <code>message</code>, about its <code>topic</code>. Be warm and brief: two to four sentences, under 80 words. Answer what was asked if you can; otherwise say what happens next. Do not promise anything specific, such as a refund or a date. Sign it \"The team\".</p>",
+      "properties": {
+        "uag": "reply",
+        "uagField": "criteria"
+      }
+    },
+    {
+      "type": "button",
+      "key": "draft",
+      "label": "Draft a reply",
+      "action": "event",
+      "event": "draftReply",
+      "input": true,
+      "theme": "secondary"
+    },
+    {
+      "type": "textarea",
+      "key": "reply",
+      "label": "Reply",
+      "input": true,
+      "rows": 5,
+      "properties": {
+        "uag": "reply"
+      }
+    },
+    {
+      "type": "button",
+      "key": "submit",
+      "label": "Submit",
+      "action": "submit",
+      "input": true
+    }
+  ]
+}

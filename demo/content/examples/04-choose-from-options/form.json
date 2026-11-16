@@ -1,0 +1,89 @@
+{
+  "title": "Example: Choose from a set of options",
+  "name": "exampleChooseFromOptions",
+  "path": "example-choose-from-options",
+  "type": "form",
+  "display": "form",
+  "tags": [
+    "uag"
+  ],
+  "properties": {
+    "description": "A general request, routed to the team that handles it."
+  },
+  "components": [
+    {
+      "type": "textarea",
+      "key": "description",
+      "label": "Describe your request",
+      "input": true,
+      "placeholder": "Tell us what you need, in your own words.",
+      "rows": 4,
+      "validate": {
+        "required": true
+      },
+      "properties": {
+        "uag": "route",
+        "uagField": "input"
+      }
+    },
+    {
+      "type": "radio",
+      "key": "team",
+      "label": "What is it about?",
+      "input": true,
+      "values": [
+        {
+          "label": "Billing",
+          "value": "billing"
+        },
+        {
+          "label": "Access",
+          "value": "access"
+        },
+        {
+          "label": "Product",
+          "value": "product"
+        },
+        {
+          "label": "General",
+          "value": "general"
+        }
+      ],
+      "properties": {
+        "uag": "route",
+        "uagOptionDescriptions": "{\"billing\": \"Payments, charges, refunds, receipts and prices.\", \"access\": \"Signing in, passwords, locked accounts and permissions.\", \"product\": \"How something works, what it can do, errors in it, and ideas to improve it.\", \"general\": \"Anything else, such as opening hours or how to reach a person.\"}"
+      }
+    },
+    {
+      "type": "radio",
+      "key": "urgency",
+      "label": "How urgent is it?",
+      "input": true,
+      "values": [
+        {
+          "label": "Low",
+          "value": "low"
+        },
+        {
+          "label": "Normal",
+          "value": "normal"
+        },
+        {
+          "label": "Urgent",
+          "value": "urgent"
+        }
+      ],
+      "properties": {
+        "uag": "route",
+        "uagOptionDescriptions": "{\"low\": \"Nothing is blocked; an answer within a week is fine.\", \"normal\": \"Something is harder than it should be; an answer within a day or two.\", \"urgent\": \"Work is stopped, or a deadline is close.\"}"
+      }
+    },
+    {
+      "type": "button",
+      "key": "submit",
+      "label": "Submit",
+      "action": "submit",
+      "input": true
+    }
+  ]
+}

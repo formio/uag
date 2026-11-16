@@ -44,7 +44,7 @@ const STAGE = `
 
 /** Open an example page on its demo alone (see STAGE), started as a guest. */
 export async function openExample(d, site, name) {
-    await d.goto(`${site}/examples/${name}`);
+    await d.goto(`${site}/showcase/${name}`);
     const page = d.page;
     // "Start the live demo" signs the visitor in as a guest; a guest already signed in goes straight in.
     const start = page.locator('[data-demo-start]');

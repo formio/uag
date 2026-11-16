@@ -57,7 +57,7 @@ Custom properties are set in the builder under a component's **API → Custom Pr
 | The Agent API: `{form}/agent/extract`, `{form}/agent/decide`, `{form}/agent/generate`, under the form's URL on the UAG | No. It is stateless: it answers from the data in the request, and never reads or writes a stored submission. | Pages and applications that fill a form as a person works on it. See [Agent API](./agent-api.md). |
 | The `agent_provide` and `agent_decide` MCP tools | No. They only read: they hand an MCP client the task, and the client writes with `submission_update`. | An MCP client that does the task with its own model. See [MCP tools](./mcp-tools.md). |
 
-Run task, the Agent API's extract, decide and generate, and the `agent_provide` and `agent_decide` MCP tools are Agentic Formflow, which needs a license that includes the UAG or a project on Form.io's hosted service; see [Licensing](./agent-api.md#licensing).
+Run task, the Agent API's extract, decide and generate, and the `agent_provide` and `agent_decide` MCP tools are Agentic Formflow, which needs a license that includes the UAG (or, to try it, a 30-day free trial project on portal.form.io); see [Licensing](./agent-api.md#licensing).
 
 ![The demo's First Notice of Loss form: its input, its criteria, two decision fields and two value fields, all in the triage task.](../../public/images/uag-task-anatomy.svg)
 

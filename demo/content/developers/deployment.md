@@ -1,6 +1,6 @@
 ---
 title: Deployment
-description: Run the UAG with Docker, Compose or Node.js, configure it with the full environment variable reference, choose between Open Source, Enterprise and hosted Form.io, and pin a compatible set of images and packages.
+description: Run the UAG with Docker, Compose or Node.js, configure it with the full environment variable reference, choose between Enterprise, Open Source and a trial project, and pin a compatible set of images and packages.
 section: Operate
 order: 20
 ---
@@ -101,7 +101,7 @@ The Form.io deployment the UAG serves:
 |---|---|---|
 | Open Source | The server's root, `http://formio:3001` or `https://forms.example.com` | `ADMIN_KEY` |
 | Enterprise, self-hosted | The project endpoint, `http://api-server:3000/myproject` or `https://forms.example.com/myproject` | `PROJECT_KEY`, plus `LICENSE_KEY` |
-| Hosted SaaS | `https://<project>.form.io` | `PROJECT_KEY` |
+| A trial project on portal.form.io | `https://<project>.form.io` | `PROJECT_KEY` |
 
 It does not need public DNS. If it is an `https` URL with a self-signed certificate, the UAG cannot connect until you set `NODE_TLS_REJECT_UNAUTHORIZED=0`, which disables certificate checks for every outbound request; do that only on deployments unreachable from outside your network.
 
@@ -121,7 +121,7 @@ The login form JSON endpoint the `/auth/authorize` page loads, such as `https://
 
 | Variable | Default | Description |
 |---|---|---|
-| `PROJECT` | none, **required** | The Open Source server URL, or the Enterprise or hosted project endpoint. |
+| `PROJECT` | none, **required** | The Open Source server URL, or the Enterprise or trial project endpoint. |
 | `PROJECT_KEY` | none | Enterprise and hosted: the project API key (**Project Settings → API Keys**). Also accepted from callers as `x-token`. |
 | `ADMIN_KEY` | none | Open Source: the server's admin key. Also accepted from callers as `x-admin-key`. |
 | `JWT_SECRET` | random per start, with a warning | **Required in practice.** Signs the UAG's own tokens. Set it to the Form.io Enterprise server's `JWT_SECRET` for an agent to act on users' behalf (see [Project setup for agents](./project-setup.md)). Set it the same on every instance, or tokens break on restart. |
@@ -202,16 +202,16 @@ Which engine answers which work (`routing`), timeouts, rate limits, and the engi
 
 ## Editions
 
-| | Open Source | Enterprise, self-hosted | Hosted SaaS |
+| | Enterprise, self-hosted | Open Source | 30-day trial on portal.form.io |
 |---|---|---|---|
-| Form.io server | `formio/formio` | `formio/formio-enterprise` | `portal.form.io` |
-| UAG credential | `ADMIN_KEY` | `PROJECT_KEY` | `PROJECT_KEY` |
-| `client_credentials` id | `formio-oss-x-admin-key` | `<project>-x-token` | `<project>-x-token` |
-| License for MCP and conversation forms (the MCP tools, and a form's [chat](./chat.md)) | Not needed | Needed (includes the UAG) | Not needed |
+| Form.io server | `formio/formio-enterprise` | `formio/formio` | `portal.form.io` |
+| UAG credential | `PROJECT_KEY` | `ADMIN_KEY` | `PROJECT_KEY` |
+| `client_credentials` id | `<project>-x-token` | `formio-oss-x-admin-key` | `<project>-x-token` |
+| License for MCP and conversation forms (the MCP tools, and a form's [chat](./chat.md)) | Needed (includes the UAG) | Not needed | Not needed |
 | Agentic Formflow (Agent API `extract`, `decide`, `generate`; "Agent: Run task") | Needs a license that includes the UAG | Needs a license that includes the UAG | Allowed |
-| An agent role acting on users' behalf | No | Yes (shared `JWT_SECRET`) | No |
+| An agent role acting on users' behalf | Yes (shared `JWT_SECRET`) | No | No |
 | The UAG's database (`MONGO`) | With a license | With a license | With a license |
-| Form and submission revisions, stages | No | Yes | Yes |
+| Form and submission revisions, stages | Yes | No | Yes |
 
 The UAG prints its edition at startup, and whether Agentic Formflow will run:
 
@@ -234,16 +234,16 @@ Running against a self-hosted Enterprise project and Agentic Formflow are licens
 
 **Agentic Formflow.** The Agent API's `extract`, `decide` and `generate`, the "Agent: Run task" action, the `agent_decide` and `agent_provide` MCP tools and `uag-eval` need a license that includes the UAG for the project's endpoint on a self-hosted project, Open Source or Enterprise. Without it they run only:
 
-- against a project on Form.io's hosted SaaS (`reason: "hosted"`), except `uag-eval`, which runs offline and needs `LICENSE_KEY` (see [Evaluation](./evaluation.md));
+- against a 30-day free trial project on portal.form.io (`reason: "hosted"`), except `uag-eval`, which runs offline and needs `LICENSE_KEY` (see [Evaluation](./evaluation.md));
 - with only the built-in stub engines (`reason: "stub-engines"`), which answer with placeholders, except `agent_decide` and `agent_provide`, which call no engine.
 
 Conversation forms need no license: the MCP tools and a form's [chat](./chat.md) (`{form}/agent/chat`, which needs an agent engine) run on Form.io Open Source with an unlicensed UAG.
 
 Otherwise each Agentic Formflow request is refused with `403` and `code: "license_required"`. A Run task action that runs before the save refuses the submission the same way, so nothing is saved; one that runs after the save fails in the background, and the failure is logged. `GET /agent/capabilities` always answers with the current `edition` and `formflow.reason`.
 
-**The UAG's database** (`MONGO`) needs a license that includes the UAG on every edition, Form.io's hosted service included, and so does remote MCP sign-in (`MCP_OAUTH`), which keeps its codes there. Without the license the database features stay off. See [The database](#the-database).
+**The UAG's database** (`MONGO`) needs a license that includes the UAG on every edition, a trial project included, and so does remote MCP sign-in (`MCP_OAUTH`), which keeps its codes there. Without the license the database features stay off. See [The database](#the-database).
 
-**Hosted SaaS** projects (`https://*.form.io`) need no license, except for `uag-eval` and the UAG's own database: they run under Form.io's own license, as the Enterprise edition. Leave `LICENSE_KEY` and `UAG_LICENSE` unset there unless the UAG has a database of its own, which needs one: with a key set, the project must be on that key's endpoint allowlist, or it does not load.
+**Trial projects** on portal.form.io (`https://*.form.io`) need no UAG license, except for `uag-eval` and the UAG's own database: they run under Form.io's own license, as the Enterprise edition. They are for trying the UAG; run it in production self-hosted, with Form.io Enterprise. Leave `LICENSE_KEY` and `UAG_LICENSE` unset there unless the UAG has a database of its own, which needs one: with a key set, the project must be on that key's endpoint allowlist, or it does not load.
 
 **How keys are validated.** An offline license is verified by the UAG itself; set `LICENSE_REMOTE=true` for one. Any other key is an online license, validated with the Form.io license server, so the UAG must be able to reach it; where it cannot, use an offline license.
 
@@ -295,7 +295,7 @@ On a fresh database it writes its schema marker first, then creates its collecti
 
 ### The database's license
 
-Using the database needs a license that includes the UAG (`LICENSE_KEY`), on Open Source, Enterprise and Form.io's hosted service alike, as in the [custom module sample](../../samples/custom-module).
+Using the database needs a license that includes the UAG (`LICENSE_KEY`), on Open Source, Enterprise and trial projects alike, as in the [custom module sample](../../samples/custom-module).
 
 Without the license, the UAG still starts, with the database features off. It creates and changes nothing in the database, closes the connection, and says why:
 
@@ -320,7 +320,7 @@ A durable run is taken by one instance under a lease of 2 minutes, which that in
 
 ## Form.io Enterprise benefits
 
-Running against Form.io Enterprise (self-hosted or hosted) adds controls that matter when agents change your data and your forms change what agents do:
+Running against Form.io Enterprise adds controls that matter when agents change your data and your forms change what agents do:
 
 - **Form revisions.** Every form change is a revision, and each submission records the revision it was made against. Because agent behavior comes from the form, rolling back a bad criteria edit is reverting a revision; no model is retrained.
 - **Submission revisions.** Every change to a submission is recorded with who made it. Together with the UAG's provenance in `metadata.uag`, an audit can follow a value from the engine that proposed it to the person who confirmed or changed it.

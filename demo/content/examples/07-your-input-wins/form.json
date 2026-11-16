@@ -1,0 +1,94 @@
+{
+  "title": "Example: The person's own input wins",
+  "name": "exampleYourInputWins",
+  "path": "example-your-input-wins",
+  "type": "form",
+  "display": "form",
+  "tags": [
+    "uag"
+  ],
+  "properties": {
+    "description": "A general request: who sent it, how to reach them, and what it is about."
+  },
+  "components": [
+    {
+      "type": "textarea",
+      "key": "description",
+      "label": "Describe your request",
+      "input": true,
+      "placeholder": "Tell us what you need, in your own words.",
+      "rows": 4,
+      "validate": {
+        "required": true
+      },
+      "properties": {
+        "uag": "fill",
+        "uagField": "input"
+      }
+    },
+    {
+      "type": "textfield",
+      "key": "name",
+      "label": "Name",
+      "input": true,
+      "properties": {
+        "uag": "fill"
+      }
+    },
+    {
+      "type": "email",
+      "key": "email",
+      "label": "Email",
+      "input": true,
+      "properties": {
+        "uag": "fill"
+      }
+    },
+    {
+      "type": "select",
+      "key": "topic",
+      "label": "Topic",
+      "input": true,
+      "dataSrc": "values",
+      "data": {
+        "values": [
+          {
+            "label": "Question",
+            "value": "question"
+          },
+          {
+            "label": "Problem",
+            "value": "problem"
+          },
+          {
+            "label": "Request",
+            "value": "request"
+          },
+          {
+            "label": "Feedback",
+            "value": "feedback"
+          }
+        ]
+      },
+      "properties": {
+        "uag": "fill"
+      }
+    },
+    {
+      "type": "textfield",
+      "key": "subject",
+      "label": "Subject",
+      "input": true,
+      "properties": {
+        "uag": "fill"
+      }
+    },
+    {
+      "type": "button",
+      "key": "submit",
+      "label": "Submit",
+      "action": "submit",
+      "input": true
+    }
+  ]
+}

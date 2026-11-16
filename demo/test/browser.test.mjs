@@ -92,14 +92,26 @@ describe('Demo site browser scripts', function () {
         });
 
         it('reads an event stream as it arrives, and leaves the caller the whole of it', async function () {
-            const body = 'event: decision\ndata: {"path":"claimType"}\n\nevent: result\ndata: {"engines":[{"engine":"jev","latencyMs":90}]}\n\n';
+            // An extract's stream, as the UAG sends it: decisions first, then values, then the whole result.
+            const body = [
+                'event: result\ndata: {"kind":"decision","task":"fill","engine":"jev","latencyMs":90,"fields":{},"patch":{"topic":"problem","urgency":"urgent"}}',
+                'event: result\ndata: {"kind":"value","task":"fill","engine":"claude","latencyMs":3100,"fields":{},"patch":{"name":"Sam Ortega","email":"sam@example.com"}}',
+                'event: result\ndata: {"kind":"value","task":"fill","engine":null,"latencyMs":20,"fields":{},"patch":{},"error":"every engine failed"}',
+                'event: done\ndata: {"requestId":"r1","engines":[{"engine":"jev","latencyMs":90},{"engine":"claude","latencyMs":3100}]}',
+                '',
+            ].join('\n\n');
             const fetch = async () => new Response(body, { headers: { 'Content-Type': 'text/event-stream' } });
             const { window, events } = page({ fetch });
             const response = await window.fetch(`${UAG}/form/abc/agent/extract`, { method: 'POST', body: '{}' });
             expect(await response.text()).to.equal(body);
             await tick();
-            expect(events.filter((event) => event.phase === 'chunk').map((event) => event.summary)).to.deep.equal(['decision', 'result · engines: jev · 90 ms']);
-            expect(events.at(-1)).to.include({ phase: 'response', summary: 'engines: jev · 90 ms' });
+            const chunks = events.filter((event) => event.phase === 'chunk');
+            expect(chunks.map((event) => event.stream)).to.deep.equal(['result', 'result', 'result', 'done']);
+            expect(chunks[0].summary).to.match(/^decisions at \d+ ms · jev · topic, urgency$/);
+            expect(chunks[1].summary).to.match(/^values at \d+ ms · claude · name, email$/);
+            expect(chunks[2].summary).to.match(/^values at \d+ ms · failed: every engine failed$/);
+            expect(chunks[3].summary).to.equal('done · engines: jev · 90 ms; claude · 3.1 s');
+            expect(events.at(-1)).to.include({ phase: 'response', summary: 'engines: jev · 90 ms; claude · 3.1 s' });
         });
 
         it('records a call that never reached the UAG as status 0', async function () {
@@ -108,6 +120,32 @@ describe('Demo site browser scripts', function () {
             await window.fetch(`${UAG}/form/abc/submission`, { method: 'POST', body: '{}' }).catch(() => { failed = true; });
             expect(failed).to.equal(true);
             expect(events.at(-1)).to.include({ phase: 'response', status: 0 });
+        });
+    });
+
+    describe('a demo app opened on its own (js/demo-app.js)', function () {
+        function openApp(dataset) {
+            const appended = [];
+            const window = {
+                location: { pathname: '/uag/apps/workflow/', origin: 'https://formio.github.io' },
+                document: {
+                    documentElement: { dataset },
+                    createElement: () => ({ style: {}, setAttribute() {} }),
+                    body: { appendChild: (node) => appended.push(node) },
+                },
+                addEventListener() {},
+            };
+            window.window = window;
+            window.parent = window;
+            vm.createContext(window);
+            vm.runInContext(fs.readFileSync(path.join(js, 'demo-app.js'), 'utf8'), window, { filename: 'demo-app.js' });
+            return window.DemoApp.ready().then(() => { throw new Error('ready() resolved without a guest'); }, () => appended[0].innerHTML);
+        }
+
+        it('asks the visitor to start the demo from its example page, without linking to it', async function () {
+            const html = await openApp({ basePath: '/uag' });
+            expect(html).to.include('Start the demo first');
+            expect(html).to.not.include('<a ');
         });
     });
 

@@ -15,7 +15,7 @@ This page covers the `UAGServer` class and its configuration, modules, the proje
 |---|---|
 | Node.js 22 or later | `@formio/uag` and every engine package declare `"node": ">=22.0.0"`. |
 | `--no-node-snapshot` | Form logic (conditionals, calculated values, custom validation) runs in `isolated-vm`, which needs Node's startup snapshot turned off: without it the process can crash later, in native code. Pass it to `node`, or set `NODE_OPTIONS=--no-node-snapshot`. The `UAGServer` constructor refuses to start without it, saying so; the `uag` command adds it for you. |
-| A Form.io project | `PROJECT` must point at a reachable Open Source server (with `ADMIN_KEY`), a project on Form.io's hosted service (with `PROJECT_KEY`; no license needed), or a self-hosted Enterprise project (with `PROJECT_KEY` and a `LICENSE_KEY` that includes the UAG). Without one, `router()` throws. |
+| A Form.io project | `PROJECT` must point at a reachable Open Source server (with `ADMIN_KEY`), a self-hosted Enterprise project (with `PROJECT_KEY` and a `LICENSE_KEY` that includes the UAG), or a trial project on portal.form.io (with `PROJECT_KEY`; no UAG license needed). Without one, `router()` throws. |
 | `JWT_SECRET` | Tokens the UAG issues are signed with it. With an agent role, it must be the Form.io Enterprise server's. See [Deployment](./deployment.md). |
 | Optional: `MONGO` | The UAG's own database, for run records, runs that survive a restart and remote MCP sign-in (`MCP_OAUTH`). See [The UAG database](#the-uag-database). |
 

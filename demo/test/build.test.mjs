@@ -3,9 +3,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { basePathOf, contentSecurityPolicy, formioBaseOf, projectNameOf, readConfig } from '../lib/config.mjs';
+import { basePathOf, contentSecurityPolicy, showcasePathOf, formioBaseOf, projectNameOf, readConfig } from '../lib/config.mjs';
 import { render } from '../lib/pages.mjs';
-import { build, fileOf, finishHtml, metaPolicy } from '../scripts/build.mjs';
+import { loadExamples } from '../lib/examples.mjs';
+import { NOINDEX, build, fileOf, finishHtml, metaPolicy } from '../scripts/build.mjs';
 import { createServer, resolve } from '../scripts/serve.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -23,7 +24,6 @@ describe('Demo site build', function () {
 
         it('derives the public URL from DEMO_DOMAIN, unless DEMO_PUBLIC_URL names it, and defaults to GitHub Pages', function () {
             expect(readConfig({}).publicUrl).to.equal('https://formio.github.io/uag');
-            expect(readConfig({}).links.liveDemo).to.equal('https://formio.github.io/uag');
             expect(readConfig({ DEMO_DOMAIN: 'agents.example.com' }).publicUrl).to.equal('https://agents.example.com');
             expect(readConfig({ DEMO_PUBLIC_URL: 'http://localhost:8080/' }).publicUrl).to.equal('http://localhost:8080');
         });
@@ -37,6 +37,24 @@ describe('Demo site build', function () {
             }
         });
 
+        it('reads the path the showcase is served under, /showcase unless DEMO_SHOWCASE_PATH names another', function () {
+            expect(readConfig({}).showcasePath).to.equal('/showcase');
+            expect(showcasePathOf({ DEMO_SHOWCASE_PATH: '/x-7f3c9a/' })).to.equal('/x-7f3c9a');
+            expect(showcasePathOf({ DEMO_SHOWCASE_PATH: '/demos/live' })).to.equal('/demos/live');
+            for (const value of ['x y', '/x y', 'examples', 'https://example.com/x', '/', '/x"><script>', '/developers', '/apps/x', '/images', '/examples', '/Examples/x', '/x/..', '/..', '/.', '/./x', '/x/../developers', '/Developers', '/FAQ', ' ', '\n']) {
+                expect(() => showcasePathOf({ DEMO_SHOWCASE_PATH: value }), value).to.throw(/DEMO_SHOWCASE_PATH/);
+            }
+        });
+
+        it('never repeats the showcase path in its error, since the published one is a secret', function () {
+            expect(() => showcasePathOf({ DEMO_SHOWCASE_PATH: '/x secret' })).to.throw().with.property('message').that.does.not.include('secret');
+        });
+
+        it('sends sales calls to action to Form.io\'s contact page and the trial to its sign-up, unless told otherwise', function () {
+            expect(readConfig({}).links).to.include({ contact: 'https://form.io/contact-us', trial: 'https://portal.form.io' });
+            expect(readConfig({ CONTACT_URL: 'https://form.io/uag-contact', TRIAL_URL: 'https://form.io/uag-trial' }).links).to.include({ contact: 'https://form.io/uag-contact', trial: 'https://form.io/uag-trial' });
+        });
+
         it('refuses a production build that does not name its UAG', function () {
             expect(() => readConfig({ NODE_ENV: 'production' })).to.throw(/DEMO_UAG_URL/);
         });
@@ -44,11 +62,11 @@ describe('Demo site build', function () {
 
     describe('finishing the HTML', function () {
         const config = readConfig({ DEMO_UAG_URL: 'https://ai.example.com', FORMIO_PROJECT_URL: 'https://uag.form.io', DEMO_BASE_PATH: '/uag' });
-        const page = '<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <link rel="stylesheet" href="/css/site.css?v=1">\n</head>\n<body><a href="/developers/chat#x">a</a> <a href="https://form.io/">b</a> <a href="//cdn.example.com/x.js">c</a> <img src="/images/a.png"> <a href="#top">d</a> <a href="chat.js">e</a> <svg><use href="/images/icons.svg#lock"/></svg> <form action="/contact"></form> <iframe data-src="/apps/chat/"></iframe> <button data-watch="/images/a.gif"></button></body></html>';
+        const page = '<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <link rel="stylesheet" href="/css/site.css?v=1">\n</head>\n<body><a href="/developers/chat#x">a</a> <a href="https://form.io/">b</a> <a href="//cdn.example.com/x.js">c</a> <img src="/images/a.png"> <a href="#top">d</a> <a href="chat.js">e</a> <svg><use href="/images/icons.svg#lock"/></svg> <form action="/search"></form> <iframe data-src="/apps/chat/"></iframe> <button data-watch="/images/a.gif"></button></body></html>';
 
         it('starts every link and source from the root with the base path, and leaves the others alone', function () {
             const html = finishHtml(page, config);
-            for (const prefixed of ['href="/uag/css/site.css?v=1"', 'href="/uag/developers/chat#x"', 'src="/uag/images/a.png"', 'href="/uag/images/icons.svg#lock"', 'action="/uag/contact"', 'data-src="/uag/apps/chat/"', 'data-watch="/uag/images/a.gif"']) expect(html).to.include(prefixed);
+            for (const prefixed of ['href="/uag/css/site.css?v=1"', 'href="/uag/developers/chat#x"', 'src="/uag/images/a.png"', 'href="/uag/images/icons.svg#lock"', 'action="/uag/search"', 'data-src="/uag/apps/chat/"', 'data-watch="/uag/images/a.gif"']) expect(html).to.include(prefixed);
             for (const kept of ['href="https://form.io/"', 'href="//cdn.example.com/x.js"', 'href="#top"', 'href="chat.js"']) expect(html).to.include(kept);
             expect(html).to.include('<html data-base-path="/uag" lang="en">');
             expect(finishHtml(page, { ...config, basePath: '' })).to.include('href="/developers/chat#x"').and.include('data-base-path=""');
@@ -96,14 +114,14 @@ describe('Demo site build', function () {
         const read = (file) => fs.readFileSync(path.join(config.out, file), 'utf8');
 
         it('writes every page and doc as <route>/index.html, and a 404 page', function () {
-            for (const route of ['/', '/examples', '/examples/conversation', '/examples/workflow', '/examples/formflow', '/examples/documents', '/developers', '/developers/agent-api', '/getting-started']) {
+            for (const route of ['/', '/showcase', '/showcase/conversation', '/showcase/workflow', '/showcase/formflow', '/showcase/documents', '/developers', '/developers/agent-api', '/getting-started']) {
                 expect(fs.existsSync(path.join(config.out, fileOf(route))), route).to.equal(true);
             }
             expect(read('404.html')).to.include('</html>');
         });
 
         it('gives every page and demo app the UAG and the project, and leaves no template unfilled', function () {
-            expect(read('examples/conversation/index.html')).to.include('data-uag-url="https://uag.build-test.example"').and.include('data-project-url="https://uag.form.io"');
+            expect(read('showcase/conversation/index.html')).to.include('data-uag-url="https://uag.build-test.example"').and.include('data-project-url="https://uag.form.io"');
             for (const app of ['conversation', 'formflow', 'documents', 'workflow']) {
                 const html = read(`apps/${app}/index.html`);
                 expect(html, app).to.include('<script src="https://uag.build-test.example/uag-js/uag.use.js"');
@@ -207,6 +225,210 @@ describe('Demo site build', function () {
             finally {
                 server.close();
             }
+        });
+    });
+
+    describe('a build with a showcase path', function () {
+        let out;
+        let config;
+        const SHOWCASE = '/x-test-showcase';
+        const env = { DEMO_UAG_URL: 'https://ai.example.com', FORMIO_PROJECT_URL: 'https://uag.form.io', NODE_ENV: 'production', DEMO_BASE_PATH: '/uag', DEMO_SHOWCASE_PATH: SHOWCASE };
+        const htmlFiles = () => {
+            const files = [];
+            const walk = (dir) => {
+                for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                    const file = path.join(dir, entry.name);
+                    if (entry.isDirectory()) walk(file);
+                    else if (entry.name.endsWith('.html')) files.push(path.relative(config.out, file).split(path.sep).join('/'));
+                }
+            };
+            walk(config.out);
+            return files;
+        };
+        const read = (file) => fs.readFileSync(path.join(config.out, file), 'utf8');
+        const isShowcase = (file) => file.startsWith(`${SHOWCASE.slice(1)}/`);
+        const isApp = (file) => file.startsWith('apps/');
+
+        before(function () {
+            this.timeout(60000);
+            out = fs.mkdtempSync(path.join(os.tmpdir(), 'uag-demo-unlisted-'));
+            config = readConfig({ ...env, DEMO_OUT: path.join(out, 'dist') });
+            build(config, env);
+        });
+
+        after(function () {
+            fs.rmSync(out, { recursive: true, force: true });
+        });
+
+        it('serves the showcase under its path, and nothing under /showcase', function () {
+            for (const route of [SHOWCASE, `${SHOWCASE}/conversation`, `${SHOWCASE}/workflow`, `${SHOWCASE}/formflow`, `${SHOWCASE}/documents`]) {
+                expect(fs.existsSync(path.join(config.out, fileOf(route))), route).to.equal(true);
+            }
+            expect(fs.existsSync(path.join(config.out, 'showcase'))).to.equal(false);
+            expect(read(fileOf(`${SHOWCASE}/conversation`))).to.include(`href="/uag${SHOWCASE}/workflow"`).and.include(`href="/uag${SHOWCASE}"`);
+            expect(htmlFiles().filter((file) => /["']\/(uag\/)?showcase\b/.test(read(file)))).to.deep.equal([]);
+        });
+
+        it('names no showcase page anywhere outside the showcase: not in a page, image, script or stylesheet', function () {
+            // A path on the site (after a quote, bracket, space or tag).
+            const sitePath = new RegExp(`(^|[\\s>"'(=])(/uag)?(/showcase|${SHOWCASE})\\b`);
+            const offenders = [];
+            for (const file of fs.readdirSync(config.out, { recursive: true })) {
+                const name = String(file).split(path.sep).join('/');
+                if (isShowcase(name) || !/\.(html|svg|js|css|json|txt|xml)$/.test(name)) continue;
+                if (sitePath.test(read(name))) offenders.push(name);
+            }
+            expect(offenders).to.deep.equal([]);
+        });
+
+        it('asks search engines not to index the showcase and the demo apps, and only those', function () {
+            const files = htmlFiles();
+            expect(files.filter(isShowcase)).to.have.lengthOf(5);
+            expect(files.filter(isApp)).to.have.lengthOf(5);
+            for (const file of files) {
+                expect(read(file).includes(NOINDEX), file).to.equal(isShowcase(file) || isApp(file));
+            }
+        });
+
+        it('links to the showcase only from the showcase, and never names its path in an app', function () {
+            const linking = htmlFiles().filter((file) => read(file).includes(SHOWCASE));
+            expect(linking.filter((file) => !isShowcase(file))).to.deep.equal([]);
+            for (const file of fs.readdirSync(path.join(config.out, 'apps'), { recursive: true })) {
+                const full = path.join(config.out, 'apps', file);
+                if (fs.statSync(full).isFile()) expect(fs.readFileSync(full, 'utf8').includes(SHOWCASE), file).to.equal(false);
+            }
+        });
+
+        it('names a leaking showcase page by a path that holds the showcase path whole, so CI logs mask it', function () {
+            // A "secret" only the built showcase pages contain: the showcase path itself.
+            expect(() => build(config, { ...env, SOME_API_KEY: SHOWCASE })).to.throw().with.property('message').that.matches(new RegExp(`SOME_API_KEY in ${SHOWCASE}/`));
+        });
+
+        describe('the Examples catalog', function () {
+            const examples = loadExamples(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'content/examples'));
+            const decode = (html) => html.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+            const panel = (html, id) => {
+                const start = html.indexOf(`id="panel-${id}"`);
+                const code = html.indexOf('<code', start);
+                return decode(html.slice(html.indexOf('>', code) + 1, html.indexOf('</code>', code)));
+            };
+
+            it('lists every example on /examples, in the catalog\'s order and grouped', function () {
+                const html = read('examples/index.html');
+                const hrefs = [...html.matchAll(/class="card card-link example-link" href="([^"]+)"/g)].map((match) => match[1]);
+                expect(hrefs).to.deep.equal(examples.map((example) => `/uag${example.href}`));
+                expect([...html.matchAll(/<section class="example-group"><h2>([^<]+)<\/h2>/g)].map((match) => match[1])).to.deep.equal(['Fill in forms', 'Workflows', 'Chat widget']);
+            });
+
+            it('gives every feature page its four parts, the side list and the docs link', function () {
+                for (const example of examples) {
+                    const html = read(fileOf(example.href));
+                    expect(html, example.slug).to.include(`<h1>${example.title.replace(/'/g, '&#39;')}</h1>`);
+                    expect(html, example.slug).to.include('id="turn-it-on"').and.include('id="panel-form"').and.include('id="panel-page"');
+                    expect(html, example.slug).to.include(`data-src="/uag/apps/example/?form=${example.form.path}&amp;mode=${example.mode}`);
+                    expect(html, example.slug).to.include('data-flow').and.include('data-demo-gate');
+                    expect(html, example.slug).to.include(`href="/uag${example.docs}"`);
+                    expect(html, example.slug).to.include(`href="/uag${example.href}" aria-current="page"`);
+                    expect(html.includes(NOINDEX), example.slug).to.equal(false);
+                }
+            });
+
+            it('shows each example\'s form exactly as its form.json, and the page code that renders it', function () {
+                for (const example of examples) {
+                    const html = read(fileOf(example.href));
+                    expect(JSON.parse(panel(html, 'form')), example.slug).to.deep.equal(example.form);
+                    const code = panel(html, 'page');
+                    expect(code, example.slug).to.include(`${example.mode === 'chat' ? 'Formio.createChat' : 'Formio.createForm'}(`).and.include(`'https://uag.form.io/${example.form.path}'`);
+                    if (example.action) expect(JSON.parse(panel(html, 'action')), example.slug).to.deep.equal(example.action);
+                }
+            });
+
+            it('publishes each example\'s PDFs and images beside its page, and links its sample files there', function () {
+                const withAssets = examples.filter((example) => example.assets.length);
+                expect(withAssets).to.not.have.lengthOf(0);
+                for (const example of withAssets) {
+                    const html = read(fileOf(example.href));
+                    for (const asset of example.assets) {
+                        const source = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'content/examples', example.folder, asset));
+                        expect(fs.readFileSync(path.join(config.out, 'examples', example.slug, asset)).equals(source), asset).to.equal(true);
+                    }
+                    for (const sample of example.samples.filter((item) => item.file)) {
+                        expect(html, sample.file).to.include(`href="/uag${example.href}/${sample.file}" data-sample-file>${sample.label}</a>`);
+                    }
+                }
+            });
+
+            it('runs the same page code it shows, for an example that has some', function () {
+                const withPage = examples.filter((example) => example.page);
+                expect(withPage).to.not.have.lengthOf(0);
+                for (const example of withPage) {
+                    const shown = panel(read(fileOf(example.href)), 'page');
+                    const run = read(`apps/example/pages/${example.slug}.js`);
+                    const body = run.slice(run.indexOf('{\n') + 2, run.lastIndexOf('\n};')).split('\n').map((line) => line.replace(/^ {2}/, '')).join('\n');
+                    expect(shown, example.slug).to.include(body.split('\n').map((line) => (line ? `    ${line}` : '')).join('\n'));
+                    expect(run, example.slug).to.not.include('UAG_PROJECT_URL');
+                }
+            });
+
+            it('links Examples from every page\'s header, and names no conversation form on a catalog page', function () {
+                for (const file of htmlFiles().filter((name) => !isApp(name) && !isShowcase(name))) {
+                    const html = read(file);
+                    const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'));
+                    expect(header, file).to.match(/<a href="\/uag\/examples"[^>]*>Examples<\/a>/);
+                }
+                for (const file of htmlFiles().filter((name) => name.startsWith('examples/'))) {
+                    expect(read(file), file).to.not.match(/conversation(al)? form/i);
+                }
+            });
+        });
+
+        it('has no contact page of its own: every sales call to action leaves for Form.io\'s', function () {
+            expect(fs.existsSync(path.join(config.out, 'contact'))).to.equal(false);
+            const files = htmlFiles();
+            expect(files.filter((file) => /(?:href|action)="(?:\/uag)?\/contact\b/.test(read(file)))).to.deep.equal([]);
+            for (const file of files.filter((name) => !isApp(name))) {
+                const html = read(file);
+                const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'));
+                expect(header, file).to.include(`href="${config.links.contact}">Talk to Sales</a>`);
+                expect(header, file).to.include(`href="${config.links.trial}">Try free for 30 days</a>`);
+            }
+        });
+
+        it('closes every page with a one-line footer: copyright and the open-source notice, and no links', function () {
+            for (const file of htmlFiles().filter((name) => !isApp(name))) {
+                const html = read(file);
+                const footer = html.slice(html.indexOf('<footer'), html.indexOf('</footer>'));
+                expect(footer, file).to.include('Form.io LLC. All rights reserved.').and.include('MIT license');
+                expect(footer, file).to.not.include('<a ');
+            }
+        });
+
+        it('uses light sections only outside the showcase, with sales as a green button and the trial as a text link', function () {
+            for (const file of htmlFiles().filter((name) => !isApp(name) && !isShowcase(name))) {
+                expect(read(file), file).to.not.match(/class="[^"]*\b(section-dark|section-ink|section-green|card-dark)\b/);
+            }
+            for (const file of ['index.html', 'getting-started/index.html']) {
+                const html = read(file);
+                expect(html, file).to.include(`<a class="btn btn-primary" href="${config.links.contact}">Talk to Sales`);
+                expect(html, file).to.include(`<a class="link-arrow" href="${config.links.trial}">Try free for 30 days</a>`);
+            }
+        });
+
+        it('opens Getting Started on Enterprise, self-hosted, with the trial last', function () {
+            const html = read('getting-started/index.html');
+            const tabs = [...html.matchAll(/<button role="tab" id="(tab-[a-z]+)" aria-controls="panel-[a-z]+" aria-selected="(true|false)"/g)].slice(0, 3);
+            expect(tabs.map(([, id, selected]) => `${id}:${selected}`)).to.deep.equal(['tab-ent:true', 'tab-oss:false', 'tab-saas:false']);
+            expect(html).to.include('id="panel-ent" aria-labelledby="tab-ent">').and.include('id="panel-saas" aria-labelledby="tab-saas" hidden>');
+            const cards = [...html.matchAll(/<div class="card[^"]*">\s*<span class="num">[^<]*<\/span>\s*<h3>([^<]*)<\/h3>/g)].map((match) => match[1]);
+            expect(cards).to.deep.equal(['Enterprise, self-hosted', 'Open Source stack', '30-day free trial']);
+        });
+
+        it('offers the showcase nowhere in the header, the menu or the footer', function () {
+            const home = read('index.html');
+            const header = home.slice(home.indexOf('<header'), home.indexOf('</header>'));
+            const footer = home.slice(home.indexOf('<footer'), home.indexOf('</footer>'));
+            expect(header).to.not.match(/Showcase|\/showcase/);
+            expect(footer).to.not.match(/Showcase|\/showcase/);
         });
     });
 

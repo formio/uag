@@ -5,7 +5,7 @@ section: Build
 order: 48
 ---
 
-The **AI Document** component (`uagdocument`) lets the people filling a form drop files and get AI-generated content from them: an exact extraction, a summary, an assessment. The form designer picks a **process** (a document plugin) and writes the instructions; converters bring each file to what the AI engine reads (PDF or text). Files upload to the form's own storage; the submission holds the file references and the result, never file bytes from the UAG. The [lease review example](../../public/apps/documents) shows it at work.
+The **AI Document** component (`uagdocument`) lets the people filling a form drop files and get AI-generated content from them: an exact extraction, a summary, an assessment. The form designer picks a **process** (a document plugin) and writes the instructions; converters bring each file to what the AI engine reads (PDF or text). Files upload to the form's own storage; the submission holds the file references and the result, never file bytes from the UAG.
 
 AI Document is a [module](./modules.md#settings-routes-and-components): it comes with `@formio/uag-extras/modules/ai-document`, which brings the component, the process route and the `document` plugin type, and the plugins it runs come from the document extras of `@formio/uag-extras` or your own (see [Plugins](./plugins.md)). With Docker, the `formio/uag-documents` add-on brings all of them to the `formio/uag` image (see [Run it with Docker](#run-it-with-docker)). In your own server (`@formio/uag-extras` 2.x needs `@formio/uag` 2.0.0 or later and Node.js 24 or later), after `npm install @formio/uag-extras@^2`:
 
@@ -48,6 +48,8 @@ Rendering a form that contains an AI Document needs nothing else. An application
 ### The target field
 
 With a target field, the result is also written into a textarea or text field of the same form (in a Data Grid, the field of the same row), in that field's format: HTML for a textarea with a rich-text editor (from the component's own renderer, which escapes all text), Markdown otherwise. The submission still holds the result as the process produced it, so it has both what the process returned and what the person submitted. Use it to keep an application's existing data model: an application that reads a rich-text field gets the content there, with no Markdown rendering.
+
+A target field can also be the input of a task, so the result fills in the rest of the form: Agent Input reads it as it reads anything a person writes. Try it live: [Fill an online form from a scanned paper form](../examples/01-fill-from-scanned-form/example.md).
 
 ### Nothing checks the result on save
 

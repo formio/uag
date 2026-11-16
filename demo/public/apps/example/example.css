@@ -1,0 +1,9 @@
+/* The live example: one form, plainly, inside the example page's frame. */
+body { margin: 0; background: #fff; color: #0c141d; font: 15px/1.55 Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; }
+.example-app { padding: 24px; max-width: 760px; }
+.example-status { margin-top: 24px; padding: 18px 20px; border: 1px solid #dfe3e8; border-radius: 10px; background: #f7f8fa; }
+.example-status[hidden] { display: none; }
+.example-status h2 { font-size: 17px; font-weight: 700; margin: 0 0 6px; }
+.example-status p { color: #566073; margin: 0 0 12px; }
+.example-status pre { max-height: 280px; overflow: auto; margin: 0 0 12px; padding: 12px 14px; border-radius: 8px; background: #0f1419; color: #e4e9ef; font-size: 12.5px; }
+.example-status pre:empty { display: none; }

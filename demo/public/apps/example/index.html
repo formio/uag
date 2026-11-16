@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en" data-asset-version="{{assetVersion}}" data-uag-url="{{uag.url}}" data-uag-project-url="{{uag.projectUrl}}" data-project-url="{{projectUrl}}" data-formio-base-url="{{formioBaseUrl}}" data-production="{{production}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Example | UAG</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@formio/js@{{formioJsVersion}}/dist/formio.full.min.css">
+  <link rel="stylesheet" href="{{uag.url}}/uag-js/uag-js.css">
+  <link rel="stylesheet" href="example.css?v={{assetVersion}}">
+</head>
+<body>
+  <main class="example-app">
+    <div id="example" data-example-root></div>
+    <section class="example-status" data-status hidden aria-live="polite">
+      <h2 data-status-title></h2>
+      <p data-status-lede></p>
+      <pre data-status-body></pre>
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-again>Start over</button>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js" integrity="sha384-H+hy9ULve6xfxRkWIh/YOtvDdpXgV2fmAGQkIDTxIgZwNoaoBal14Di2YTMR6MzR" crossorigin="anonymous"></script>
+  <script src="/js/flow-log.js?v={{assetVersion}}"></script>
+  <script src="/js/guest.js?v={{assetVersion}}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@formio/js@{{formioJsVersion}}/dist/formio.full.min.js"></script>
+  <!-- Registers @formio/uag-js with the UAG: forms tagged uag save through it, and get Agent Input and the chat. -->
+  <script src="{{uag.url}}/uag-js/uag.use.js"></script>
+  <script src="/js/demo-app.js?v={{assetVersion}}"></script>
+  <script src="example.js?v={{assetVersion}}"></script>
+</body>
+</html>

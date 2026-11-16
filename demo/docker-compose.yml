@@ -8,7 +8,7 @@
 #
 # Beside it, the AI Document add-on (formio/uag-documents) fills the volume the
 # UAG mounts at /app/plugins/documents with the AI Document module and the
-# document plugins, which the AI Document demo (/examples/documents) needs; it
+# document plugins, which the AI Document demo (/showcase/documents) needs; it
 # runs at each "up" and exits.
 #
 # The project's forms are not created here: the UAG uses the forms already in

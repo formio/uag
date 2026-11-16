@@ -1,0 +1,82 @@
+{
+  "title": "Example: Chat widget",
+  "name": "exampleChatWidget",
+  "path": "example-chat-widget",
+  "type": "form",
+  "display": "form",
+  "tags": [
+    "uag"
+  ],
+  "properties": {
+    "description": "A general request: who sent it, how to reach them, what it is about, and the details.",
+    "uagChatInstructions": "Be brief and friendly. Ask for one thing at a time, and use the person's name once you know it."
+  },
+  "components": [
+    {
+      "type": "textfield",
+      "key": "name",
+      "label": "Name",
+      "input": true,
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "type": "email",
+      "key": "email",
+      "label": "Email",
+      "input": true,
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "type": "select",
+      "key": "topic",
+      "label": "Topic",
+      "input": true,
+      "dataSrc": "values",
+      "data": {
+        "values": [
+          {
+            "label": "Question",
+            "value": "question"
+          },
+          {
+            "label": "Problem",
+            "value": "problem"
+          },
+          {
+            "label": "Request",
+            "value": "request"
+          },
+          {
+            "label": "Feedback",
+            "value": "feedback"
+          }
+        ]
+      },
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "key": "details",
+      "label": "Details",
+      "input": true,
+      "rows": 3,
+      "validate": {
+        "required": true
+      },
+      "description": "What you need, in a sentence or two."
+    },
+    {
+      "type": "button",
+      "key": "submit",
+      "label": "Submit",
+      "action": "submit",
+      "input": true
+    }
+  ]
+}

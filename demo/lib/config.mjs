@@ -37,6 +37,32 @@ export function basePathOf(env) {
     return base;
 }
 
+/** Where the showcase (the industry demos) is served when DEMO_SHOWCASE_PATH does not say. */
+export const DEFAULT_SHOWCASE_PATH = '/showcase';
+
+/** First path segments the site's own pages and assets use, which the showcase may not take. */
+const RESERVED_SEGMENTS = new Set(['apps', 'css', 'developers', 'examples', 'faq', 'fonts', 'getting-started', 'images', 'js', '404.html', 'index.html']);
+
+/**
+ * The path the showcase is served under (DEMO_SHOWCASE_PATH), such as
+ * `/showcase`: the industry demos kept for sales demonstrations, their index
+ * there and each demo below it. Nothing outside the showcase links to it, so the
+ * published site can keep it unlisted. The public feature examples are at /examples.
+ */
+export function showcasePathOf(env) {
+    const error = new Error('DEMO_SHOWCASE_PATH must be a path of its own, such as /showcase.');
+    if (!env.DEMO_SHOWCASE_PATH) return DEFAULT_SHOWCASE_PATH;
+    // Set but blank is a mistake (an empty secret, say), not a request for the default.
+    const value = String(env.DEMO_SHOWCASE_PATH).trim().replace(/\/+$/, '');
+    if (!/^(\/[A-Za-z0-9._~-]+)+$/.test(value)) throw error;
+    const segments = value.split('/').slice(1);
+    // `.` and `..` would put the examples over the home page or outside the build.
+    if (segments.some((segment) => segment === '.' || segment === '..')) throw error;
+    // Compared without case: on a case-insensitive disk, /Developers is /developers.
+    if (RESERVED_SEGMENTS.has(segments[0].toLowerCase())) throw error;
+    return value;
+}
+
 /**
  * Whether a UAG's capabilities let it run Agentic Formflow: it needs a UAG
  * license or a project on Form.io's hosted service.
@@ -120,6 +146,7 @@ export function readConfig(env = process.env) {
         production,
         publicUrl,
         basePath: basePathOf(env),
+        showcasePath: showcasePathOf(env),
         root: path.resolve(here, '..'),
         out: path.resolve(here, '..', env.DEMO_OUT || 'dist'),
         // What the pages are given: the UAG they embed, the project's URL on it, and the
@@ -128,7 +155,10 @@ export function readConfig(env = process.env) {
         projectUrl,
         formioBaseUrl: trim(env.FORMIO_BASE_URL || formioBaseOf(projectUrl)),
         links: {
-            contactForm: env.CONTACT_FORM_URL || 'https://formio.form.io/contact',
+            // Where sales calls to action go: Form.io's contact page, which marketing tracks.
+            contact: env.CONTACT_URL || 'https://form.io/contact-us',
+            // Where "Try free for 30 days" goes: Form.io's trial sign-up.
+            trial: env.TRIAL_URL || 'https://portal.form.io',
             portal: env.PORTAL_URL || 'https://portal.form.io',
             github: env.GITHUB_URL || 'https://github.com/formio/uag',
             // Links into the repository's files point at this release's tag, so they
@@ -139,9 +169,6 @@ export function readConfig(env = process.env) {
             // The Agentic Coding Plugin (skills and the Form.io MCP server).
             plugin: env.PLUGIN_URL || 'https://github.com/formio/ai',
             formio: env.FORMIO_SITE_URL || 'https://form.io',
-            schedule: env.SCHEDULE_URL || 'https://form.io/contact-us',
-            // Where the demos run for anyone, named by the notice a local run shows.
-            liveDemo: env.DEMO_LIVE_URL || DEFAULT_PUBLIC_URL,
         },
         formioJsVersion: env.FORMIO_JS_VERSION || '5.6.1',
         // Added to the URLs of the site's scripts and stylesheets (?v=), so a new

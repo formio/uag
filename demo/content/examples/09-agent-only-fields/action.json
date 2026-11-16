@@ -1,0 +1,17 @@
+{
+  "title": "Agent: Run task (review)",
+  "name": "agentRunTask",
+  "priority": 20,
+  "handler": [
+    "before",
+    "after"
+  ],
+  "method": [
+    "create"
+  ],
+  "settings": {
+    "task": "review",
+    "answer": "task",
+    "when": "after"
+  }
+}

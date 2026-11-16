@@ -40,6 +40,34 @@
     }
 
     /**
+     * A component's value as the form's data holds it. formio.js updates the data
+     * as soon as a value is set, but a select drawn with Choices.js shows the new
+     * value, in getValue(), only a moment later.
+     */
+    function currentValue(component) {
+        return component.dataValue !== undefined ? component.dataValue : component.getValue();
+    }
+
+    /**
+     * Empty a component, with a change event, so the form's conditions and
+     * calculations follow. The resetValue flag makes formio.js take the empty
+     * value even when it is null, which a number field otherwise ignores.
+     */
+    function emptyComponent(component) {
+        component.setValue(component.emptyValue !== undefined ? component.emptyValue : '', { resetValue: true });
+    }
+
+    /**
+     * The value a component holds after a write, to recognize as the writer's own
+     * later: formio.js may normalize it (select boxes, dates). When the component
+     * does not hold it yet, the value written is the one to recognize.
+     */
+    function heldValue(component, value) {
+        var held = currentValue(component);
+        return held === undefined || (isEmpty(held) && !isEmpty(value)) ? value : held;
+    }
+
+    /**
      * Where each field's value came from. A value may be written by extraction
      * only when the field is empty, or when its current value is the one
      * extraction wrote last and the user has not touched it since.
@@ -385,12 +413,11 @@
                 Object.keys(patch).forEach(function (path) {
                     var component = form.getComponent(path);
                     if (!component) return;
-                    if (!state.canApply(path, component.getValue())) return;
+                    if (!state.canApply(path, currentValue(component))) return;
                     component.setValue(patch[path]);
                     // What the field holds after formio.js normalizes it (select boxes,
                     // dates), so it is still recognized as extraction's own value later.
-                    var written = component.getValue();
-                    state.recordAgent(path, written === undefined ? patch[path] : written);
+                    state.recordAgent(path, heldValue(component, patch[path]));
                     applied++;
                 });
             }
@@ -420,8 +447,8 @@
             try {
                 Object.keys(state.agentValues).forEach(function (path) {
                     var component = form.getComponent(path);
-                    if (component && state.canApply(path, component.getValue())) {
-                        component.setValue(component.emptyValue !== undefined ? component.emptyValue : '');
+                    if (component && state.canApply(path, currentValue(component))) {
+                        emptyComponent(component);
                     }
                     delete state.agentValues[path];
                 });
@@ -1259,10 +1286,9 @@
                     Object.keys(patch).forEach(function (path) {
                         var component = self.getComponent(path);
                         if (!component) return;
-                        if (!self.chat.state.canApply(path, component.getValue())) return;
+                        if (!self.chat.state.canApply(path, currentValue(component))) return;
                         component.setValue(patch[path]);
-                        var written = component.getValue();
-                        self.chat.state.recordAgent(path, written === undefined ? patch[path] : written);
+                        self.chat.state.recordAgent(path, heldValue(component, patch[path]));
                     });
                 }
                 finally {
@@ -1322,8 +1348,8 @@
                     }
                     Object.keys(this.chat.state.agentValues).forEach(function (path) {
                         var component = self.getComponent(path);
-                        if (component && self.chat.state.canApply(path, component.getValue())) {
-                            component.setValue(component.emptyValue !== undefined ? component.emptyValue : '');
+                        if (component && self.chat.state.canApply(path, currentValue(component))) {
+                            emptyComponent(component);
                         }
                     });
                 }

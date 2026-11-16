@@ -51,9 +51,9 @@ A server-side client has no browser, so it exchanges a key for a UAG access toke
 | Deployment | `client_id` | `client_secret` |
 |---|---|---|
 | Form.io Open Source | `formio-oss-x-admin-key` (the project name is always `formio-oss`) | The Form.io server's `ADMIN_KEY` |
-| Form.io Enterprise, hosted SaaS | `<project name>-x-token`, for example `claims-x-token` | The project API key, `PROJECT_KEY` |
+| Form.io Enterprise, or a trial project on portal.form.io | `<project name>-x-token`, for example `claims-x-token` | The project API key, `PROJECT_KEY` |
 
-The token endpoint is `/auth/token` on every edition, and it is always on: it needs no `BASE_URL`, `MONGO` or `MCP_OAUTH`. Against an Enterprise or hosted project, the project's routes are also served under its name, so `/<project name>/auth/token` works too.
+The token endpoint is `/auth/token` on every edition, and it is always on: it needs no `BASE_URL`, `MONGO` or `MCP_OAUTH`. Against an Enterprise or trial project, the project's routes are also served under its name, so `/<project name>/auth/token` works too.
 
 ```http
 POST /auth/token
@@ -260,7 +260,7 @@ Returns a task's criteria, the submission's values and the task's fields as one 
 | `submission_id` | string | Yes in practice | The submission to process. |
 | `task` | string | No | The task name (its `uag` value). Default: the form's first task. |
 
-It refuses a task without criteria or without fields. Like `agent_decide`, it is part of Agentic Formflow: without a license that includes the UAG, or a project on Form.io's hosted service, it returns `{ error, code: "license_required" }`.
+It refuses a task without criteria or without fields. Like `agent_decide`, it is part of Agentic Formflow: without a license that includes the UAG, or a trial project on portal.form.io, it returns `{ error, code: "license_required" }`.
 
 ### `agent_decide`
 

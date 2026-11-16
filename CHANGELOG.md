@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Fixed
+
+- `@formio/uag-js`: Agent Input and the chat now recognize the value they wrote into a select, including one they rewrite while results stream in. A select drawn with Choices.js shows a new value only a moment after it is set, so the value recorded was the one shown before: a new description then left the select's answer in place, and Agent Input treated it as the person's choice. Fields are now compared by the value in the form's data.
+- `@formio/uag-js`: Agent Input and the chat now empty a number field they filled when the description changes, or the chat starts over. formio.js's number field ignores `setValue()` with its empty value, so the old number stayed, and the next answer was refused as if the person had typed it. Emptying a field now also fires a change, so the form's conditions and calculations follow.
+
 ### Changed
 
 - The documentation names `formio/uag-documents:2` and `@formio/uag-extras@^2`. `@formio/uag-extras` 2.0.0 takes the UAG's major version: 2.x, and `formio/uag-documents:2`, are for the UAG 2.x. `formio/uag-documents:1` stays on 1.0.0, built for the release candidates. The AI Document page and `DOCKERHUB.md` link the deployment kit, which ships in `@formio/uag-extras` (2.0.1 or later) and is served by jsDelivr (`https://cdn.jsdelivr.net/npm/@formio/uag-extras@2/deploy/`), and the `formio/uag-documents` Docker Hub page that explains it.

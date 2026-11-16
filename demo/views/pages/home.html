@@ -4,8 +4,8 @@
           <h1 class="hero-title"><span>Your agents</span> <span>follow <span class="accent">your rules</span></span> <span>within <span class="accent">your environment</span>.</span></h1>
           <p class="lede">Form.io's <strong>Universal Agent Gateway</strong> (UAG) sits between AI agents and your Form.io project. Agents read your forms to learn what to collect and how to behave. Every value they send back is checked against the form's own validation and saved according to the user's permissions, all within your <strong>own environment.</strong></p>
           <div class="hero-actions">
-            <a class="btn btn-primary" href="/examples"><svg aria-hidden="true"><use href="/images/icons.svg#play"/></svg>See it live</a>
-            <a class="btn btn-outline" href="/getting-started">Run it yourself <span class="arrow"></span></a>
+            <a class="btn btn-primary" href="/getting-started">Run it yourself <span class="arrow"></span></a>
+            <a class="link-arrow" href="{{links.trial}}">Try free for 30 days</a>
           </div>
           <div class="install-card">
             <p>Or install the Form.io <strong><a href="{{links.plugin}}" target="_blank" rel="noopener">Agentic Coding Plugin</a></strong> and have your coding agent make your forms agent-ready.</p>
@@ -111,6 +111,21 @@
       </div>
     </section>
 
+    <section class="section section-tint">
+      <div class="container">
+        <div class="section-head">
+          <h2>See each feature, live.</h2>
+          <p class="lede">The examples show one feature at a time on a small, ordinary form: what it does, the form settings that turn it on, and every call it makes to the UAG.</p>
+        </div>
+        <div class="grid grid-3">
+          <a class="card card-link" href="/examples/fill-from-scanned-form"><span class="num">FILL IN FORMS</span><h3>Fill an online form from a scanned paper form</h3><p>Upload a scan of a paper form filled in by hand, and the online form fills itself in from it.</p><span class="link-arrow">Try it</span></a>
+          <a class="card card-link" href="/examples/run-task"><span class="num">WORKFLOWS</span><h3>Run an agent task after a submission</h3><p>Saving the form starts an agent, which saves its answers back to the submission.</p><span class="link-arrow">Try it</span></a>
+          <a class="card card-link" href="/examples/chat-widget"><span class="num">CHAT WIDGET</span><h3>Chat widget</h3><p>Any form tagged uag can be filled in as a chat, and is checked and submitted the same way.</p><span class="link-arrow">Try it</span></a>
+        </div>
+        <p class="examples-more"><a class="btn btn-primary" href="/examples">See all the examples</a></p>
+      </div>
+    </section>
+
     <section class="section">
       <div class="container split">
         <div>
@@ -187,44 +202,6 @@
     </section>
 
     <section class="section section-tint">
-      <div class="container">
-        <div class="section-head center">
-          <h2>Try it yourself!</h2>
-        </div>
-        <div class="grid grid-2">
-          <a class="card card-link" href="/examples/conversation">
-            <div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#chat"/></svg></div>
-            <span class="num">01 · CONVERSATION FORMS</span>
-            <h3>Talk to a form</h3>
-            <p>A customer describes a problem in plain language. The agent asks only what the form needs and submits validated data.</p>
-            <p class="link-arrow">Try it</p>
-          </a>
-          <a class="card card-link" href="/examples/workflow">
-            <div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#workflow"/></svg></div>
-            <span class="num">02 · AGENTIC WORKFLOW</span>
-            <h3>Hand off the review</h3>
-            <p>An agent reviews each submission against criteria you define in the form and records its findings. When needed, it hands off to a second agent.</p>
-            <p class="link-arrow">Try it</p>
-          </a>
-          <a class="card card-link" href="/examples/formflow">
-            <div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#wizard"/></svg></div>
-            <span class="num">03 · AGENTIC FORMFLOW</span>
-            <h3>Forms that fill themselves</h3>
-            <p>The user describes what happened. A decision engine picks the wizard pages that apply, and extraction prefills them for the user to check.</p>
-            <p class="link-arrow">Try it</p>
-          </a>
-          <a class="card card-link" href="/examples/documents">
-            <div class="card-icon"><svg aria-hidden="true"><use href="/images/icons.svg#form"/></svg></div>
-            <span class="num">04 · AI DOCUMENT</span>
-            <h3>Forms that read your files</h3>
-            <p>The user uploads a lease. The form copies its key clauses word for word, checks the copy against the lease, and writes a summary and a Spanish translation for the user to check.</p>
-            <p class="link-arrow">Try it</p>
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <section class="section section-dark">
       <div class="container">
         <div class="section-head">
           <h2>Agents inherit <span class="accent">your users' permissions</span>.</h2>
@@ -389,19 +366,19 @@
       </div>
     </section>
 
-    <section class="section section-ink" id="agentic-coding">
+    <section class="section" id="agentic-coding">
       <div class="container split">
         <div>
           <h2>Let your coding agent build it.</h2>
           <p>The Form.io Agentic Coding Plugin gives Claude Code, Cursor, Codex and other coding agents that read skills the Form.io skill library, including the <code>formio-uag</code> skill. Describe what the agent should do, and your coding agent tags and writes your forms for agents, designs their tasks, deploys the UAG and its engines, and wires your application to it.</p>
           <ul class="checks">
-            <li>The conversation, workflow and formflow example pages each link the prompt that builds that demo in your own project.</li>
+            <li>Its example prompts build a chat that fills in a form, an agentic workflow and a self-filling wizard in your own project.</li>
             <li>The plugin writes forms through the Form.io MCP server and shows you each change before it saves.</li>
             <li>Settings that open a form to anonymous users or spend model credits are listed separately for you to confirm.</li>
           </ul>
           <div class="hero-actions" style="margin-top:28px">
             <a class="btn btn-primary" href="{{links.plugin}}" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="/images/icons.svg#github"/></svg>Get the plugin</a>
-            <a class="btn btn-outline-light" href="/developers/agentic-coding">Plugin guide</a>
+            <a class="btn btn-outline" href="/developers/agentic-coding">Plugin guide</a>
           </div>
         </div>
         <div>
@@ -416,15 +393,15 @@ npx skills add formio/ai
       </div>
     </section>
 
-    <section class="section-green">
+    <section class="section section-tint">
       <div class="container cta-band">
         <div>
           <h2>Take it to production.</h2>
           <p>Form.io has run enterprise data collection for more than a decade. We can help with licensing, architecture and support.</p>
         </div>
         <div class="hero-actions">
-          <a class="btn btn-light" href="/contact">Talk to Sales <span class="arrow"></span></a>
-          <a class="btn btn-outline-light" href="#agentic-coding">Install the plugin</a>
+          <a class="btn btn-primary" href="{{links.contact}}">Talk to Sales <span class="arrow"></span></a>
+          <a class="link-arrow" href="{{links.trial}}">Try free for 30 days</a>
         </div>
       </div>
     </section>

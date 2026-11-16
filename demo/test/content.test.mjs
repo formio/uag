@@ -4,13 +4,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Docs, SECTIONS, parseFrontMatter, siteLink, slugify, sourceLink } from '../lib/docs.mjs';
 import { PAGES } from '../lib/pages.mjs';
+import { loadExamples } from '../lib/examples.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const docs = new Docs(path.join(root, 'content/developers'));
 const views = fs.readdirSync(path.join(root, 'views/pages')).map((file) => [file, fs.readFileSync(path.join(root, 'views/pages', file), 'utf8')]);
 
 /** Every route the site serves a page at. */
-const routes = new Set([...PAGES.map((page) => page.route), ...docs.ordered.map((page) => page.href)]);
+const examples = loadExamples(path.join(root, 'content/examples'));
+const routes = new Set([...PAGES.map((page) => page.route), ...docs.ordered.map((page) => page.href), '/examples', ...examples.flatMap((example) => [example.href, ...example.assets.map((asset) => `${example.href}/${asset}`)])]);
 
 function links(html) {
     return [...html.matchAll(/(?:href|src)="(\/[^"#?]*)(#[^"]*)?"/g)].map((match) => ({ path: match[1], hash: match[2] || '' }));
@@ -36,9 +38,16 @@ describe('Demo site content', function () {
         expect(siteLink('./chat.md', context)).to.equal('/developers/chat');
         expect(siteLink('chat.md#the-widget', context)).to.equal('/developers/chat#the-widget');
         expect(siteLink('./index.md#ways-to-use-it', context)).to.equal('/developers#ways-to-use-it');
-        expect(siteLink('../../public/apps/workflow', context)).to.equal('/examples/workflow');
         expect(siteLink('../../public/apps/workflow/workflow.js', context)).to.equal('/apps/workflow/workflow.js');
         expect(siteLink('../../public/images/login.png', context)).to.equal('/images/login.png');
+        // A feature example, by its example.md or its folder, from a developer page and from another example.
+        expect(siteLink('../examples/02-fill-from-description/example.md#x', context)).to.equal('/examples/fill-from-description#x');
+        expect(siteLink('../examples/10-chat-widget/', context)).to.equal('/examples/chat-widget');
+        expect(siteLink('../examples/01-fill-from-scanned-form/sample-scan.jpg', context)).to.equal('/examples/fill-from-scanned-form/sample-scan.jpg');
+        const example = { dir: path.join(root, 'content/examples/03-streamed-results'), contentRoot: path.join(root, 'content') };
+        expect(siteLink('../02-fill-from-description/example.md', example)).to.equal('/examples/fill-from-description');
+        expect(siteLink('../../developers/renderer.md#triggers', example)).to.equal('/developers/renderer#triggers');
+        expect(siteLink('../02-fill-from-description/form.json', example)).to.equal(null);
         for (const href of ['./README.md', '../../samples/custom-module', '../../../MIGRATING-2.0.md', '/developers/chat', '#anchor', 'https://form.io']) {
             expect(siteLink(href, context), href).to.equal(null);
         }
@@ -46,6 +55,22 @@ describe('Demo site content', function () {
         expect(page.html).to.include('src="/images/uag-chat.svg"');
         for (const each of docs.ordered) expect(each.html, each.slug).not.to.match(/href="(?!https?:)[^"]*\.md[#"]/);
         expect(page.sources).not.to.satisfy((sources) => sources.some((source) => source.startsWith('demo/public/') || source.startsWith('demo/content/')));
+    });
+
+    it('links each feature example from the developer page it shows', function () {
+        const linked = new Set();
+        for (const page of docs.ordered) for (const match of page.html.matchAll(/href="(\/examples\/[a-z0-9-]+)"/g)) linked.add(match[1]);
+        const examples = loadExamples(path.join(root, 'content/examples'));
+        expect([...linked].sort()).to.deep.equal(examples.map((example) => example.href).sort());
+    });
+
+    it('links no showcase demo from the developer pages', function () {
+        const offenders = [];
+        for (const name of fs.readdirSync(path.join(root, 'content/developers')).filter((file) => file.endsWith('.md'))) {
+            const body = fs.readFileSync(path.join(root, 'content/developers', name), 'utf8');
+            for (const match of body.matchAll(/\]\(([^)\s]*public\/apps\/[a-z0-9-]+\/?(?:[#?][^)\s]*)?)\)|\/(?:examples|showcase)\/(?:conversation|workflow|formflow|documents)\b|[Ss]ee it (?:live|running)/g)) offenders.push(`${name}: ${match[0]}`);
+        }
+        expect(offenders).to.deep.equal([]);
     });
 
     it('writes no site paths in developer pages, which would not resolve on GitHub', function () {
@@ -112,6 +137,7 @@ describe('Demo site content', function () {
         const broken = [];
         const sources = [
             ...docs.ordered.map((page) => [page.href, page.html]),
+            ...examples.map((example) => [example.href, example.html]),
             ...views,
             ['layout', fs.readFileSync(path.join(root, 'views/layout.html'), 'utf8')],
         ];
@@ -119,7 +145,7 @@ describe('Demo site content', function () {
             for (const link of links(html)) {
                 if (/\{\{/.test(link.path)) continue;
                 if (!exists(link.path)) broken.push(`${source}: ${link.path}`);
-                const target = docs.ordered.find((page) => page.href === link.path.replace(/\/$/, ''));
+                const target = [...docs.ordered, ...examples].find((page) => page.href === link.path.replace(/\/$/, ''));
                 const id = link.hash.slice(1);
                 if (target && id && !new RegExp(`id="${id}"`).test(target.html)) broken.push(`${source}: ${link.path}${link.hash}`);
             }
