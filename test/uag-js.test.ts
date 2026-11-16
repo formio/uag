@@ -296,6 +296,29 @@ describe('Agent Input renderer', () => {
             expect(JSON.parse(fetch.calls[2].init.body)).to.not.have.property('task');
         });
 
+        it('recognizes its own value in a select that shows it a moment later, so a new description empties it', async () => {
+            const form: any = fakeForm({ description: 'Do you ship to Canada?', topic: '' }, { topic: { uag: 'triage' } });
+            // A select drawn with Choices.js: its data changes at once, but getValue()
+            // returns the old value until the widget catches up a moment later.
+            const topic = form.getComponent('topic');
+            const write = topic.setValue;
+            let shown = form.values.topic;
+            topic.getValue = () => shown;
+            topic.setValue = (value: any) => {
+                write(value);
+                setTimeout(() => { shown = form.values.topic; }, 0);
+            };
+            const fetch = fakeFetch(sse([['result', { kind: 'decision', fields: {}, patch: { topic: 'question' } }]]));
+            const agent = attach(form, { uagUrl: 'https://uag.test', trigger: 'button', fetch });
+            await agent.extract().done;
+            await new Promise((resolve) => setTimeout(resolve, 5));
+            expect(form.values.topic).to.equal('question');
+            expect(agent.state.source('topic')).to.equal('agent');
+            form.userTypes('description', 'My last order arrived damaged');
+            await agent.extract().done;
+            expect(JSON.parse(fetch.calls[1].init.body).data.topic).to.equal('');
+        });
+
         it('recognizes its own value after formio.js normalizes it, so it can update it later', async () => {
             const options = (value: any) => ({ water: false, fire: false, ...value });
             const form = fakeForm({ description: 'x' }, { 'triage.causes': {} }, { 'triage.causes': options });

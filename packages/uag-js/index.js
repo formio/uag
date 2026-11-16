@@ -40,6 +40,17 @@
     }
 
     /**
+     * The value a component holds after a write, to recognize as the writer's own
+     * later: formio.js may normalize it (select boxes, dates), and a select drawn
+     * with Choices.js shows it only a moment later, its getValue() still empty
+     * right after setValue(); then the value written is the one to recognize.
+     */
+    function heldValue(component, value) {
+        var held = component.getValue();
+        return held === undefined || (isEmpty(held) && !isEmpty(value)) ? value : held;
+    }
+
+    /**
      * Where each field's value came from. A value may be written by extraction
      * only when the field is empty, or when its current value is the one
      * extraction wrote last and the user has not touched it since.
@@ -389,8 +400,7 @@
                     component.setValue(patch[path]);
                     // What the field holds after formio.js normalizes it (select boxes,
                     // dates), so it is still recognized as extraction's own value later.
-                    var written = component.getValue();
-                    state.recordAgent(path, written === undefined ? patch[path] : written);
+                    state.recordAgent(path, heldValue(component, patch[path]));
                     applied++;
                 });
             }
@@ -1261,8 +1271,7 @@
                         if (!component) return;
                         if (!self.chat.state.canApply(path, component.getValue())) return;
                         component.setValue(patch[path]);
-                        var written = component.getValue();
-                        self.chat.state.recordAgent(path, written === undefined ? patch[path] : written);
+                        self.chat.state.recordAgent(path, heldValue(component, patch[path]));
                     });
                 }
                 finally {
