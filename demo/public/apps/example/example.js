@@ -109,8 +109,10 @@
     const component = form.getComponent(input.key);
     if (!component) return;
     component.setValue(text);
-    // Read as typed text is: only a task's input is.
-    if (agent && input.properties && input.properties.uagField === 'input') agent.extract();
+    // Read as typed text is: only a task's input is. By the form's current Agent Input,
+    // which the example's own page code may have attached in place of this page's.
+    const current = form.uagAgent || agent;
+    if (current && input.properties && input.properties.uagField === 'input') current.extract();
   });
 
   /** A sample file from the example page, given to the form's file field as if the visitor had dropped it there. */
@@ -165,11 +167,10 @@
     }, POLL_MS);
   }
 
+  // Start over: the page again, with a fresh form and Agent Input; the guest stays signed in.
   $('[data-again]').addEventListener('click', () => {
     clearInterval(poller);
-    poller = null;
-    status.hidden = true;
-    if (mode === 'chat' && typeof form.reset === 'function') form.reset();
-    else form.submission = { data: {} };
+    location.reload();
   });
+
 })();

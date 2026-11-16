@@ -607,12 +607,25 @@ describe('Layer 3: the demo site, as it ships', function () {
             expect(page.errors).to.deep.equal([]);
         });
 
-        it('fills a form from a description', async function () {
-            const { page } = await openExample('fill-from-description');
+        it('fills a form from a description, and again after a save and Start over', async function () {
+            const { page, frame } = await openExample('fill-from-description');
             await sample(page, 1);
             const filled = await settled(page, (values) => values.email && values.topic, 'the form from the description');
             expect(filled).to.include({ email: 'sam.ortega@example.com', topic: 'problem' });
             expect(filled.name).to.include('Sam Ortega');
+            // Corrected by the visitor and saved; then Start over gives an empty form that the
+            // same sample fills again.
+            const name = frame.locator('[name="data[name]"]');
+            await name.fill('Samuel Ortega');
+            await name.blur();
+            await frame.locator('button[name="data[submit]"]').click();
+            await titled(frame, 'Saved').waitFor();
+            await frame.locator('[data-again]').click();
+            await frame.locator('.formio-form').waitFor();
+            await page.waitForTimeout(1000);
+            await sample(page, 1);
+            const again = await settled(page, (values) => values.name && values.email, 'the sample after Start over');
+            expect(again.name).to.include('Sam Ortega');
             expect(page.errors).to.deep.equal([]);
         });
 
@@ -648,6 +661,11 @@ describe('Layer 3: the demo site, as it ships', function () {
             expect(unsure.topicConfidence).to.be.below(0.7);
             await note.waitFor();
             expect(await frame.locator('.uag-uncertain').count()).to.be.at.least(1);
+            // And back: the confident sample's confidence replaces the low one, and the note goes.
+            await sample(page, 0);
+            const again = await settled(page, (values) => values.topic === 'feedback' && values.topicConfidence >= 0.7, 'the confident sample again');
+            expect(again.topicConfidence).to.be.at.least(0.7);
+            await note.waitFor({ state: 'hidden' });
         });
 
         it('drafts written text from the rest of the form, without touching the person\'s values', async function () {

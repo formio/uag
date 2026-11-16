@@ -78,7 +78,7 @@ describe('Layer 1: the demo site\'s Examples catalog', function () {
         await context.close();
     });
 
-    it('loads every example\'s live form straight away once the visitor has a guest', async function () {
+    it('opens every example\'s live frame straight away once the visitor has a guest, without the gate', async function () {
         const { context } = await visitor({ guest: true });
         const page = await context.newPage();
         for (const example of examples) {
