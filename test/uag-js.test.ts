@@ -319,6 +319,27 @@ describe('Agent Input renderer', () => {
             expect(JSON.parse(fetch.calls[1].init.body).data.topic).to.equal('');
         });
 
+        it('empties a number it wrote when the description changes, though the number ignores setValue(null)', async () => {
+            const form: any = fakeForm({ description: 'Thanks, all fixed', topicConfidence: null }, { topicConfidence: { uag: 'triage' } });
+            // formio.js's number component: null, its empty value, is ignored by setValue(); resetValue() empties it.
+            const number = form.getComponent('topicConfidence');
+            const write = number.setValue;
+            number.emptyValue = null;
+            number.setValue = (value: any) => { if (value !== null) write(value); };
+            number.resetValue = () => write(null);
+            let body = sse([['result', { kind: 'decision', fields: {}, patch: { topicConfidence: 0.99 } }]]);
+            const calls: any[] = [];
+            const fetch = async (url: string, init: any) => { calls.push(init); return { ok: true, status: 200, text: async () => body }; };
+            const agent = attach(form, { uagUrl: 'https://uag.test', trigger: 'button', fetch });
+            await agent.extract().done;
+            expect(form.values.topicConfidence).to.equal(0.99);
+            form.userTypes('description', 'Not sure what this is about');
+            body = sse([['result', { kind: 'decision', fields: {}, patch: { topicConfidence: 0.49 } }]]);
+            await agent.extract().done;
+            expect(JSON.parse(calls[1].body).data.topicConfidence).to.equal(null);
+            expect(form.values.topicConfidence).to.equal(0.49);
+        });
+
         it('recognizes its own value after formio.js normalizes it, so it can update it later', async () => {
             const options = (value: any) => ({ water: false, fire: false, ...value });
             const form = fakeForm({ description: 'x' }, { 'triage.causes': {} }, { 'triage.causes': options });

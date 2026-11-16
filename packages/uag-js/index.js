@@ -40,6 +40,16 @@
     }
 
     /**
+     * Empty a component. formio.js's own resetValue() when it has one: some
+     * components ignore setValue() with their empty value (a number field keeps
+     * its value when given null).
+     */
+    function emptyComponent(component) {
+        if (typeof component.resetValue === 'function') component.resetValue();
+        else component.setValue(component.emptyValue !== undefined ? component.emptyValue : '');
+    }
+
+    /**
      * The value a component holds after a write, to recognize as the writer's own
      * later: formio.js may normalize it (select boxes, dates), and a select drawn
      * with Choices.js shows it only a moment later, its getValue() still empty
@@ -431,7 +441,7 @@
                 Object.keys(state.agentValues).forEach(function (path) {
                     var component = form.getComponent(path);
                     if (component && state.canApply(path, component.getValue())) {
-                        component.setValue(component.emptyValue !== undefined ? component.emptyValue : '');
+                        emptyComponent(component);
                     }
                     delete state.agentValues[path];
                 });
@@ -1332,7 +1342,7 @@
                     Object.keys(this.chat.state.agentValues).forEach(function (path) {
                         var component = self.getComponent(path);
                         if (component && self.chat.state.canApply(path, component.getValue())) {
-                            component.setValue(component.emptyValue !== undefined ? component.emptyValue : '');
+                            emptyComponent(component);
                         }
                     });
                 }
