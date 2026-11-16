@@ -1,11 +1,10 @@
 # Builds the demo site (demo/) and publishes it to GitHub Pages, at
-# https://formio.github.io/uag: on each release tag (not a prerelease), and when
-# run by hand (Actions → Demo site → Run workflow), from any branch or tag.
+# https://formio.github.io/uag, only when run by hand (Actions → Demo site →
+# Run workflow, or `gh workflow run pages.yml --ref <tag>`), from any branch or
+# tag. A release does not publish it: the site goes live once it is approved.
 name: Demo site
 
 on:
-  push:
-    tags: ["v[0-9]*"]
   workflow_dispatch:
 
 permissions:
@@ -17,7 +16,6 @@ concurrency:
 
 jobs:
   build:
-    if: github.event_name == 'workflow_dispatch' || !contains(github.ref_name, '-')
     runs-on: ubuntu-latest
     env:
       NODE_ENV: production
