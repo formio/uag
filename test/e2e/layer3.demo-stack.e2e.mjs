@@ -544,6 +544,186 @@ describe('Layer 3: the demo site, as it ships', function () {
         }
     });
 
+    describe('the feature examples, in a browser', function () {
+        let browser;
+
+        before(async function () {
+            browser = await launchBrowser(this);
+        });
+
+        after(async function () {
+            if (browser) await browser.close();
+        });
+
+        /** An example's page, its live examples started as a guest, with its live form loaded. */
+        async function openExample(slug) {
+            const page = await browser.page();
+            page.setDefaultTimeout(120000);
+            await page.goto(`${SITE}/examples/${slug}`);
+            const start = page.locator('[data-demo-start]');
+            await start.or(page.locator('[data-demo-frame]:not([hidden])')).first().waitFor();
+            if (await start.isVisible()) await start.click();
+            const frame = page.frameLocator('iframe[data-demo-frame]');
+            await frame.locator('.formio-form, [class*="chat"]').first().waitFor();
+            return { page, frame };
+        }
+        const live = (page) => page.frames().find((frame) => frame.url().includes('/apps/example/'));
+        /** The live form's data, without an uploaded file's content. */
+        const data = (page) => live(page).evaluate(() => {
+            const values = { ...Object.values(Formio.forms)[0].submission.data };
+            if (values.scan) values.scan = (values.scan.files || []).length;
+            delete values.submit;
+            return values;
+        });
+        const sample = (page, index) => page.locator('[data-sample], [data-sample-file]').nth(index).click();
+        /** Waits for the live form's data to pass `check`, and returns it. */
+        async function settled(page, check, what) {
+            let last = null;
+            for (let tries = 0; tries < 120; tries++) {
+                last = await data(page);
+                if (check(last)) return last;
+                await page.waitForTimeout(1000);
+            }
+            throw new Error(`${what}: ${JSON.stringify(last)}`);
+        }
+        const status = (frame) => frame.locator('[data-status]');
+        /** The live example's status heading, once it says exactly `text`. */
+        const titled = (frame, text) => frame.locator('[data-status-title]', { hasText: new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) });
+        /** The chat's turn for a message, as the visitor sends it. */
+        const send = (page, text) => live(page).evaluate((message) => Object.values(Formio.forms)[0].send(message), text);
+
+        it('fills an online form from a scanned paper form: a transcript, then every field', async function () {
+            const { page, frame } = await openExample('fill-from-scanned-form');
+            const saves = [];
+            page.on('request', (request) => { if (request.method() === 'POST' && /\/submission$/.test(request.url())) saves.push(request.url()); });
+            await sample(page, 0);
+            const filled = await settled(page, (values) => values.newZip && values.contactBy, 'the form from the scan');
+            expect(filled.transcript).to.include('Portland').and.include('Willow');
+            expect(filled).to.include({ fullName: 'Jordan T. Ellis', email: 'jordan.ellis@example.com', currentCity: 'Springfield', newCity: 'Portland', newState: 'OR', newZip: '97209', contactBy: 'email' });
+            const runs = await flowLog(page);
+            expect(runs.map((run) => run.title).join('\n')).to.include('AI Document').and.include('/agent/extract');
+            expect(saves).to.deep.equal([]);
+            expect(await status(frame).isVisible()).to.equal(false);
+            expect(page.errors).to.deep.equal([]);
+        });
+
+        it('fills a form from a description', async function () {
+            const { page } = await openExample('fill-from-description');
+            await sample(page, 1);
+            const filled = await settled(page, (values) => values.email && values.topic, 'the form from the description');
+            expect(filled).to.include({ email: 'sam.ortega@example.com', topic: 'problem' });
+            expect(filled.name).to.include('Sam Ortega');
+            expect(page.errors).to.deep.equal([]);
+        });
+
+        it('streams the decisions first, then the values, and lists each with when it arrived', async function () {
+            const { page } = await openExample('streamed-results');
+            await sample(page, 0);
+            await settled(page, (values) => values.email && values.urgency, 'the streamed results');
+            const lines = await page.locator('.flow-stream li').allTextContents();
+            expect(lines.length, JSON.stringify(lines)).to.be.at.least(2);
+            expect(lines[0]).to.match(/^decisions at .* · jev · /);
+            expect(lines.some((line) => /^values at .* · claude · .*email/.test(line)), JSON.stringify(lines)).to.equal(true);
+            expect(page.errors).to.deep.equal([]);
+        });
+
+        it('chooses an option from what each option means', async function () {
+            const { page } = await openExample('choose-from-options');
+            await sample(page, 0);
+            expect(await settled(page, (values) => values.team, 'the billing sample')).to.include({ team: 'billing' });
+            await sample(page, 1);
+            expect(await settled(page, (values) => values.team === 'product' && values.urgency, 'the product sample')).to.include({ team: 'product', urgency: 'urgent' });
+        });
+
+        it('says when it is unsure, below the threshold, and leaves the choice to the person', async function () {
+            const { page, frame } = await openExample('confidence');
+            const note = frame.locator('.formio-component-unsureNote');
+            await sample(page, 0);
+            const sure = await settled(page, (values) => values.topic && values.topicConfidence, 'the confident sample');
+            expect(sure.topic).to.equal('feedback');
+            expect(sure.topicConfidence).to.be.at.least(0.7);
+            expect(await note.isVisible()).to.equal(false);
+            await sample(page, 1);
+            const unsure = await settled(page, (values) => values.followUp === true && values.topicConfidence && values.topicConfidence < 0.7, 'the uncertain sample');
+            expect(unsure.topicConfidence).to.be.below(0.7);
+            await note.waitFor();
+            expect(await frame.locator('.uag-uncertain').count()).to.be.at.least(1);
+        });
+
+        it('drafts written text from the rest of the form, without touching the person\'s values', async function () {
+            const { page, frame } = await openExample('generate-text');
+            await sample(page, 1);
+            await frame.locator('button', { hasText: 'Draft a reply' }).click();
+            const drafted = await settled(page, (values) => values.reply, 'the drafted reply');
+            expect(drafted.reply.length).to.be.above(40);
+            expect(drafted.message).to.include('charged twice');
+            expect(page.errors).to.deep.equal([]);
+        });
+
+        it('keeps the person\'s own value when the description is read again, and updates its own', async function () {
+            const { page, frame } = await openExample('your-input-wins');
+            await sample(page, 0);
+            await settled(page, (values) => values.email === 'casey@example.com' && values.topic, 'the first read');
+            await frame.locator('[name="data[name]"]').fill('Casey B.');
+            await frame.locator('[name="data[name]"]').blur();
+            await sample(page, 1);
+            const second = await settled(page, (values) => values.email === 'casey.brooks@example.org', 'the second read');
+            expect(second.name).to.equal('Casey B.');
+            expect(await settled(page, (values) => values.topic && values.topic !== 'question', 'the topic read again')).to.include({ topic: 'problem' });
+        });
+
+        it('runs an agent task after a submission, and saves its answers back to it', async function () {
+            const { page, frame } = await openExample('run-task');
+            await frame.locator('[name="data[name]"]').fill('Robin Chen');
+            await sample(page, 0);
+            await frame.locator('button[name="data[submit]"]').click();
+            await titled(frame, 'Done').waitFor({ timeout: 180000 });
+            const saved = JSON.parse(await frame.locator('[data-status-body]').textContent());
+            expect(saved.summary).to.be.a('string').and.not.equal('');
+            expect(saved.urgency).to.equal('urgent');
+        });
+
+        it('keeps only the agent\'s values in fields only the agent may set', async function () {
+            const { page, frame } = await openExample('agent-only-fields');
+            await sample(page, 1);
+            await frame.locator('input[value="low"]').check();
+            await frame.locator('[name="data[summary]"]').fill('Approved by me');
+            await frame.locator('button[name="data[submit]"]').click();
+            await titled(frame, 'Saved. The agent is working…').waitFor();
+            const first = JSON.parse(await frame.locator('[data-status-body]').textContent());
+            expect(first.priority || '').to.equal('');
+            expect(first.summary || '').to.equal('');
+            await titled(frame, 'Done').waitFor({ timeout: 180000 });
+            const done = JSON.parse(await frame.locator('[data-status-body]').textContent());
+            expect(done.priority).to.equal('urgent');
+            expect(done.summary).to.be.a('string').and.not.equal('Approved by me');
+        });
+
+        it('fills a form as a chat, and submits it through the UAG once the person confirms', async function () {
+            const { page, frame } = await openExample('chat-widget');
+            const turn = await send(page, 'Hi, I am Robin Chen (robin.chen@example.com). I have a question: are you open on Saturdays?');
+            expect(turn.complete, JSON.stringify(turn)).to.equal(true);
+            expect(turn.patch).to.include({ name: 'Robin Chen', email: 'robin.chen@example.com', topic: 'question' });
+            await live(page).evaluate(() => Object.values(Formio.forms)[0].submitChat());
+            await titled(frame, 'Saved').waitFor();
+            expect(JSON.parse(await frame.locator('[data-status-body]').textContent())).to.include({ name: 'Robin Chen', topic: 'question' });
+        });
+
+        it('holds a chat to the form\'s validation, and asks again with the form\'s error', async function () {
+            const { page, frame } = await openExample('chat-validation');
+            const refused = await send(page, 'Please change order 1234 to 25 units.');
+            expect(refused.complete).to.equal(false);
+            expect(refused.patch).to.not.have.property('quantity');
+            expect(refused.patch).to.not.have.property('orderCode');
+            expect(refused.reply).to.match(/ABC-1234|three capital letters/);
+            const fixed = await send(page, 'Sorry, the code is ABC-1234 and I want 5. Email: sam@example.com');
+            expect(fixed.complete, JSON.stringify(fixed)).to.equal(true);
+            await live(page).evaluate(() => Object.values(Formio.forms)[0].submitChat());
+            await titled(frame, 'Saved').waitFor();
+            expect(JSON.parse(await frame.locator('[data-status-body]').textContent())).to.include({ orderCode: 'ABC-1234', quantity: 5 });
+        });
+    });
+
     describe('the AI Document lease review, in a browser', function () {
         let browser;
 
