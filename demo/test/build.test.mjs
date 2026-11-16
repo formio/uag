@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { basePathOf, contentSecurityPolicy, showcasePathOf, formioBaseOf, projectNameOf, readConfig } from '../lib/config.mjs';
 import { render } from '../lib/pages.mjs';
+import { loadExamples } from '../lib/examples.mjs';
 import { NOINDEX, build, fileOf, finishHtml, metaPolicy } from '../scripts/build.mjs';
 import { createServer, resolve } from '../scripts/serve.mjs';
 
@@ -283,7 +284,7 @@ describe('Demo site build', function () {
         it('asks search engines not to index the showcase and the demo apps, and only those', function () {
             const files = htmlFiles();
             expect(files.filter(isShowcase)).to.have.lengthOf(5);
-            expect(files.filter(isApp)).to.have.lengthOf(4);
+            expect(files.filter(isApp)).to.have.lengthOf(5);
             for (const file of files) {
                 expect(read(file).includes(NOINDEX), file).to.equal(isShowcase(file) || isApp(file));
             }
@@ -301,6 +302,69 @@ describe('Demo site build', function () {
         it('names a leaking showcase page by a path that holds the showcase path whole, so CI logs mask it', function () {
             // A "secret" only the built showcase pages contain: the showcase path itself.
             expect(() => build(config, { ...env, SOME_API_KEY: SHOWCASE })).to.throw().with.property('message').that.matches(new RegExp(`SOME_API_KEY in ${SHOWCASE}/`));
+        });
+
+        describe('the Examples catalog', function () {
+            const examples = loadExamples(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'content/examples'));
+            const decode = (html) => html.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+            const panel = (html, id) => {
+                const start = html.indexOf(`id="panel-${id}"`);
+                const code = html.indexOf('<code', start);
+                return decode(html.slice(html.indexOf('>', code) + 1, html.indexOf('</code>', code)));
+            };
+
+            it('lists every example on /examples, in the catalog\'s order and grouped', function () {
+                const html = read('examples/index.html');
+                const hrefs = [...html.matchAll(/class="card card-link example-link" href="([^"]+)"/g)].map((match) => match[1]);
+                expect(hrefs).to.deep.equal(examples.map((example) => `/uag${example.href}`));
+                expect([...html.matchAll(/<section class="example-group"><h2>([^<]+)<\/h2>/g)].map((match) => match[1])).to.deep.equal(['Fill in forms', 'Workflows', 'Chat widget']);
+            });
+
+            it('gives every feature page its four parts, the side list and the docs link', function () {
+                for (const example of examples) {
+                    const html = read(fileOf(example.href));
+                    expect(html, example.slug).to.include(`<h1>${example.title.replace(/'/g, '&#39;')}</h1>`);
+                    expect(html, example.slug).to.include('id="turn-it-on"').and.include('id="panel-form"').and.include('id="panel-page"');
+                    expect(html, example.slug).to.include(`data-src="/uag/apps/example/?form=${example.form.path}&amp;mode=${example.mode}`);
+                    expect(html, example.slug).to.include('data-flow').and.include('data-demo-gate');
+                    expect(html, example.slug).to.include(`href="/uag${example.docs}"`);
+                    expect(html, example.slug).to.include(`href="/uag${example.href}" aria-current="page"`);
+                    expect(html.includes(NOINDEX), example.slug).to.equal(false);
+                }
+            });
+
+            it('shows each example\'s form exactly as its form.json, and the page code that renders it', function () {
+                for (const example of examples) {
+                    const html = read(fileOf(example.href));
+                    expect(JSON.parse(panel(html, 'form')), example.slug).to.deep.equal(example.form);
+                    const code = panel(html, 'page');
+                    expect(code, example.slug).to.include(`${example.mode === 'chat' ? 'Formio.createChat' : 'Formio.createForm'}(`).and.include(`'https://uag.form.io/${example.form.path}'`);
+                    if (example.action) expect(JSON.parse(panel(html, 'action')), example.slug).to.deep.equal(example.action);
+                }
+            });
+
+            it('runs the same page code it shows, for an example that has some', function () {
+                const withPage = examples.filter((example) => example.page);
+                expect(withPage).to.not.have.lengthOf(0);
+                for (const example of withPage) {
+                    const shown = panel(read(fileOf(example.href)), 'page');
+                    const run = read(`apps/example/pages/${example.slug}.js`);
+                    const body = run.slice(run.indexOf('{\n') + 2, run.lastIndexOf('\n};')).split('\n').map((line) => line.replace(/^ {2}/, '')).join('\n');
+                    expect(shown, example.slug).to.include(body.split('\n').map((line) => (line ? `    ${line}` : '')).join('\n'));
+                    expect(run, example.slug).to.not.include('UAG_PROJECT_URL');
+                }
+            });
+
+            it('links Examples from every page\'s header, and names no conversation form on a catalog page', function () {
+                for (const file of htmlFiles().filter((name) => !isApp(name) && !isShowcase(name))) {
+                    const html = read(file);
+                    const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'));
+                    expect(header, file).to.match(/<a href="\/uag\/examples"[^>]*>Examples<\/a>/);
+                }
+                for (const file of htmlFiles().filter((name) => name.startsWith('examples/'))) {
+                    expect(read(file), file).to.not.match(/conversation(al)? form/i);
+                }
+            });
         });
 
         it('has no contact page of its own: every sales call to action leaves for Form.io\'s', function () {

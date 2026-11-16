@@ -65,7 +65,7 @@ export class Views {
 /** The values every page sees. */
 export function siteValues(config, page, extra = {}) {
     const fullTitle = page.route === '/' ? 'Form.io Agentic Forms: the Universal Agent Gateway and Agentic Coding Plugin' : `${page.title} | Form.io Agentic Forms`;
-    const nav = Object.fromEntries(['product', 'start', 'developers'].map((key) => [key, page.nav === key ? 'aria-current="page"' : '']));
+    const nav = Object.fromEntries(['product', 'start', 'examples', 'developers'].map((key) => [key, page.nav === key ? 'aria-current="page"' : '']));
     return {
         site: { url: config.publicUrl, year: new Date().getFullYear() },
         links: config.links,

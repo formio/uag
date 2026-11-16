@@ -76,6 +76,19 @@
     return documentSummary(body);
   }
 
+  /**
+   * One streamed event of an Agent API call: a `result` says which kind of answer
+   * it is (decisions or values), from which engine, how long after the request it
+   * arrived, and the fields it filled; other events say their name.
+   */
+  function streamSummary(name, event, ms) {
+    if (name !== 'result' || !event || typeof event !== 'object') return name + (engineSummary(event) ? ' · ' + engineSummary(event) : '');
+    var kind = event.kind === 'decision' ? 'decisions' : event.kind === 'value' ? 'values' : 'result';
+    var at = ms >= 1000 ? (ms / 1000).toFixed(1) + ' s' : ms + ' ms';
+    var filled = Object.keys(event.patch || {});
+    return [kind + ' at ' + at, event.engine, event.error ? 'failed: ' + event.error : filled.length ? filled.join(', ') : 'nothing filled'].filter(Boolean).join(' · ');
+  }
+
   /** An AI Document result's engine, plugin and files, from its meta (`{ result: { meta } }`). */
   function documentSummary(body) {
     var meta = body.meta || (body.result && typeof body.result === 'object' ? body.result.meta : null);
@@ -129,7 +142,7 @@
           var parsed = null;
           try { parsed = JSON.parse(data); } catch (e) { /* not JSON */ }
           if (parsed) last = parsed;
-          emit(Object.assign({}, base, { phase: 'chunk', summary: name + (engineSummary(parsed) ? ' · ' + engineSummary(parsed) : '') }));
+          emit(Object.assign({}, base, { phase: 'chunk', stream: name, summary: streamSummary(name, parsed, Date.now() - started) }));
         });
         return pump();
       });
@@ -186,6 +199,8 @@
   window.fetch = function (input, init) { return recorded(input, init); };
 
   window.UAGFlowLog = {
+    /** How a streamed event is summarized in the log (see streamSummary). */
+    streamSummary: streamSummary,
     /** fetch with recording options: { reqId, run, label, summary }. */
     fetch: recorded,
     /** A row the page adds itself, such as a workflow stage the polling saw change. */

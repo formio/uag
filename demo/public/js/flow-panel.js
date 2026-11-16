@@ -218,7 +218,15 @@
         if (event.summary) leg.summary.textContent = event.summary;
       }
       else if (event.phase === 'chunk') {
-        if (event.summary) leg.summary.textContent = event.summary;
+        // Each streamed result stays listed, in the order it arrived: decisions, then values.
+        if ((event.stream === 'result' || event.stream === 'error') && event.summary) {
+          if (!leg.stream) {
+            leg.stream = el('ol', 'flow-stream');
+            leg.summary.after(leg.stream);
+          }
+          leg.stream.appendChild(el('li', '', event.summary));
+        }
+        else if (event.summary) leg.summary.textContent = event.summary;
       }
       else if (event.phase === 'response') {
         leg.response = event.detail || '';

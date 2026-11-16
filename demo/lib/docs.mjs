@@ -64,26 +64,28 @@ export function parseFrontMatter(source) {
 
 const CALLOUT = /^<p><strong>(Note|Warning|Tip|Important):?<\/strong>:?\s*/i;
 
-const DEFAULT_SOURCE = {
+export const DEFAULT_SOURCE = {
     source: 'https://github.com/formio/uag/tree/main',
     sourceFile: 'https://github.com/formio/uag/blob/main',
     releaseTag: 'main',
 };
 
 /**
- * The site path of a page's relative link to another page, a demo's source
- * folder, or a file under `demo/public` (`null` for any other link).
+ * The site path of a page's relative link to a developer page, a feature
+ * example (its folder or its `example.md`), or a file under `demo/public`
+ * (`null` for any other link). `contentRoot` is `demo/content`; it defaults to
+ * the folder above `dir`, as for the developer pages.
  */
-export function siteLink(href, { dir }) {
+export function siteLink(href, { dir, contentRoot = path.resolve(dir, '..') }) {
     if (!href || /^(?:[a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) return null;
     const [, pathname, rest] = /^([^?#]*)(.*)$/.exec(href);
     const target = path.resolve(dir, pathname);
-    const page = path.relative(dir, target).split(path.sep).join('/');
-    if (/^[a-z0-9-]+\.md$/.test(page) && page !== 'README.md') {
-        const slug = page.replace(/\.md$/, '');
-        return `${slug === 'index' ? '/developers' : `/developers/${slug}`}${rest}`;
-    }
-    const pub = path.relative(path.resolve(dir, '..', '..', 'public'), target).split(path.sep).join('/');
+    const inContent = path.relative(contentRoot, target).split(path.sep).join('/');
+    const doc = /^developers\/([a-z0-9-]+)\.md$/.exec(inContent);
+    if (doc) return `${doc[1] === 'index' ? '/developers' : `/developers/${doc[1]}`}${rest}`;
+    const example = /^examples\/\d+-([a-z0-9-]+)(?:\/example\.md)?$/.exec(inContent);
+    if (example) return `/examples/${example[1]}${rest}`;
+    const pub = path.relative(path.resolve(contentRoot, '..', 'public'), target).split(path.sep).join('/');
     if (!pub || pub.startsWith('..') || path.isAbsolute(pub)) return null;
     return `/${pub}${rest}`;
 }
@@ -103,7 +105,8 @@ export function sourceLink(href, { dir, repoRoot, source, sourceFile }) {
     return { href: `${folder ? source : sourceFile}/${repoPath}${rest}`, repoPath };
 }
 
-function renderPage(body, context) {
+/** Markdown as the site renders it: headings with anchors, callouts, code with Copy, and site links. */
+export function renderMarkdown(body, context) {
     const sources = [];
     const headings = [];
     const used = new Map();
@@ -185,7 +188,7 @@ export class Docs {
                 if (!file.endsWith('.md') || file === 'README.md') continue;
                 const slug = file.replace(/\.md$/, '');
                 const { meta, body } = parseFrontMatter(fs.readFileSync(path.join(this.dir, file), 'utf8'));
-                const { html, headings, sources } = renderPage(body, this.context);
+                const { html, headings, sources } = renderMarkdown(body, this.context);
                 pages.set(slug, {
                     slug,
                     href: slug === 'index' ? '/developers' : `/developers/${slug}`,

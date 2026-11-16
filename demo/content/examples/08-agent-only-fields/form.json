@@ -1,0 +1,87 @@
+{
+  "title": "Example: Fields only the agent may set",
+  "name": "exampleAgentOnlyFields",
+  "path": "example-agent-only-fields",
+  "type": "form",
+  "display": "form",
+  "tags": [
+    "uag"
+  ],
+  "properties": {
+    "description": "A message whose priority and summary only the reviewing agent may set."
+  },
+  "components": [
+    {
+      "type": "textarea",
+      "key": "message",
+      "label": "Message",
+      "input": true,
+      "rows": 4,
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "type": "content",
+      "key": "reviewCriteria",
+      "label": "Criteria",
+      "input": false,
+      "html": "<p>You review messages sent to a team. Read <code>message</code>. Write <code>summary</code>: one sentence, under 20 words, saying what the sender wants. Set <code>priority</code> to <code>urgent</code> if work is stopped or a deadline is within two days, <code>low</code> if nothing is blocked, and <code>normal</code> otherwise.</p>",
+      "properties": {
+        "uag": "review",
+        "uagField": "criteria",
+        "uagEngine": "agent"
+      }
+    },
+    {
+      "type": "panel",
+      "key": "review",
+      "title": "Only the agent's values are kept",
+      "input": false,
+      "components": [
+        {
+          "type": "radio",
+          "key": "priority",
+          "label": "Priority",
+          "input": true,
+          "values": [
+            {
+              "label": "Low",
+              "value": "low"
+            },
+            {
+              "label": "Normal",
+              "value": "normal"
+            },
+            {
+              "label": "Urgent",
+              "value": "urgent"
+            }
+          ],
+          "properties": {
+            "uag": "review",
+            "uagAuthoritative": "true",
+            "uagAgentDecides": "true"
+          }
+        },
+        {
+          "type": "textfield",
+          "key": "summary",
+          "label": "Summary",
+          "input": true,
+          "properties": {
+            "uag": "review",
+            "uagAuthoritative": "true"
+          }
+        }
+      ]
+    },
+    {
+      "type": "button",
+      "key": "submit",
+      "label": "Submit",
+      "action": "submit",
+      "input": true
+    }
+  ]
+}

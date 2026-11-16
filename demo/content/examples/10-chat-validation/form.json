@@ -1,0 +1,53 @@
+{
+  "title": "Example: Validation in the chat widget",
+  "name": "exampleChatValidation",
+  "path": "example-chat-validation",
+  "type": "form",
+  "display": "form",
+  "tags": [
+    "uag"
+  ],
+  "properties": {
+    "description": "An order change: the order code, a new quantity, and an email for the confirmation."
+  },
+  "components": [
+    {
+      "type": "textfield",
+      "key": "orderCode",
+      "label": "Order code",
+      "input": true,
+      "validate": {
+        "required": true,
+        "pattern": "^[A-Z]{3}-\\d{4}$",
+        "customMessage": "An order code is three capital letters, a dash and four digits, such as ABC-1234."
+      }
+    },
+    {
+      "type": "number",
+      "key": "quantity",
+      "label": "New quantity",
+      "input": true,
+      "validate": {
+        "required": true,
+        "min": 1,
+        "max": 10
+      }
+    },
+    {
+      "type": "email",
+      "key": "email",
+      "label": "Email for the confirmation",
+      "input": true,
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "type": "button",
+      "key": "submit",
+      "label": "Submit",
+      "action": "submit",
+      "input": true
+    }
+  ]
+}

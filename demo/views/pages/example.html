@@ -1,0 +1,47 @@
+    <div class="container docs example-page">
+      <details class="docs-menu" open>
+        <summary>Examples menu</summary>
+        <nav class="docs-nav" aria-label="Examples">{{{examplesNav}}}</nav>
+      </details>
+      <article class="example-article">
+        <div class="prose">
+          <p class="eyebrow"><a href="/examples">Examples</a>&nbsp;/&nbsp;{{example.group}}</p>
+          <h1>{{example.title}}</h1>
+          <p class="doc-lede">{{example.summary}}</p>
+          {{{example.html}}}
+          <h2 id="turn-it-on"><a class="anchor" href="#turn-it-on" aria-hidden="true">#</a>Turn it on</h2>
+        </div>
+        <div class="tabs example-code">
+          <div class="tab-list" role="tablist" aria-label="What turns it on">{{{codeTabs}}}</div>
+          {{{codePanels}}}
+        </div>
+        <div class="prose">
+          <h2 id="try-it"><a class="anchor" href="#try-it" aria-hidden="true">#</a>Try it</h2>
+        </div>
+        <p class="notice" data-demo-notice hidden></p>
+        <div class="example-samples" data-example-samples{{{samplesHidden}}}>
+          <span>Samples:</span>{{{sampleButtons}}}
+        </div>
+        <div class="example-try">
+          <div class="browser">
+            <div class="browser-bar">
+              <div class="browser-dots"><span></span><span></span><span></span></div>
+              <div class="browser-url">{{example.form.title}}</div>
+            </div>
+            <div class="demo-gate" data-demo-gate hidden>
+              <div><h3>Start the live examples</h3><p>The examples call real models. Starting them signs you in as a temporary guest of the examples' project, for every example; what you enter is deleted after a day.</p><button type="button" class="btn btn-primary btn-small" data-demo-start>Start the live examples</button></div>
+            </div>
+            {{{demoUnsupported}}}
+            <iframe title="{{example.title}}, live" data-demo-frame data-src="{{frameSrc}}" hidden></iframe>
+          </div>
+          <div data-flow data-title="What the UAG did" data-intro="Every call this form makes to the UAG and to Form.io, as your browser sends it. The engines run inside the UAG." data-empty="Nothing yet. Use the form to see its calls here."></div>
+        </div>
+        <p class="example-docs"><a class="link-arrow" href="{{example.docs}}">Read about it in the developer docs</a></p>
+        <nav class="pager" aria-label="More examples">{{{pager}}}</nav>
+      </article>
+    </div>
+    <script src="/js/flow-log.js?v={{assetVersion}}"></script>
+    <script src="/js/guest.js?v={{assetVersion}}"></script>
+    <script src="/js/flow-panel.js?v={{assetVersion}}"></script>
+    <script src="/js/demo.js?v={{assetVersion}}"></script>
+    <script src="/js/example.js?v={{assetVersion}}"></script>

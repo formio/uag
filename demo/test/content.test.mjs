@@ -4,13 +4,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Docs, SECTIONS, parseFrontMatter, siteLink, slugify, sourceLink } from '../lib/docs.mjs';
 import { PAGES } from '../lib/pages.mjs';
+import { loadExamples } from '../lib/examples.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const docs = new Docs(path.join(root, 'content/developers'));
 const views = fs.readdirSync(path.join(root, 'views/pages')).map((file) => [file, fs.readFileSync(path.join(root, 'views/pages', file), 'utf8')]);
 
 /** Every route the site serves a page at. */
-const routes = new Set([...PAGES.map((page) => page.route), ...docs.ordered.map((page) => page.href)]);
+const examples = loadExamples(path.join(root, 'content/examples'));
+const routes = new Set([...PAGES.map((page) => page.route), ...docs.ordered.map((page) => page.href), '/examples', ...examples.map((example) => example.href)]);
 
 function links(html) {
     return [...html.matchAll(/(?:href|src)="(\/[^"#?]*)(#[^"]*)?"/g)].map((match) => ({ path: match[1], hash: match[2] || '' }));
@@ -120,6 +122,7 @@ describe('Demo site content', function () {
         const broken = [];
         const sources = [
             ...docs.ordered.map((page) => [page.href, page.html]),
+            ...examples.map((example) => [example.href, example.html]),
             ...views,
             ['layout', fs.readFileSync(path.join(root, 'views/layout.html'), 'utf8')],
         ];
@@ -127,7 +130,7 @@ describe('Demo site content', function () {
             for (const link of links(html)) {
                 if (/\{\{/.test(link.path)) continue;
                 if (!exists(link.path)) broken.push(`${source}: ${link.path}`);
-                const target = docs.ordered.find((page) => page.href === link.path.replace(/\/$/, ''));
+                const target = [...docs.ordered, ...examples].find((page) => page.href === link.path.replace(/\/$/, ''));
                 const id = link.hash.slice(1);
                 if (target && id && !new RegExp(`id="${id}"`).test(target.html)) broken.push(`${source}: ${link.path}${link.hash}`);
             }

@@ -1,0 +1,96 @@
+{
+  "title": "Example: Run an agent task after a submission",
+  "name": "exampleRunTask",
+  "path": "example-run-task",
+  "type": "form",
+  "display": "form",
+  "tags": [
+    "uag"
+  ],
+  "properties": {
+    "description": "A message, reviewed by an agent after it is saved."
+  },
+  "components": [
+    {
+      "type": "textfield",
+      "key": "name",
+      "label": "Name",
+      "input": true,
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "key": "message",
+      "label": "Message",
+      "input": true,
+      "rows": 4,
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "type": "content",
+      "key": "reviewCriteria",
+      "label": "Criteria",
+      "input": false,
+      "html": "<p>You review messages sent to a team. Read <code>message</code>. Write <code>summary</code>: one sentence, under 20 words, saying what the sender wants. Set <code>urgency</code> to <code>urgent</code> if work is stopped or a deadline is within two days, <code>low</code> if nothing is blocked, and <code>normal</code> otherwise.</p>",
+      "properties": {
+        "uag": "review",
+        "uagField": "criteria",
+        "uagEngine": "agent"
+      }
+    },
+    {
+      "type": "panel",
+      "key": "review",
+      "title": "Filled in by the agent after you submit",
+      "input": false,
+      "components": [
+        {
+          "type": "textfield",
+          "key": "summary",
+          "label": "Summary",
+          "input": true,
+          "disabled": true,
+          "properties": {
+            "uag": "review"
+          }
+        },
+        {
+          "type": "radio",
+          "key": "urgency",
+          "label": "Urgency",
+          "input": true,
+          "values": [
+            {
+              "label": "Low",
+              "value": "low"
+            },
+            {
+              "label": "Normal",
+              "value": "normal"
+            },
+            {
+              "label": "Urgent",
+              "value": "urgent"
+            }
+          ],
+          "disabled": true,
+          "properties": {
+            "uag": "review",
+            "uagAgentDecides": "true"
+          }
+        }
+      ]
+    },
+    {
+      "type": "button",
+      "key": "submit",
+      "label": "Submit",
+      "action": "submit",
+      "input": true
+    }
+  ]
+}

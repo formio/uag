@@ -1,0 +1,140 @@
+{
+  "title": "Example: Streamed results",
+  "name": "exampleStreamedResults",
+  "path": "example-streamed-results",
+  "type": "form",
+  "display": "form",
+  "tags": [
+    "uag"
+  ],
+  "properties": {
+    "description": "A general request: its topic, urgency and tone, and who sent it."
+  },
+  "components": [
+    {
+      "type": "textarea",
+      "key": "description",
+      "label": "Describe your request",
+      "input": true,
+      "placeholder": "Tell us what you need, in your own words.",
+      "rows": 4,
+      "validate": {
+        "required": true
+      },
+      "properties": {
+        "uag": "triage",
+        "uagField": "input"
+      }
+    },
+    {
+      "type": "select",
+      "key": "topic",
+      "label": "Topic",
+      "input": true,
+      "dataSrc": "values",
+      "data": {
+        "values": [
+          {
+            "label": "Question",
+            "value": "question"
+          },
+          {
+            "label": "Problem",
+            "value": "problem"
+          },
+          {
+            "label": "Request",
+            "value": "request"
+          },
+          {
+            "label": "Feedback",
+            "value": "feedback"
+          }
+        ]
+      },
+      "properties": {
+        "uag": "triage"
+      }
+    },
+    {
+      "type": "radio",
+      "key": "urgency",
+      "label": "Urgency",
+      "input": true,
+      "values": [
+        {
+          "label": "Low",
+          "value": "low"
+        },
+        {
+          "label": "Normal",
+          "value": "normal"
+        },
+        {
+          "label": "Urgent",
+          "value": "urgent"
+        }
+      ],
+      "properties": {
+        "uag": "triage"
+      }
+    },
+    {
+      "type": "radio",
+      "key": "sentiment",
+      "label": "Tone",
+      "input": true,
+      "values": [
+        {
+          "label": "Positive",
+          "value": "positive"
+        },
+        {
+          "label": "Neutral",
+          "value": "neutral"
+        },
+        {
+          "label": "Negative",
+          "value": "negative"
+        }
+      ],
+      "properties": {
+        "uag": "triage"
+      }
+    },
+    {
+      "type": "textfield",
+      "key": "name",
+      "label": "Name",
+      "input": true,
+      "properties": {
+        "uag": "triage"
+      }
+    },
+    {
+      "type": "email",
+      "key": "email",
+      "label": "Email",
+      "input": true,
+      "properties": {
+        "uag": "triage"
+      }
+    },
+    {
+      "type": "day",
+      "key": "date",
+      "label": "Date it started",
+      "input": true,
+      "properties": {
+        "uag": "triage"
+      }
+    },
+    {
+      "type": "button",
+      "key": "submit",
+      "label": "Submit",
+      "action": "submit",
+      "input": true
+    }
+  ]
+}

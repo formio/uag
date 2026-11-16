@@ -10,7 +10,7 @@
  * barely moves when it swaps in. Tuned on the header's own labels: medium for its
  * links, bold for its buttons.
  */
-@font-face { font-family: 'Inter Fallback'; font-weight: 100 549; src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('Arimo'); size-adjust: 108.6%; ascent-override: 89.2%; descent-override: 22.2%; line-gap-override: 0%; }
+@font-face { font-family: 'Inter Fallback'; font-weight: 100 549; src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('Arimo'); size-adjust: 108.2%; ascent-override: 89.5%; descent-override: 22.3%; line-gap-override: 0%; }
 @font-face { font-family: 'Inter Fallback'; font-weight: 550 900; src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'), local('Arimo Bold'); size-adjust: 100.5%; ascent-override: 96.4%; descent-override: 24%; line-gap-override: 0%; }
 @font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 100 800; font-display: swap; src: url('../fonts/jetbrains-mono-latin.woff2') format('woff2'); }
 
@@ -339,6 +339,9 @@ a:hover .arrow::after, .btn:hover .arrow::after, a.arrow:hover::after { transfor
 .flow-kind.save { background: rgba(241, 157, 89, .15); color: var(--orange); }
 .flow-label { color: #e4e9ef; font-weight: 600; word-break: break-word; }
 .flow-summary { display: block; color: #8d99a8; font-weight: 400; font-size: 12px; margin-top: 2px; word-break: break-word; }
+/* An Agent API call's streamed results, in the order they arrived. */
+.flow-stream { margin: 4px 0 0; padding-left: 18px; color: #b8c3cf; font-size: 12px; font-weight: 400; }
+.flow-stream li { margin: 1px 0; }
 .flow-status { font: 600 11px var(--font); color: #8d99a8; white-space: nowrap; }
 .flow-status.ok { color: var(--green-light); }
 .flow-status.bad { color: #f08a95; }
@@ -426,16 +429,43 @@ a:hover .arrow::after, .btn:hover .arrow::after, a.arrow:hover::after { transfor
     *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 
+/* Examples ------------------------------------------------------------ */
+.examples-hero { padding-top: 64px; }
+.examples-hero h1 { max-width: 760px; }
+.examples-hero .lede { max-width: 760px; }
+.example-group { margin-bottom: 48px; }
+.example-group h2 { font-size: 1.35rem; margin: 0 0 18px; }
+.example-link h3 { font-size: 1.1rem; }
+.example-link p { color: var(--muted); }
+.example-article .prose h1 { margin-top: 0; }
+.example-code { margin: 0 0 8px; }
+.example-code .tab-list button { padding: 12px 18px; font-size: 14px; }
+.example-code .tab-panel { padding: 0; }
+.example-code .code { margin: 0; border: 0; border-radius: 0; }
+.example-code pre { max-height: 480px; }
+/* The properties that turn the feature on, marked in the form shown. */
+.code mark { display: inline-block; min-width: 100%; margin: 0 -18px; padding: 0 18px 0 16px; border-left: 2px solid var(--green); background: rgba(120, 205, 75, .16); color: #f2f7ee; }
+.example-samples { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 16px; font-size: 14px; color: var(--muted); }
+.example-samples[hidden] { display: none; }
+.example-samples button { cursor: pointer; font: 500 13px var(--font); }
+.example-samples button:hover { border-color: var(--green); color: var(--ink); }
+.example-try { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+.example-try .browser iframe { height: 640px; }
+.example-try .flow { height: 682px; }
+.example-docs { margin: 28px 0 0; }
+.examples-more { margin: 32px 0 0; text-align: center; }
+
 /* Responsive ---------------------------------------------------------- */
 @media (max-width: 1180px) {
     .nav a { padding: 8px 9px; }
+    .example-try { grid-template-columns: minmax(0, 1fr); }
     .docs { grid-template-columns: 230px minmax(0, 1fr); }
     .docs-toc { display: none; }
     .demo-layout { grid-template-columns: minmax(0, 1fr); }
     .flow { position: relative; top: 0; height: 560px; }
 }
-/* The header's links and calls to action need about 1060px in one row. */
-@media (max-width: 1100px) {
+/* The header's links and calls to action need about 1140px in one row. */
+@media (max-width: 1180px) {
     .nav, .header-actions { display: none; }
     .menu-toggle { display: block; }
     .site-header.open .nav { display: flex; position: absolute; left: 0; right: 0; top: var(--header); flex-direction: column; align-items: stretch; background: #fff; padding: 12px 24px 20px; border-bottom: 1px solid var(--gray4); box-shadow: var(--shadow); }
@@ -532,6 +562,9 @@ html:has(.watch[open]) { overflow: hidden; }
 .prose p code, .prose li code { overflow-wrap: anywhere; }
 @media (max-width: 1180px) { .container.docs { grid-template-columns: 230px minmax(0, 1fr); } }
 @media (max-width: 980px) { .container.docs { grid-template-columns: minmax(0, 1fr); } }
+/* An example page has the examples list and the example: no table of contents. */
+.container.docs.example-page { grid-template-columns: 240px minmax(0, 1fr); }
+@media (max-width: 980px) { .container.docs.example-page { grid-template-columns: minmax(0, 1fr); } }
 .prose td:first-child code { white-space: nowrap; overflow-wrap: normal; }
 .demo-unsupported { display: grid; place-items: center; min-height: 520px; padding: 40px 32px; text-align: center; background: var(--gray1); }
 .demo-unsupported[hidden] { display: none; }
