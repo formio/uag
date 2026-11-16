@@ -37,22 +37,23 @@ export function basePathOf(env) {
     return base;
 }
 
-/** Where the live examples are served when DEMO_EXAMPLES_PATH does not say. */
-export const DEFAULT_EXAMPLES_PATH = '/examples';
+/** Where the showcase (the industry demos) is served when DEMO_SHOWCASE_PATH does not say. */
+export const DEFAULT_SHOWCASE_PATH = '/showcase';
 
-/** First path segments the site's own pages and assets use, which the examples may not take. */
-const RESERVED_SEGMENTS = new Set(['apps', 'css', 'developers', 'faq', 'fonts', 'getting-started', 'images', 'js', '404.html', 'index.html']);
+/** First path segments the site's own pages and assets use, which the showcase may not take. */
+const RESERVED_SEGMENTS = new Set(['apps', 'css', 'developers', 'examples', 'faq', 'fonts', 'getting-started', 'images', 'js', '404.html', 'index.html']);
 
 /**
- * The path the live examples are served under (DEMO_EXAMPLES_PATH), such as
- * `/examples`: the examples index there and each example below it. Nothing
- * outside the examples links to it, so the published site can keep it unlisted.
+ * The path the showcase is served under (DEMO_SHOWCASE_PATH), such as
+ * `/showcase`: the industry demos kept for sales demonstrations, their index
+ * there and each demo below it. Nothing outside the showcase links to it, so the
+ * published site can keep it unlisted. The public feature examples are at /examples.
  */
-export function examplesPathOf(env) {
-    const error = new Error('DEMO_EXAMPLES_PATH must be a path of its own, such as /examples.');
-    if (!env.DEMO_EXAMPLES_PATH) return DEFAULT_EXAMPLES_PATH;
+export function showcasePathOf(env) {
+    const error = new Error('DEMO_SHOWCASE_PATH must be a path of its own, such as /showcase.');
+    if (!env.DEMO_SHOWCASE_PATH) return DEFAULT_SHOWCASE_PATH;
     // Set but blank is a mistake (an empty secret, say), not a request for the default.
-    const value = String(env.DEMO_EXAMPLES_PATH).trim().replace(/\/+$/, '');
+    const value = String(env.DEMO_SHOWCASE_PATH).trim().replace(/\/+$/, '');
     if (!/^(\/[A-Za-z0-9._~-]+)+$/.test(value)) throw error;
     const segments = value.split('/').slice(1);
     // `.` and `..` would put the examples over the home page or outside the build.
@@ -145,7 +146,7 @@ export function readConfig(env = process.env) {
         production,
         publicUrl,
         basePath: basePathOf(env),
-        examplesPath: examplesPathOf(env),
+        showcasePath: showcasePathOf(env),
         root: path.resolve(here, '..'),
         out: path.resolve(here, '..', env.DEMO_OUT || 'dist'),
         // What the pages are given: the UAG they embed, the project's URL on it, and the

@@ -181,7 +181,7 @@ export async function guest({ uagUrl = UAG_URL } = {}) {
  * Resolves to the frame's locator.
  */
 export async function startExample(page, name, { site = SITE_URL } = {}) {
-    await page.goto(`${site}/examples/${name}`);
+    await page.goto(`${site}/showcase/${name}`);
     const start = page.locator('[data-demo-start]');
     await start.or(page.locator('[data-demo-frame]:not([hidden])')).first().waitFor();
     if (await start.isVisible()) await start.click();

@@ -25,14 +25,14 @@ jobs:
       FORMIO_PROJECT_URL: https://uag.form.io
       DEMO_PUBLIC_URL: https://formio.github.io/uag
       DEMO_BASE_PATH: /uag
-      # Where the live examples are served. Nothing on the site links there,
+      # Where the showcase is served. Nothing public on the site links there,
       # so it is kept out of the repository.
-      DEMO_EXAMPLES_PATH: ${{ secrets.DEMO_EXAMPLES_PATH }}
+      DEMO_SHOWCASE_PATH: ${{ secrets.DEMO_SHOWCASE_PATH }}
     steps:
-      - name: Check the examples path is set
+      - name: Check the showcase path is set
         run: |
-          if [ -z "$(printf '%s' "$DEMO_EXAMPLES_PATH" | tr -d '[:space:]')" ]; then
-            echo "::error::Set the DEMO_EXAMPLES_PATH secret: the path the live examples are served under."
+          if [ -z "$(printf '%s' "$DEMO_SHOWCASE_PATH" | tr -d '[:space:]')" ]; then
+            echo "::error::Set the DEMO_SHOWCASE_PATH secret: the path the showcase is served under."
             exit 1
           fi
 

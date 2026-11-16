@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { basePathOf, contentSecurityPolicy, examplesPathOf, formioBaseOf, projectNameOf, readConfig } from '../lib/config.mjs';
+import { basePathOf, contentSecurityPolicy, showcasePathOf, formioBaseOf, projectNameOf, readConfig } from '../lib/config.mjs';
 import { render } from '../lib/pages.mjs';
 import { NOINDEX, build, fileOf, finishHtml, metaPolicy } from '../scripts/build.mjs';
 import { createServer, resolve } from '../scripts/serve.mjs';
@@ -36,17 +36,17 @@ describe('Demo site build', function () {
             }
         });
 
-        it('reads the path the examples are served under, /examples unless DEMO_EXAMPLES_PATH names another', function () {
-            expect(readConfig({}).examplesPath).to.equal('/examples');
-            expect(examplesPathOf({ DEMO_EXAMPLES_PATH: '/x-7f3c9a/' })).to.equal('/x-7f3c9a');
-            expect(examplesPathOf({ DEMO_EXAMPLES_PATH: '/demos/live' })).to.equal('/demos/live');
-            for (const value of ['x y', '/x y', 'examples', 'https://example.com/x', '/', '/x"><script>', '/developers', '/apps/x', '/images', '/x/..', '/..', '/.', '/./x', '/x/../developers', '/Developers', '/FAQ', ' ', '\n']) {
-                expect(() => examplesPathOf({ DEMO_EXAMPLES_PATH: value }), value).to.throw(/DEMO_EXAMPLES_PATH/);
+        it('reads the path the showcase is served under, /showcase unless DEMO_SHOWCASE_PATH names another', function () {
+            expect(readConfig({}).showcasePath).to.equal('/showcase');
+            expect(showcasePathOf({ DEMO_SHOWCASE_PATH: '/x-7f3c9a/' })).to.equal('/x-7f3c9a');
+            expect(showcasePathOf({ DEMO_SHOWCASE_PATH: '/demos/live' })).to.equal('/demos/live');
+            for (const value of ['x y', '/x y', 'examples', 'https://example.com/x', '/', '/x"><script>', '/developers', '/apps/x', '/images', '/examples', '/Examples/x', '/x/..', '/..', '/.', '/./x', '/x/../developers', '/Developers', '/FAQ', ' ', '\n']) {
+                expect(() => showcasePathOf({ DEMO_SHOWCASE_PATH: value }), value).to.throw(/DEMO_SHOWCASE_PATH/);
             }
         });
 
-        it('never repeats the examples path in its error, since the published one is a secret', function () {
-            expect(() => examplesPathOf({ DEMO_EXAMPLES_PATH: '/x secret' })).to.throw().with.property('message').that.does.not.include('secret');
+        it('never repeats the showcase path in its error, since the published one is a secret', function () {
+            expect(() => showcasePathOf({ DEMO_SHOWCASE_PATH: '/x secret' })).to.throw().with.property('message').that.does.not.include('secret');
         });
 
         it('sends sales calls to action to Form.io\'s contact page and the trial to its sign-up, unless told otherwise', function () {
@@ -113,14 +113,14 @@ describe('Demo site build', function () {
         const read = (file) => fs.readFileSync(path.join(config.out, file), 'utf8');
 
         it('writes every page and doc as <route>/index.html, and a 404 page', function () {
-            for (const route of ['/', '/examples', '/examples/conversation', '/examples/workflow', '/examples/formflow', '/examples/documents', '/developers', '/developers/agent-api', '/getting-started']) {
+            for (const route of ['/', '/showcase', '/showcase/conversation', '/showcase/workflow', '/showcase/formflow', '/showcase/documents', '/developers', '/developers/agent-api', '/getting-started']) {
                 expect(fs.existsSync(path.join(config.out, fileOf(route))), route).to.equal(true);
             }
             expect(read('404.html')).to.include('</html>');
         });
 
         it('gives every page and demo app the UAG and the project, and leaves no template unfilled', function () {
-            expect(read('examples/conversation/index.html')).to.include('data-uag-url="https://uag.build-test.example"').and.include('data-project-url="https://uag.form.io"');
+            expect(read('showcase/conversation/index.html')).to.include('data-uag-url="https://uag.build-test.example"').and.include('data-project-url="https://uag.form.io"');
             for (const app of ['conversation', 'formflow', 'documents', 'workflow']) {
                 const html = read(`apps/${app}/index.html`);
                 expect(html, app).to.include('<script src="https://uag.build-test.example/uag-js/uag.use.js"');
@@ -227,11 +227,11 @@ describe('Demo site build', function () {
         });
     });
 
-    describe('a build with unlisted examples', function () {
+    describe('a build with a showcase path', function () {
         let out;
         let config;
-        const EXAMPLES = '/x-test-examples';
-        const env = { DEMO_UAG_URL: 'https://ai.example.com', FORMIO_PROJECT_URL: 'https://uag.form.io', NODE_ENV: 'production', DEMO_BASE_PATH: '/uag', DEMO_EXAMPLES_PATH: EXAMPLES };
+        const SHOWCASE = '/x-test-showcase';
+        const env = { DEMO_UAG_URL: 'https://ai.example.com', FORMIO_PROJECT_URL: 'https://uag.form.io', NODE_ENV: 'production', DEMO_BASE_PATH: '/uag', DEMO_SHOWCASE_PATH: SHOWCASE };
         const htmlFiles = () => {
             const files = [];
             const walk = (dir) => {
@@ -245,7 +245,7 @@ describe('Demo site build', function () {
             return files;
         };
         const read = (file) => fs.readFileSync(path.join(config.out, file), 'utf8');
-        const isExample = (file) => file.startsWith(`${EXAMPLES.slice(1)}/`);
+        const isShowcase = (file) => file.startsWith(`${SHOWCASE.slice(1)}/`);
         const isApp = (file) => file.startsWith('apps/');
 
         before(function () {
@@ -259,49 +259,48 @@ describe('Demo site build', function () {
             fs.rmSync(out, { recursive: true, force: true });
         });
 
-        it('serves the examples under the examples path, and nothing under /examples', function () {
-            for (const route of [EXAMPLES, `${EXAMPLES}/conversation`, `${EXAMPLES}/workflow`, `${EXAMPLES}/formflow`, `${EXAMPLES}/documents`]) {
+        it('serves the showcase under its path, and nothing under /showcase', function () {
+            for (const route of [SHOWCASE, `${SHOWCASE}/conversation`, `${SHOWCASE}/workflow`, `${SHOWCASE}/formflow`, `${SHOWCASE}/documents`]) {
                 expect(fs.existsSync(path.join(config.out, fileOf(route))), route).to.equal(true);
             }
-            expect(fs.existsSync(path.join(config.out, 'examples'))).to.equal(false);
-            expect(read(fileOf(`${EXAMPLES}/conversation`))).to.include(`href="/uag${EXAMPLES}/workflow"`).and.include(`href="/uag${EXAMPLES}"`);
-            expect(htmlFiles().filter((file) => /["']\/(uag\/)?examples\b/.test(read(file)))).to.deep.equal([]);
+            expect(fs.existsSync(path.join(config.out, 'showcase'))).to.equal(false);
+            expect(read(fileOf(`${SHOWCASE}/conversation`))).to.include(`href="/uag${SHOWCASE}/workflow"`).and.include(`href="/uag${SHOWCASE}"`);
+            expect(htmlFiles().filter((file) => /["']\/(uag\/)?showcase\b/.test(read(file)))).to.deep.equal([]);
         });
 
-        it('names no examples page anywhere outside the examples: not in a page, image, script or stylesheet', function () {
-            // A path on the site (after a quote, bracket, space or tag), not the
-            // formio/ai repository's examples folder on GitHub.
-            const sitePath = new RegExp(`(^|[\\s>"'(=])(/uag)?(/examples|${EXAMPLES})\\b`);
+        it('names no showcase page anywhere outside the showcase: not in a page, image, script or stylesheet', function () {
+            // A path on the site (after a quote, bracket, space or tag).
+            const sitePath = new RegExp(`(^|[\\s>"'(=])(/uag)?(/showcase|${SHOWCASE})\\b`);
             const offenders = [];
             for (const file of fs.readdirSync(config.out, { recursive: true })) {
                 const name = String(file).split(path.sep).join('/');
-                if (isExample(name) || !/\.(html|svg|js|css|json|txt|xml)$/.test(name)) continue;
+                if (isShowcase(name) || !/\.(html|svg|js|css|json|txt|xml)$/.test(name)) continue;
                 if (sitePath.test(read(name))) offenders.push(name);
             }
             expect(offenders).to.deep.equal([]);
         });
 
-        it('asks search engines not to index the examples and their apps, and only those', function () {
+        it('asks search engines not to index the showcase and the demo apps, and only those', function () {
             const files = htmlFiles();
-            expect(files.filter(isExample)).to.have.lengthOf(5);
+            expect(files.filter(isShowcase)).to.have.lengthOf(5);
             expect(files.filter(isApp)).to.have.lengthOf(4);
             for (const file of files) {
-                expect(read(file).includes(NOINDEX), file).to.equal(isExample(file) || isApp(file));
+                expect(read(file).includes(NOINDEX), file).to.equal(isShowcase(file) || isApp(file));
             }
         });
 
-        it('links to the examples only from the examples, and never names their path in an app', function () {
-            const linking = htmlFiles().filter((file) => read(file).includes(EXAMPLES));
-            expect(linking.filter((file) => !isExample(file))).to.deep.equal([]);
+        it('links to the showcase only from the showcase, and never names its path in an app', function () {
+            const linking = htmlFiles().filter((file) => read(file).includes(SHOWCASE));
+            expect(linking.filter((file) => !isShowcase(file))).to.deep.equal([]);
             for (const file of fs.readdirSync(path.join(config.out, 'apps'), { recursive: true })) {
                 const full = path.join(config.out, 'apps', file);
-                if (fs.statSync(full).isFile()) expect(fs.readFileSync(full, 'utf8').includes(EXAMPLES), file).to.equal(false);
+                if (fs.statSync(full).isFile()) expect(fs.readFileSync(full, 'utf8').includes(SHOWCASE), file).to.equal(false);
             }
         });
 
-        it('names a leaking example page by a path that holds the examples path whole, so CI logs mask it', function () {
-            // A "secret" only the built example pages contain: the examples path itself.
-            expect(() => build(config, { ...env, SOME_API_KEY: EXAMPLES })).to.throw().with.property('message').that.matches(new RegExp(`SOME_API_KEY in ${EXAMPLES}/`));
+        it('names a leaking showcase page by a path that holds the showcase path whole, so CI logs mask it', function () {
+            // A "secret" only the built showcase pages contain: the showcase path itself.
+            expect(() => build(config, { ...env, SOME_API_KEY: SHOWCASE })).to.throw().with.property('message').that.matches(new RegExp(`SOME_API_KEY in ${SHOWCASE}/`));
         });
 
         it('has no contact page of its own: every sales call to action leaves for Form.io\'s', function () {
@@ -325,8 +324,8 @@ describe('Demo site build', function () {
             }
         });
 
-        it('uses light sections only outside the examples, with sales as a green button and the trial as a text link', function () {
-            for (const file of htmlFiles().filter((name) => !isApp(name) && !isExample(name))) {
+        it('uses light sections only outside the showcase, with sales as a green button and the trial as a text link', function () {
+            for (const file of htmlFiles().filter((name) => !isApp(name) && !isShowcase(name))) {
                 expect(read(file), file).to.not.match(/class="[^"]*\b(section-dark|section-ink|section-green|card-dark)\b/);
             }
             for (const file of ['index.html', 'getting-started/index.html']) {
@@ -345,12 +344,12 @@ describe('Demo site build', function () {
             expect(cards).to.deep.equal(['Enterprise, self-hosted', 'Open Source stack', '30-day free trial']);
         });
 
-        it('offers the examples nowhere in the header, the menu or the footer', function () {
+        it('offers the showcase nowhere in the header, the menu or the footer', function () {
             const home = read('index.html');
             const header = home.slice(home.indexOf('<header'), home.indexOf('</header>'));
             const footer = home.slice(home.indexOf('<footer'), home.indexOf('</footer>'));
-            expect(header).to.not.match(/Examples/);
-            expect(footer).to.not.match(/Examples/);
+            expect(header).to.not.match(/Showcase|\/showcase/);
+            expect(footer).to.not.match(/Showcase|\/showcase/);
         });
     });
 

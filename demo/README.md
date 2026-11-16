@@ -5,11 +5,12 @@
 The marketing and demo site for the Form.io Universal Agent Gateway:
 
 - **Product** (`/`) and **Getting Started** (`/getting-started`): what the UAG is, and how to run it yourself.
-- **Examples** (`/examples`): four live demos, each with a flow log beside it showing every call the page makes to the UAG.
-  - **Conversation Forms** (`/examples/conversation`): a chat whose questions come entirely from a form.
-  - **Agentic Workflow** (`/examples/workflow`): a college application reviewed by two chained agents, with no human in the loop.
-  - **Agentic Formflow** (`/examples/formflow`): a claims wizard that chooses its own pages and fills itself in from a description.
-  - **AI Document** (`/examples/documents`): a lease review whose AI Document components copy an uploaded lease's key clauses word for word into a field, check the copy, and summarize the lease. It needs the AI Document module and the document plugins in the UAG's plugins folder: in Docker, the `formio/uag-documents:2` add-on brings them, run beside `formio/uag` with its volume mounted at `/app/plugins/documents`; with `yarn demo:local`, set `UAG_PLUGINS` to a plugins file that lists them. Without them, the demo answers that its process is not installed.
+- **Examples** (`/examples`): one page per UAG feature, each with what the feature does, the form settings that turn it on, a live form, and a log of every call the form makes to the UAG.
+- **Showcase** (`/showcase`, or `DEMO_SHOWCASE_PATH`): four longer demos, unlisted, each with the same log beside it.
+  - **Conversation Forms** (`/showcase/conversation`): a chat whose questions come entirely from a form.
+  - **Agentic Workflow** (`/showcase/workflow`): a college application reviewed by two chained agents, with no human in the loop.
+  - **Agentic Formflow** (`/showcase/formflow`): a claims wizard that chooses its own pages and fills itself in from a description.
+  - **AI Document** (`/showcase/documents`): a lease review whose AI Document components copy an uploaded lease's key clauses word for word into a field, check the copy, and summarize the lease. It needs the AI Document module and the document plugins in the UAG's plugins folder: in Docker, the `formio/uag-documents:2` add-on brings them, run beside `formio/uag` with its volume mounted at `/app/plugins/documents`; with `yarn demo:local`, set `UAG_PLUGINS` to a plugins file that lists them. Without them, the demo answers that its process is not installed.
 - **Developers** (`/developers`): the technical documentation, from how the UAG works to the engine SDK.
 
 ## How it works
@@ -43,7 +44,7 @@ The build reads its settings from the environment ([`lib/config.mjs`](./lib/conf
 | `FORMIO_BASE_URL` | Derived from the project URL | formio.js's base URL. |
 | `DEMO_PUBLIC_URL` | `https://<DEMO_DOMAIN>` when `DEMO_DOMAIN` is set, else `https://formio.github.io/uag` | The site's own address, for canonical links and social cards. |
 | `DEMO_BASE_PATH` | `""` | The path the site is served under, such as `/uag` for a GitHub Pages project site. Every link and source the build writes from the root starts with it, the pages give it to their scripts (`data-base-path`), and `yarn workspace @formio/uag-demo serve` serves the build under it. |
-| `DEMO_EXAMPLES_PATH` | `/examples` | The path the live examples are served under. Only the example pages link to it, and they ask search engines not to index them. It must be a path of its own, not one the site's pages or assets use. |
+| `DEMO_SHOWCASE_PATH` | `/showcase` | The path the showcase is served under. Only the showcase's pages link to it, and they ask search engines not to index them. It must be a path of its own, not one the site's pages or assets use (such as `/examples`). |
 | `DEMO_OUT` | `dist` | Where the build is written. |
 | `DEMO_ASSET_VERSION` | The release's version | Added to the URLs of scripts and styles (`?v=`). |
 | `CONTACT_URL` | `https://form.io/contact-us` | Where "Talk to Sales" and the other sales calls to action go. |

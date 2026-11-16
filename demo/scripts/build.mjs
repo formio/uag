@@ -30,7 +30,7 @@ export function fileOf(route) {
 
 /**
  * The pages and docs of the site, as `{ file, html, unlisted }`: `unlisted` for the
- * examples, which no other page links to. Throws, naming the source, on any render error.
+ * showcase, which no other page links to. Throws, naming the source, on any render error.
  */
 export function renderSite(config) {
     const views = new Views(path.join(config.root, 'views'));
@@ -45,13 +45,13 @@ export function renderSite(config) {
         }
     };
 
-    for (const page of pagesFor(config.examplesPath)) {
+    for (const page of pagesFor(config.showcasePath)) {
         out.push(attempt(`views/pages/${page.view}.html`, () => {
             const values = siteValues(config, page);
             // What a demo frame shows in place of a demo the UAG cannot run (see js/demo.js).
             if (page.app) values.demoUnsupported = render(views.read('partials/demo-unsupported'), values);
             // Shown by js/demo.js when a local UAG cannot run Agentic Formflow.
-            if (page.nav === 'examples') values.licenseNotice = render(views.read('partials/license-notice'), values);
+            if (page.unlisted) values.licenseNotice = render(views.read('partials/license-notice'), values);
             return { file: fileOf(page.route), html: views.page(page.view, values), unlisted: !!page.unlisted };
         }));
     }
@@ -92,7 +92,7 @@ export function metaPolicy(config) {
         .split('; ').filter((directive) => !directive.startsWith('frame-ancestors ')).join('; ');
 }
 
-/** What an unlisted page (the examples and their apps) tells search engines. */
+/** What an unlisted page (the showcase and the demo apps) tells search engines. */
 export const NOINDEX = '<meta name="robots" content="noindex, nofollow, noarchive">';
 
 /**
@@ -100,7 +100,7 @@ export const NOINDEX = '<meta name="robots" content="noindex, nofollow, noarchiv
  * sources from the root (`/developers`, `/js/site.js`) start with the base path,
  * the `<html>` element names it for scripts (`data-base-path`), and the head
  * carries the Content-Security-Policy and referrer policy as `<meta>` tags. An
- * `unlisted` page (an example or a demo app) also asks not to be indexed.
+ * `unlisted` page (a showcase page or a demo app) also asks not to be indexed.
  */
 export function finishHtml(html, config, { unlisted = false } = {}) {
     const base = config.basePath || '';
@@ -160,7 +160,7 @@ export function leakedSecrets(dir, env = process.env, root = null) {
     for (const file of textFiles(dir)) {
         const text = fs.readFileSync(file, 'utf8');
         for (const [name, value] of secrets) {
-            // From the site's root, with its leading slash: under the examples path, the
+            // From the site's root, with its leading slash: under the showcase path, the
             // file then contains that path whole, which CI logs mask as a secret.
             if (text.includes(value)) found.push(`${name} in /${path.relative(dir, file).split(path.sep).join('/')}`);
         }

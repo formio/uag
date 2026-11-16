@@ -47,11 +47,11 @@ describe('Demo site content', function () {
         expect(page.sources).not.to.satisfy((sources) => sources.some((source) => source.startsWith('demo/public/') || source.startsWith('demo/content/')));
     });
 
-    it('links no live example from the developer pages', function () {
+    it('links no showcase demo from the developer pages', function () {
         const offenders = [];
         for (const name of fs.readdirSync(path.join(root, 'content/developers')).filter((file) => file.endsWith('.md'))) {
             const body = fs.readFileSync(path.join(root, 'content/developers', name), 'utf8');
-            for (const match of body.matchAll(/\]\(([^)\s]*public\/apps\/[a-z0-9-]+\/?(?:[#?][^)\s]*)?)\)|\/examples\/(?:conversation|workflow|formflow|documents)\b|[Ss]ee it (?:live|running)/g)) offenders.push(`${name}: ${match[0]}`);
+            for (const match of body.matchAll(/\]\(([^)\s]*public\/apps\/[a-z0-9-]+\/?(?:[#?][^)\s]*)?)\)|\/(?:examples|showcase)\/(?:conversation|workflow|formflow|documents)\b|[Ss]ee it (?:live|running)/g)) offenders.push(`${name}: ${match[0]}`);
         }
         expect(offenders).to.deep.equal([]);
     });
