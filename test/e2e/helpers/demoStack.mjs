@@ -14,7 +14,11 @@ export const ENGINE_SERVER_URL = 'http://127.0.0.1:3311';
 export const ENGINE_CALLS_PORT = 3312;
 export const SITE_URL = 'http://127.0.0.1:3420';
 export const ENGINE_SERVER_KEY = 'uag-e2e-engine-server-key-0123456789abcdef';
-export const DEMO_FORMS = ['serviceRequest', 'application', 'sum', 'claim', 'leaseReview', 'guest', 'guestRegister'];
+export const DEMO_FORMS = [
+    'serviceRequest', 'application', 'sum', 'claim', 'leaseReview', 'guest', 'guestRegister',
+    // The feature examples' forms (demo/content/examples, synced by yarn demo:examples:sync).
+    ...Object.keys(require('../../../demo/module/project.json').forms).filter((key) => /^example[A-Z]/.test(key)),
+];
 
 /** The demo's project template, as the e2e module installs it. */
 export const demoTemplate = () => JSON.parse(JSON.stringify(require('../../../demo/module/project.json')));

@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GROUPS, formHtml, formKeyOf, formPathOf, loadExamples, readExample } from '../lib/examples.mjs';
+import { outOfStep, syncTemplate } from '../scripts/sync-examples.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const EXAMPLES = path.join(root, 'content/examples');
@@ -115,6 +116,26 @@ describe('Feature examples', function () {
                     expect(banned.exec(text)?.[0], `${example.folder}/${file}`).to.equal(undefined);
                 }
             }
+        });
+
+        it('is in the demo project\'s template exactly as its pages show it', function () {
+            const template = JSON.parse(fs.readFileSync(path.join(root, 'module/project.json'), 'utf8'));
+            expect(outOfStep(template, examples), 'run yarn demo:examples:sync').to.deep.equal([]);
+            for (const example of examples) {
+                const form = template.forms[formKeyOf(example.slug)];
+                for (const [key, value] of Object.entries(example.form)) expect(form[key], `${example.folder} ${key}`).to.deep.equal(value);
+                const actions = Object.values(template.actions).filter((action) => action.form === formKeyOf(example.slug));
+                expect(actions.map((action) => action.name).sort(), example.folder).to.deep.equal(example.action ? ['agentRunTask', 'save'] : ['save']);
+                const own = (type) => form.submissionAccess.find((entry) => entry.type === type).roles.includes('guest');
+                expect([own('create_own'), own('read_own'), own('update_own')], example.folder).to.deep.equal(example.mode === 'workflow' ? [true, true, true] : [true, false, false]);
+            }
+        });
+
+        it('names the example whose form the template no longer matches', function () {
+            const template = syncTemplate(JSON.parse(fs.readFileSync(path.join(root, 'module/project.json'), 'utf8')), examples);
+            template.forms[formKeyOf(examples[2].slug)].components[0].label = 'Changed in the template only';
+            template.forms.exampleGone = { title: 'Gone' };
+            expect(outOfStep(template, examples)).to.deep.equal([examples[2].folder, 'exampleGone (no longer an example)']);
         });
 
         it('reads every example as it is checked in', function () {

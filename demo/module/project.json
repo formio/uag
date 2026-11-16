@@ -2614,6 +2614,1530 @@
           "action": "submit"
         }
       ]
+    },
+    "exampleFillFromDescription": {
+      "title": "Example: Fill a form from a description",
+      "name": "exampleFillFromDescription",
+      "path": "example-fill-from-description",
+      "type": "form",
+      "display": "form",
+      "tags": [
+        "uag"
+      ],
+      "properties": {
+        "description": "A general request: who sent it, when, what it is about, and the amount involved, filled in from the sender's own description."
+      },
+      "components": [
+        {
+          "type": "textarea",
+          "key": "description",
+          "label": "Describe your request",
+          "placeholder": "Tell us what you need, in your own words.",
+          "rows": 4,
+          "input": true,
+          "validate": {
+            "required": true
+          },
+          "properties": {
+            "uag": "fill",
+            "uagField": "input"
+          }
+        },
+        {
+          "type": "textfield",
+          "key": "name",
+          "label": "Name",
+          "input": true,
+          "validate": {
+            "required": true
+          },
+          "properties": {
+            "uag": "fill"
+          }
+        },
+        {
+          "type": "email",
+          "key": "email",
+          "label": "Email",
+          "input": true,
+          "validate": {
+            "required": true
+          },
+          "properties": {
+            "uag": "fill"
+          }
+        },
+        {
+          "type": "select",
+          "key": "topic",
+          "label": "Topic",
+          "input": true,
+          "dataSrc": "values",
+          "data": {
+            "values": [
+              {
+                "label": "Question",
+                "value": "question"
+              },
+              {
+                "label": "Problem",
+                "value": "problem"
+              },
+              {
+                "label": "Request",
+                "value": "request"
+              },
+              {
+                "label": "Feedback",
+                "value": "feedback"
+              }
+            ]
+          },
+          "validate": {
+            "required": true
+          },
+          "properties": {
+            "uag": "fill"
+          }
+        },
+        {
+          "type": "day",
+          "key": "date",
+          "label": "Date it happened",
+          "input": true,
+          "properties": {
+            "uag": "fill"
+          }
+        },
+        {
+          "type": "currency",
+          "key": "amount",
+          "label": "Amount involved",
+          "currency": "USD",
+          "input": true,
+          "properties": {
+            "uag": "fill"
+          }
+        },
+        {
+          "type": "button",
+          "key": "submit",
+          "label": "Submit",
+          "action": "submit",
+          "input": true
+        }
+      ],
+      "access": [
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous",
+            "guest"
+          ]
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": [
+            "authenticated",
+            "guest"
+          ]
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "administrator"
+          ]
+        }
+      ]
+    },
+    "exampleStreamedResults": {
+      "title": "Example: Streamed results",
+      "name": "exampleStreamedResults",
+      "path": "example-streamed-results",
+      "type": "form",
+      "display": "form",
+      "tags": [
+        "uag"
+      ],
+      "properties": {
+        "description": "A general request: its topic, urgency and tone, and who sent it."
+      },
+      "components": [
+        {
+          "type": "textarea",
+          "key": "description",
+          "label": "Describe your request",
+          "input": true,
+          "placeholder": "Tell us what you need, in your own words.",
+          "rows": 4,
+          "validate": {
+            "required": true
+          },
+          "properties": {
+            "uag": "triage",
+            "uagField": "input"
+          }
+        },
+        {
+          "type": "select",
+          "key": "topic",
+          "label": "Topic",
+          "input": true,
+          "dataSrc": "values",
+          "data": {
+            "values": [
+              {
+                "label": "Question",
+                "value": "question"
+              },
+              {
+                "label": "Problem",
+                "value": "problem"
+              },
+              {
+                "label": "Request",
+                "value": "request"
+              },
+              {
+                "label": "Feedback",
+                "value": "feedback"
+              }
+            ]
+          },
+          "properties": {
+            "uag": "triage"
+          }
+        },
+        {
+          "type": "radio",
+          "key": "urgency",
+          "label": "Urgency",
+          "input": true,
+          "values": [
+            {
+              "label": "Low",
+              "value": "low"
+            },
+            {
+              "label": "Normal",
+              "value": "normal"
+            },
+            {
+              "label": "Urgent",
+              "value": "urgent"
+            }
+          ],
+          "properties": {
+            "uag": "triage"
+          }
+        },
+        {
+          "type": "radio",
+          "key": "sentiment",
+          "label": "Tone",
+          "input": true,
+          "values": [
+            {
+              "label": "Positive",
+              "value": "positive"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            },
+            {
+              "label": "Negative",
+              "value": "negative"
+            }
+          ],
+          "properties": {
+            "uag": "triage"
+          }
+        },
+        {
+          "type": "textfield",
+          "key": "name",
+          "label": "Name",
+          "input": true,
+          "properties": {
+            "uag": "triage"
+          }
+        },
+        {
+          "type": "email",
+          "key": "email",
+          "label": "Email",
+          "input": true,
+          "properties": {
+            "uag": "triage"
+          }
+        },
+        {
+          "type": "day",
+          "key": "date",
+          "label": "Date it started",
+          "input": true,
+          "properties": {
+            "uag": "triage"
+          }
+        },
+        {
+          "type": "button",
+          "key": "submit",
+          "label": "Submit",
+          "action": "submit",
+          "input": true
+        }
+      ],
+      "access": [
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous",
+            "guest"
+          ]
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": [
+            "authenticated",
+            "guest"
+          ]
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "administrator"
+          ]
+        }
+      ]
+    },
+    "exampleChooseFromOptions": {
+      "title": "Example: Choose from a set of options",
+      "name": "exampleChooseFromOptions",
+      "path": "example-choose-from-options",
+      "type": "form",
+      "display": "form",
+      "tags": [
+        "uag"
+      ],
+      "properties": {
+        "description": "A general request, routed to the team that handles it."
+      },
+      "components": [
+        {
+          "type": "textarea",
+          "key": "description",
+          "label": "Describe your request",
+          "input": true,
+          "placeholder": "Tell us what you need, in your own words.",
+          "rows": 4,
+          "validate": {
+            "required": true
+          },
+          "properties": {
+            "uag": "route",
+            "uagField": "input"
+          }
+        },
+        {
+          "type": "radio",
+          "key": "team",
+          "label": "Which team should handle it?",
+          "input": true,
+          "values": [
+            {
+              "label": "Billing",
+              "value": "billing"
+            },
+            {
+              "label": "Access",
+              "value": "access"
+            },
+            {
+              "label": "Product",
+              "value": "product"
+            },
+            {
+              "label": "General",
+              "value": "general"
+            }
+          ],
+          "properties": {
+            "uag": "route",
+            "uagOptionDescriptions": "{\"billing\": \"Payments, charges, refunds, receipts and prices.\", \"access\": \"Signing in, passwords, locked accounts and permissions.\", \"product\": \"How something works, what it can do, errors in it, and ideas to improve it.\", \"general\": \"Anything else, such as opening hours or how to reach a person.\"}"
+          }
+        },
+        {
+          "type": "radio",
+          "key": "urgency",
+          "label": "Urgency",
+          "input": true,
+          "values": [
+            {
+              "label": "Low",
+              "value": "low"
+            },
+            {
+              "label": "Normal",
+              "value": "normal"
+            },
+            {
+              "label": "Urgent",
+              "value": "urgent"
+            }
+          ],
+          "properties": {
+            "uag": "route",
+            "uagOptionDescriptions": "{\"low\": \"Nothing is blocked; an answer within a week is fine.\", \"normal\": \"Something is harder than it should be; an answer within a day or two.\", \"urgent\": \"Work is stopped, or a deadline is close.\"}"
+          }
+        },
+        {
+          "type": "button",
+          "key": "submit",
+          "label": "Submit",
+          "action": "submit",
+          "input": true
+        }
+      ],
+      "access": [
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous",
+            "guest"
+          ]
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": [
+            "authenticated",
+            "guest"
+          ]
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "administrator"
+          ]
+        }
+      ]
+    },
+    "exampleConfidence": {
+      "title": "Example: Confidence and the unsure band",
+      "name": "exampleConfidence",
+      "path": "example-confidence",
+      "type": "form",
+      "display": "form",
+      "tags": [
+        "uag"
+      ],
+      "properties": {
+        "description": "A general request: its topic, with how sure the decision is, and whether it needs a follow-up."
+      },
+      "components": [
+        {
+          "type": "textarea",
+          "key": "description",
+          "label": "Describe your request",
+          "input": true,
+          "placeholder": "Tell us what you need, in your own words.",
+          "rows": 4,
+          "validate": {
+            "required": true
+          },
+          "properties": {
+            "uag": "triage",
+            "uagField": "input"
+          }
+        },
+        {
+          "type": "radio",
+          "key": "topic",
+          "label": "Topic",
+          "input": true,
+          "values": [
+            {
+              "label": "Question",
+              "value": "question"
+            },
+            {
+              "label": "Problem",
+              "value": "problem"
+            },
+            {
+              "label": "Request",
+              "value": "request"
+            },
+            {
+              "label": "Feedback",
+              "value": "feedback"
+            }
+          ],
+          "properties": {
+            "uag": "triage",
+            "uagThreshold": "0.7",
+            "uagConfidenceField": "topicConfidence"
+          }
+        },
+        {
+          "type": "number",
+          "key": "topicConfidence",
+          "label": "Confidence in the topic",
+          "input": true,
+          "disabled": true,
+          "properties": {
+            "uag": "triage"
+          }
+        },
+        {
+          "type": "htmlelement",
+          "key": "unsureNote",
+          "tag": "p",
+          "input": false,
+          "className": "alert alert-warning",
+          "content": "We are not sure about the topic. Please check it, and choose another if it is wrong.",
+          "conditional": {
+            "show": true,
+            "conjunction": "all",
+            "conditions": [
+              {
+                "component": "topicConfidence",
+                "operator": "isNotEmpty"
+              },
+              {
+                "component": "topicConfidence",
+                "operator": "lessThan",
+                "value": 0.7
+              }
+            ]
+          }
+        },
+        {
+          "type": "checkbox",
+          "key": "followUp",
+          "label": "Asks for a follow-up",
+          "input": true,
+          "properties": {
+            "uag": "triage",
+            "uagUncertainBand": "0.3-0.7"
+          }
+        },
+        {
+          "type": "button",
+          "key": "submit",
+          "label": "Submit",
+          "action": "submit",
+          "input": true
+        }
+      ],
+      "access": [
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous",
+            "guest"
+          ]
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": [
+            "authenticated",
+            "guest"
+          ]
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "administrator"
+          ]
+        }
+      ]
+    },
+    "exampleGenerateText": {
+      "title": "Example: Generate written text",
+      "name": "exampleGenerateText",
+      "path": "example-generate-text",
+      "type": "form",
+      "display": "form",
+      "tags": [
+        "uag"
+      ],
+      "properties": {
+        "description": "A message received, and a reply to send back."
+      },
+      "components": [
+        {
+          "type": "select",
+          "key": "topic",
+          "label": "Topic",
+          "input": true,
+          "dataSrc": "values",
+          "data": {
+            "values": [
+              {
+                "label": "Question",
+                "value": "question"
+              },
+              {
+                "label": "Problem",
+                "value": "problem"
+              },
+              {
+                "label": "Request",
+                "value": "request"
+              },
+              {
+                "label": "Feedback",
+                "value": "feedback"
+              }
+            ]
+          }
+        },
+        {
+          "type": "textarea",
+          "key": "message",
+          "label": "Message received",
+          "input": true,
+          "rows": 4,
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "content",
+          "key": "replyCriteria",
+          "label": "Criteria",
+          "input": false,
+          "html": "<p>Write a reply to the message in <code>message</code>, about its <code>topic</code>. Be warm and brief: two to four sentences, under 80 words. Answer what was asked if you can; otherwise say what happens next. Do not promise anything specific, such as a refund or a date. Sign it \"The team\".</p>",
+          "properties": {
+            "uag": "reply",
+            "uagField": "criteria"
+          }
+        },
+        {
+          "type": "button",
+          "key": "draft",
+          "label": "Draft a reply",
+          "action": "event",
+          "event": "draftReply",
+          "input": true,
+          "theme": "secondary"
+        },
+        {
+          "type": "textarea",
+          "key": "reply",
+          "label": "Reply",
+          "input": true,
+          "rows": 5,
+          "properties": {
+            "uag": "reply"
+          }
+        },
+        {
+          "type": "button",
+          "key": "submit",
+          "label": "Submit",
+          "action": "submit",
+          "input": true
+        }
+      ],
+      "access": [
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous",
+            "guest"
+          ]
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": [
+            "authenticated",
+            "guest"
+          ]
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "administrator"
+          ]
+        }
+      ]
+    },
+    "exampleYourInputWins": {
+      "title": "Example: The person's own input wins",
+      "name": "exampleYourInputWins",
+      "path": "example-your-input-wins",
+      "type": "form",
+      "display": "form",
+      "tags": [
+        "uag"
+      ],
+      "properties": {
+        "description": "A general request: who sent it, how to reach them, and what it is about."
+      },
+      "components": [
+        {
+          "type": "textarea",
+          "key": "description",
+          "label": "Describe your request",
+          "input": true,
+          "placeholder": "Tell us what you need, in your own words.",
+          "rows": 4,
+          "validate": {
+            "required": true
+          },
+          "properties": {
+            "uag": "fill",
+            "uagField": "input"
+          }
+        },
+        {
+          "type": "textfield",
+          "key": "name",
+          "label": "Name",
+          "input": true,
+          "properties": {
+            "uag": "fill"
+          }
+        },
+        {
+          "type": "email",
+          "key": "email",
+          "label": "Email",
+          "input": true,
+          "properties": {
+            "uag": "fill"
+          }
+        },
+        {
+          "type": "select",
+          "key": "topic",
+          "label": "Topic",
+          "input": true,
+          "dataSrc": "values",
+          "data": {
+            "values": [
+              {
+                "label": "Question",
+                "value": "question"
+              },
+              {
+                "label": "Problem",
+                "value": "problem"
+              },
+              {
+                "label": "Request",
+                "value": "request"
+              },
+              {
+                "label": "Feedback",
+                "value": "feedback"
+              }
+            ]
+          },
+          "properties": {
+            "uag": "fill"
+          }
+        },
+        {
+          "type": "textfield",
+          "key": "subject",
+          "label": "Subject",
+          "input": true,
+          "properties": {
+            "uag": "fill"
+          }
+        },
+        {
+          "type": "button",
+          "key": "submit",
+          "label": "Submit",
+          "action": "submit",
+          "input": true
+        }
+      ],
+      "access": [
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous",
+            "guest"
+          ]
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": [
+            "authenticated",
+            "guest"
+          ]
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "administrator"
+          ]
+        }
+      ]
+    },
+    "exampleRunTask": {
+      "title": "Example: Run an agent task after a submission",
+      "name": "exampleRunTask",
+      "path": "example-run-task",
+      "type": "form",
+      "display": "form",
+      "tags": [
+        "uag"
+      ],
+      "properties": {
+        "description": "A message, reviewed by an agent after it is saved."
+      },
+      "components": [
+        {
+          "type": "textfield",
+          "key": "name",
+          "label": "Name",
+          "input": true,
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textarea",
+          "key": "message",
+          "label": "Message",
+          "input": true,
+          "rows": 4,
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "content",
+          "key": "reviewCriteria",
+          "label": "Criteria",
+          "input": false,
+          "html": "<p>You review messages sent to a team. Read <code>message</code>. Write <code>summary</code>: one sentence, under 20 words, saying what the sender wants. Set <code>urgency</code> to <code>urgent</code> if work is stopped or a deadline is within two days, <code>low</code> if nothing is blocked, and <code>normal</code> otherwise.</p>",
+          "properties": {
+            "uag": "review",
+            "uagField": "criteria",
+            "uagEngine": "agent"
+          }
+        },
+        {
+          "type": "panel",
+          "key": "review",
+          "title": "Filled in by the agent after you submit",
+          "input": false,
+          "components": [
+            {
+              "type": "textfield",
+              "key": "summary",
+              "label": "Summary",
+              "input": true,
+              "disabled": true,
+              "properties": {
+                "uag": "review"
+              }
+            },
+            {
+              "type": "radio",
+              "key": "urgency",
+              "label": "Urgency",
+              "input": true,
+              "values": [
+                {
+                  "label": "Low",
+                  "value": "low"
+                },
+                {
+                  "label": "Normal",
+                  "value": "normal"
+                },
+                {
+                  "label": "Urgent",
+                  "value": "urgent"
+                }
+              ],
+              "disabled": true,
+              "properties": {
+                "uag": "review",
+                "uagAgentDecides": "true"
+              }
+            }
+          ]
+        },
+        {
+          "type": "button",
+          "key": "submit",
+          "label": "Submit",
+          "action": "submit",
+          "input": true
+        }
+      ],
+      "access": [
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous",
+            "guest"
+          ]
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": [
+            "authenticated",
+            "guest"
+          ]
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": [
+            "authenticated",
+            "guest"
+          ]
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": [
+            "authenticated",
+            "guest"
+          ]
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "administrator"
+          ]
+        }
+      ]
+    },
+    "exampleAgentOnlyFields": {
+      "title": "Example: Fields only the agent may set",
+      "name": "exampleAgentOnlyFields",
+      "path": "example-agent-only-fields",
+      "type": "form",
+      "display": "form",
+      "tags": [
+        "uag"
+      ],
+      "properties": {
+        "description": "A message whose priority and summary only the reviewing agent may set."
+      },
+      "components": [
+        {
+          "type": "textarea",
+          "key": "message",
+          "label": "Message",
+          "input": true,
+          "rows": 4,
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "content",
+          "key": "reviewCriteria",
+          "label": "Criteria",
+          "input": false,
+          "html": "<p>You review messages sent to a team. Read <code>message</code>. Write <code>summary</code>: one sentence, under 20 words, saying what the sender wants. Set <code>priority</code> to <code>urgent</code> if work is stopped or a deadline is within two days, <code>low</code> if nothing is blocked, and <code>normal</code> otherwise.</p>",
+          "properties": {
+            "uag": "review",
+            "uagField": "criteria",
+            "uagEngine": "agent"
+          }
+        },
+        {
+          "type": "panel",
+          "key": "review",
+          "title": "Only the agent's values are kept",
+          "input": false,
+          "components": [
+            {
+              "type": "radio",
+              "key": "priority",
+              "label": "Priority",
+              "input": true,
+              "values": [
+                {
+                  "label": "Low",
+                  "value": "low"
+                },
+                {
+                  "label": "Normal",
+                  "value": "normal"
+                },
+                {
+                  "label": "Urgent",
+                  "value": "urgent"
+                }
+              ],
+              "properties": {
+                "uag": "review",
+                "uagAuthoritative": "true",
+                "uagAgentDecides": "true"
+              }
+            },
+            {
+              "type": "textfield",
+              "key": "summary",
+              "label": "Summary",
+              "input": true,
+              "properties": {
+                "uag": "review",
+                "uagAuthoritative": "true"
+              }
+            }
+          ]
+        },
+        {
+          "type": "button",
+          "key": "submit",
+          "label": "Submit",
+          "action": "submit",
+          "input": true
+        }
+      ],
+      "access": [
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous",
+            "guest"
+          ]
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": [
+            "authenticated",
+            "guest"
+          ]
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": [
+            "authenticated",
+            "guest"
+          ]
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": [
+            "authenticated",
+            "guest"
+          ]
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "administrator"
+          ]
+        }
+      ]
+    },
+    "exampleChatWidget": {
+      "title": "Example: Chat widget",
+      "name": "exampleChatWidget",
+      "path": "example-chat-widget",
+      "type": "form",
+      "display": "form",
+      "tags": [
+        "uag"
+      ],
+      "properties": {
+        "description": "A general request: who sent it, how to reach them, what it is about, and the details.",
+        "uagChatInstructions": "Be brief and friendly. Ask for one thing at a time, and use the person's name once you know it."
+      },
+      "components": [
+        {
+          "type": "textfield",
+          "key": "name",
+          "label": "Name",
+          "input": true,
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "email",
+          "key": "email",
+          "label": "Email",
+          "input": true,
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "select",
+          "key": "topic",
+          "label": "Topic",
+          "input": true,
+          "dataSrc": "values",
+          "data": {
+            "values": [
+              {
+                "label": "Question",
+                "value": "question"
+              },
+              {
+                "label": "Problem",
+                "value": "problem"
+              },
+              {
+                "label": "Request",
+                "value": "request"
+              },
+              {
+                "label": "Feedback",
+                "value": "feedback"
+              }
+            ]
+          },
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "textarea",
+          "key": "details",
+          "label": "Details",
+          "input": true,
+          "rows": 3,
+          "validate": {
+            "required": true
+          },
+          "description": "What you need, in a sentence or two."
+        },
+        {
+          "type": "button",
+          "key": "submit",
+          "label": "Submit",
+          "action": "submit",
+          "input": true
+        }
+      ],
+      "access": [
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous",
+            "guest"
+          ]
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": [
+            "authenticated",
+            "guest"
+          ]
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "administrator"
+          ]
+        }
+      ]
+    },
+    "exampleChatValidation": {
+      "title": "Example: Validation in the chat widget",
+      "name": "exampleChatValidation",
+      "path": "example-chat-validation",
+      "type": "form",
+      "display": "form",
+      "tags": [
+        "uag"
+      ],
+      "properties": {
+        "description": "An order change: the order code, a new quantity, and an email for the confirmation."
+      },
+      "components": [
+        {
+          "type": "textfield",
+          "key": "orderCode",
+          "label": "Order code",
+          "input": true,
+          "validate": {
+            "required": true,
+            "pattern": "^[A-Z]{3}-\\d{4}$",
+            "customMessage": "An order code is three capital letters, a dash and four digits, such as ABC-1234."
+          }
+        },
+        {
+          "type": "number",
+          "key": "quantity",
+          "label": "New quantity",
+          "input": true,
+          "validate": {
+            "required": true,
+            "min": 1,
+            "max": 10
+          }
+        },
+        {
+          "type": "email",
+          "key": "email",
+          "label": "Email for the confirmation",
+          "input": true,
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "type": "button",
+          "key": "submit",
+          "label": "Submit",
+          "action": "submit",
+          "input": true
+        }
+      ],
+      "access": [
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous",
+            "guest"
+          ]
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": [
+            "authenticated",
+            "guest"
+          ]
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "administrator"
+          ]
+        }
+      ]
     }
   },
   "actions": {
@@ -2837,6 +4361,172 @@
         "username": "email",
         "password": "password"
       }
+    },
+    "exampleFillFromDescription:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "exampleFillFromDescription",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    },
+    "exampleStreamedResults:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "exampleStreamedResults",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    },
+    "exampleChooseFromOptions:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "exampleChooseFromOptions",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    },
+    "exampleConfidence:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "exampleConfidence",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    },
+    "exampleGenerateText:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "exampleGenerateText",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    },
+    "exampleYourInputWins:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "exampleYourInputWins",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    },
+    "exampleRunTask:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "exampleRunTask",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    },
+    "exampleRunTask:review": {
+      "title": "Agent: Run task (review)",
+      "name": "agentRunTask",
+      "priority": 20,
+      "handler": [
+        "before",
+        "after"
+      ],
+      "method": [
+        "create"
+      ],
+      "settings": {
+        "task": "review",
+        "answer": "task",
+        "when": "after"
+      },
+      "form": "exampleRunTask"
+    },
+    "exampleAgentOnlyFields:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "exampleAgentOnlyFields",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    },
+    "exampleAgentOnlyFields:review": {
+      "title": "Agent: Run task (review)",
+      "name": "agentRunTask",
+      "priority": 20,
+      "handler": [
+        "before",
+        "after"
+      ],
+      "method": [
+        "create"
+      ],
+      "settings": {
+        "task": "review",
+        "answer": "task",
+        "when": "after"
+      },
+      "form": "exampleAgentOnlyFields"
+    },
+    "exampleChatWidget:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "exampleChatWidget",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
+    },
+    "exampleChatValidation:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "exampleChatValidation",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
     }
   },
   "access": [
