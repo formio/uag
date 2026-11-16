@@ -138,7 +138,9 @@ export function renderExamples(config, views, attempt = (source, fn) => fn()) {
                 codeTabs: tabs.map((tab, i) => `<button role="tab" id="tab-${tab.id}" aria-controls="panel-${tab.id}" aria-selected="${i === 0}"${i ? ' tabindex="-1"' : ''}>${tab.label}</button>`).join(''),
                 codePanels: tabs.map((tab, i) => `<div class="tab-panel" role="tabpanel" id="panel-${tab.id}" aria-labelledby="tab-${tab.id}"${i ? ' hidden' : ''}>${tab.html}</div>`).join(''),
                 samplesHidden: example.samples.length ? '' : ' hidden',
-                sampleButtons: example.samples.map((sample) => `<button type="button" class="chip" data-sample="${escapeHtml(sample)}" title="${escapeHtml(sample)}">${escapeHtml(sampleLabel(sample))}</button>`).join(''),
+                sampleButtons: example.samples.map((sample) => (sample.file
+                    ? `<a class="chip" href="${example.href}/${escapeHtml(sample.file)}" data-sample-file>${escapeHtml(sample.label)}</a>`
+                    : `<button type="button" class="chip" data-sample="${escapeHtml(sample.text)}" title="${escapeHtml(sample.text)}">${escapeHtml(sampleLabel(sample.text))}</button>`)).join(''),
                 frameSrc: `/apps/example/?form=${encodeURIComponent(example.form.path)}&mode=${example.mode}${example.page ? '&page=1' : ''}`,
                 unsupported,
                 pager: [
@@ -149,6 +151,10 @@ export function renderExamples(config, views, attempt = (source, fn) => fn()) {
             values.demoUnsupported = render(views.read('partials/demo-unsupported'), values);
             return { file: fileOf(page.route), html: views.page('example', values) };
         }));
+        // The example's PDFs and images, beside its page.
+        for (const asset of example.assets) {
+            out.push({ file: `examples/${example.slug}/${asset}`, copy: path.join(config.root, 'content/examples', example.folder, asset) });
+        }
         // The example's page code, as the live example runs it.
         if (example.page) {
             out.push({ file: `apps/example/pages/${example.slug}.js`, text: `// ${example.title}: the page code shown on its example page.\nwindow.UAGExamplePage = function (form) {\n${pageCodeOf(example, config.uag.projectUrl).split('\n').map((line) => (line ? `  ${line}` : '')).join('\n')}\n};\n` });
@@ -255,9 +261,10 @@ export function build(config = readConfig(), env = process.env) {
             const app = source.includes(`${path.sep}apps${path.sep}`);
             return finishHtml(app ? render(html, values) : html, config, { unlisted: app });
         });
-        for (const { file, html, text, unlisted } of pages) {
+        for (const { file, html, text, copy, unlisted } of pages) {
             fs.mkdirSync(path.join(temp, path.dirname(file)), { recursive: true });
-            fs.writeFileSync(path.join(temp, file), text !== undefined ? text : finishHtml(html, config, { unlisted }));
+            if (copy) fs.copyFileSync(copy, path.join(temp, file));
+            else fs.writeFileSync(path.join(temp, file), text !== undefined ? text : finishHtml(html, config, { unlisted }));
         }
         // The workflow demo's sample applicants.
         fs.writeFileSync(path.join(temp, 'apps/workflow/applicants.json'), JSON.stringify(PROFILES, null, 2));

@@ -94,7 +94,7 @@ Each turn goes to the form's chat on the UAG, addressed by id like its submissio
 
 Render from the form's URL when the chat should save: a form rendered from a definition has no URL to submit to, as with `Formio.createForm`.
 
-Try it live: [Chat widget](../examples/09-chat-widget/example.md).
+Try it live: [Chat widget](../examples/10-chat-widget/example.md).
 
 ## How a conversation goes
 
@@ -108,7 +108,7 @@ At any time, **Review form** shows the formio.js form behind the chat, filled in
 
 Nothing is submitted without the person's confirmation. The UAG never submits: it only answers turns.
 
-Try it live: [Validation in the chat widget](../examples/10-chat-validation/example.md).
+Try it live: [Validation in the chat widget](../examples/11-chat-validation/example.md).
 
 ## Set up the form
 

@@ -343,6 +343,21 @@ describe('Demo site build', function () {
                 }
             });
 
+            it('publishes each example\'s PDFs and images beside its page, and links its sample files there', function () {
+                const withAssets = examples.filter((example) => example.assets.length);
+                expect(withAssets).to.not.have.lengthOf(0);
+                for (const example of withAssets) {
+                    const html = read(fileOf(example.href));
+                    for (const asset of example.assets) {
+                        const source = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'content/examples', example.folder, asset));
+                        expect(fs.readFileSync(path.join(config.out, 'examples', example.slug, asset)).equals(source), asset).to.equal(true);
+                    }
+                    for (const sample of example.samples.filter((item) => item.file)) {
+                        expect(html, sample.file).to.include(`href="/uag${example.href}/${sample.file}" data-sample-file>${sample.label}</a>`);
+                    }
+                }
+            });
+
             it('runs the same page code it shows, for an example that has some', function () {
                 const withPage = examples.filter((example) => example.page);
                 expect(withPage).to.not.have.lengthOf(0);

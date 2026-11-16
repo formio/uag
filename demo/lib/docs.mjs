@@ -72,7 +72,7 @@ export const DEFAULT_SOURCE = {
 
 /**
  * The site path of a page's relative link to a developer page, a feature
- * example (its folder or its `example.md`), or a file under `demo/public`
+ * example (its folder, its `example.md`, or one of its PDFs or images), or a file under `demo/public`
  * (`null` for any other link). `contentRoot` is `demo/content`; it defaults to
  * the folder above `dir`, as for the developer pages.
  */
@@ -83,8 +83,8 @@ export function siteLink(href, { dir, contentRoot = path.resolve(dir, '..') }) {
     const inContent = path.relative(contentRoot, target).split(path.sep).join('/');
     const doc = /^developers\/([a-z0-9-]+)\.md$/.exec(inContent);
     if (doc) return `${doc[1] === 'index' ? '/developers' : `/developers/${doc[1]}`}${rest}`;
-    const example = /^examples\/\d+-([a-z0-9-]+)(?:\/example\.md)?$/.exec(inContent);
-    if (example) return `/examples/${example[1]}${rest}`;
+    const example = /^examples\/\d+-([a-z0-9-]+)(?:\/(example\.md|[\w.-]+\.(?:pdf|png|jpe?g)))?$/i.exec(inContent);
+    if (example) return `/examples/${example[1]}${example[2] && example[2] !== 'example.md' ? `/${example[2]}` : ''}${rest}`;
     const pub = path.relative(path.resolve(contentRoot, '..', 'public'), target).split(path.sep).join('/');
     if (!pub || pub.startsWith('..') || path.isAbsolute(pub)) return null;
     return `/${pub}${rest}`;

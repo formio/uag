@@ -1,0 +1,120 @@
+<!doctype html>
+<!--
+  The paper form of the "Fill an online form from a scanned paper form" example.
+  demo/scripts/paper-form.mjs renders it twice: blank, as paper-form.pdf, and
+  filled in by hand and scanned (#filled), as sample-scan.jpg. Every value in
+  it is made up.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Change of Address</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&display=block">
+<style>
+  @page { size: Letter; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #fff; }
+  body { font: 13px/1.35 Helvetica, Arial, sans-serif; color: #1d1d1f; }
+  .sheet { position: relative; width: 816px; height: 1056px; padding: 56px 64px; background: #fff; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #1d1d1f; padding-bottom: 10px; }
+  h1 { margin: 0; font-size: 30px; letter-spacing: -.01em; }
+  header p { margin: 0; font-size: 11px; color: #555; text-align: right; }
+  .intro { margin: 14px 0 6px; font-size: 12px; color: #333; }
+  section { margin-top: 18px; }
+  h2 { margin: 0 0 6px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; background: #1d1d1f; color: #fff; padding: 4px 8px; }
+  .row { display: flex; gap: 14px; margin-top: 8px; }
+  .field { flex: 1; position: relative; }
+  .field label { display: block; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; color: #444; }
+  .line { position: relative; height: 34px; border-bottom: 1px solid #1d1d1f; }
+  .narrow { flex: 0 0 90px; }
+  .medium { flex: 0 0 160px; }
+  .boxes { display: flex; gap: 34px; margin-top: 10px; font-size: 13px; }
+  .box { display: inline-block; position: relative; width: 16px; height: 16px; border: 1.5px solid #1d1d1f; vertical-align: -3px; margin-right: 8px; }
+  .note { margin-top: 26px; font-size: 10.5px; color: #555; }
+  footer { position: absolute; left: 64px; right: 64px; bottom: 40px; display: flex; justify-content: space-between; font-size: 10px; color: #777; border-top: 1px solid #bbb; padding-top: 6px; }
+  /* The handwriting: hidden on the blank form. */
+  .hw { display: none; position: absolute; left: 6px; bottom: 2px; font-family: 'Caveat', cursive; font-size: 25px; font-weight: 500; color: #22305e; white-space: nowrap; transform-origin: left bottom; }
+  .tick { display: none; position: absolute; left: 1px; top: -9px; font-family: 'Caveat', cursive; font-size: 28px; font-weight: 600; color: #22305e; }
+  .filled .hw, .filled .tick { display: block; }
+  /* What a flatbed scan does to a page: off-white, a little crooked, a little noisy. */
+  .scan body { background: #d9d6cf; }
+  .scan .sheet { background: #fbfaf6; transform: rotate(-0.6deg) translate(4px, 6px); box-shadow: 0 0 0 1px #e8e4da, 6px 8px 18px rgba(0,0,0,.18); filter: contrast(1.08) grayscale(.15) blur(.25px); }
+  .scan .grain { display: block; }
+  .grain { display: none; position: absolute; inset: 0; pointer-events: none; opacity: .22; mix-blend-mode: multiply; }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <svg class="grain" width="816" height="1056" aria-hidden="true"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="7"/><feColorMatrix values="0 0 0 0 .4  0 0 0 0 .4  0 0 0 0 .4  0 0 0 .55 0"/></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>
+  <header>
+    <h1>Change of Address</h1>
+    <p>Please print clearly in ink.<br>Return by mail, or scan and upload it.</p>
+  </header>
+  <p class="intro">Use this form to tell us your new address. Fill in every section, then sign and date it.</p>
+
+  <section>
+    <h2>1. Your details</h2>
+    <div class="row">
+      <div class="field"><label>Full name</label><div class="line"><span class="hw" style="transform:rotate(-.6deg)">Jordan T. Ellis</span></div></div>
+      <div class="field medium"><label>Reference number (if any)</label><div class="line"><span class="hw" style="transform:rotate(.4deg)">R-40217</span></div></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Email</label><div class="line"><span class="hw" style="transform:rotate(-.3deg)">jordan.ellis@example.com</span></div></div>
+      <div class="field medium"><label>Phone</label><div class="line"><span class="hw" style="transform:rotate(.5deg)">(555) 014-2276</span></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. Current address</h2>
+    <div class="row">
+      <div class="field"><label>Street address</label><div class="line"><span class="hw" style="transform:rotate(-.4deg)">14 Willow Lane, Apt 3B</span></div></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>City</label><div class="line"><span class="hw" style="transform:rotate(.3deg)">Springfield</span></div></div>
+      <div class="field narrow"><label>State</label><div class="line"><span class="hw">IL</span></div></div>
+      <div class="field medium"><label>ZIP code</label><div class="line"><span class="hw" style="transform:rotate(-.5deg)">62704</span></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. New address</h2>
+    <div class="row">
+      <div class="field"><label>Street address</label><div class="line"><span class="hw" style="transform:rotate(.5deg)">2208 Harbor View Drive</span></div></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>City</label><div class="line"><span class="hw" style="transform:rotate(-.3deg)">Portland</span></div></div>
+      <div class="field narrow"><label>State</label><div class="line"><span class="hw" style="transform:rotate(.6deg)">OR</span></div></div>
+      <div class="field medium"><label>ZIP code</label><div class="line"><span class="hw">97209</span></div></div>
+    </div>
+    <div class="row">
+      <div class="field medium"><label>Date you move</label><div class="line"><span class="hw" style="transform:rotate(-.4deg)">3/15/2027</span></div></div>
+      <div class="field"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. How should we contact you?</h2>
+    <p style="margin:8px 0 0;font-size:12px">Tick one.</p>
+    <div class="boxes">
+      <span><span class="box"><span class="tick">&#10003;</span></span>Email</span>
+      <span><span class="box"></span>Phone</span>
+      <span><span class="box"></span>Mail</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>5. Signature</h2>
+    <div class="row">
+      <div class="field"><label>Signature</label><div class="line"><span class="hw" style="font-size:30px;transform:rotate(-2deg)">Jordan Ellis</span></div></div>
+      <div class="field medium"><label>Date</label><div class="line"><span class="hw" style="transform:rotate(.4deg)">11/12/2026</span></div></div>
+    </div>
+  </section>
+
+  <p class="note">We will update our records within five working days and confirm by the contact method you ticked.</p>
+  <footer><span>Form CA-1 &middot; Change of Address</span><span>Page 1 of 1</span></footer>
+</div>
+<script>
+  if (location.hash === '#filled') document.documentElement.classList.add('filled', 'scan');
+</script>
+</body>
+</html>

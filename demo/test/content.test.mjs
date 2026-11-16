@@ -12,7 +12,7 @@ const views = fs.readdirSync(path.join(root, 'views/pages')).map((file) => [file
 
 /** Every route the site serves a page at. */
 const examples = loadExamples(path.join(root, 'content/examples'));
-const routes = new Set([...PAGES.map((page) => page.route), ...docs.ordered.map((page) => page.href), '/examples', ...examples.map((example) => example.href)]);
+const routes = new Set([...PAGES.map((page) => page.route), ...docs.ordered.map((page) => page.href), '/examples', ...examples.flatMap((example) => [example.href, ...example.assets.map((asset) => `${example.href}/${asset}`)])]);
 
 function links(html) {
     return [...html.matchAll(/(?:href|src)="(\/[^"#?]*)(#[^"]*)?"/g)].map((match) => ({ path: match[1], hash: match[2] || '' }));
@@ -41,12 +41,13 @@ describe('Demo site content', function () {
         expect(siteLink('../../public/apps/workflow/workflow.js', context)).to.equal('/apps/workflow/workflow.js');
         expect(siteLink('../../public/images/login.png', context)).to.equal('/images/login.png');
         // A feature example, by its example.md or its folder, from a developer page and from another example.
-        expect(siteLink('../examples/01-fill-from-description/example.md#x', context)).to.equal('/examples/fill-from-description#x');
-        expect(siteLink('../examples/09-chat-widget/', context)).to.equal('/examples/chat-widget');
-        const example = { dir: path.join(root, 'content/examples/02-streamed-results'), contentRoot: path.join(root, 'content') };
-        expect(siteLink('../01-fill-from-description/example.md', example)).to.equal('/examples/fill-from-description');
+        expect(siteLink('../examples/02-fill-from-description/example.md#x', context)).to.equal('/examples/fill-from-description#x');
+        expect(siteLink('../examples/10-chat-widget/', context)).to.equal('/examples/chat-widget');
+        expect(siteLink('../examples/01-fill-from-scanned-form/sample-scan.jpg', context)).to.equal('/examples/fill-from-scanned-form/sample-scan.jpg');
+        const example = { dir: path.join(root, 'content/examples/03-streamed-results'), contentRoot: path.join(root, 'content') };
+        expect(siteLink('../02-fill-from-description/example.md', example)).to.equal('/examples/fill-from-description');
         expect(siteLink('../../developers/renderer.md#triggers', example)).to.equal('/developers/renderer#triggers');
-        expect(siteLink('../01-fill-from-description/form.json', example)).to.equal(null);
+        expect(siteLink('../02-fill-from-description/form.json', example)).to.equal(null);
         for (const href of ['./README.md', '../../samples/custom-module', '../../../MIGRATING-2.0.md', '/developers/chat', '#anchor', 'https://form.io']) {
             expect(siteLink(href, context), href).to.equal(null);
         }

@@ -108,7 +108,7 @@ describe('Layer 1: the demo site\'s Examples catalog', function () {
     it('copies the form JSON as its form.json, and the page code', async function () {
         const { context } = await visitor();
         const page = await context.newPage();
-        const example = examples.find((item) => item.page);
+        const example = examples.find((item) => item.slug === 'generate-text');
         await page.goto(`${base}${example.href}`);
         await page.locator('#panel-form [data-copy]').click();
         expect(JSON.parse(await page.evaluate(() => navigator.clipboard.readText()))).to.deep.equal(example.form);

@@ -9,6 +9,9 @@
  * - `form.json`: the form, as the demo project's template holds it (see
  *   scripts/sync-examples.mjs), and as the live example loads it.
  * - `action.json` (optional): an action the form needs, such as Agent: Run task.
+ * - PDFs and images (`.pdf`, `.png`, `.jpg`, `.jpeg`): published beside the
+ *   example's page, at /examples/<slug>/<file>, for its text to link and its
+ *   samples to use.
  * - `page.js` (optional): page code the example needs beyond rendering the form,
  *   run with the rendered form as `form`. `UAG_PROJECT_URL` in it stands for the
  *   project's URL on the UAG. It is shown in the example's page code, and the
@@ -37,11 +40,21 @@ export function formKeyOf(slug) {
     return `example${slug.replace(/(^|-)([a-z0-9])/g, (match, dash, char) => char.toUpperCase())}`;
 }
 
-/** Lines of `## Try these` (a list), taken out of the body. */
+/** Files an example publishes beside its page. */
+export const ASSET = /^[\w.-]+\.(?:pdf|png|jpe?g)$/i;
+
+/**
+ * Lines of `## Try these` (a list), taken out of the body: text to put in the
+ * form (`{ text }`), or a link to one of the example's files to upload into it
+ * (`[Use the sample scan](sample-scan.jpg)`: `{ label, file }`).
+ */
 function takeSamples(body) {
     const match = /^## Try these\s*\n((?:[ \t]*[-*] .*(?:\n|$))+)/m.exec(body);
     if (!match) return { body, samples: [] };
-    const samples = match[1].split('\n').map((line) => line.replace(/^[ \t]*[-*] /, '').trim()).filter(Boolean);
+    const samples = match[1].split('\n').map((line) => line.replace(/^[ \t]*[-*] /, '').trim()).filter(Boolean).map((line) => {
+        const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(line);
+        return link ? { label: link[1], file: link[2] } : { text: line };
+    });
     return { body: body.slice(0, match.index) + body.slice(match.index + match[0].length), samples };
 }
 
@@ -90,6 +103,10 @@ export function readExample(folder, { contentRoot, links } = {}) {
     if (meta.mode === 'workflow' && !action) fail('a workflow example needs action.json');
 
     const { body, samples } = takeSamples(raw);
+    const assets = fs.readdirSync(folder).filter((file) => ASSET.test(file)).sort();
+    for (const sample of samples) {
+        if (sample.file && !assets.includes(sample.file)) fail(`the sample ${sample.file} is not a PDF or image in the folder`);
+    }
     const highlight = String(meta.highlight || '').split(',').map((item) => item.trim()).filter(Boolean);
     const json = JSON.stringify(form, null, 2);
     for (const property of highlight) if (!json.includes(`"${property}"`)) fail(`highlight names ${property}, which form.json does not use`);
@@ -105,6 +122,7 @@ export function readExample(folder, { contentRoot, links } = {}) {
         docs,
         highlight,
         samples,
+        assets,
         html: renderMarkdown(body, context).html,
         form,
         action,

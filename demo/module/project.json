@@ -2615,6 +2615,384 @@
         }
       ]
     },
+    "exampleFillFromScannedForm": {
+      "title": "Example: Fill an online form from a scanned paper form",
+      "name": "exampleFillFromScannedForm",
+      "path": "example-fill-from-scanned-form",
+      "type": "form",
+      "display": "form",
+      "tags": [
+        "uag"
+      ],
+      "properties": {
+        "description": "A change of address: the person's details, their current and new address, and how to contact them, filled in from a scan of the paper form."
+      },
+      "components": [
+        {
+          "type": "uagdocument",
+          "key": "scan",
+          "label": "Upload the scanned paper form",
+          "input": true,
+          "tree": true,
+          "tableView": false,
+          "description": "A scan or photo of the filled-in paper form: PDF, PNG or JPEG, up to 3 MB.",
+          "uag": {
+            "plugin": "analyze",
+            "settings": {},
+            "instructions": "This is a scan of a Change of Address form, filled in by hand. Transcribe what the person wrote in every field, one line per field, as \"Section, Label: value\" with the form's own printed section names and labels (for example \"New address, City: Portland\"). Copy the handwriting exactly as written; do not correct, complete or reformat it. Write (blank) for an empty field and (unclear) for writing you cannot read. For the contact section, name the box that is ticked. Write nothing else: no heading, no summary.",
+            "instructionsComponent": "",
+            "accept": [],
+            "converters": {},
+            "engine": "",
+            "auto": true,
+            "target": "transcript"
+          },
+          "components": [
+            {
+              "type": "file",
+              "key": "files",
+              "label": "Scanned form",
+              "input": true,
+              "storage": "base64",
+              "multiple": false,
+              "hideLabel": true,
+              "filePattern": ".pdf,.png,.jpg,.jpeg",
+              "fileMaxSize": "3MB",
+              "tableView": false
+            },
+            {
+              "type": "hidden",
+              "key": "result",
+              "input": true
+            }
+          ]
+        },
+        {
+          "type": "textarea",
+          "key": "transcript",
+          "label": "What the scan says",
+          "input": true,
+          "rows": 8,
+          "description": "Read from the scan by the AI. Check it against the paper and correct it if needed: the fields below are filled in from it.",
+          "properties": {
+            "uag": "fill",
+            "uagField": "input"
+          }
+        },
+        {
+          "type": "panel",
+          "key": "yourDetails",
+          "title": "Your details",
+          "input": false,
+          "properties": {
+            "uag": "fill"
+          },
+          "components": [
+            {
+              "type": "columns",
+              "key": "columnsFullName",
+              "input": false,
+              "columns": [
+                {
+                  "components": [
+                    {
+                      "type": "textfield",
+                      "key": "fullName",
+                      "label": "Full name",
+                      "input": true,
+                      "validate": {
+                        "required": true
+                      }
+                    }
+                  ],
+                  "width": 8,
+                  "size": "md"
+                },
+                {
+                  "components": [
+                    {
+                      "type": "textfield",
+                      "key": "reference",
+                      "label": "Reference number",
+                      "input": true
+                    }
+                  ],
+                  "width": 4,
+                  "size": "md"
+                }
+              ]
+            },
+            {
+              "type": "columns",
+              "key": "columnsEmail",
+              "input": false,
+              "columns": [
+                {
+                  "components": [
+                    {
+                      "type": "email",
+                      "key": "email",
+                      "label": "Email",
+                      "input": true,
+                      "validate": {
+                        "required": true
+                      }
+                    }
+                  ],
+                  "width": 8,
+                  "size": "md"
+                },
+                {
+                  "components": [
+                    {
+                      "type": "phoneNumber",
+                      "key": "phone",
+                      "label": "Phone",
+                      "input": true
+                    }
+                  ],
+                  "width": 4,
+                  "size": "md"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "panel",
+          "key": "currentAddress",
+          "title": "Current address",
+          "input": false,
+          "properties": {
+            "uag": "fill"
+          },
+          "components": [
+            {
+              "type": "textfield",
+              "key": "currentStreet",
+              "label": "Street address",
+              "input": true,
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "type": "columns",
+              "key": "columnsCurrentCity",
+              "input": false,
+              "columns": [
+                {
+                  "components": [
+                    {
+                      "type": "textfield",
+                      "key": "currentCity",
+                      "label": "City",
+                      "input": true,
+                      "validate": {
+                        "required": true
+                      }
+                    }
+                  ],
+                  "width": 6,
+                  "size": "md"
+                },
+                {
+                  "components": [
+                    {
+                      "type": "textfield",
+                      "key": "currentState",
+                      "label": "State",
+                      "input": true
+                    }
+                  ],
+                  "width": 2,
+                  "size": "md"
+                },
+                {
+                  "components": [
+                    {
+                      "type": "textfield",
+                      "key": "currentZip",
+                      "label": "ZIP code",
+                      "input": true
+                    }
+                  ],
+                  "width": 4,
+                  "size": "md"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "panel",
+          "key": "newAddress",
+          "title": "New address",
+          "input": false,
+          "properties": {
+            "uag": "fill"
+          },
+          "components": [
+            {
+              "type": "textfield",
+              "key": "newStreet",
+              "label": "Street address",
+              "input": true,
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "type": "columns",
+              "key": "columnsNewCity",
+              "input": false,
+              "columns": [
+                {
+                  "components": [
+                    {
+                      "type": "textfield",
+                      "key": "newCity",
+                      "label": "City",
+                      "input": true,
+                      "validate": {
+                        "required": true
+                      }
+                    }
+                  ],
+                  "width": 6,
+                  "size": "md"
+                },
+                {
+                  "components": [
+                    {
+                      "type": "textfield",
+                      "key": "newState",
+                      "label": "State",
+                      "input": true
+                    }
+                  ],
+                  "width": 2,
+                  "size": "md"
+                },
+                {
+                  "components": [
+                    {
+                      "type": "textfield",
+                      "key": "newZip",
+                      "label": "ZIP code",
+                      "input": true
+                    }
+                  ],
+                  "width": 4,
+                  "size": "md"
+                }
+              ]
+            },
+            {
+              "type": "day",
+              "key": "moveDate",
+              "label": "Date you move",
+              "input": true
+            }
+          ]
+        },
+        {
+          "type": "radio",
+          "key": "contactBy",
+          "label": "How should we contact you?",
+          "input": true,
+          "values": [
+            {
+              "label": "Email",
+              "value": "email"
+            },
+            {
+              "label": "Phone",
+              "value": "phone"
+            },
+            {
+              "label": "Mail",
+              "value": "mail"
+            }
+          ],
+          "properties": {
+            "uag": "fill"
+          }
+        },
+        {
+          "type": "day",
+          "key": "signedOn",
+          "label": "Date signed",
+          "input": true,
+          "properties": {
+            "uag": "fill"
+          }
+        },
+        {
+          "type": "button",
+          "key": "submit",
+          "label": "Submit",
+          "action": "submit",
+          "input": true
+        }
+      ],
+      "access": [
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator",
+            "authenticated",
+            "anonymous",
+            "guest"
+          ]
+        }
+      ],
+      "submissionAccess": [
+        {
+          "type": "create_own",
+          "roles": [
+            "authenticated",
+            "guest"
+          ]
+        },
+        {
+          "type": "create_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "read_own",
+          "roles": []
+        },
+        {
+          "type": "read_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "update_own",
+          "roles": []
+        },
+        {
+          "type": "update_all",
+          "roles": [
+            "administrator"
+          ]
+        },
+        {
+          "type": "delete_own",
+          "roles": []
+        },
+        {
+          "type": "delete_all",
+          "roles": [
+            "administrator"
+          ]
+        }
+      ]
+    },
     "exampleFillFromDescription": {
       "title": "Example: Fill a form from a description",
       "name": "exampleFillFromDescription",
@@ -4361,6 +4739,19 @@
         "username": "email",
         "password": "password"
       }
+    },
+    "exampleFillFromScannedForm:save": {
+      "title": "Save Submission",
+      "name": "save",
+      "form": "exampleFillFromScannedForm",
+      "priority": 10,
+      "method": [
+        "create",
+        "update"
+      ],
+      "handler": [
+        "before"
+      ]
     },
     "exampleFillFromDescription:save": {
       "title": "Save Submission",

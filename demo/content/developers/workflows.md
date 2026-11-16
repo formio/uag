@@ -118,7 +118,7 @@ The handler is fixed: keep `handler` as `["before", "after"]` in a template, and
 
 To add it in the Form.io Enterprise portal, use a stage connected to the UAG; see [Connecting the Enterprise portal](./deployment.md#connecting-the-enterprise-portal). In that stage the portal reads Run task's settings form from the UAG, and every other action's from Form.io. On an Open Source server, post it to the form's actions; see [Attaching an action to a form](./modules.md#attaching-an-action-to-a-form). A new action, or a criteria edit, takes effect after the UAG's next `PROJECT_TTL` refresh or a restart.
 
-Try it live: [Run an agent task after a submission](../examples/07-run-task/example.md).
+Try it live: [Run an agent task after a submission](../examples/08-run-task/example.md).
 
 ## Before or after the save
 

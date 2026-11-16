@@ -94,6 +94,10 @@
   // A sample from the example page: into the input, then read as if the visitor had typed it.
   window.addEventListener('message', (event) => {
     if (event.origin !== location.origin || !event.data || event.data.type !== 'uag-example-sample') return;
+    if (event.data.file) {
+      upload(String(event.data.file));
+      return;
+    }
     const text = String(event.data.text || '');
     if (mode === 'chat') {
       if (typeof form.send === 'function') form.send(text);
@@ -105,6 +109,19 @@
     component.setValue(text);
     if (agent) agent.extract();
   });
+
+  /** A sample file from the example page, chosen in the form's file input as a visitor would choose it. */
+  async function upload(url) {
+    const file = new URL(url, location.href);
+    if (file.origin !== location.origin) return;
+    const blob = await (await fetch(file)).blob();
+    const input = root.querySelector('input[type="file"]');
+    if (!input) return;
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([blob], file.pathname.split('/').pop(), { type: blob.type }));
+    input.files = transfer.files;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }
 
   form.on('submitDone', (submission) => {
     if (mode !== 'workflow') {

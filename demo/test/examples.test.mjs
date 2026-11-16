@@ -46,8 +46,20 @@ describe('Feature examples', function () {
 
         it('takes a "Try these" list out of the text as the example\'s samples', function () {
             const [example] = load([{ folder: '01-samples', body: 'Before.\n\n## Try these\n\n- First sample, with a comma.\n- Second sample.\n\nAfter.\n' }]);
-            expect(example.samples).to.deep.equal(['First sample, with a comma.', 'Second sample.']);
+            expect(example.samples).to.deep.equal([{ text: 'First sample, with a comma.' }, { text: 'Second sample.' }]);
             expect(example.html).to.include('Before.').and.include('After.').and.not.include('First sample');
+        });
+
+        it('reads a linked sample as a file to upload, and publishes the folder\'s PDFs and images', function () {
+            const content = fixture([{ folder: '01-scan', body: '## Try these\n\n- [Use the sample scan](scan.jpg)\n' }]);
+            made.push(content);
+            fs.writeFileSync(path.join(content, 'examples/01-scan/scan.jpg'), 'jpg');
+            fs.writeFileSync(path.join(content, 'examples/01-scan/blank.pdf'), 'pdf');
+            fs.writeFileSync(path.join(content, 'examples/01-scan/notes.txt'), 'not published');
+            const [example] = loadExamples(path.join(content, 'examples'), { contentRoot: content });
+            expect(example.samples).to.deep.equal([{ label: 'Use the sample scan', file: 'scan.jpg' }]);
+            expect(example.assets).to.deep.equal(['blank.pdf', 'scan.jpg']);
+            expect(() => load([{ folder: '01-gone', body: '## Try these\n\n- [A scan](missing.jpg)\n' }])).to.throw(/01-gone: the sample missing.jpg is not a PDF or image in the folder/);
         });
 
         it('refuses an example without a required setting, naming the folder', function () {
@@ -91,6 +103,7 @@ describe('Feature examples', function () {
 
         it('lists the first batch in its order, the chat widget after the form and workflow examples', function () {
             expect(examples.map((example) => example.title)).to.deep.equal([
+                'Fill an online form from a scanned paper form',
                 'Fill a form from a description',
                 'Streamed results',
                 'Choose from a set of options',
@@ -111,7 +124,7 @@ describe('Feature examples', function () {
             const banned = /\b(?:conversation(?:al)? forms?|insur\w*|claims?|policyholders?|patients?|admissions?|applicants?|leases?|tenants?|loans?|mortgages?|invoices?)\b/i;
             for (const example of examples) {
                 const folder = path.join(EXAMPLES, example.folder);
-                for (const file of fs.readdirSync(folder)) {
+                for (const file of fs.readdirSync(folder).filter((name) => /\.(md|json|js|html)$/.test(name))) {
                     const text = fs.readFileSync(path.join(folder, file), 'utf8');
                     expect(banned.exec(text)?.[0], `${example.folder}/${file}`).to.equal(undefined);
                 }

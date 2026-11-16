@@ -282,7 +282,7 @@ A task whose `uagTools` names a tool that may write, or does not exist, is refus
 
 To get decisions and values for the same data, call `decide` and `generate` at the same time. Decisions come back first, without waiting for the slower model.
 
-Try it live: [Generate written text](../examples/05-generate-text/example.md).
+Try it live: [Generate written text](../examples/06-generate-text/example.md).
 
 ## Chat
 

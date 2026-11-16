@@ -49,6 +49,8 @@ Rendering a form that contains an AI Document needs nothing else. An application
 
 With a target field, the result is also written into a textarea or text field of the same form (in a Data Grid, the field of the same row), in that field's format: HTML for a textarea with a rich-text editor (from the component's own renderer, which escapes all text), Markdown otherwise. The submission still holds the result as the process produced it, so it has both what the process returned and what the person submitted. Use it to keep an application's existing data model: an application that reads a rich-text field gets the content there, with no Markdown rendering.
 
+A target field can also be the input of a task, so the result fills in the rest of the form: Agent Input reads it as it reads anything a person writes. Try it live: [Fill an online form from a scanned paper form](../examples/01-fill-from-scanned-form/example.md).
+
 ### Nothing checks the result on save
 
 In this release the UAG neither signs results nor checks AI Document values when a submission is saved. A submission is saved the way the application saves any other, and its `result` is whatever the client sent: anyone who can submit the form can submit any `content`, `status`, `issues` or `meta`. The person's review before submitting is the control. **An application that acts on a result without a person reviewing it must not rely on `status`, `issues` or `meta`.**
