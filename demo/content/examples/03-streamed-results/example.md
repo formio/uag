@@ -15,6 +15,6 @@ Pick a sample and watch the log: under the `agent/extract` call, the decisions a
 
 ## Try these
 
-- Hello, Jordan Avery here (jordan.avery@example.com). Since Monday the 3rd nothing I upload goes through, and I have a deadline tomorrow. Please help as soon as you can!
+- Hello, Jordan Avery here (jordan.avery@example.com). Since Monday, November 2nd, nothing I upload goes through, and I have a deadline tomorrow. Please help as soon as you can!
 - Hi, I'm Robin Chen, robin.chen@example.com. Just wanted to say the new layout is lovely and much easier to read. Thank you!
 - Alex Moreno (alex.moreno@example.com) here. Do you offer a yearly plan, and if so, what does it cost?

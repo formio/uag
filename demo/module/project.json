@@ -3389,7 +3389,7 @@
         {
           "type": "radio",
           "key": "team",
-          "label": "Which team should handle it?",
+          "label": "What is it about?",
           "input": true,
           "values": [
             {
@@ -3417,7 +3417,7 @@
         {
           "type": "radio",
           "key": "urgency",
-          "label": "Urgency",
+          "label": "How urgent is it?",
           "input": true,
           "values": [
             {
@@ -3534,7 +3534,7 @@
         {
           "type": "radio",
           "key": "topic",
-          "label": "Topic",
+          "label": "What is the message about?",
           "input": true,
           "values": [
             {
@@ -3596,7 +3596,7 @@
         {
           "type": "checkbox",
           "key": "followUp",
-          "label": "Asks for a follow-up",
+          "label": "Does the sender ask to be contacted?",
           "input": true,
           "properties": {
             "uag": "triage",

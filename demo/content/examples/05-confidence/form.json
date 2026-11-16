@@ -29,7 +29,7 @@
     {
       "type": "radio",
       "key": "topic",
-      "label": "Topic",
+      "label": "What is the message about?",
       "input": true,
       "values": [
         {
@@ -91,7 +91,7 @@
     {
       "type": "checkbox",
       "key": "followUp",
-      "label": "Asks for a follow-up",
+      "label": "Does the sender ask to be contacted?",
       "input": true,
       "properties": {
         "uag": "triage",

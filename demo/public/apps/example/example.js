@@ -87,7 +87,9 @@
 
   const definition = form.form || {};
   const all = components(definition.components);
-  const input = all.find((component) => component.properties && component.properties.uagField === 'input');
+  // Where a text sample goes: the task's input, or else the first text area no task fills.
+  const input = all.find((component) => component.properties && component.properties.uagField === 'input')
+    || all.find((component) => component.type === 'textarea' && !(component.properties && component.properties.uag));
   // The fields a workflow's task fills: its agent fields, not its criteria or input.
   const taskFields = all.filter((component) => component.input && component.properties && component.properties.uag && !component.properties.uagField).map((component) => component.key);
 
@@ -107,20 +109,18 @@
     const component = form.getComponent(input.key);
     if (!component) return;
     component.setValue(text);
-    if (agent) agent.extract();
+    // Read as typed text is: only a task's input is.
+    if (agent && input.properties && input.properties.uagField === 'input') agent.extract();
   });
 
-  /** A sample file from the example page, chosen in the form's file input as a visitor would choose it. */
+  /** A sample file from the example page, given to the form's file field as if the visitor had dropped it there. */
   async function upload(url) {
     const file = new URL(url, location.href);
     if (file.origin !== location.origin) return;
     const blob = await (await fetch(file)).blob();
-    const input = root.querySelector('input[type="file"]');
-    if (!input) return;
-    const transfer = new DataTransfer();
-    transfer.items.add(new File([blob], file.pathname.split('/').pop(), { type: blob.type }));
-    input.files = transfer.files;
-    input.dispatchEvent(new Event('change', { bubbles: true }));
+    let field = null;
+    form.everyComponent((component) => { if (!field && component.component.type === 'file') field = component; });
+    if (field) field.handleFilesToUpload([new File([blob], file.pathname.split('/').pop(), { type: blob.type })]);
   }
 
   form.on('submitDone', (submission) => {

@@ -29,7 +29,7 @@
     {
       "type": "radio",
       "key": "team",
-      "label": "Which team should handle it?",
+      "label": "What is it about?",
       "input": true,
       "values": [
         {
@@ -57,7 +57,7 @@
     {
       "type": "radio",
       "key": "urgency",
-      "label": "Urgency",
+      "label": "How urgent is it?",
       "input": true,
       "values": [
         {
