@@ -33,6 +33,7 @@ Optional:
 | `E2E_HOSTED_PROJECT_URL`, `E2E_HOSTED_PROJECT_KEY` | unset | For `layer3.getting-started`: a project on Form.io's hosted service with the demo's `claim` form (`demo/module/project.json`), and an API key of it. |
 | `E2E_STRICT` | unset | `true` makes `layer3.getting-started` fail a guide whose variables are missing, instead of skipping it. The release workflow sets it. |
 | `E2E_DEMO_UAG_LICENSE` | unset | A license that includes the UAG and allows the endpoint `formio.e2e.test` (the same kind as `E2E_UAG_LICENSE`), for `layer3.demo-stack`, with `CLAUDE_API_KEY` and `TYPESAFE_API_KEY`. `E2E_EXAMPLE_UAG_LICENSE`, its earlier name, is still read. |
+| `E2E_DEMO_SITE_PORT` | `3420` | The port the demo suites serve the demo site on. `yarn demo:dev` uses 3420 too; set another port to run the suites beside it. |
 
 ## Layers
 

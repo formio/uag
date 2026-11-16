@@ -12,7 +12,9 @@ const require = createRequire(import.meta.url);
 
 export const ENGINE_SERVER_URL = 'http://127.0.0.1:3311';
 export const ENGINE_CALLS_PORT = 3312;
-export const SITE_URL = 'http://127.0.0.1:3420';
+// The demo site's port: 3420 by default, which `yarn demo:dev` also uses; set
+// E2E_DEMO_SITE_PORT to run the suites beside it.
+export const SITE_URL = `http://127.0.0.1:${process.env.E2E_DEMO_SITE_PORT || 3420}`;
 export const ENGINE_SERVER_KEY = 'uag-e2e-engine-server-key-0123456789abcdef';
 export const DEMO_FORMS = [
     'serviceRequest', 'application', 'sum', 'claim', 'leaseReview', 'guest', 'guestRegister',
