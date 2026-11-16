@@ -430,7 +430,9 @@ a:hover .arrow::after, .btn:hover .arrow::after, a.arrow:hover::after { transfor
 }
 
 /* Examples ------------------------------------------------------------ */
-.examples-hero { padding-top: 64px; }
+.examples-hero { padding-top: 64px; padding-bottom: 8px; }
+.examples-hero + .section-tight { padding-top: 24px; }
+.example-article .eyebrow a { color: inherit; }
 .examples-hero h1 { max-width: 760px; }
 .examples-hero .lede { max-width: 760px; }
 .example-group { margin-bottom: 48px; }
