@@ -1,0 +1,31 @@
+# Sourced (.envsh) by the nginx image's entrypoint before it fills in the
+# configuration template: the exports reach it.
+# The image is built for placeholder URLs; point the pages at the real ones:
+#   DEMO_UAG_URL        the UAG the site embeds (required)
+#   FORMIO_PROJECT_URL  the demo's project (default https://uag.form.io)
+# Derived as lib/config.mjs does: the project's name (the last path segment, else
+# the host's first label) and its Form.io server (https://api.form.io for a
+# project on Form.io's hosted service, else the URL without its last segment).
+: "${DEMO_UAG_URL:?Set DEMO_UAG_URL to the UAG the site embeds}"
+uag=${DEMO_UAG_URL%/}
+project=${FORMIO_PROJECT_URL:-https://uag.form.io}; project=${project%/}
+rest=${project#*://}; host=${rest%%/*}; path=${rest#"$host"}
+name=${path##*/}; name=${name:-${host%%.*}}
+if [ -z "$path" ]; then base=$project; else base=${project%/*}; fi
+if [ -z "$path" ] && [ "${host%.form.io}" != "$host" ]; then base=https://api.form.io; fi
+
+export DEMO_UAG_ORIGIN=$(echo "$uag" | sed -E 's|^([a-z]+://[^/]+).*|\1|')
+# The project's origin joins connect-src unless Form.io's hosted service or the UAG covers it.
+project_origin=${project%%://*}://$host
+export DEMO_CSP_PROJECT=
+case "$project_origin" in
+    https://form.io | https://*.form.io | "$DEMO_UAG_ORIGIN") ;;
+    *) DEMO_CSP_PROJECT=" $project_origin" ;;
+esac
+
+# Longest first: each placeholder contains the next.
+grep -rlF "$PLACEHOLDER_UAG_URL" /site | xargs sed -i \
+    -e "s|$PLACEHOLDER_UAG_URL/$PLACEHOLDER_PROJECT_NAME|$uag/$name|g" \
+    -e "s|$PLACEHOLDER_PROJECT_ORIGIN/$PLACEHOLDER_PROJECT_NAME|$project|g" \
+    -e "s|$PLACEHOLDER_PROJECT_ORIGIN|$base|g" \
+    -e "s|$PLACEHOLDER_UAG_URL|$uag|g"

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Bakes every image (docker-bake.hcl) and pushes them to ECR, to test the build
+# and the registry. Uses the current buildx builder. Tags: <version>-dev and dev,
+# so a release's tags are never overwritten.
+#
+#   scripts/build [--no-cache] [target...]
+#
+# Options and targets go to `docker buildx bake`. VERSION, CHANNEL and ECR_REGISTRY
+# override the defaults.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+region=us-east-1
+registry=${ECR_REGISTRY:-551091399009.dkr.ecr.$region.amazonaws.com}
+export VERSION=${VERSION:-$(jq -r .version package.json)-dev}
+export CHANNEL=${CHANNEL:-dev}
+export REGISTRIES="$registry/"
+
+aws ecr get-login-password --region "$region" | docker login --username AWS --password-stdin "$registry"
+docker buildx bake --push "$@"

@@ -1,0 +1,26 @@
+# syntax=docker/dockerfile:1
+# formio/uag-demo: the demo site's static files behind nginx, which answers as
+# CloudFront did (deploy/nginx.conf.template). One image for every environment:
+# the site is built for placeholders, and the container replaces them at start with
+# its DEMO_UAG_URL (required) and FORMIO_PROJECT_URL (default https://uag.form.io). Build from the repository root:
+#
+#   docker build -f demo/Dockerfile.demo -t formio/uag-demo .
+#   docker run -p 8080:8080 -e DEMO_UAG_URL=https://uag.ai.form.io \
+#     -e FORMIO_PROJECT_URL=https://uag.form.io formio/uag-demo
+FROM node:24-alpine AS build
+WORKDIR /app/demo
+COPY demo/package.json ./
+RUN npm install --omit=dev --no-package-lock
+COPY demo/ ./
+ENV NODE_ENV=production \
+    DEMO_UAG_URL=https://uag.placeholder.invalid \
+    FORMIO_PROJECT_URL=https://project.placeholder.invalid/placeholder-project
+RUN node scripts/build.mjs
+
+FROM nginxinc/nginx-unprivileged:stable-alpine
+ENV PLACEHOLDER_UAG_URL=https://uag.placeholder.invalid \
+    PLACEHOLDER_PROJECT_ORIGIN=https://project.placeholder.invalid \
+    PLACEHOLDER_PROJECT_NAME=placeholder-project
+COPY --from=build --chown=nginx:nginx /app/demo/dist /site
+COPY demo/deploy/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY demo/deploy/15-uag-url.envsh /docker-entrypoint.d/

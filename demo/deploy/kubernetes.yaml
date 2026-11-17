@@ -1,0 +1,47 @@
+# The demo's retention job (demo/scripts/retention.mjs) as a CronJob: every hour it
+# deletes what visitors left in the demo's project once it is a day old.
+#
+#   kubectl apply -f demo/deploy/kubernetes.yaml
+#
+# Replace the <PLACEHOLDERS> first (<ENV> is test or prod: each cluster's workloads
+# are named <ENV>-demo-uag-*). The workflow updates the image on each deploy.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: <ENV>-demo-uag-maint
+  namespace: demo-uag
+type: Opaque
+stringData:
+  PROJECT_KEY: <PROJECT_API_KEY>
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: <ENV>-demo-uag-maint
+  namespace: demo-uag
+spec:
+  schedule: "17 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 1200
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: retention
+              image: 551091399009.dkr.ecr.us-east-1.amazonaws.com/formio/uag-demo-maint:<VERSION>
+              env:
+                - name: FORMIO_PROJECT_URL
+                  value: <PROJECT_URL> # e.g. https://uag.form.io
+                - name: DEMO_RETENTION_HOURS
+                  value: "24"
+              envFrom:
+                - secretRef:
+                    name: <ENV>-demo-uag-maint
+              resources:
+                requests: { cpu: 50m, memory: 64Mi }
+                limits: { memory: 128Mi }

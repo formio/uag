@@ -1,0 +1,13 @@
+# syntax=docker/dockerfile:1
+# formio/uag-demo-maint: the demo's retention job (scripts/retention.mjs). It
+# needs no dependencies, only Node's own fetch. Build from the repository root:
+#
+#   docker build -f demo/Dockerfile.maint -t formio/uag-demo-maint .
+FROM node:24-alpine
+WORKDIR /app
+COPY demo/package.json demo/
+COPY demo/lib/config.mjs demo/lib/
+COPY demo/module/project.json demo/module/
+COPY demo/scripts/retention.mjs demo/scripts/
+USER node
+ENTRYPOINT ["node", "demo/scripts/retention.mjs"]
