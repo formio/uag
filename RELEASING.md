@@ -60,7 +60,7 @@ To check them without releasing, run the workflow by hand: **Actions → Publish
 | ECR `formio/uag`, `formio/uag-engines` | `:2.0.0` and `:latest` | `:2.0.0-rc.2` and `:rc` |
 | Docker Hub `formio/uag`, `formio/uag-engines` | `:2.0.0` and `:latest`, copied from ECR | skipped |
 | MCP Registry (`server.json`) | published, after npm | skipped |
-| Deploy (`demo-uag` on EKS `deploy-01`) | test (us-east-1), then production (us-west-1) | test (us-east-1) |
+| Deploy (namespace `demo-uag` on EKS) | test (`deploy-01`, us-east-1), then production (`prod-01`, us-west-2) | test (`deploy-01`, us-east-1) |
 
 Both images are built for amd64 and arm64 on native remote builders and pushed to ECR. Docker Hub gets the same manifests, copied rather than rebuilt. A deploy points the environment's `<test|prod>-demo-uag-gw` deployment at the ECR image and waits for the rollout; production is deployed only after test succeeds.
 

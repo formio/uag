@@ -28,10 +28,10 @@ release() {
   fi
   if [[ $version == *-* ]]; then
     kind=pre; channel=${version#*-}; channel=${channel%%.*}
-    targets='[{"prefix":"test","region":"us-east-1"}]'
+    targets='[{"prefix":"test","region":"us-east-1","cluster":"deploy-01"}]'
   else
     kind=release; channel=latest
-    targets='[{"prefix":"test","region":"us-east-1"},{"prefix":"prod","region":"us-west-1"}]'
+    targets='[{"prefix":"test","region":"us-east-1","cluster":"deploy-01"},{"prefix":"prod","region":"us-west-2","cluster":"prod-01"}]'
   fi
   printf '%s\n' "kind=$kind" "version=$version" "channel=$channel" "targets=$targets" >> "$GITHUB_OUTPUT"
 }
@@ -105,11 +105,11 @@ publish_mcp() {
   mcp-publisher publish
 }
 
-# deploy <registry> <version> <prefix> <region>: point the demo workloads at
-# the new images.
+# deploy <registry> <version> <prefix> <region> <cluster>: point the demo
+# workloads on that EKS cluster at the new images.
 deploy() {
-  local registry="$1" version="$2" prefix="$3" region="$4"
-  local namespace=demo-uag cluster=deploy-01
+  local registry="$1" version="$2" prefix="$3" region="$4" cluster="$5"
+  local namespace=demo-uag
   aws eks update-kubeconfig --name "$cluster" --region "$region"
   kubectl -n "$namespace" set image "deployment/$prefix-demo-uag-gw" "uag=$registry/uag:$version"
   kubectl -n "$namespace" rollout status "deployment/$prefix-demo-uag-gw" --timeout=10m
