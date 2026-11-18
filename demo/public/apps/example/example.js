@@ -26,6 +26,15 @@
     root.textContent = 'This example is not available.';
     return;
   }
+  // Samples from the example page, heard from the start: one sent while the form or
+  // its page code is still loading waits for them rather than being lost.
+  let onSample = null;
+  const early = [];
+  window.addEventListener('message', (event) => {
+    if (event.origin !== location.origin || !event.data || event.data.type !== 'uag-example-sample') return;
+    if (onSample) onSample(event.data);
+    else early.push(event.data);
+  });
   await DemoApp.ready();
 
   function show(title, lede, body) {
@@ -94,13 +103,12 @@
   const taskFields = all.filter((component) => component.input && component.properties && component.properties.uag && !component.properties.uagField).map((component) => component.key);
 
   // A sample from the example page: into the input, then read as if the visitor had typed it.
-  window.addEventListener('message', (event) => {
-    if (event.origin !== location.origin || !event.data || event.data.type !== 'uag-example-sample') return;
-    if (event.data.file) {
-      upload(String(event.data.file));
+  onSample = (sample) => {
+    if (sample.file) {
+      upload(String(sample.file));
       return;
     }
-    const text = String(event.data.text || '');
+    const text = String(sample.text || '');
     if (mode === 'chat') {
       if (typeof form.send === 'function') form.send(text);
       return;
@@ -113,7 +121,8 @@
     // which the example's own page code may have attached in place of this page's.
     const current = form.uagAgent || agent;
     if (current && input.properties && input.properties.uagField === 'input') current.extract();
-  });
+  };
+  early.splice(0).forEach(onSample);
 
   /** A sample file from the example page, given to the form's file field as if the visitor had dropped it there. */
   async function upload(url) {
