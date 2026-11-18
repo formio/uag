@@ -152,7 +152,7 @@ interface ToolAnnotations {
 }
 ```
 
-A tool without a `name` is skipped. Names must be unique: a custom tool with a built-in tool's name stops startup, with `router()` rejecting `Tool <name> is already registered`. The built-in names are listed under [Overriding built-in tools](#overriding-built-in-tools).
+A tool without a `name` is skipped. Names must be unique: a custom tool with a built-in tool's name stops startup, with `router()` rejecting `The MCP tool "<name>" in config.tools (or a module) has the name of a built-in UAG tool: give it another name, or change the built-in tool with toolOverrides.<name>.`, and two custom tools with one name stop it with `The MCP tool "<name>" is defined more than once in config.tools (or its modules)`. The built-in names are listed under [Overriding built-in tools](#overriding-built-in-tools).
 
 ### The input schema
 

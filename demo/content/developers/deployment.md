@@ -343,7 +343,7 @@ In that stage, forms and actions are read and saved through the UAG, which passe
 
 ## Image and version pinning
 
-From 2.0.0, the UAG and the packages released with it (the engines, the engine SDK and server, and `@formio/uag-js`) share one version. Install the same version of each. `@formio/uag-extras` is versioned on its own:
+From 2.0.0, the UAG and the packages released with it (the engines, the engine SDK and server, and `@formio/uag-js`) share one version. Install the same version of each. `@formio/uag-extras` takes the UAG's major version, with a minor and patch of its own:
 
 | Package | Version | Compatible UAG | Notes |
 |---|---|---|---|
@@ -356,7 +356,7 @@ From 2.0.0, the UAG and the packages released with it (the engines, the engine S
 | `@formio/uag-gemini` | 2.x | >= 2.0.0 | Built on `@formio/uag-openai`. No default model. |
 | `@formio/uag-engines` | 2.x | >= 2.0.0 | The engine server. Docker image `formio/uag-engines`. |
 | `@formio/uag-js` | 2.x | >= 2.0.0 | The formio.js module, for the browser: saves `uag` forms through the UAG and adds Agent Input. Published on npm, and served by the UAG at `/uag-js/` (the image includes it). |
-| `@formio/uag-extras` | 1.x | >= 2.0.0 | Versioned on its own, and needs Node.js 24 or later: extras such as the AI Document module, document plugins and converters ([npm](https://www.npmjs.com/package/@formio/uag-extras)). Docker image `formio/uag-documents` (`:1`), an add-on that runs beside `formio/uag` and fills its plugins folder: see [AI Document](./ai-document.md#run-it-with-docker). |
+| `@formio/uag-extras` | 2.x | >= 2.0.0 | Its minor and patch versions are its own, and it needs Node.js 24 or later: extras such as the AI Document module, document plugins and converters ([npm](https://www.npmjs.com/package/@formio/uag-extras)). Docker image `formio/uag-documents` (`:2`; `:1` is the 1.0.0 built for the release candidates), an add-on that runs beside `formio/uag` and fills its plugins folder: see [AI Document](./ai-document.md#run-it-with-docker). |
 | `@formio/uag-claude` | 1.3.x | 1.12.0 – 1.13.x | The retired Claude integration, deprecated. Against 2.0 only its direct commands work: its `agent_provide_data` webhooks need 1.x. |
 | `@formio/uag-claude` | 1.2.x | 1.10.0 – 1.11.x | The retired Claude integration. |
 

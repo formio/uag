@@ -183,7 +183,7 @@ Try it live: [Fill a form from a description](../examples/02-fill-from-descripti
 
 ## Attaching by hand
 
-`UAG.attach(form, options)` attaches Agent Input to one rendered form, for example with `agentInput: false`, or to call a relay of your own. It replaces the form's earlier attachment, the automatic one included, so the form never extracts twice. The package includes TypeScript types.
+`UAG.attach(form, options)` attaches Agent Input to one rendered form, for example with `agentInput: false`, or to call a relay of your own. It replaces the form's earlier attachment, the automatic one included, so the form never extracts twice. Its `trigger` defaults to `blur` on every form, wizards included (only the automatic attachment picks `next` for a wizard), so pass `trigger: 'next'` when attaching a wizard by hand. The package includes TypeScript types.
 
 ```ts
 UAG.attach(form: Webform | Wizard, options?: {
