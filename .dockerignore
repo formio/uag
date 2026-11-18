@@ -18,3 +18,7 @@ test
 engines/*/test
 packages/*/test
 packages/engine-server/Dockerfile*
+demo/test
+demo/recordings
+demo/dist
+demo/node_modules

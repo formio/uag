@@ -1,6 +1,6 @@
 # Releasing
 
-Every package in this repository is released together, at one version: `@formio/uag`, the engine SDK, the engines, the engine server, `@formio/uag-js` and the demo. A pushed version tag (`v2.0.0-rc.1` or `2.0.0-rc.1`) runs [`.github/workflows/publish.yml`](.github/workflows/publish.yml), which tests, builds and publishes them. The tag can be on any branch: tag a pull request's branch to publish a release candidate for testing before it is merged.
+Every package in this repository is released together, at one version: `@formio/uag`, the engine SDK, the engines, the engine server, `@formio/uag-js` and the demo. A pushed version tag (`v2.0.0-rc.1`; the leading `v` is required) runs [`.github/workflows/publish.yml`](.github/workflows/publish.yml), which tests, builds and publishes them. The tag can be on any branch: tag a pull request's branch to publish a release candidate for testing before it is merged.
 
 ## Steps
 
@@ -16,7 +16,7 @@ Every package in this repository is released together, at one version: `@formio/
 
    It sets the version on every package (`yarn release:version`), names the changelog's newest entry for it, updates the lockfile, builds, runs the tests (`--skip-tests` skips them) and the release check, commits `Update versions.` and tags `v2.0.0-rc.2`. It refuses uncommitted changes, a tag that already exists, and a changelog whose newest entry is a released version (its notes are never renamed: add the new ones under `## Unreleased`). If a step fails, nothing is committed, and `git checkout -- .` undoes the version changes.
 
-The release check (`scripts/check-release.mjs`) refuses a package out of step with the root version, a dependency range that does not accept it, a dependency on a local folder, a package that is not MIT, a model provider SDK or engine package among `@formio/uag`'s dependencies, an engine whose provider SDK is not pinned to an exact version, a stale `lib/`, and a version the changelog does not describe. `yarn release` and CI both run it with `--before-publish`, which skips only its check that the packages of this repository that `@formio/uag` depends on (the engine SDK, `@formio/uag-sdk`) are on npm at a version its range accepts: they are not published yet when it runs. CI publishes them first, and `@formio/uag`'s `prepublishOnly` runs the full check before it goes out.
+The release check (`scripts/check-release.mjs`) refuses a package out of step with the root version, a dependency range that does not accept it, a dependency on a local folder, a package that is not MIT, a model provider SDK or engine package among `@formio/uag`'s dependencies, an engine whose provider SDK is not pinned to an exact version, a stale `lib/`, and a version the changelog does not describe. `yarn release` and CI both run it with `--before-publish`, which skips only its check that the packages of this repository that `@formio/uag` depends on (the engine SDK, `@formio/uag-sdk`) are on npm at a version its range accepts: they are not published yet when it runs. CI publishes them first, waits until npm shows them, and `@formio/uag`'s `prepublishOnly` runs the full check before it goes out. (A prerelease goes to the private registry with `--ignore-scripts`, so the full check does not run for it.)
 
 ## Repository settings
 
@@ -26,11 +26,17 @@ The release check (`scripts/check-release.mjs`) refuses a package out of step wi
 |---|---|---|
 | `E2E_HOSTED_PROJECT_URL`, `E2E_FORMIO_LICENSE_REMOTE` | variables | The Getting Started gate (below). |
 | `E2E_HOSTED_PROJECT_KEY`, `E2E_FORMIO_LICENSE`, `CLAUDE_API_KEY`, `TYPESAFE_API_KEY` | secrets | The Getting Started gate (below). |
-| `DOCKERHUB_USERNAME` | variable | Docker Hub sign-in, to push `formio/uag` and `formio/uag-engines`. |
+| `PRIVATE_NPM_REGISTRY` | variable | The private npm registry prereleases are published to (its URL). |
+| `PRIVATE_NPM_TOKEN` | secret | A token that can publish to that registry. |
+| `CI_ROLE_ARN` | variable | The AWS role CI assumes (OIDC) to push to ECR and deploy to EKS. |
+| `PRIVATE_ECR_REGISTRY` | variable | The ECR registry every image is pushed to (`<account>.dkr.ecr.<region>.amazonaws.com`). |
+| `BUILDER_AMD64_ENDPOINT`, `BUILDER_ARM64_ENDPOINT` | variables | The remote BuildKit builders for each platform (`tcp://host:port`). |
+| `BUILDER_CA`, `BUILDER_CERT`, `BUILDER_KEY` | secrets | The TLS CA, client certificate and key for those builders. |
+| `DOCKERHUB_USERNAME` | variable | Docker Hub sign-in, to copy a release's `formio/uag` and `formio/uag-engines` there. |
 | `DOCKERHUB_TOKEN` | secret | Docker Hub sign-in: an access token of that account. |
 | `MCP_PRIVATE_KEY` | secret | Signing in to the MCP Registry as `form.io` (DNS authentication), to publish `server.json` for a release. |
 
-npm needs no token: CI publishes through npm's Trusted Publishing (see [A new package](#a-new-package)), which needs the job's `id-token: write` permission and no `NODE_AUTH_TOKEN`.
+npmjs needs no token: CI publishes a release through npm's Trusted Publishing (see [A new package](#a-new-package)), which needs the job's `id-token: write` permission, no `NODE_AUTH_TOKEN`, and a GitHub-hosted runner, so that one job runs on `ubuntu-latest`. The other jobs run on the self-hosted `aws-build-runner`, which provides Node, `mcp-publisher`, the AWS CLI and `kubectl`.
 
 ## The Getting Started gate
 
@@ -44,23 +50,26 @@ Before it publishes anything, the workflow runs the Getting Started page's three
 | `E2E_FORMIO_LICENSE_REMOTE` | variable | `true` when that license is an offline license. |
 | `CLAUDE_API_KEY`, `TYPESAFE_API_KEY` | secrets | The engines the guides use. |
 
-To check them without releasing, run the workflow by hand: **Actions → Publish UAG → Run workflow**, or `gh workflow run publish.yml --ref <branch>`. A run by hand runs only the guides and publishes nothing. Or run them locally with the same variables in `.env`; without them, the guides that need them are skipped.
+To check them without releasing, run the workflow by hand: **Actions → Publish UAG → Run workflow**, or `gh workflow run publish.yml --ref <branch>`. A run by hand on a branch runs the guides, builds and tests every package, and pushes its images to ECR only (tagged `<branch>-<short sha>` and `<branch>`); it publishes nothing to npm or Docker Hub and deploys nothing. A run by hand on a tag publishes that release, as pushing the tag would. Or run them locally with the same variables in `.env`; without them, the guides that need them are skipped.
 
 ## What the workflow publishes
 
 | Where | Release (`2.0.0`) | Prerelease (`2.0.0-rc.2`) |
 |---|---|---|
-| npm, every public package | dist-tag `latest` | dist-tag `rc` (the word before the first dot) |
-| `formio/uag` | `:2.0.0` and `:latest` | `:2.0.0-rc.2` and `:rc` |
-| `formio/uag-engines` | `:2.0.0` and `:latest` | `:2.0.0-rc.2` and `:rc` |
-| MCP Registry (`server.json`) | published | skipped |
+| npm, every public package | npmjs, dist-tag `latest` | the private registry, dist-tag `rc` (the word before the first dot) |
+| ECR `formio/uag`, `formio/uag-engines` | `:2.0.0` and `:latest` | `:2.0.0-rc.2` and `:rc` |
+| Docker Hub `formio/uag`, `formio/uag-engines` | `:2.0.0` and `:latest`, copied from ECR | skipped |
+| MCP Registry (`server.json`) | published, after npm | skipped |
+| Deploy (`demo-uag` on EKS `deploy-01`) | test (us-east-1), then production (us-west-1) | test (us-east-1) |
 
-A failed run can be rerun ("Re-run failed jobs"): a package npm already has at the version is skipped, as is the `formio/uag-engines` image when Docker Hub has it; the `formio/uag` image is built and pushed again. An image build that runs longer than 30 minutes fails instead of hanging: the arm64 half is built under QEMU, which can crash and hang.
+Both images are built for amd64 and arm64 on native remote builders and pushed to ECR. Docker Hub gets the same manifests, copied rather than rebuilt. A deploy points the environment's `<test|prod>-demo-uag-gw` deployment at the ECR image and waits for the rollout; production is deployed only after test succeeds.
+
+A failed run can be rerun ("Re-run failed jobs"): a package the registry already has at the version is skipped, and the images are built and pushed again.
 
 
 ## A new package
 
-npm publishes from CI through Trusted Publishing, which is set up per package, on a package that exists. Publish a new package's first version from your machine, before tagging, and do not publish `@formio/uag` itself this way (CI must, or every step after it is skipped):
+npm publishes releases from CI through Trusted Publishing, which is set up per package, on a package that exists. Publish a new package's first version to npmjs from your machine, before tagging, and do not publish `@formio/uag` itself this way (CI must, or every step after it is skipped):
 
 ```bash
 cd packages/engine-sdk && npm publish --access public --tag rc
