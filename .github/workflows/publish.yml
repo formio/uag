@@ -229,4 +229,4 @@ jobs:
           aws-region: ${{ matrix.target.region }}
 
       - name: Deploy
-        run: .github/run.sh deploy "${{ vars.PRIVATE_ECR_REGISTRY }}/formio" "${{ needs.build.outputs.version }}" "${{ matrix.target.prefix }}" "${{ matrix.target.region }}"
+        run: .github/run.sh deploy "${{ vars.PRIVATE_ECR_REGISTRY }}/formio" "${{ needs.build.outputs.version }}" "${{ matrix.target.prefix }}" "${{ matrix.target.region }}" "${{ matrix.target.cluster }}"
