@@ -14,7 +14,7 @@ group "default" {
   targets = [
     "uag",
     "uag-engines",
-    "uag-demo",
+    # "uag-demo",
     # "uag-demo-maint",
   ]
 }
@@ -35,12 +35,12 @@ target "uag-engines" {
   tags       = tags("uag-engines")
 }
 
-target "uag-demo" {
-  inherits   = ["_common"]
-  dockerfile = "demo/Dockerfile.demo"
-  tags       = tags("uag-demo")
-}
-
+# target "uag-demo" {
+#   inherits   = ["_common"]
+#   dockerfile = "demo/Dockerfile.demo"
+#   tags       = tags("uag-demo")
+# }
+#
 # target "uag-demo-maint" {
 #   inherits   = ["_common"]
 #   dockerfile = "demo/Dockerfile.maint"

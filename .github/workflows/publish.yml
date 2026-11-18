@@ -2,7 +2,6 @@ name: Publish UAG
 
 on:
   push:
-    # branches: ["kburge-main"]
     tags: ["v[0-9]*"]
 
   workflow_dispatch:
@@ -19,38 +18,36 @@ env:
   DRY_RUN: ${{ inputs.dry_run }}
 
 jobs:
-  # getting-started:
-  #   runs-on: ubuntu-latest
-  #   environment: production
-  #   permissions:
-  #     contents: read
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v7
+  getting-started:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
 
-  #     - name: Enable Corepack
-  #       run: corepack enable
+      - name: Enable Corepack
+        run: corepack enable
 
-  #     - name: Install dependencies
-  #       run: yarn install --immutable
+      - name: Install dependencies
+        run: yarn install --immutable
 
-  #     - name: Run the Getting Started guides
-  #       run: yarn test:getting-started
-  #       env:
-  #         E2E_STRICT: "true"
-  #         # A project on Form.io's hosted service with the demo's claim form, and an API key of it.
-  #         E2E_HOSTED_PROJECT_URL: ${{ vars.E2E_HOSTED_PROJECT_URL }}
-  #         E2E_HOSTED_PROJECT_KEY: ${{ secrets.E2E_HOSTED_PROJECT_KEY }}
-  #         # A Form.io license that includes the UAG and allows formio.e2e.test.
-  #         E2E_FORMIO_LICENSE: ${{ secrets.E2E_FORMIO_LICENSE }}
-  #         E2E_FORMIO_LICENSE_REMOTE: ${{ vars.E2E_FORMIO_LICENSE_REMOTE }}
-  #         CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
-  #         TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+      - name: Run the Getting Started guides
+        run: yarn test:getting-started
+        env:
+          E2E_STRICT: "true"
+          # A project on Form.io's hosted service with the demo's claim form, and an API key of it.
+          E2E_HOSTED_PROJECT_URL: ${{ vars.E2E_HOSTED_PROJECT_URL }}
+          E2E_HOSTED_PROJECT_KEY: ${{ secrets.E2E_HOSTED_PROJECT_KEY }}
+          # A Form.io license that includes the UAG and allows formio.e2e.test.
+          E2E_FORMIO_LICENSE: ${{ secrets.E2E_FORMIO_LICENSE }}
+          E2E_FORMIO_LICENSE_REMOTE: ${{ vars.E2E_FORMIO_LICENSE_REMOTE }}
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
 
-  # One checkout and one install: works out the release, builds and tests, then
-  # publishes to npm and the MCP registry.
   build:
-    # needs: getting-started ########################################## restore
+    needs: getting-started
     runs-on: aws-build-runner
     environment: production
     outputs:
@@ -91,8 +88,6 @@ jobs:
           MCP_PRIVATE_KEY: ${{ secrets.MCP_PRIVATE_KEY }}
         run: .github/run.sh publish_mcp "${{ steps.release.outputs.version }}"
 
-  # Builds from the local checkout (path context), so BuildKit does not clone
-  # the repository; .dockerignore keeps the context sent to the remote builders small.
   images:
     needs: [build]
     runs-on: aws-build-runner
@@ -129,7 +124,6 @@ jobs:
       - name: Bake and push
         uses: docker/bake-action@v7
         with:
-          # Local path context instead of the default Git context.
           source: .
           push: true
           vars: |
@@ -137,8 +131,6 @@ jobs:
             CHANNEL=${{ needs.build.outputs.channel }}
             REGISTRIES=${{ vars.PRIVATE_ECR_REGISTRY }}/
 
-  # Copies the ECR manifests, so Docker Hub gets the tested images. The demo
-  # images are not published here.
   dockerhub:
     needs: [build, images]
     if: ${{ needs.build.outputs.kind == 'release' && !inputs.dry_run }}
@@ -147,7 +139,6 @@ jobs:
       contents: read
       id-token: write
     steps:
-      # Only run.sh, not the whole repository.
       - uses: actions/checkout@v7
         with:
           sparse-checkout: .github/run.sh
@@ -174,13 +165,11 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    # A release goes to test, then production; a failure stops the rest.
     strategy:
       max-parallel: 1
       matrix:
         target: ${{ fromJSON(needs.build.outputs.targets) }}
     steps:
-      # Only run.sh, not the whole repository.
       - uses: actions/checkout@v7
         with:
           sparse-checkout: .github/run.sh
