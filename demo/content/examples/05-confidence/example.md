@@ -1,19 +1,27 @@
 ---
-title: Confidence and the unsure band
-summary: Each decision comes with a confidence; below the threshold the form says it is unsure and leaves the choice to the person.
+title: Leave unsure answers to the person
+summary: The AI says how sure it is of each choice. When it is not sure enough, it marks its pick for the person to check and offers the other likely options.
 group: Fill in forms
 mode: form
 docs: ../../developers/form-properties.md#uagconfidencefield
 highlight: uagThreshold, uagUncertainBand, uagConfidenceField
 ---
 
-A decision engine says how sure it is. The form decides what "sure enough" means:
+When the AI answers a choice, it also says how sure it is: its **confidence**, a number from 0 (a guess) to 1 (certain). The form, not the AI, sets how sure is sure enough. Below that, the AI still fills in its best guess, but marks it "Please check this." and offers the other likely options as buttons, so a guess never looks like a sure answer.
 
-- `uagThreshold` is the confidence a choice needs. Below it, the field is **uncertain**: Agent Input suggests the likeliest option and its alternatives, and the person picks.
-- `uagUncertainBand` is the range of probabilities treated as unsure for a yes/no field, such as a checkbox: inside it, the box is neither ticked nor cleared for the person.
-- `uagConfidenceField` writes the confidence to another field, so ordinary conditions can act on it. Here, a note appears when the topic is uncertain.
+Use it where a wrong answer costs more than asking. Three settings in this form do it:
 
-Try the samples in order. The thank-you note is plainly feedback: the topic is chosen, with a confidence near 1. The second is both a request and a problem: the decision engine also asks with the options in reverse order, the answer changes, so the topic is only suggested, its confidence stays under the threshold, and the note appears. It plainly asks for a call back, so the follow-up box is ticked. The third barely says what it is about.
+- **What is the message about?** has `uagThreshold: 0.7`. When the AI is at least 0.7 sure of the topic, it selects it. Below 0.7, it still selects its best guess, but marks it for the person to check and shows buttons for the other likely options.
+- **Confidence in the topic** receives that number, because the topic field names it in `uagConfidenceField`. It is an ordinary field, so the form's ordinary logic can use it. Here a note asks the person to check the topic when the confidence is below 0.7. It could as well show an extra page, or send the submission to a reviewer.
+- **Does the sender ask to be contacted?** is a yes/no checkbox, so it uses a range instead of a threshold. The AI rates how likely the answer is yes, and how likely it is no. `uagUncertainBand: 0.3-0.7` makes 0.3 to 0.7 the gray zone. The box is ticked when yes is above 0.7 and no is below 0.3, and cleared in the opposite case. If the message does not mention it at all (both below 0.3), the box is left alone. Anything else sets the box to the likelier answer and marks it for the person to check.
+
+The marks guide the person; they do not stop a submit. To make the person check each marked answer before moving on, turn on Agent Input's `requireReview` option.
+
+Try the samples in order:
+
+1. A thank-you note is plainly feedback. The topic is selected, with a confidence near 1, and no note appears.
+2. This message is both a request and a problem. The AI is asked twice, with the options in a different order; when its two answers differ, as they usually do here, the topic counts as unsure. The topic is filled in but marked to check, and the note appears. The message plainly asks for a call back, so the box is ticked.
+3. This one barely says what it is about. See what the AI decides, and what it marks for you to check.
 
 ## Try these
 

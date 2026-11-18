@@ -630,7 +630,7 @@ describe('Layer 3: the demo site, as it ships', function () {
         });
 
         it('streams the decisions first, then the values, and lists each with when it arrived', async function () {
-            const { page } = await openExample('streamed-results');
+            const { page } = await openExample('agent-helps-you-fill');
             await sample(page, 0);
             await settled(page, (values) => values.email && values.urgency, 'the streamed results');
             const lines = await page.locator('.flow-stream li').allTextContents();
@@ -679,7 +679,7 @@ describe('Layer 3: the demo site, as it ships', function () {
         });
 
         it('keeps the person\'s own value when the description is read again, and updates its own', async function () {
-            const { page, frame } = await openExample('your-input-wins');
+            const { page, frame } = await openExample('human-answers-priority');
             await sample(page, 0);
             await settled(page, (values) => values.email === 'casey@example.com' && values.topic, 'the first read');
             await frame.locator('[name="data[name]"]').fill('Casey B.');

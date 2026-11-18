@@ -1,7 +1,7 @@
 {
-  "title": "Example: Streamed results",
-  "name": "exampleStreamedResults",
-  "path": "example-streamed-results",
+  "title": "Example: An agent helps you fill out a form",
+  "name": "exampleAgentHelpsYouFill",
+  "path": "example-agent-helps-you-fill",
   "type": "form",
   "display": "form",
   "tags": [

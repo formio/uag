@@ -1,17 +1,17 @@
 ---
-title: Streamed results
-summary: Decisions arrive in a fraction of a second and values a few seconds later, each applied to the form as it comes.
+title: An agent helps you fill out a form
+summary: The form fills in while the AI works: choices such as topic and urgency appear in a fraction of a second, and details such as name and email a few seconds later.
 group: Fill in forms
 mode: form
 docs: ../../developers/renderer.md#how-results-arrive
 highlight: uag, uagField
 ---
 
-The UAG answers an `agent/extract` call as a stream. Each group of engines sends its results as soon as it has them: **decision fields** (choices such as a topic, an urgency or a sentiment) are answered by a decision engine in milliseconds, and **value fields** (names, emails, dates) by a model a few seconds later. Agent Input applies each group to the form as it arrives, so the choices are in place while the values are still being read.
+The UAG sends its answers back in batches, each as soon as it is ready. **Choice fields** (here topic, urgency and tone) are picked in milliseconds by a decision engine, an AI built to choose between options. **Value fields** (name, email, date) are written a few seconds later by a larger AI model. Agent Input fills each batch into the form as it arrives, so the choices are in place while the details are still being read.
 
-Nothing in the form asks for streaming; every form tagged `uag` gets it. Which engine answers which field comes from the UAG's routing, or from `uagEngine` on a field.
+There is nothing to set up for this: every form the UAG can fill (one with the `uag` tag) works this way. A field's `uagEngine` property can choose which AI answers it.
 
-Pick a sample and watch the log: under the `agent/extract` call, the decisions and the values are listed in the order they arrived, with the time each took.
+Try it: pick a sample and watch the **What the UAG did** panel. Under the `agent/extract` request, the choices and the values are listed in the order they arrived, with the time each took.
 
 ## Try these
 

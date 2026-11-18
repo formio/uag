@@ -3162,10 +3162,10 @@
         }
       ]
     },
-    "exampleStreamedResults": {
-      "title": "Example: Streamed results",
-      "name": "exampleStreamedResults",
-      "path": "example-streamed-results",
+    "exampleAgentHelpsYouFill": {
+      "title": "Example: An agent helps you fill out a form",
+      "name": "exampleAgentHelpsYouFill",
+      "path": "example-agent-helps-you-fill",
       "type": "form",
       "display": "form",
       "tags": [
@@ -3504,7 +3504,7 @@
       ]
     },
     "exampleConfidence": {
-      "title": "Example: Confidence and the unsure band",
+      "title": "Example: Leave unsure answers to the person",
       "name": "exampleConfidence",
       "path": "example-confidence",
       "type": "form",
@@ -3813,10 +3813,10 @@
         }
       ]
     },
-    "exampleYourInputWins": {
-      "title": "Example: The person's own input wins",
-      "name": "exampleYourInputWins",
-      "path": "example-your-input-wins",
+    "exampleHumanAnswersPriority": {
+      "title": "Example: Human answers take priority",
+      "name": "exampleHumanAnswersPriority",
+      "path": "example-human-answers-priority",
       "type": "form",
       "display": "form",
       "tags": [
@@ -4122,7 +4122,7 @@
       ]
     },
     "exampleAgentOnlyFields": {
-      "title": "Example: Fields only the agent may set",
+      "title": "Example: Agent-only form fields",
       "name": "exampleAgentOnlyFields",
       "path": "example-agent-only-fields",
       "type": "form",
@@ -4766,10 +4766,10 @@
         "before"
       ]
     },
-    "exampleStreamedResults:save": {
+    "exampleAgentHelpsYouFill:save": {
       "title": "Save Submission",
       "name": "save",
-      "form": "exampleStreamedResults",
+      "form": "exampleAgentHelpsYouFill",
       "priority": 10,
       "method": [
         "create",
@@ -4818,10 +4818,10 @@
         "before"
       ]
     },
-    "exampleYourInputWins:save": {
+    "exampleHumanAnswersPriority:save": {
       "title": "Save Submission",
       "name": "save",
-      "form": "exampleYourInputWins",
+      "form": "exampleHumanAnswersPriority",
       "priority": 10,
       "method": [
         "create",

@@ -1,17 +1,17 @@
 ---
 title: Chat widget
-summary: Any form tagged uag can be filled in as a chat: the widget asks for what the form needs, then submits it.
+summary: Any form the UAG can fill can be filled in as a chat: the widget asks for what the form needs, then submits it once the person confirms.
 group: Chat widget
 mode: chat
 docs: ../../developers/chat.md#embed-a-chat
 highlight: uagChatInstructions
 ---
 
-`Formio.createChat` renders a form as a chat. Each turn goes to the form's `agent/chat` on the UAG, which reads the person's message, fills in what it can, and asks for the rest, one thing at a time. The questions come from the form: its fields, labels, descriptions, options and validation. When the form is complete, the widget shows a summary, and the person confirms before it is submitted, through the UAG, like any other submission.
+One call in the page code, `Formio.createChat`, shows a form as a chat. After each message, the UAG fills in what it can and asks for what is still missing. The questions come from the form: its fields, labels, descriptions, options and validation. When the form is complete, the widget shows a summary, and the person confirms before it is submitted, through the UAG, like any other submission.
 
-`uagChatInstructions` adds instructions of your own, such as a tone. The widget's text, buttons and styles are all templates you can change.
+`uagChatInstructions` adds instructions of your own. This form's ask the chat to be brief and friendly, ask for one thing at a time, and use the person's name. You can change the widget's text, buttons and styles.
 
-Type a message, or pick a sample to start.
+Try it: type a message, or pick a sample to start.
 
 ## Try these
 

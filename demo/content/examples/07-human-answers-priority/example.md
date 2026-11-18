@@ -1,17 +1,17 @@
 ---
-title: The person's own input wins
-summary: When the description is read again, every value the person typed or changed stays as they left it.
+title: Human answers take priority
+summary: If the person changes a field and then rewrites their request, the AI updates its own answers but leaves the person's changes alone.
 group: Fill in forms
 mode: form
 docs: ../../developers/renderer.md#rules-agent-input-keeps
 highlight: uag
 ---
 
-Agent Input keeps a record of which values it wrote and which the person changed. When the description is read again, it updates only its own values and the empty ones. Whatever the person typed, chose or corrected is never overwritten, and it is never asked about again.
+**Agent Input**, part of the UAG's browser library `@formio/uag-js`, fills the form from what the person writes in **Describe your request**, and fills it again whenever they rewrite it. Each time, it updates only the fields it filled itself and the ones still empty. A field the person typed in, picked or corrected belongs to them: it is never overwritten, and the AI does not answer it again.
 
-The same holds for the person's corrections to an uncertain suggestion: once they pick an option, it is theirs.
+The same holds when the AI is unsure and offers options (see [Leave unsure answers to the person](../05-confidence/example.md)): once the person picks one, it is theirs.
 
-Try it: pick the first sample, change the **Name** field, then pick the second sample. The email and topic follow the new description; the name stays yours.
+Try it: pick the first sample, change the **Name** field, then pick the second sample. The email, topic and subject change to match the new text; the name stays as you typed it.
 
 ## Try these
 

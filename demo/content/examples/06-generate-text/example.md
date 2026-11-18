@@ -1,19 +1,19 @@
 ---
 title: Generate written text
-summary: A model writes a text field, such as a draft reply, from the rest of the form, and the person edits it before saving.
+summary: The AI writes a text field, such as a draft reply, from the rest of the form, and the person edits it before saving.
 group: Fill in forms
 mode: form
 docs: ../../developers/agent-api.md#generate
 highlight: uag, uagField
 ---
 
-`agent/generate` writes a task's open fields (text, dates, amounts) from the data the form already has. Here the task is `reply`: its **criteria**, a content component with `uagField: "criteria"`, tells the model what to write, and the reply field names the task in `uag`.
+The AI can write free-text fields, such as a reply, from what is already in the form. Here it writes the **Reply** field, which is marked with the task name `reply` in `uag`.
 
-The criteria is the model's whole briefing. It is part of the form, so the person designing the form controls what the model writes, and it changes with the form, not in code.
+Its instructions are part of the form: the **Criteria** text (a content component marked `uagField: "criteria"`) tells the AI what to write, and it gets no other instructions. Because they live in the form, whoever designs the form controls what the AI writes, and can change it in the form builder without touching code.
 
-Nothing is saved by generating. The page code calls the operation when the form's **Draft a reply** button is pressed, and puts the draft into the field, where the person can change it before submitting.
+Nothing is saved by generating. When the **Draft a reply** button is pressed, the page code asks the UAG's `agent/generate` for a draft and puts it into the **Reply** field, where the person can change it before submitting. Pressing the button again replaces the reply with a new draft.
 
-Pick a sample to fill in the message, then press **Draft a reply**.
+Try it: pick a sample to fill in the message, then press **Draft a reply**.
 
 ## Try these
 

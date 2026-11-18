@@ -1,5 +1,5 @@
 {
-  "title": "Example: Fields only the agent may set",
+  "title": "Example: Agent-only form fields",
   "name": "exampleAgentOnlyFields",
   "path": "example-agent-only-fields",
   "type": "form",
