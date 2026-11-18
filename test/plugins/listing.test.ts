@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { requireTestLicense } from '../agent/fixtures';
-import { ADMIN_KEY, oneXModule, start, Started } from '../characterization/harness';
+import { ADMIN_KEY, oneXModule, PORTAL, SECRET, start, Started, user } from '../characterization/harness';
 
 /**
  * Engines, MCP tools and form actions are listed in the plugin registry as
@@ -74,5 +74,43 @@ describe('Plugin registry: engines, tools and actions listed', function () {
         started = await start({ config: { engines: ['stub-agent'] } });
         const types = new Set((await manifest()).map((p: any) => p.type));
         expect([...types]).to.include.members(['action', 'engine', 'tool']);
+    });
+
+    // @formio/uag-js fetches the manifest from {uagUrl}/plugins: an Enterprise or hosted
+    // project's routes are under its name, so a server for one project answers it at the
+    // root too, as it answers that project's OAuth endpoints.
+    describe('at the UAG\'s root, for an Enterprise or hosted project', () => {
+        const enterprise = { auth: { projectKey: 'project-key', secret: SECRET, portal: PORTAL }, engines: ['stub-agent'] };
+
+        it('answers GET /plugins with the project\'s manifest', async () => {
+            started = await start({ config: enterprise });
+            const named = await started.request().get('/myproject/plugins').set('x-token', 'project-key');
+            expect(named.status, named.text).to.equal(200);
+            const root = await started.request().get('/plugins').set('x-token', 'project-key');
+            expect(root.status, root.text).to.equal(200);
+            expect(root.body).to.deep.equal(named.body);
+        });
+
+        it('keeps the query, so ?type= filters as it does under the project', async () => {
+            started = await start({ config: enterprise });
+            const root = await started.request().get('/plugins?type=engine').set('x-token', 'project-key');
+            expect(root.status, root.text).to.equal(200);
+            expect(root.body.map((p: any) => p.type)).to.deep.equal(['engine']);
+        });
+
+        it('answers a signed-in user\'s token, as a page registering @formio/uag-js sends it', async () => {
+            started = await start({ config: enterprise });
+            const token = started.tokenFor(user);
+            const root = await started.request().get('/plugins').set('x-jwt-token', token);
+            expect(root.status, root.text).to.equal(200);
+            expect(root.body.map((p: any) => p.type)).to.include('engine');
+        });
+
+        it('refuses a caller with no credential, as the project\'s own route does', async () => {
+            started = await start({ config: enterprise });
+            const named = await started.request().get('/myproject/plugins');
+            const root = await started.request().get('/plugins');
+            expect(root.status).to.equal(named.status).and.to.equal(401);
+        });
     });
 });
