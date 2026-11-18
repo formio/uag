@@ -1,35 +1,36 @@
 name: Publish UAG
 
-# A pushed version tag publishes, from whatever branch it is on: tag a branch to
-# publish a release candidate for testing before its pull request is merged.
-# Run it by hand (Actions, Publish UAG, Run workflow; or `gh workflow run
-# publish.yml --ref <branch>`) to run only the Getting Started guides, which
-# publishes nothing.
+# A pushed version tag (v2.0.0, v2.0.0-rc.1) publishes, from whatever branch it
+# is on: tag a branch to publish a release candidate before its pull request is
+# merged. A run by hand (Actions, Publish UAG, Run workflow; or `gh workflow
+# run publish.yml --ref <ref>`) on a branch builds and tests it and pushes its
+# images to ECR only; on a tag it publishes that release, as a push of the tag
+# would. See RELEASING.md.
 on:
   push:
-    tags: ["v[0-9]*", "[0-9]*"] # v2.0.0-rc.1 or 2.0.0-rc.1
+    tags: ["v[0-9]*"]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  # The Getting Started page is where most people first run the UAG. Run its three
-  # guides as documented (test/e2e/layer3.getting-started.e2e.mjs), against an
-  # image built from this tag, before anything is published. E2E_STRICT fails a
-  # guide whose keys or license are missing instead of skipping it.
+  # The Getting Started page is where most people first run the UAG. Run its
+  # three guides as documented (test/e2e/layer3.getting-started.e2e.mjs) before
+  # anything is published. E2E_STRICT fails a guide whose keys or license are
+  # missing instead of skipping it.
   getting-started:
     runs-on: ubuntu-latest
     environment: production
-    permissions:
-      contents: read
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      # As in the publish job: before setup-node, which probes yarn.
+      # Before setup-node, which probes yarn: package.json pins yarn 4.
       - name: Enable Corepack
         run: corepack enable
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v5
+      # Node 24, as the images use: Node 25 and later ship without corepack.
+      - uses: actions/setup-node@v5
         with:
           node-version: "24"
           package-manager-cache: false
@@ -50,260 +51,182 @@ jobs:
           CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
           TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
 
-  publish:
+  # Build and test every package, and publish a prerelease to the private npm
+  # registry.
+  build:
     needs: getting-started
-    # Only a version tag publishes; a run by hand stops after the guides.
-    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: aws-build-runner
+    environment: production
+    outputs:
+      kind: ${{ steps.release.outputs.kind }}
+      version: ${{ steps.release.outputs.version }}
+      channel: ${{ steps.release.outputs.channel }}
+      targets: ${{ steps.release.outputs.targets }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: release
+        run: .github/run.sh release
+
+      - run: corepack enable && yarn install --immutable
+      - run: yarn workspaces foreach --all --topological run build
+      - run: yarn workspaces foreach --all --topological run test
+        env:
+          LICENSE_KEY: ""
+
+      # Before publishing anything. It skips the check that @formio/uag's
+      # dependencies are on npm; @formio/uag's prepublishOnly runs it.
+      - if: steps.release.outputs.kind != 'branch'
+        run: node scripts/check-release.mjs --before-publish
+
+      - name: Publish the prerelease to the private npm registry
+        if: steps.release.outputs.kind == 'pre'
+        env:
+          PRIVATE_NPM_REGISTRY: ${{ vars.PRIVATE_NPM_REGISTRY }}
+          PRIVATE_NPM_TOKEN: ${{ secrets.PRIVATE_NPM_TOKEN }}
+        run: .github/run.sh publish_prerelease "${{ steps.release.outputs.channel }}"
+
+  # A release goes to npmjs through Trusted Publishing (OIDC), which npm accepts
+  # only from GitHub-hosted runners. No NODE_AUTH_TOKEN: a token in the
+  # environment makes npm skip Trusted Publishing.
+  npm:
+    needs: build
+    if: needs.build.outputs.kind == 'release'
     runs-on: ubuntu-latest
     environment: production
     permissions:
       contents: read
-      # Required for npm Trusted Publishing (OIDC). Without it npm auth fails
-      # with a misleading 404 on PUT rather than a 401.
       id-token: write
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      # Image tags are unprefixed (1.12.3), while the git tag may carry a leading v,
-      # so github.ref_name cannot be used directly.
-      #
-      # Versions here are bumped by hand, so tagging without editing package.json
-      # is an easy mistake — and its symptom is a late, cryptic failure: the run
-      # gets all the way to `npm publish`, which rejects it with "cannot publish
-      # over the previously published versions", and every image and registry step
-      # after it silently skips. Fail immediately and say what to do instead.
-      - name: Resolve the release version
-        id: version
-        run: |
-          set -euo pipefail
-          TAG="${GITHUB_REF#refs/tags/}"
-          TAG_VERSION="${TAG#v}"
-          PKG_VERSION=$(jq -r .version package.json)
-          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-            echo "::error::Tag ${TAG} does not match package.json (${PKG_VERSION}). Run \`yarn release:version ${TAG_VERSION}\`, commit it, then move the tag to that commit."
-            exit 1
-          fi
-          echo "version=$TAG_VERSION" >> "$GITHUB_OUTPUT"
-          # A prerelease (2.0.0-rc.1) goes out under its own tag (rc), on npm and
-          # Docker Hub alike, so `npm install` and `:latest` keep the last release.
-          case "$TAG_VERSION" in
-            *-*)
-              PRE="${TAG_VERSION#*-}"
-              echo "channel=${PRE%%.*}" >> "$GITHUB_OUTPUT"
-              echo "prerelease=true" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "channel=latest" >> "$GITHUB_OUTPUT"
-              echo "prerelease=false" >> "$GITHUB_OUTPUT"
-              ;;
-          esac
-
-      ### Publish underlying npm package:
-
-      # package.json pins "packageManager": "yarn@4", and the runner's global
-      # yarn 1.x refuses to run anything without Corepack enabled. This must come
-      # BEFORE setup-node: setup-node probes `yarn cache dir` while configuring
-      # its cache, which hits the same error and fails the whole step.
       - name: Enable Corepack
         run: corepack enable
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v5
+      # Node 24 bundles npm 11.5.1 or later, which Trusted Publishing needs.
+      - uses: actions/setup-node@v5
         with:
-          # Node 24, as the images use: Node 25 and later ship without corepack.
           node-version: "24"
-          registry-url: "https://registry.npmjs.org"
-          # setup-node v5 enables package-manager caching by default, which is
-          # what runs the `yarn cache dir` probe. Corepack shims are installed
-          # against the pre-setup Node, so the probe can still fail here; the
-          # yarn install below is unaffected and fast enough without the cache.
           package-manager-cache: false
 
-      # Trusted Publishing needs npm >= 11.5.1; the LTS Node images still bundle
-      # npm 10.x.
-      - name: Upgrade npm for Trusted Publishing
-        run: npm install -g npm@latest
+      - run: yarn install --immutable
+      - run: yarn workspaces foreach --all --topological run build
 
-      - name: Install dependencies
-        run: yarn install --immutable
+      - name: Publish to npm
+        run: .github/run.sh publish_release
 
-      - name: Run tests
-        run: yarn test --if-present
+  # The registry lists one current version, so releases only; after npm, which
+  # it checks for the package.
+  mcp:
+    needs: [build, npm]
+    runs-on: aws-build-runner
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
 
-      - name: Build package
-        run: yarn build --if-present
+      - name: Publish to the MCP registry
+        env:
+          MCP_PRIVATE_KEY: ${{ secrets.MCP_PRIVATE_KEY }}
+        run: .github/run.sh publish_mcp "${{ needs.build.outputs.version }}"
 
-      # Every package here is released at the UAG's version (`yarn release:version`;
-      # the release check refuses one out of step). Each is published when npm does
-      # not have its version yet, so a rerun never republishes one. They go first,
-      # in dependency order: the SDK, then the engines (openai before the grok and
-      # gemini engines built on it), then the engine server and @formio/uag-js,
-      # and the UAG after them, because it depends on the SDK.
-      # First publish of a brand-new package name may not be possible over OIDC;
-      # if this fails on the very first run, publish once locally and let CI take
-      # over from then on.
-      # The UAG's prepublishOnly runs this too, but only after the engine
-      # packages are already out; check every package before publishing any.
-      - name: Check the release
-        # Before publishing: the packages @formio/uag depends on are published in the
-        # next step, and its prepublishOnly checks they are on npm before it goes out.
-        run: node scripts/check-release.mjs --before-publish
+  # Build both images for amd64 and arm64 on native remote builders, and push
+  # them to ECR.
+  images:
+    needs: build
+    runs-on: aws-build-runner
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
 
-      - name: Publish the engine packages to npm
-        run: |
-          set -euo pipefail
-          for dir in packages/engine-sdk engines/jev engines/claude engines/openai engines/grok engines/gemini packages/engine-server packages/uag-js; do
-            NAME=$(jq -r .name "$dir/package.json")
-            VERSION=$(jq -r .version "$dir/package.json")
-            if npm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then
-              echo "npm already has ${NAME}@${VERSION} — skipping."
-            else
-              (cd "$dir" && npm publish --access public --tag "${{ steps.version.outputs.channel }}")
-            fi
-          done
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.CI_ROLE_ARN }}
+          aws-region: us-east-1
 
-      # npm takes a few minutes to show a new version, and @formio/uag's prepublishOnly
-      # refuses to publish until the engine SDK it depends on is there. Wait for every
-      # package this release published, so the UAG's check never races them.
-      - name: Wait for the packages to appear on npm
-        run: |
-          set -euo pipefail
-          for dir in packages/engine-sdk engines/jev engines/claude engines/openai engines/grok engines/gemini packages/engine-server packages/uag-js; do
-            NAME=$(jq -r .name "$dir/package.json")
-            VERSION=$(jq -r .version "$dir/package.json")
-            for attempt in $(seq 1 60); do
-              if npm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then continue 2; fi
-              sleep 10
-            done
-            echo "::error::${NAME}@${VERSION} did not appear on npm within 10 minutes."
-            exit 1
-          done
+      - uses: aws-actions/amazon-ecr-login@v2
 
-      # No NODE_AUTH_TOKEN: OIDC supplies short-lived credentials, and leaving a
-      # token in the environment makes npm prefer it and skip Trusted Publishing.
-      # Skipped when npm already has this version, so rerunning a release whose
-      # image steps failed publishes the images instead of stopping here.
-      - name: Publish package to npm
-        run: |
-          set -euo pipefail
-          NAME=$(jq -r .name package.json)
-          VERSION="${{ steps.version.outputs.version }}"
-          if npm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then
-            echo "npm already has ${NAME}@${VERSION} — skipping."
-          else
-            npm publish --tag "${{ steps.version.outputs.channel }}"
-          fi
+      - name: Set up the remote builders
+        uses: docker/setup-buildx-action@v4
+        with:
+          driver: remote
+          endpoint: ${{ vars.BUILDER_AMD64_ENDPOINT }}
+          platforms: linux/amd64
+          append: |-
+            - endpoint: ${{ vars.BUILDER_ARM64_ENDPOINT }}
+              platforms: linux/arm64
+        env:
+          BUILDER_NODE_0_AUTH_TLS_CACERT: ${{ secrets.BUILDER_CA }}
+          BUILDER_NODE_0_AUTH_TLS_CERT: ${{ secrets.BUILDER_CERT }}
+          BUILDER_NODE_0_AUTH_TLS_KEY: ${{ secrets.BUILDER_KEY }}
+          BUILDER_NODE_1_AUTH_TLS_CACERT: ${{ secrets.BUILDER_CA }}
+          BUILDER_NODE_1_AUTH_TLS_CERT: ${{ secrets.BUILDER_CERT }}
+          BUILDER_NODE_1_AUTH_TLS_KEY: ${{ secrets.BUILDER_KEY }}
 
-      - name: Docker Login
-        uses: docker/login-action@v4
+      - name: Bake and push
+        uses: docker/bake-action@v7
+        with:
+          source: .
+          push: true
+          vars: |
+            VERSION=${{ needs.build.outputs.version }}
+            CHANNEL=${{ needs.build.outputs.channel }}
+            REGISTRIES=${{ vars.PRIVATE_ECR_REGISTRY }}/
+
+  # Releases only: prereleases and branches stay in ECR.
+  dockerhub:
+    needs: [build, images]
+    if: needs.build.outputs.kind == 'release'
+    runs-on: aws-build-runner
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/run.sh
+          sparse-checkout-cone-mode: false
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.CI_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/login-action@v4
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # arm64 as well as amd64: a large share of developers run Apple Silicon,
-      # where an amd64-only image is emulated and warns on every run. Buildx
-      # replaces the previous build/tag/push trio — it builds both platforms and
-      # pushes a single multi-arch manifest, which the plain docker driver cannot
-      # do at all.
-      # The arm64 half is built under QEMU, which can crash and then hang instead
-      # of failing. Each image step has a timeout far above its usual 2-3 minutes,
-      # so a hang fails the run and "Re-run failed jobs" can try again.
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      - run: .github/run.sh copy_to_dockerhub "${{ vars.PRIVATE_ECR_REGISTRY }}" "${{ needs.build.outputs.version }}" "${{ needs.build.outputs.channel }}"
 
-      - name: Set up Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push formio/uag
-        timeout-minutes: 30
-        uses: docker/build-push-action@v6
+  # A prerelease deploys to test; a release to test, then production.
+  deploy:
+    needs: [build, images]
+    if: needs.build.outputs.kind != 'branch'
+    runs-on: aws-build-runner
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      max-parallel: 1
+      matrix:
+        target: ${{ fromJSON(needs.build.outputs.targets) }}
+    steps:
+      - uses: actions/checkout@v7
         with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          provenance: true
-          # latest for a release; rc (or beta, ...) for a prerelease.
-          tags: |
-            formio/uag:${{ steps.version.outputs.channel }}
-            formio/uag:${{ steps.version.outputs.version }}
+          sparse-checkout: .github/run.sh
+          sparse-checkout-cone-mode: false
 
-      ### Publish the engine server image (formio/uag-engines).
-      # Built only when Docker Hub does not have its package's version yet.
-      - name: Check whether the engine server image needs publishing
-        id: engine_server
-        run: |
-          set -euo pipefail
-          VERSION=$(jq -r .version packages/engine-server/package.json)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          CODE=$(curl -s -o /dev/null -w '%{http_code}' \
-            "https://hub.docker.com/v2/repositories/formio/uag-engines/tags/${VERSION}")
-          if [ "$CODE" = "200" ]; then
-            echo "Docker Hub already has formio/uag-engines:${VERSION} — skipping image."
-          else
-            echo "docker=publish" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Build and push formio/uag-engines
-        if: steps.engine_server.outputs.docker == 'publish'
-        timeout-minutes: 30
-        uses: docker/build-push-action@v6
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
-          context: .
-          file: packages/engine-server/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          provenance: true
-          tags: |
-            formio/uag-engines:${{ steps.version.outputs.channel }}
-            formio/uag-engines:${{ steps.engine_server.outputs.version }}
+          role-to-assume: ${{ vars.CI_ROLE_ARN }}
+          aws-region: ${{ matrix.target.region }}
 
-      ### Publish MCP server (releases only: the registry lists one current version):
-      - name: Install mcp-publisher
-        if: steps.version.outputs.prerelease != 'true'
-        run: |
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
-
-      - name: Authenticate to MCP Registry
-        if: steps.version.outputs.prerelease != 'true'
-        run: ./mcp-publisher login dns --domain form.io --private-key ${{ secrets.MCP_PRIVATE_KEY }}
-
-      - name: Set version in server.json
-        if: steps.version.outputs.prerelease != 'true'
-        run: |
-          VERSION=${{ steps.version.outputs.version }}
-          jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
-
-      - name: Publish server to MCP Registry
-        if: steps.version.outputs.prerelease != 'true'
-        run: ./mcp-publisher publish
-
-      ### Deploy: a prerelease (2.0.0-rc.1) to the test environment, a release
-      # (2.0.0) to production. Each is optional: set the environment's hook URL as
-      # a secret, and its token if the hook needs one (sent as a bearer token):
-      #   DEPLOY_TEST_HOOK_URL, DEPLOY_TEST_HOOK_TOKEN
-      #   DEPLOY_PRODUCTION_HOOK_URL, DEPLOY_PRODUCTION_HOOK_TOKEN
-      # The hook gets the version and the image tags to deploy.
-      - name: Notify the deployment hook
-        env:
-          PRERELEASE: ${{ steps.version.outputs.prerelease }}
-          TEST_URL: ${{ secrets.DEPLOY_TEST_HOOK_URL }}
-          TEST_TOKEN: ${{ secrets.DEPLOY_TEST_HOOK_TOKEN }}
-          PRODUCTION_URL: ${{ secrets.DEPLOY_PRODUCTION_HOOK_URL }}
-          PRODUCTION_TOKEN: ${{ secrets.DEPLOY_PRODUCTION_HOOK_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [ "$PRERELEASE" = "true" ]; then TARGET=test URL="${TEST_URL:-}" TOKEN="${TEST_TOKEN:-}"
-          else TARGET=production URL="${PRODUCTION_URL:-}" TOKEN="${PRODUCTION_TOKEN:-}"; fi
-          if [ -z "$URL" ]; then
-            echo "No deployment hook for the ${TARGET} environment; nothing to deploy."
-            exit 0
-          fi
-          VERSION="${{ steps.version.outputs.version }}"
-          BODY=$(jq -n --arg environment "$TARGET" --arg version "$VERSION" --arg tag "$GITHUB_REF_NAME" --arg commit "$GITHUB_SHA" \
-            '{environment: $environment, version: $version, tag: $tag, commit: $commit,
-              images: {uag: "formio/uag:\($version)"}}')
-          curl -fsS --retry 3 -X POST "$URL" -H 'Content-Type: application/json' \
-            ${TOKEN:+-H "Authorization: Bearer $TOKEN"} -d "$BODY"
-          echo "Asked the ${TARGET} environment to deploy ${VERSION}."
+      - name: Deploy
+        run: .github/run.sh deploy "${{ vars.PRIVATE_ECR_REGISTRY }}/formio" "${{ needs.build.outputs.version }}" "${{ matrix.target.prefix }}" "${{ matrix.target.region }}"
