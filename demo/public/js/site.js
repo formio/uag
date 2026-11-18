@@ -29,6 +29,19 @@
         if (panel) panel.hidden = !selected;
       });
     }
+    // A tab with data-hash="trial" opens from a link to #trial, on load or from
+    // this page, and the tabs scroll into view.
+    function fromHash() {
+      var hash = decodeURIComponent(location.hash.slice(1));
+      if (!hash) return;
+      buttons.forEach(function (button) {
+        if (button.getAttribute('data-hash') !== hash) return;
+        select(button);
+        tabs.scrollIntoView();
+      });
+    }
+    fromHash();
+    window.addEventListener('hashchange', fromHash);
     buttons.forEach(function (button, index) {
       button.addEventListener('click', function () { select(button); });
       button.addEventListener('keydown', function (event) {

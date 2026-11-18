@@ -50,8 +50,8 @@ describe('Demo site build', function () {
             expect(() => showcasePathOf({ DEMO_SHOWCASE_PATH: '/x secret' })).to.throw().with.property('message').that.does.not.include('secret');
         });
 
-        it('sends sales calls to action to Form.io\'s contact page and the trial to its sign-up, unless told otherwise', function () {
-            expect(readConfig({}).links).to.include({ contact: 'https://form.io/contact-us', trial: 'https://portal.form.io' });
+        it('sends sales calls to action to Form.io\'s contact page and the trial to its steps on Getting Started, unless told otherwise', function () {
+            expect(readConfig({}).links).to.include({ contact: 'https://form.io/contact-us', trial: '/getting-started#trial', portal: 'https://portal.form.io' });
             expect(readConfig({ CONTACT_URL: 'https://form.io/uag-contact', TRIAL_URL: 'https://form.io/uag-trial' }).links).to.include({ contact: 'https://form.io/uag-contact', trial: 'https://form.io/uag-trial' });
         });
 
@@ -386,12 +386,33 @@ describe('Demo site build', function () {
             expect(fs.existsSync(path.join(config.out, 'contact'))).to.equal(false);
             const files = htmlFiles();
             expect(files.filter((file) => /(?:href|action)="(?:\/uag)?\/contact\b/.test(read(file)))).to.deep.equal([]);
-            for (const file of files.filter((name) => !isApp(name))) {
+            expect(read('index.html')).to.include(`href="${config.links.contact}"`);
+        });
+
+        it('keeps calls to action out of the header: only the site\'s sections, on every page', function () {
+            for (const file of htmlFiles().filter((name) => !isApp(name))) {
                 const html = read(file);
                 const header = html.slice(html.indexOf('<header'), html.indexOf('</header>'));
-                expect(header, file).to.include(`href="${config.links.contact}">Talk to Sales</a>`);
-                expect(header, file).to.include(`href="${config.links.trial}">Try free for 30 days</a>`);
+                const links = [...header.matchAll(/<a [^>]*>([^<]*)<\/a>/g)].map(([, text]) => text.trim());
+                expect(links, file).to.deep.equal(['Product', 'Getting Started', 'Examples', 'Developers']);
+                expect(header, file).to.not.include('Talk to Sales').and.not.include('Try free for 30 days').and.not.include('Get the plugin');
+                expect(header, file).to.not.include(config.links.contact);
             }
+        });
+
+        it('sends every "Try free for 30 days" to the 30-day free trial tab of Getting Started, which links the portal', function () {
+            expect(config.links.trial).to.equal('/getting-started#trial');
+            for (const file of htmlFiles().filter((name) => !isApp(name))) {
+                const html = read(file);
+                for (const [, href] of html.matchAll(/<a [^>]*href="([^"#][^"]*)"[^>]*>[^<]*(?:Try free for 30 days|30-day free trial)<\/a>/g)) {
+                    if (file === 'getting-started/index.html' && href === config.links.portal) continue;
+                    expect(href, file).to.equal(`${config.basePath}/getting-started#trial`);
+                }
+            }
+            const start = read('getting-started/index.html');
+            expect(start).to.include('id="tab-saas" aria-controls="panel-saas" aria-selected="false" tabindex="-1" data-hash="trial">');
+            const panel = start.slice(start.indexOf('id="panel-saas"'));
+            expect(panel).to.include(`Sign up for a <a href="${config.links.portal}">30-day free trial</a> on portal.form.io`);
         });
 
         it('closes every page with a one-line footer: copyright and the open-source notice, and no links', function () {
@@ -410,7 +431,7 @@ describe('Demo site build', function () {
             for (const file of ['index.html', 'getting-started/index.html']) {
                 const html = read(file);
                 expect(html, file).to.include(`<a class="btn btn-primary" href="${config.links.contact}">Talk to Sales`);
-                expect(html, file).to.include(`<a class="link-arrow" href="${config.links.trial}">Try free for 30 days</a>`);
+                expect(html, file).to.include(`<a class="link-arrow" href="${config.basePath}${config.links.trial}">Try free for 30 days</a>`);
             }
         });
 
