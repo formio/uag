@@ -28,7 +28,7 @@ export interface AgentInputError extends Error {
 export interface AttachOptions {
     /** The task to run (the `uag` value). Default: the task of the input that triggered it. */
     task?: string;
-    /** When to extract. Default `blur`; `next` for wizards. */
+    /** When to extract. Default `blur`, on wizards too when attached by hand; `UAG()`'s automatic attachment uses `next` for wizards. */
     trigger?: 'blur' | 'pause' | 'next' | 'button';
     /** The UAG's URL, when not the one given to `UAG()`. */
     uagUrl?: string;

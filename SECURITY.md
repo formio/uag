@@ -18,7 +18,7 @@ Include a description of the issue, steps to reproduce, and the affected package
 | `@formio/uag`, image `formio/uag` | Yes | The latest published version |
 | `@formio/uag-sdk`, `@formio/uag-jev`, `@formio/uag-claude` 2.x, `@formio/uag-openai`, `@formio/uag-grok`, `@formio/uag-gemini`, `@formio/uag-js` | Yes, released with the UAG at its version | The latest published version |
 | `@formio/uag-engines`, image `formio/uag-engines` | Yes, released with the UAG at its version | The latest published version |
-| `@formio/uag-extras`, image `formio/uag-documents` | No: released from a separate repository, versioned on their own (1.x) | The latest published version. Report vulnerabilities in them the same way. |
+| `@formio/uag-extras`, image `formio/uag-documents` | No: released from a separate repository, at a 2.x version of their own whose major is the UAG's | The latest published version. Report vulnerabilities in them the same way. |
 | The retired Claude integration, `@formio/uag-claude` 1.x and image `formio/uag-claude` | Yes, from the `1.x` branch | Security fixes on its 1.3.x line |
 
 ## Scope notes

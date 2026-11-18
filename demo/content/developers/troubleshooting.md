@@ -23,7 +23,7 @@ Most UAG problems are configuration, and they surface far from their cause: a mi
 
 | Symptom | Cause |
 |---|---|
-| The UAG exits with "No Form.io project could be loaded" | `PROJECT` is not set. |
+| The UAG exits with "No Form.io project could be loaded" | `PROJECT` is not set, or its project could not be loaded: the lines logged before it say why (see the rows below). |
 | The UAG exits with "Unable to load project from ..." or "Unable to load the project template from ..." | `PROJECT` is unreachable from inside the UAG container, or it is paired with the wrong credential: `ADMIN_KEY` for Open Source, `PROJECT_KEY` (plus a `LICENSE_KEY` when self-hosted Enterprise) for a project. Set `DEBUG=formio:error,formio:ProjectInterface` to see each attempt and the status Form.io answered (`401`: a wrong key). |
 | The UAG cannot reach the server at all, and every tool fails | `PROJECT` is an `https` URL with a self-signed certificate: set `NODE_TLS_REJECT_UNAUTHORIZED=0` (private deployments only). Otherwise `PROJECT` is a browser address, not a container-to-container one. |
 | The UAG exits on first boot, then works after a restart | Form.io was not answering yet. Add a healthcheck and `depends_on: condition: service_healthy`, or raise `PROJECT_RETRIES`. |

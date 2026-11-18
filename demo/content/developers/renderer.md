@@ -154,7 +154,7 @@ The tag now does four things at once. A form tagged `uag`:
 | `requireReview` | `false` | Make the user check each uncertain value before the wizard moves on or the form submits. See [Rules](#rules-agent-input-keeps). |
 | `fetch` | the global `fetch` | The `fetch` Agent Input uses. |
 | `onStart`, `onResult`, `onError`, `onDone` | | Agent Input's callbacks, for every form. See [Attaching by hand](#attaching-by-hand). |
-| `manifest` | fetched at registration | The installed plugins, as `GET {project}/plugins` describes them, for the modules' components (see [`client`](#for-module-components-client)). Without it, registering fetches them with the user's token. `uag.use.js` passes the UAG's own. |
+| `manifest` | fetched at registration | The installed plugins, as `GET {project}/plugins` describes them (the UAG answers it at its root too, `{uagUrl}/plugins`, where registering fetches it), for the modules' components (see [`client`](#for-module-components-client)). Without it, registering fetches them with the user's token. `uag.use.js` passes the UAG's own. |
 
 ## Set up the form
 
@@ -183,7 +183,7 @@ Try it live: [Fill a form from a description](../examples/02-fill-from-descripti
 
 ## Attaching by hand
 
-`UAG.attach(form, options)` attaches Agent Input to one rendered form, for example with `agentInput: false`, or to call a relay of your own. It replaces the form's earlier attachment, the automatic one included, so the form never extracts twice. The package includes TypeScript types.
+`UAG.attach(form, options)` attaches Agent Input to one rendered form, for example with `agentInput: false`, or to call a relay of your own. It replaces the form's earlier attachment, the automatic one included, so the form never extracts twice. Its `trigger` defaults to `blur` on every form, wizards included (only the automatic attachment picks `next` for a wizard), so pass `trigger: 'next'` when attaching a wizard by hand. The package includes TypeScript types.
 
 ```ts
 UAG.attach(form: Webform | Wizard, options?: {
