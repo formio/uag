@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- A UAG in front of a self-hosted Enterprise project or a project on Form.io's hosted service answers `GET /plugins` at its root, as `GET {project}/plugins`, with the same authentication and listing. `@formio/uag-js` fetches the plugin manifest from `{uagUrl}/plugins` when it is registered with `UAG()`, and those projects are served only under their name and id, so the manifest came back empty: modules' components saw no plugins, and an AI Document's result could not be edited. Open Source projects, served at the root, already answered it, and `/uag-js/uag.use.js` carries the manifest itself.
+
 ## 2.0.1
 
 ### Fixed

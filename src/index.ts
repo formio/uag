@@ -417,8 +417,26 @@ export class UAGServer extends Server {
       debug(`Could not report the edition: ${err?.message || err}`);
     }
     router.use(uagProject.uagRouter(false));
-    return router;
+    return withRootManifest(router, uagProject);
   }
+}
+
+/**
+ * An Open Source project is served at the UAG's root; an Enterprise or hosted
+ * project only under its name and id. @formio/uag-js fetches the plugin manifest
+ * from {uagUrl}/plugins, so for those projects the UAG answers it at the root too,
+ * as it answers the project's OAuth endpoints: the request goes on as the
+ * project's own GET {project}/plugins, with its authentication and its listing.
+ */
+function withRootManifest(router: Router, project: UAGProjectInterface): Router {
+  if (project.oss || !project.name) return router;
+  const root = Router();
+  root.get('/plugins', (req, res, next) => {
+    req.url = `/${project.name}${req.url}`;
+    next();
+  });
+  root.use(router);
+  return root;
 }
 
 export * from '@formio/appserver';
