@@ -69,7 +69,7 @@ describe('Layer 1: the demo site header', function () {
     }
 
     /** Each visible header link's text, left edge and width. */
-    const header = (page) => page.evaluate(() => [...document.querySelectorAll('.site-header .nav a, .site-header .header-actions a')]
+    const header = (page) => page.evaluate(() => [...document.querySelectorAll('.site-header .nav a')]
         .filter((link) => link.offsetParent)
         .map((link) => {
             const box = link.getBoundingClientRect();
@@ -89,7 +89,7 @@ describe('Layer 1: the demo site header', function () {
             await page.context().close();
         }
         for (const pathname of PAGES) expect(seen[pathname], pathname).to.deep.equal(seen['/']);
-        expect(seen['/']).to.have.length.greaterThan(4);
+        expect(seen['/'].map((link) => link.split(' @')[0])).to.deep.equal(['Product', 'Getting Started', 'Examples', 'Developers']);
     });
 
     it('barely moves the header links when the font arrives late, on a slow first visit', async function () {
@@ -100,11 +100,11 @@ describe('Layer 1: the demo site header', function () {
             await route.continue();
         });
         const page = await context.newPage();
-        const lefts = () => page.evaluate(() => [...document.querySelectorAll('.site-header .nav a, .site-header .header-actions a')]
+        const lefts = () => page.evaluate(() => [...document.querySelectorAll('.site-header .nav a')]
             .filter((link) => link.offsetParent)
             .map((link) => ({ text: link.textContent.trim(), left: link.getBoundingClientRect().left })));
         await page.goto(`${base}/`, { waitUntil: 'commit' });
-        await page.waitForSelector('.site-header .header-actions a');
+        await page.waitForSelector('.site-header .nav a');
         const before = await lefts();
         expect(await page.evaluate(() => document.fonts.check('500 15px Inter')), 'Inter loaded before the first read').to.equal(false);
         await page.evaluate(() => document.fonts.ready);
@@ -126,7 +126,7 @@ describe('Layer 1: the demo site header', function () {
             await page.setViewportSize({ width, height: 400 });
             // The brand's parts, not the brand: its box shrinks while its text overflows.
             const crowded = await page.evaluate(() => {
-                const items = [...document.querySelectorAll('.site-header .brand img, .site-header .brand-product, .site-header .nav a, .site-header .header-actions a, .site-header .menu-toggle')]
+                const items = [...document.querySelectorAll('.site-header .brand img, .site-header .brand-product, .site-header .nav a, .site-header .menu-toggle')]
                     .filter((item) => item.offsetParent)
                     .map((item) => ({ text: item.textContent.trim() || item.className, box: item.getBoundingClientRect() }));
                 const row = document.querySelector('.site-header .container').getBoundingClientRect();
@@ -139,6 +139,26 @@ describe('Layer 1: the demo site header', function () {
             });
             expect(crowded, `${width}px`).to.deep.equal([]);
         }
+        await context.close();
+    });
+
+    it('opens Getting Started on its 30-day free trial tab from a "Try free for 30 days" link', async function () {
+        const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+        const page = await context.newPage();
+        const shown = () => page.evaluate(() => [...document.querySelectorAll('.tab-panel')].filter((panel) => !panel.hidden).map((panel) => panel.id));
+        // From another page: the home page's link.
+        await page.goto(`${base}/`);
+        await page.locator('a', { hasText: 'Try free for 30 days' }).first().click();
+        await page.waitForURL(/\/getting-started#trial$/);
+        expect(await shown()).to.include('panel-saas').and.not.include('panel-ent');
+        expect(await page.locator('#tab-saas').getAttribute('aria-selected')).to.equal('true');
+        expect(await page.locator('#panel-saas').isVisible()).to.equal(true);
+        // From Getting Started itself, with another tab open.
+        await page.goto(`${base}/getting-started`);
+        expect(await shown()).to.include('panel-ent').and.not.include('panel-saas');
+        await page.locator('a', { hasText: 'Try free for 30 days' }).last().click();
+        await page.waitForFunction(() => !document.getElementById('panel-saas').hidden);
+        expect(await shown()).to.include('panel-saas').and.not.include('panel-ent');
         await context.close();
     });
 });

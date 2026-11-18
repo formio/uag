@@ -44,7 +44,7 @@ describe('Demo site content', function () {
         expect(siteLink('../examples/02-fill-from-description/example.md#x', context)).to.equal('/examples/fill-from-description#x');
         expect(siteLink('../examples/10-chat-widget/', context)).to.equal('/examples/chat-widget');
         expect(siteLink('../examples/01-fill-from-scanned-form/sample-scan.jpg', context)).to.equal('/examples/fill-from-scanned-form/sample-scan.jpg');
-        const example = { dir: path.join(root, 'content/examples/03-streamed-results'), contentRoot: path.join(root, 'content') };
+        const example = { dir: path.join(root, 'content/examples/03-agent-helps-you-fill'), contentRoot: path.join(root, 'content') };
         expect(siteLink('../02-fill-from-description/example.md', example)).to.equal('/examples/fill-from-description');
         expect(siteLink('../../developers/renderer.md#triggers', example)).to.equal('/developers/renderer#triggers');
         expect(siteLink('../02-fill-from-description/form.json', example)).to.equal(null);

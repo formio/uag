@@ -1,19 +1,19 @@
 ---
 title: Choose from a set of options
-summary: A choice field is decided from the person's words, using a description of what each option means.
+summary: The AI picks a choice field's option from the person's words, using a description of what each option means.
 group: Fill in forms
 mode: form
 docs: ../../developers/form-properties.md#uagoptiondescriptions
 highlight: uagOptionDescriptions
 ---
 
-A select or radio field that belongs to a task is a **decision field**: the UAG chooses one of its options, and never writes a value that is not an option. A decision engine answers it with a confidence, so the form can tell a sure answer from a guess.
+When the AI fills a select or radio field, it can only pick one of the field's options, never write something else. It also says how sure it is (see [Leave unsure answers to the person](../05-confidence/example.md)).
 
-Each field's label is asked of the text first: does it say anything about this at all? Phrase it as the question the text answers ("What is it about?", not "Which team should handle it?"), or the decision engine finds nothing to decide.
+Before picking an option, the AI checks whether the text says anything about the field at all, using the field's label as the question. So write the label as a question the text itself answers ("What is it about?", not "Which team should handle it?"); otherwise the AI may decide the text does not mention it and leave the field empty.
 
-Option labels alone are often too short to decide well. `uagOptionDescriptions` gives each option a sentence saying which situations it covers, in the form's own terms, as a person filling it would be told. It is a JSON object from each option's value to its description.
+Option labels alone are often too short to choose well. `uagOptionDescriptions` adds a sentence to each option saying what it covers, as you would explain it to someone filling in the form; for example, Billing: "Payments, charges, refunds, receipts and prices." It is a JSON object from each option's value to its description.
 
-Try the samples: each fits one team, but only once you know what each team handles.
+Try the samples. Each fits a single option, but only once you read the option descriptions: a receipt with the wrong amount is Billing, and an export that comes out empty is Product. **How urgent is it?** works the same way.
 
 ## Try these
 

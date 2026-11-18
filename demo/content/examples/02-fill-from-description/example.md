@@ -7,11 +7,11 @@ docs: ../../developers/renderer.md#set-up-the-form
 highlight: uag, uagField
 ---
 
-Agent Input reads one field, the task's **input**, and fills in the rest of the form from what the person wrote there. Each field the task should fill names the task in its `uag` property; the input field also has `uagField: "input"`.
+**Agent Input**, part of the UAG's browser library `@formio/uag-js`, reads what the person wrote in one field (**Describe your request**) and fills in the rest of the form from it. You choose which fields it fills by giving each one the same task name in its `uag` property (here `fill`), and you mark the field to read with `uagField: "input"`.
 
-The values arrive as suggestions. Nothing is saved until the person reviews the form and submits it, and the form's own validation applies to every value, whoever entered it.
+The AI only fills the fields in; the person can change any of them. Nothing is saved until the person checks the form and submits it, and the form's own validation applies to every value, whoever entered it.
 
-Leave the description field, or pick a sample, to see the form fill in. The log beside the form shows the `agent/extract` call and what each engine returned.
+Try it: type a request and click outside the box, or pick a sample, to see the form fill in. The **What the UAG did** panel beside the form shows the request to the UAG and what the AI returned for each field.
 
 ## Try these
 

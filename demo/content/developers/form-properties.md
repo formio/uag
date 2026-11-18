@@ -324,7 +324,7 @@ When the companion is itself flagged with the task, it is excluded from answerin
 
 A wizard page conditioned on `claimTypeConfidence` below `0.6` then appears only when triage is unsure.
 
-Try it live: [Confidence and the unsure band](../examples/05-confidence/example.md).
+Try it live: [Leave unsure answers to the person](../examples/05-confidence/example.md).
 
 ### `uagAuthoritative`
 
@@ -348,7 +348,7 @@ Use it for fields that drive sensitive routing or outcomes and must not be set b
 { "type": "number", "key": "overallScore", "label": "Overall score", "properties": { "uag": "admissions", "uagAuthoritative": "true" } }
 ```
 
-Try it live: [Fields only the agent may set](../examples/09-agent-only-fields/example.md).
+Try it live: [Agent-only form fields](../examples/09-agent-only-fields/example.md).
 
 ### `uagAgentDecides`
 

@@ -48,7 +48,7 @@ The build reads its settings from the environment ([`lib/config.mjs`](./lib/conf
 | `DEMO_OUT` | `dist` | Where the build is written. |
 | `DEMO_ASSET_VERSION` | The release's version | Added to the URLs of scripts and styles (`?v=`). |
 | `CONTACT_URL` | `https://form.io/contact-us` | Where "Talk to Sales" and the other sales calls to action go. |
-| `TRIAL_URL` | `https://portal.form.io` | Where "Try free for 30 days" goes. |
+| `TRIAL_URL` | `/getting-started#trial` | Where "Try free for 30 days" goes: the 30-day free trial tab of Getting Started. |
 | `FORMIO_JS_VERSION` | `5.6.1` | The formio.js the demo apps load. |
 
 The UAG's settings are in [`.env.example`](./.env.example).

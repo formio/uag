@@ -157,8 +157,9 @@ export function readConfig(env = process.env) {
         links: {
             // Where sales calls to action go: Form.io's contact page, which marketing tracks.
             contact: env.CONTACT_URL || 'https://form.io/contact-us',
-            // Where "Try free for 30 days" goes: Form.io's trial sign-up.
-            trial: env.TRIAL_URL || 'https://portal.form.io',
+            // Where "Try free for 30 days" goes: the trial's steps on Getting Started,
+            // which say how to run the UAG against a trial project.
+            trial: env.TRIAL_URL || '/getting-started#trial',
             portal: env.PORTAL_URL || 'https://portal.form.io',
             github: env.GITHUB_URL || 'https://github.com/formio/uag',
             // Links into the repository's files point at this release's tag, so they

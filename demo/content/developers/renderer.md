@@ -290,7 +290,7 @@ type ResultEvent = {
 
 A new request aborts the one in flight. An aborted request calls neither `onError` nor `onDone`.
 
-Try it live: [Streamed results](../examples/03-streamed-results/example.md).
+Try it live: [An agent helps you fill out a form](../examples/03-agent-helps-you-fill/example.md).
 
 ### Fields the decisions reveal
 
@@ -307,7 +307,7 @@ When decision results changed values and the `done` summary lists fields exclude
 
 Values Agent Input writes are values the user submits. To make decisions that drive sensitive routing trustworthy, re-decide them on the server: the form's submissions already go to the UAG, so add an "Agent: Run task" action that runs before the save and answers the task's decision fields only, with those fields marked `uagAuthoritative` (see [Security](./security.md#fields-the-server-owns)).
 
-Try it live: [The person's own input wins](../examples/07-your-input-wins/example.md).
+Try it live: [Human answers take priority](../examples/07-human-answers-priority/example.md).
 
 ### Styles
 

@@ -105,13 +105,13 @@ describe('Feature examples', function () {
             expect(examples.map((example) => example.title)).to.deep.equal([
                 'Fill an online form from a scanned paper form',
                 'Fill a form from a description',
-                'Streamed results',
+                'An agent helps you fill out a form',
                 'Choose from a set of options',
-                'Confidence and the unsure band',
+                'Leave unsure answers to the person',
                 'Generate written text',
-                'The person\'s own input wins',
+                'Human answers take priority',
                 'Run an agent task after a submission',
-                'Fields only the agent may set',
+                'Agent-only form fields',
                 'Chat widget',
                 'Validation in the chat widget',
             ]);

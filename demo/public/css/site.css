@@ -8,9 +8,9 @@
  * Until Inter arrives, text is set in Arial scaled to Inter's widths and heights
  * (size-adjust, then Inter's ascent and descent over that scale), so the header
  * barely moves when it swaps in. Tuned on the header's own labels: medium for its
- * links, bold for its buttons.
+ * links, bold for the brand.
  */
-@font-face { font-family: 'Inter Fallback'; font-weight: 100 549; src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('Arimo'); size-adjust: 108.2%; ascent-override: 89.5%; descent-override: 22.3%; line-gap-override: 0%; }
+@font-face { font-family: 'Inter Fallback'; font-weight: 100 549; src: local('Arial'), local('ArialMT'), local('Liberation Sans'), local('Arimo'); size-adjust: 107.2%; ascent-override: 90.4%; descent-override: 22.5%; line-gap-override: 0%; }
 @font-face { font-family: 'Inter Fallback'; font-weight: 550 900; src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'), local('Arimo Bold'); size-adjust: 100.5%; ascent-override: 96.4%; descent-override: 24%; line-gap-override: 0%; }
 @font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 100 800; font-display: swap; src: url('../fonts/jetbrains-mono-latin.woff2') format('woff2'); }
 
@@ -120,11 +120,6 @@ a:hover .arrow::after, .btn:hover .arrow::after, a.arrow:hover::after { transfor
 .nav a { color: var(--char); font-weight: 500; font-size: 15px; padding: 8px 12px; border-radius: 6px; white-space: nowrap; }
 .nav a:hover { color: var(--ink); background: var(--gray2); text-decoration: none; }
 .nav a[aria-current] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--green); border-radius: 0; }
-.header-actions { display: flex; align-items: center; gap: 10px; }
-.header-link { color: var(--char); font-weight: 500; font-size: 15px; white-space: nowrap; margin-right: 6px; }
-.header-link:hover { color: var(--ink); }
-/* The header buttons, repeated in the collapsed menu, where the buttons are hidden. */
-.nav .nav-menu-only { display: none; }
 .menu-toggle { display: none; margin-left: auto; background: none; border: 1px solid var(--gray4); border-radius: 6px; padding: 8px 10px; cursor: pointer; }
 .menu-toggle span { display: block; width: 20px; height: 2px; background: var(--ink); margin: 4px 0; }
 
@@ -459,20 +454,18 @@ a:hover .arrow::after, .btn:hover .arrow::after, a.arrow:hover::after { transfor
 
 /* Responsive ---------------------------------------------------------- */
 @media (max-width: 1180px) {
-    .nav a { padding: 8px 9px; }
     .example-try { grid-template-columns: minmax(0, 1fr); }
     .docs { grid-template-columns: 230px minmax(0, 1fr); }
     .docs-toc { display: none; }
     .demo-layout { grid-template-columns: minmax(0, 1fr); }
     .flow { position: relative; top: 0; height: 560px; }
 }
-/* The header's links and calls to action need about 1140px in one row. */
-@media (max-width: 1180px) {
-    .nav, .header-actions { display: none; }
+/* The header's links fold into the menu where the desktop layout ends. */
+@media (max-width: 980px) {
+    .nav { display: none; }
     .menu-toggle { display: block; }
     .site-header.open .nav { display: flex; position: absolute; left: 0; right: 0; top: var(--header); flex-direction: column; align-items: stretch; background: #fff; padding: 12px 24px 20px; border-bottom: 1px solid var(--gray4); box-shadow: var(--shadow); }
     .site-header.open .nav a[aria-current] { box-shadow: inset 3px 0 0 var(--green); }
-    .site-header.open .nav .nav-menu-only { display: block; }
 }
 @media (max-width: 980px) {
     .hero-grid, .split, .compare, .example-card { grid-template-columns: minmax(0, 1fr); }
