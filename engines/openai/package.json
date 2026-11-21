@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "@formio/uag-sdk": "^2.0.2",
-    "openai": "7.45.1"
+    "openai": "7.46.0"
   },
   "devDependencies": {
     "chai": "^6.3.0",
