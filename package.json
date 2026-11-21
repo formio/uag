@@ -61,7 +61,7 @@
     "mongodb": "^7.7.0",
     "node-cache": "^5.1.2",
     "node-html-markdown": "^2.0.0",
-    "node-html-parser": "^9.0.5",
+    "node-html-parser": "^9.0.6",
     "pdf-lib": "^1.17.1",
     "unpdf": "^2.1.0",
     "zod": "^4.6.7"
